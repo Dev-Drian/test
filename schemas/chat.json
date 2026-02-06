@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Chat",
+  "description": "Conversación/mensajes. Base: db_${workspaceId}_chat",
+  "type": "object",
+  "required": ["_id"],
+  "properties": {
+    "_id": { "type": "string" },
+    "_rev": { "type": "string" },
+    "typeChat": { "type": "string", "description": "Ej: agentConfiguration, chat normal" },
+    "agent": { "type": "string", "description": "ID o nombre del agente asociado" },
+    "name": { "type": "string" },
+    "messages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "role": { "type": "string", "enum": ["user", "assistant", "system"] },
+          "content": { "type": "string" },
+          "timestamp": { "type": "string" }
+        }
+      }
+    },
+    "data": { "type": "object", "description": "Estado adicional del chat" }
+  }
+}

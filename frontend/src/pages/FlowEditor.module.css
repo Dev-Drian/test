@@ -1,0 +1,281 @@
+/* FlowEditor Styles - Editor visual tipo n8n */
+
+.container {
+  display: grid;
+  grid-template-columns: 250px 1fr 280px;
+  height: calc(100vh - 60px);
+  background: #0a0a0a;
+}
+
+/* Sidebar izquierdo */
+.sidebar {
+  background: #111;
+  border-right: 1px solid #222;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.sidebarHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.sidebarHeader h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 16px;
+}
+
+.addBtn {
+  background: #10b981;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.addBtn:hover {
+  background: #059669;
+}
+
+/* Lista de flujos */
+.flowList {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.flowItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #ccc;
+}
+
+.flowItem:hover {
+  background: #222;
+}
+
+.flowItem.active {
+  background: #1e3a5f;
+  border-left: 3px solid #3b82f6;
+  color: #fff;
+}
+
+.flowStatus {
+  font-size: 10px;
+}
+
+.emptyMessage {
+  color: #666;
+  font-size: 13px;
+  text-align: center;
+  padding: 20px;
+}
+
+/* Panel de nodos arrastrables */
+.nodePanel {
+  margin-top: 16px;
+}
+
+.nodePanel h4 {
+  color: #888;
+  font-size: 12px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.hint {
+  color: #555;
+  font-size: 11px;
+  margin-bottom: 12px;
+}
+
+.draggableNode {
+  padding: 10px 14px;
+  background: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  cursor: grab;
+  transition: all 0.2s;
+  color: #ddd;
+  font-size: 13px;
+}
+
+.draggableNode:hover {
+  background: #222;
+  transform: translateX(4px);
+}
+
+.draggableNode:active {
+  cursor: grabbing;
+}
+
+/* Área del editor */
+.editorArea {
+  display: flex;
+  flex-direction: column;
+  background: #0d0d0d;
+}
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #111;
+  border-bottom: 1px solid #222;
+}
+
+.flowNameInput {
+  flex: 1;
+  padding: 8px 14px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.flowNameInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.saveBtn {
+  background: #10b981;
+  color: #fff;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.saveBtn:hover {
+  background: #059669;
+}
+
+.saveBtn:disabled {
+  background: #555;
+  cursor: not-allowed;
+}
+
+.deleteBtn {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.deleteBtn:hover {
+  background: #dc2626;
+}
+
+/* Canvas de React Flow */
+.flowCanvas {
+  flex: 1;
+  background: #0a0a0a;
+}
+
+.panelInfo {
+  background: rgba(0, 0, 0, 0.7);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #888;
+}
+
+/* Estado vacío */
+.emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+}
+
+.emptyState h2 {
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.createBtn {
+  margin-top: 20px;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.createBtn:hover {
+  background: #2563eb;
+}
+
+/* Panel de propiedades */
+.propertiesPanel {
+  background: #111;
+  border-left: 1px solid #222;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.propertiesPanel h3 {
+  color: #fff;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.nodeProperties {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nodeProperties label {
+  color: #888;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.nodeProperties p {
+  color: #fff;
+  margin: 0;
+  padding: 8px;
+  background: #1a1a1a;
+  border-radius: 4px;
+}
+
+.select {
+  width: 100%;
+  padding: 10px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #3b82f6;
+}

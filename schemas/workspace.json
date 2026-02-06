@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Workspace",
+  "description": "Documento de workspace (entorno aislado). Base: db_workspaces",
+  "type": "object",
+  "required": ["_id"],
+  "properties": {
+    "_id": { "type": "string", "description": "UUID del workspace" },
+    "_rev": { "type": "string", "description": "Revisión CouchDB" },
+    "name": { "type": "string", "description": "Nombre del workspace" },
+    "color": { "type": "string", "description": "Color (ej. rgb(0, 158, 121))" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "createdBy": { "type": "string", "description": "ID del usuario creador" },
+    "members": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "email": { "type": "string" },
+          "name": { "type": "string" },
+          "profileImage": { "type": "string" },
+          "role": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "enum": ["owner", "member", "admin"] },
+              "permissions": { "type": "string" }
+            }
+          },
+          "memberSince": { "type": "string", "format": "date-time" },
+          "status": { "type": "string", "enum": ["active", "pending"] }
+        }
+      }
+    }
+  }
+}

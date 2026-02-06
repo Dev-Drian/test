@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Automation",
+  "description": "Workflow/automatización. Base: db_${workspaceId}_automations",
+  "type": "object",
+  "required": ["_id"],
+  "properties": {
+    "_id": { "type": "string" },
+    "_rev": { "type": "string" },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "createdBy": { "type": "string" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "nodes": { "type": "array", "description": "Nodos del flujo" },
+    "edges": { "type": "array", "description": "Conexiones entre nodos" },
+    "apiExecutionHistory": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "apiId": { "type": "string" },
+          "userId": { "type": "string" },
+          "date": { "type": "string" },
+          "status": { "type": "string", "enum": ["success", "failed"] }
+        }
+      }
+    }
+  }
+}

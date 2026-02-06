@@ -1,0 +1,102 @@
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 240px;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 1.5rem 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  padding: 0 1.5rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1rem;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navLink,
+.navActive {
+  padding: 0.6rem 1.5rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  transition: color 0.15s, background 0.15s;
+}
+
+.navLink:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
+.navActive {
+  color: var(--accent);
+  background: rgba(34, 197, 94, 0.08);
+  border-right: 2px solid var(--accent);
+}
+
+.workspaceBadge {
+  padding: 1rem 1.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+  margin-top: auto;
+}
+
+.workspaceLabel {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.workspaceName {
+  display: block;
+  color: var(--accent);
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  word-break: break-word;
+}
+
+.clearWs {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
+.clearWs:hover {
+  background: var(--border);
+  text-decoration: none;
+}
+
+.workspaceBadgeNone {
+  padding: 1rem 1.5rem;
+  font-size: 0.85rem;
+  border-top: 1px solid var(--border);
+  margin-top: auto;
+}
+
+.workspaceBadgeNone a {
+  color: var(--accent);
+}
+
+.main {
+  flex: 1;
+  padding: 2rem;
+  overflow: auto;
+}

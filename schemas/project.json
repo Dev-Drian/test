@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Project",
+  "description": "Proyecto que agrupa tablas. Base: db_${workspaceId}_project",
+  "type": "object",
+  "required": ["_id"],
+  "properties": {
+    "_id": { "type": "string" },
+    "_rev": { "type": "string" },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "icon": { "type": "object" },
+    "color": { "type": "string" },
+    "tables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "tableId": { "type": "string" },
+          "title": { "type": "string" },
+          "color": { "type": "string" },
+          "icon": { "type": "object" }
+        }
+      }
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

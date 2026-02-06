@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Doc",
+  "description": "Documento (metadata). Archivos en S3. Base: db_${workspaceId}_docs",
+  "type": "object",
+  "required": ["_id"],
+  "properties": {
+    "_id": { "type": "string" },
+    "_rev": { "type": "string" },
+    "documentTitle": { "type": "string" },
+    "location": { "type": "string", "description": "Ruta en almacenamiento" },
+    "contactId": { "type": "string", "description": "ID del contacto asociado" },
+    "status": { "type": "string" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

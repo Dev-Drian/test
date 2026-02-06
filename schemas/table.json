@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TableDefinition",
+  "description": "Definición de tabla. Base: db_${workspaceId}_table. Datos: db_${workspaceId}_table_${tableId}",
+  "type": "object",
+  "required": ["_id"],
+  "properties": {
+    "_id": { "type": "string" },
+    "_rev": { "type": "string" },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "type": { "type": "string", "enum": ["contacts", "calendar", "docs", "custom"] },
+    "color": { "type": "string" },
+    "icon": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      }
+    },
+    "headers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "key": { "type": "string" },
+          "label": { "type": "string" },
+          "title": { "type": "string" },
+          "type": { "type": "string" },
+          "options": { "type": "array" },
+          "relatedTable": { "type": "string" }
+        }
+      }
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

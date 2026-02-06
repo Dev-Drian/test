@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent",
+  "description": "Documento de agente. Base por workspace: db_${workspaceId}_agents",
+  "type": "object",
+  "required": ["_id"],
+  "properties": {
+    "_id": { "type": "string" },
+    "_rev": { "type": "string" },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "workspaceId": { "type": "string", "description": "ID del workspace al que pertenece" },
+    "createdBy": { "type": "string" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "type": { "type": "string", "enum": ["private", "public", "key"] },
+    "aiModel": {
+      "description": "Modelo(s) elegidos por el usuario al crear el agente",
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      ]
+    },
+    "language": { "type": "string" },
+    "tone": { "type": "number" },
+    "answer": { "type": "number" },
+    "instructions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "color": { "type": "string" },
+          "actions": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "tables": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "IDs de tablas vinculadas al agente (solo del mismo workspace)"
+    },
+    "workflows": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "IDs de automatizaciones vinculadas"
+    },
+    "Capabilities": {
+      "type": "object",
+      "properties": {
+        "webSearch": { "type": "boolean" },
+        "dallEImageGeneration": { "type": "boolean" },
+        "aythenCodeInterpretor": { "type": "boolean" }
+      }
+    }
+  }
+}
