@@ -37,12 +37,12 @@ const nodeTypes = {
 
 // Nodos disponibles para arrastrar
 const availableNodes = [
-  { type: 'trigger', label: '🚀 Trigger', color: '#10b981' },
-  { type: 'table', label: '📋 Tabla', color: '#3b82f6' },
-  { type: 'condition', label: '❓ Condición', color: '#f59e0b' },
-  { type: 'action', label: '⚡ Acción', color: '#8b5cf6' },
-  { type: 'availability', label: '📅 Disponibilidad', color: '#06b6d4' },
-  { type: 'response', label: '💬 Respuesta', color: '#ec4899' },
+  { type: 'trigger', label: 'Trigger', color: '#10b981' },
+  { type: 'table', label: 'Tabla', color: '#3b82f6' },
+  { type: 'condition', label: 'Condición', color: '#f59e0b' },
+  { type: 'action', label: 'Acción', color: '#8b5cf6' },
+  { type: 'availability', label: 'Disponibilidad', color: '#06b6d4' },
+  { type: 'response', label: 'Respuesta', color: '#ec4899' },
 ];
 
 export default function FlowEditor() {
@@ -69,8 +69,8 @@ export default function FlowEditor() {
         ]);
         setFlows(flowsRes.data || []);
         setTables(tablesRes.data || []);
-        console.log('📋 Tablas cargadas:', tablesRes.data?.length || 0);
-        console.log('🔄 Flujos cargados:', flowsRes.data?.length || 0);
+        console.log('Tablas cargadas:', tablesRes.data?.length || 0);
+        console.log('Flujos cargados:', flowsRes.data?.length || 0);
       } catch (err) {
         console.error('Error loading data:', err);
       }
@@ -226,7 +226,7 @@ export default function FlowEditor() {
       {/* Sidebar izquierdo - Lista de flujos */}
       <aside className={styles.sidebar}>
         <div className={styles.sidebarHeader}>
-          <h3>🔄 Flujos</h3>
+          <h3>Flujos</h3>
           <button onClick={handleCreateFlow} className={styles.addBtn}>
             + Nuevo
           </button>
@@ -241,7 +241,7 @@ export default function FlowEditor() {
             >
               <span>{flow.name}</span>
               <span className={styles.flowStatus}>
-                {flow.isActive ? '🟢' : '⚪'}
+                {flow.isActive ? 'Activo' : 'Inactivo'}
               </span>
             </div>
           ))}
@@ -259,8 +259,8 @@ export default function FlowEditor() {
           {availableNodes.map(node => (
             <div
               key={node.type}
-              className={styles.draggableNode}
-              style={{ borderColor: node.color }}
+              className={`${styles.draggableNode} ${styles[node.type] || ''}`}
+              style={{ borderLeftColor: node.color }}
               draggable
               onDragStart={(e) => onDragStart(e, node.type)}
             >
@@ -284,10 +284,10 @@ export default function FlowEditor() {
                 placeholder="Nombre del flujo"
               />
               <button onClick={handleSaveFlow} disabled={isSaving} className={styles.saveBtn}>
-                {isSaving ? 'Guardando...' : '💾 Guardar'}
+                {isSaving ? 'Guardando...' : 'Guardar'}
               </button>
               <button onClick={handleDeleteFlow} className={styles.deleteBtn}>
-                🗑️ Eliminar
+                Eliminar
               </button>
             </div>
 
@@ -304,9 +304,23 @@ export default function FlowEditor() {
                 nodeTypes={nodeTypes}
                 fitView
               >
-                <Controls />
-                <MiniMap />
-                <Background variant="dots" gap={12} size={1} />
+                <Controls 
+                  style={{ 
+                    background: '#1a1a1a', 
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    borderRadius: '8px'
+                  }}
+                />
+                <MiniMap 
+                  style={{ 
+                    background: '#1a1a1a',
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    borderRadius: '8px'
+                  }}
+                  maskColor="rgba(0, 0, 0, 0.6)"
+                  nodeColor="#3b82f6"
+                />
+                <Background variant="dots" gap={12} size={1} color="#333" />
                 <Panel position="top-right" className={styles.panelInfo}>
                   <div>Nodos: {nodes.length}</div>
                   <div>Conexiones: {edges.length}</div>
@@ -316,7 +330,7 @@ export default function FlowEditor() {
           </>
         ) : (
           <div className={styles.emptyState}>
-            <h2>🔄 Editor de Flujos</h2>
+            <h2>Editor de Flujos</h2>
             <p>Selecciona un flujo existente o crea uno nuevo</p>
             <button onClick={handleCreateFlow} className={styles.createBtn}>
               + Crear Flujo
@@ -327,7 +341,7 @@ export default function FlowEditor() {
 
       {/* Sidebar derecho - Propiedades del nodo seleccionado */}
       <aside className={styles.propertiesPanel}>
-        <h3>⚙️ Propiedades</h3>
+        <h3>Propiedades</h3>
         {nodes.find(n => n.selected) ? (
           <div className={styles.nodeProperties}>
             <label>Tipo</label>

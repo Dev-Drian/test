@@ -23,7 +23,6 @@ export default function TableNode({ id, data, selected }) {
     <div className={`${styles.node} ${styles.tableNode} ${selected ? styles.selected : ''}`}>
       <Handle type="target" position={Position.Top} className={styles.handle} />
       <div className={styles.nodeHeader}>
-        <span className={styles.nodeIcon}>📋</span>
         <span className={styles.nodeTitle}>Tabla</span>
       </div>
       <div className={styles.nodeBody}>

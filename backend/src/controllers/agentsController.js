@@ -80,3 +80,17 @@ export async function updateAgent(req, res) {
     res.status(500).json({ error: err.message });
   }
 }
+
+export async function deleteAgent(req, res) {
+  try {
+    const { workspaceId, agentId } = req.params;
+    const db = await connectDB(getAgentsDbName(workspaceId));
+    const doc = await db.get(agentId).catch(() => null);
+    if (!doc) return res.status(404).json({ error: "Agent not found" });
+    await db.destroy(doc._id, doc._rev);
+    res.json({ success: true, deleted: agentId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+}

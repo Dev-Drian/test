@@ -83,13 +83,14 @@ export async function getTableData(req, res) {
     const { limit = 50, skip = 0 } = req.query;
     const db = await connectDB(getTableDataDbName(workspaceId, tableId));
     const result = await db.find({
-      // Importante: las filas reales normalmente NO tienen el campo "main".
-      // El doc principal de metadatos sí tiene main: true.
-      // Usamos un OR para obtener todos los docs que no sean el main:
+      // Filtrar por tableId Y excluir documentos de metadatos (main: true)
       selector: {
-        $or: [
-          { main: { $exists: false } },
-          { main: { $ne: true } },
+        $and: [
+          { tableId: tableId },
+          { $or: [
+            { main: { $exists: false } },
+            { main: { $ne: true } },
+          ]},
         ],
       },
       limit: Number(limit),
@@ -109,6 +110,7 @@ export async function addTableRow(req, res) {
     const db = await connectDB(getTableDataDbName(workspaceId, tableId));
     const doc = {
       _id: uuidv4(),
+      tableId: tableId, // Agregar tableId para filtrar correctamente
       ...row,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

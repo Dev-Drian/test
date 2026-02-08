@@ -152,7 +152,7 @@ export default function Tables() {
                         <thead>
                           <tr>
                             {Object.keys(tableData[0])
-                              .filter((k) => !k.startsWith("_") && k !== "main")
+                              .filter((k) => !k.startsWith("_") && k !== "main" && k !== "tableId")
                               .map((k) => (
                                 <th key={k}>{k}</th>
                               ))}
@@ -162,7 +162,7 @@ export default function Tables() {
                           {tableData.map((row, i) => (
                             <tr key={row._id || i}>
                               {Object.keys(tableData[0])
-                                .filter((k) => !k.startsWith("_") && k !== "main")
+                                .filter((k) => !k.startsWith("_") && k !== "main" && k !== "tableId")
                                 .map((k) => (
                                   <td key={k}>{String(row[k] ?? "")}</td>
                                 ))}

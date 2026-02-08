@@ -20,6 +20,11 @@
   margin-bottom: 1rem;
 }
 
+.workspaceSection {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1rem;
+}
+
 .nav {
   display: flex;
   flex-direction: column;
@@ -49,8 +54,6 @@
   padding: 1rem 1.5rem;
   font-size: 0.85rem;
   color: var(--text-muted);
-  border-top: 1px solid var(--border);
-  margin-top: auto;
 }
 
 .workspaceLabel {
@@ -87,8 +90,6 @@
 .workspaceBadgeNone {
   padding: 1rem 1.5rem;
   font-size: 0.85rem;
-  border-top: 1px solid var(--border);
-  margin-top: auto;
 }
 
 .workspaceBadgeNone a {

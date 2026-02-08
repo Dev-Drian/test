@@ -21,7 +21,6 @@ export default function ResponseNode({ id, data, selected }) {
     <div className={`${styles.node} ${styles.responseNode} ${selected ? styles.selected : ''}`}>
       <Handle type="target" position={Position.Top} className={styles.handle} />
       <div className={styles.nodeHeader}>
-        <span className={styles.nodeIcon}>💬</span>
         <span className={styles.nodeTitle}>Respuesta</span>
       </div>
       <div className={styles.nodeBody}>
@@ -30,11 +29,11 @@ export default function ResponseNode({ id, data, selected }) {
           value={data?.type || 'success'}
           onChange={(e) => updateNodeData('type', e.target.value)}
         >
-          <option value="success">✅ Éxito</option>
-          <option value="error">❌ Error</option>
-          <option value="options">📋 Mostrar opciones</option>
-          <option value="question">❓ Hacer pregunta</option>
-          <option value="custom">✏️ Mensaje personalizado</option>
+          <option value="success">Éxito</option>
+          <option value="error">Error</option>
+          <option value="options">Mostrar opciones</option>
+          <option value="question">Hacer pregunta</option>
+          <option value="custom">Mensaje personalizado</option>
         </select>
         <textarea 
           className={styles.nodeTextarea}

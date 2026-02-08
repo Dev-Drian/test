@@ -1,13 +1,16 @@
 import { v4 as uuidv4 } from "uuid";
 import { connectDB } from "../config/db.js";
 
+// Nombre de la base de datos de workspaces
+const WORKSPACES_DB = "chatbot_workspaces";
+
 export async function createWorkspace(req, res) {
   try {
     const { name, color, createdBy } = req.body;
     if (!name) {
       return res.status(400).json({ error: "name is required" });
     }
-    const db = await connectDB("db_workspaces");
+    const db = await connectDB(WORKSPACES_DB);
     const workspace = {
       _id: uuidv4(),
       name,
@@ -27,7 +30,7 @@ export async function createWorkspace(req, res) {
 
 export async function listWorkspaces(req, res) {
   try {
-    const db = await connectDB("db_workspaces");
+    const db = await connectDB(WORKSPACES_DB);
     const result = await db.find({
       selector: {},
       limit: 200,
@@ -42,7 +45,7 @@ export async function listWorkspaces(req, res) {
 export async function getWorkspaceById(req, res) {
   try {
     const { workspaceId } = req.params;
-    const db = await connectDB("db_workspaces");
+    const db = await connectDB(WORKSPACES_DB);
     const doc = await db.get(workspaceId).catch(() => null);
     if (!doc) return res.status(404).json({ error: "Workspace not found" });
     res.json(doc);
@@ -56,7 +59,7 @@ export async function updateWorkspace(req, res) {
   try {
     const { workspaceId } = req.params;
     const updates = req.body;
-    const db = await connectDB("db_workspaces");
+    const db = await connectDB(WORKSPACES_DB);
     const doc = await db.get(workspaceId).catch(() => null);
     if (!doc) return res.status(404).json({ error: "Workspace not found" });
     const updated = {

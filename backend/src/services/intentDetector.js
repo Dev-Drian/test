@@ -3,6 +3,23 @@ import axios from "axios";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 const DEFAULT_MODEL = "gpt-4o-mini";
 
+/**
+ * Calcula la fecha de mañana basándose en una fecha string YYYY-MM-DD
+ * Sin depender de toISOString() que convierte a UTC
+ */
+function calculateTomorrow(todayStr) {
+  // Separar año, mes, día
+  const [year, month, day] = todayStr.split('-').map(Number);
+  // Crear fecha a mediodía para evitar problemas de timezone
+  const date = new Date(year, month - 1, day, 12, 0, 0);
+  date.setDate(date.getDate() + 1);
+  // Formatear sin usar toISOString
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 function getModelForAgent(agent) {
   const aiModel = agent?.aiModel;
   if (Array.isArray(aiModel) && aiModel.length > 0) {
@@ -113,13 +130,10 @@ export async function analyzeTableAction(userMessage, tablesInfo, actionType, ag
   
   // Contexto de fecha/hora actual
   const today = options.today || new Date().toISOString().split('T')[0];
-  const timezone = options.timezone || 'UTC';
+  const timezone = options.timezone || 'America/Bogota';
   
-  // Calcular mañana, pasado mañana, etc.
-  const todayDate = new Date(today);
-  const tomorrow = new Date(todayDate);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+  // Calcular mañana usando función que no depende de UTC
+  const tomorrowStr = calculateTomorrow(today);
 
   const prompt = `Eres un analizador que extrae datos de mensajes de usuario para operaciones en tablas.
 
@@ -143,19 +157,22 @@ TIPO DE ACCIÓN: "${actionType}"
 
 REGLAS IMPORTANTES:
 1. Elige la tabla cuyo "name" encaje mejor con la intención del usuario.
-2. EXTRAE todos los datos que el usuario haya mencionado y ponlos en "create.fields".
-3. CONVIERTE fechas relativas a formato YYYY-MM-DD:
+2. EXTRAE SOLO los datos que el usuario haya mencionado EXPLÍCITAMENTE y ponlos en "create.fields".
+3. CONVIERTE fechas relativas a formato YYYY-MM-DD SOLO si el usuario las menciona:
    - "hoy" → "${today}"
    - "mañana" → "${tomorrowStr}"
    - "pasado mañana" → calcula la fecha
-4. CONVIERTE horas a formato HH:MM (24h):
+   - Si el usuario NO menciona fecha, NO pongas ninguna fecha en fields.
+4. CONVIERTE horas a formato HH:MM (24h) SOLO si el usuario las menciona:
    - "las 2" o "a las 2" → "14:00" (asume PM si es cita/reunión)
    - "las 9" o "9 de la mañana" → "09:00"
    - "las 8 de la noche" → "20:00"
    - "mediodía" → "12:00"
+   - Si el usuario NO menciona hora, NO pongas ninguna hora en fields.
 5. Si el usuario dice "una consulta general", "vacunación", etc. → eso es "motivo".
 6. En "create.missingFields" pon SOLO los campos de "fields" que NO hayan sido proporcionados.
 7. Si ya tienes TODOS los campos de "fields" con valores, marca "create.isComplete": true.
+8. NUNCA inventes datos que el usuario NO dijo. Si dice "quiero agendar" sin más detalles, fields debe estar vacío o solo con lo explícito.
 
 EJEMPLOS de extracción:
 - "una consulta general" → motivo: "Consulta general"
@@ -209,10 +226,7 @@ export async function analyzeAvailabilityQuery(userMessage, tablesInfo, agent, t
   const model = resolveOpenAIModel(getModelForAgent(agent));
   
   const today = options.today || new Date().toISOString().split('T')[0];
-  const todayDate = new Date(today);
-  const tomorrow = new Date(todayDate);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+  const tomorrowStr = calculateTomorrow(today);
 
   // Encontrar tabla de citas y veterinarios
   const citasTable = tablesInfo.find(t => 
@@ -289,23 +303,37 @@ Ejemplos:
  * Extrae dinámicamente campos pendientes del mensaje del usuario
  * Usa el LLM para entender contexto y extraer valores de forma inteligente
  * 
+ * DINÁMICO: Genera el prompt basándose en fieldsConfig real de la BD,
+ * sin campos hardcodeados. Funciona con cualquier tabla/workspace.
+ * 
  * @param {string} userMessage - El mensaje del usuario
- * @param {object} pendingCreate - El estado actual del borrador (campos recolectados, campos faltantes)
+ * @param {object} pendingCreate - El estado actual del borrador (incluye fieldsConfig, requiredFields, fields)
  * @param {array} conversationHistory - Historial de la conversación para contexto
  * @param {object} agent - Configuración del agente
  * @param {string} token - Token de OpenAI
+ * @param {object} dateOptions - { today, timezone }
  * @returns {object} - { extractedFields: {}, isDataResponse: boolean, wantsToChangeFlow: boolean, newIntent: string|null }
  */
-export async function extractPendingFields(userMessage, pendingCreate, conversationHistory, agent, token) {
+export async function extractPendingFields(userMessage, pendingCreate, conversationHistory, agent, token, dateOptions = {}) {
   const apiKey = token || OPENAI_API_KEY;
   if (!apiKey) return { extractedFields: {}, isDataResponse: false };
 
   const model = resolveOpenAIModel(getModelForAgent(agent));
   
-  // Campos ya recolectados
+  const today = dateOptions.today || new Date().toISOString().split('T')[0];
+  const tomorrowStr = calculateTomorrow(today);
+  
+  // fieldsConfig viene del pendingCreate (almacenado desde la BD)
+  const fieldsConfig = pendingCreate.fieldsConfig || [];
+  
+  // Campos ya recolectados (con labels para contexto)
   const collectedFields = Object.entries(pendingCreate.fields || {})
     .filter(([k, v]) => v !== undefined && v !== null && v !== '')
-    .map(([k, v]) => `${k}: ${v}`)
+    .map(([k, v]) => {
+      const cfg = fieldsConfig.find(f => f.key === k);
+      const label = cfg?.label || k;
+      return `${k} (${label}): ${v}`;
+    })
     .join('\n');
   
   // Campos que faltan
@@ -314,52 +342,81 @@ export async function extractPendingFields(userMessage, pendingCreate, conversat
     return v === undefined || v === null || v === "";
   });
 
-  // Últimos mensajes de contexto
-  const recentHistory = (conversationHistory || []).slice(-4)
+  const recentHistory = (conversationHistory || []).slice(-8)
     .map(m => `${m.role}: ${m.content}`)
     .join('\n');
+    
+  // ─── Detectar campo que se pregunta — DINÁMICO ───
+  const lastAssistantMessage = (conversationHistory || []).filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
+  const currentlyAskingField = _detectFieldFromMessage(lastAssistantMessage, fieldsConfig, missingFields);
+  
+  // Construir contexto de campo
+  let fieldContext = '';
+  if (currentlyAskingField) {
+    const cfg = fieldsConfig.find(f => f.key === currentlyAskingField);
+    const label = cfg?.label || currentlyAskingField;
+    fieldContext = `CAMPO QUE SE ESTÁ PREGUNTANDO ACTUALMENTE: "${currentlyAskingField}" (${label})
+IMPORTANTE: Si el usuario responde con un valor simple, asígnalo al campo "${currentlyAskingField}".`;
+  }
+  
+  // ─── Generar descripción dinámica de campos ───
+  const fieldDescriptions = missingFields.map(key => {
+    const cfg = fieldsConfig.find(f => f.key === key);
+    if (!cfg) return `- "${key}": campo de texto`;
+    
+    const type = cfg.type || 'text';
+    const label = cfg.label || key;
+    let desc = `- "${key}" (${label}): tipo ${type}`;
+    
+    if (type === 'date') desc += `. Convertir a YYYY-MM-DD. "hoy"="${today}", "mañana"="${tomorrowStr}"`;
+    if (type === 'time') desc += `. Convertir a HH:MM 24h. "7 PM"="19:00", "9 AM"="09:00"`;
+    if (type === 'phone' || type === 'telefono') desc += `. DEBE tener 10 dígitos exactos`;
+    if (type === 'email') desc += `. Debe ser email válido`;
+    if (type === 'select' && cfg.options?.length > 0) desc += `. Opciones: ${cfg.options.join(', ')}`;
+    if (type === 'relation') desc += `. Es una referencia (acepta nombre o texto libre)`;
+    
+    return desc;
+  }).join('\n');
 
-  const prompt = `Eres un asistente inteligente que está ayudando a recolectar datos para crear una cita.
+  const prompt = `Eres un asistente inteligente que está ayudando a recolectar datos para crear un registro.
+
+FECHA ACTUAL: ${today}
+FECHA MAÑANA: ${tomorrowStr}
 
 CONTEXTO DE LA CONVERSACIÓN:
 ${recentHistory}
 
-DATOS YA RECOLECTADOS:
+DATOS YA RECOLECTADOS (NO VOLVER A PEDIR):
 ${collectedFields || '(ninguno aún)'}
 
-CAMPOS QUE FALTAN POR RECOLECTAR:
-${missingFields.join(', ')}
+CAMPOS QUE FALTAN POR RECOLECTAR (usa EXACTAMENTE estas keys en extractedFields):
+${fieldDescriptions}
+
+${fieldContext}
 
 EL USUARIO ACABA DE DECIR:
 "${userMessage}"
 
-ANALIZA el mensaje del usuario y responde SOLO con un JSON válido:
-
+Responde SOLO con un JSON válido:
 {
-  "isDataResponse": true/false,  // ¿El mensaje contiene datos para los campos faltantes?
-  "extractedFields": {           // Campos extraídos (solo los que encontraste)
-    "campo1": "valor1",
-    "campo2": "valor2"
-  },
-  "wantsToChangeFlow": true/false,  // ¿El usuario quiere hacer otra cosa? (cancelar, preguntar algo diferente)
-  "newIntent": null o "query" o "availability" o "cancel",  // Si wantsToChangeFlow=true, qué quiere hacer
-  "clarificationNeeded": null o "pregunta"  // Si necesitas aclarar algo
+  "isDataResponse": true/false,
+  "extractedFields": { "campo_key": "valor" },
+  "wantsToChangeFlow": true/false,
+  "newIntent": null o "query" o "availability" o "cancel" o "thanks",
+  "clarificationNeeded": null o "mensaje"
 }
 
-REGLAS DE EXTRACCIÓN:
-1. "propietario" = nombre de la persona (si dice "mi nombre es X", "soy X", "a nombre de X" → propietario = X)
-2. "telefono" = número de teléfono (cualquier secuencia de 6+ dígitos)
-3. "mascota" = nombre del animal
-4. "fecha" = convertir a formato YYYY-MM-DD (hoy=${new Date().toISOString().split('T')[0]})
-5. "hora" = convertir a formato HH:MM (24h)
-6. "servicio" = tipo de servicio (consulta, vacunación, etc.)
-
-EJEMPLOS:
-- "mi nombre es Juan Pérez" → { "isDataResponse": true, "extractedFields": { "propietario": "Juan Pérez" } }
-- "3214567890" → { "isDataResponse": true, "extractedFields": { "telefono": "3214567890" } }
-- "¿qué servicios tienen?" → { "isDataResponse": false, "wantsToChangeFlow": true, "newIntent": "query" }
-- "para mañana a las 2" → { "isDataResponse": true, "extractedFields": { "fecha": "...", "hora": "14:00" } }
-- "cancelar" → { "isDataResponse": false, "wantsToChangeFlow": true, "newIntent": "cancel" }`;
+REGLAS CRÍTICAS:
+1. Las keys en "extractedFields" DEBEN ser EXACTAMENTE las keys listadas arriba (${missingFields.join(', ')}). NO uses otras keys.
+2. Si el campo que se pregunta es "${currentlyAskingField || '(ninguno)'}" y el usuario da un valor simple, asígnalo a ESE campo.
+3. NO inventes datos. Solo extrae lo que el usuario dice explícitamente.
+4. Si un nombre tiene varias palabras (ej: "Adrian Castro"), es UN solo valor para UN solo campo.
+5. "gracias", "ok", "perfecto" → isDataResponse: false, newIntent: "thanks"
+6. Si el usuario dice "el que te pasé antes", "el mismo", revisa el CONTEXTO.
+7. "cancelar" → isDataResponse: false, wantsToChangeFlow: true, newIntent: "cancel"
+8. Fechas relativas: "hoy"="${today}", "mañana"="${tomorrowStr}".
+9. Horas: convertir a HH:MM 24h.
+10. Teléfonos: validar 10 dígitos, si no → clarificationNeeded.`;
 
   try {
     const res = await axios.post(
@@ -384,4 +441,67 @@ EJEMPLOS:
     console.error("intentDetector.extractPendingFields:", err.message);
     return { extractedFields: {}, isDataResponse: false };
   }
+}
+
+/**
+ * Detecta qué campo se está preguntando basándose en el mensaje del asistente
+ * DINÁMICO: usa fieldsConfig de la BD en vez de keywords hardcodeados
+ * @private
+ */
+function _detectFieldFromMessage(assistantMessage, fieldsConfig, missingFields) {
+  if (!assistantMessage) return null;
+  const lower = assistantMessage.toLowerCase();
+  
+  // Solo buscar entre campos que faltan
+  const missingConfigs = fieldsConfig.filter(fc => missingFields.includes(fc.key));
+  
+  // 1. Match por askMessage
+  for (const fc of missingConfigs) {
+    if (fc.askMessage) {
+      const askLower = fc.askMessage.toLowerCase().replace(/[¿?¡!]/g, '').trim();
+      if (lower.includes(askLower)) {
+        return fc.key;
+      }
+    }
+  }
+  
+  // 2. Match por label
+  for (const fc of missingConfigs) {
+    const label = (fc.label || fc.key).toLowerCase();
+    if (lower.includes(label)) {
+      return fc.key;
+    }
+  }
+  
+  // 3. Match por tipo/key (patrones genéricos)
+  for (const fc of missingConfigs) {
+    const key = fc.key.toLowerCase();
+    const type = (fc.type || '').toLowerCase();
+    
+    if ((type === 'phone' || key.includes('telefono') || key.includes('phone')) &&
+        (lower.includes('teléfono') || lower.includes('telefono') || lower.includes('número') || lower.includes('contacto'))) {
+      return fc.key;
+    }
+    if ((type === 'date' || key.includes('fecha')) &&
+        (lower.includes('fecha') || lower.includes('día') || lower.includes('cuándo'))) {
+      return fc.key;
+    }
+    if ((type === 'time' || key.includes('hora')) &&
+        (lower.includes('hora') || lower.includes('horario'))) {
+      return fc.key;
+    }
+    if (lower.includes('nombre') && (key.includes('cliente') || key.includes('nombre') || key.includes('propietario'))) {
+      return fc.key;
+    }
+    if (lower.includes('servicio') && (key.includes('servicio') || key.includes('service'))) {
+      return fc.key;
+    }
+  }
+  
+  // 4. Un solo campo faltante → asumir ese
+  if (missingConfigs.length === 1) {
+    return missingConfigs[0].key;
+  }
+  
+  return null;
 }

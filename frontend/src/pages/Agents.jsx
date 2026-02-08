@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { WorkspaceContext } from "../context/WorkspaceContext";
-import { listAgents, createAgent, listTables } from "../api/client";
+import { listAgents, createAgent, listTables, deleteAgent } from "../api/client";
 import styles from "./Agents.module.css";
 
 export default function Agents() {
@@ -55,6 +55,17 @@ export default function Agents() {
         setAiModel("gpt-4o-mini");
       })
       .finally(() => setCreating(false));
+  };
+
+  const handleDelete = async (agentId, agentName) => {
+    if (!confirm(`Eliminar agente "${agentName}"?`)) return;
+    try {
+      await deleteAgent(workspaceId, agentId);
+      setAgents((prev) => prev.filter((a) => a._id !== agentId));
+    } catch (err) {
+      console.error("Error deleting agent:", err);
+      alert("Error al eliminar el agente");
+    }
   };
 
   if (!workspaceId) {
@@ -129,7 +140,16 @@ export default function Agents() {
         <div className={styles.grid}>
           {agents.map((agent) => (
             <div key={agent._id} className={styles.card}>
-              <h3 className={styles.cardTitle}>{agent.name}</h3>
+              <div className={styles.cardHeader}>
+                <h3 className={styles.cardTitle}>{agent.name}</h3>
+                <button
+                  className={styles.deleteBtn}
+                  onClick={() => handleDelete(agent._id, agent.name)}
+                  title="Eliminar agente"
+                >
+                  X
+                </button>
+              </div>
               {agent.description && (
                 <p className={styles.cardDesc}>{agent.description}</p>
               )}

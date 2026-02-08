@@ -22,7 +22,6 @@ export default function ConditionNode({ id, data, selected }) {
     <div className={`${styles.node} ${styles.conditionNode} ${selected ? styles.selected : ''}`}>
       <Handle type="target" position={Position.Top} className={styles.handle} />
       <div className={styles.nodeHeader}>
-        <span className={styles.nodeIcon}>❓</span>
         <span className={styles.nodeTitle}>Condición</span>
       </div>
       <div className={styles.nodeBody}>

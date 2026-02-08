@@ -20,7 +20,6 @@ export default function TriggerNode({ id, data, selected }) {
   return (
     <div className={`${styles.node} ${styles.triggerNode} ${selected ? styles.selected : ''}`}>
       <div className={styles.nodeHeader}>
-        <span className={styles.nodeIcon}>🚀</span>
         <span className={styles.nodeTitle}>Trigger</span>
       </div>
       <div className={styles.nodeBody}>

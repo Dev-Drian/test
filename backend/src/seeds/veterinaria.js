@@ -11,11 +11,11 @@ dotenv.config();
 const couchUrl = process.env.COUCHDB_URL || "http://admin:password@127.0.0.1:5984";
 const couch = nano(couchUrl);
 
-// Helpers para nombres de bases de datos (MISMO patrón que db.js)
-const getWorkspaceDbName = (wsId) => `migracion_${wsId}_table`;
-const getTableDataDbName = (wsId, tableId) => `migracion_${wsId}_table_${tableId}`;
-const getAgentsDbName = (wsId) => `migracion_${wsId}_agents`;
-const getFlowsDbName = (wsId) => `migracion_${wsId}_flows`;
+// Helpers para nombres de bases de datos (prefijo chatbot_)
+const getTablesDbName = (wsId) => `chatbot_tables_${wsId}`;
+const getTableDataDbName = (wsId, tableId) => `chatbot_tabledata_${wsId}`;
+const getAgentsDbName = (wsId) => `chatbot_agents_${wsId}`;
+const getFlowsDbName = (wsId) => `chatbot_flows_${wsId}`;
 
 async function connectDB(dbName) {
   try {
@@ -31,11 +31,11 @@ async function connectDB(dbName) {
 }
 
 async function seed() {
-  console.log("🐾 Iniciando seed de Veterinaria...\n");
+  console.log("Iniciando seed de Veterinaria...\n");
 
   // 1. Crear Workspace
   const workspaceId = uuidv4();
-  const workspacesDb = await connectDB("db_workspaces");
+  const workspacesDb = await connectDB("chatbot_workspaces");
   
   const workspace = {
     _id: workspaceId,
@@ -48,10 +48,10 @@ async function seed() {
   };
   
   await workspacesDb.insert(workspace);
-  console.log(`✅ Workspace creado: ${workspace.name} (${workspaceId})`);
+  console.log(`[OK] Workspace creado: ${workspace.name} (${workspaceId})`);
 
   // 2. Crear Tablas
-  const tablesDb = await connectDB(getWorkspaceDbName(workspaceId));
+  const tablesDb = await connectDB(getTablesDbName(workspaceId));
   
   const tablesData = [
     // ========== VETERINARIOS ==========
@@ -230,7 +230,7 @@ async function seed() {
     };
     
     await tablesDb.insert(table);
-    console.log(`  📋 Tabla creada: ${table.name}`);
+    console.log(`  [+] Tabla creada: ${table.name}`);
 
     // Crear base de datos de datos de la tabla
     const dataDb = await connectDB(getTableDataDbName(workspaceId, tableId));
@@ -268,29 +268,127 @@ async function seed() {
   const agentConFlujos = {
     _id: uuidv4(),
     name: "Asistente PetCare Pro",
-    description: "Agente avanzado CON FLUJOS - Gestiona citas con validación de disponibilidad y asignación automática",
+    description: "Gestiona citas veterinarias con validación de disponibilidad y asignación automática de profesionales.",
     workspaceId,
     type: "public",
     aiModel: ["gpt-4o-mini"],
     language: "es",
     tables: createdTables.map(t => ({ id: t.id, tableId: t.id, title: t.name })),
     hasFlows: true,
+    
+    // ============ PROMPT DINÁMICO ============
+    systemPrompt: `Eres "{{agentName}}", el asistente virtual de Veterinaria PetCare.
+
+{{agentDesc}}
+
+HORARIO DE ATENCIÓN:
+- Lunes a Viernes: 8:00 AM - 8:00 PM
+- Sábados: 9:00 AM - 2:00 PM
+- Domingos: Cerrado
+
+DATOS DISPONIBLES: {{tables}}
+
+COMPORTAMIENTO:
+- Respuestas breves y directas (máximo 2-3 oraciones)
+- Usa emojis apropiados para ser amigable
+- Siempre verifica disponibilidad antes de agendar
+- Si el veterinario no está especificado, asigna automáticamente según servicio
+- Crea la mascota automáticamente si no existe
+
+NUNCA reveles que eres una IA. Actúa siempre como {{agentName}}.`,
+
+    // ============ ESTILO DE COMUNICACIÓN ============
+    communicationStyle: {
+      maxSentences: 3,
+      useEmojis: true,
+      greeting: "¡Hola! 🐾 Bienvenido a Veterinaria PetCare. ¿En qué puedo ayudarte hoy?",
+      farewell: "¡Gracias por contactarnos! 🐶🐱 Que tengas un excelente día."
+    },
+    
+    // ============ TEMPLATES DE RESPUESTA ============
+    responseTemplates: {
+      // Éxito al crear
+      createSuccess: `✅ **¡Cita agendada exitosamente!**
+
+📋 **Detalles de tu cita:**
+🐾 **{{mascota}}**
+📅 {{fecha:date}} a las {{hora:time}}
+🩺 {{servicio}}
+👨‍⚕️ {{veterinario}}
+
+📱 Te contactaremos al {{telefono}} para confirmar.
+
+¿Necesitas algo más?`,
+
+      // Confirmar antes de crear
+      createConfirm: `📋 **Por favor confirma los datos:**
+
+🐾 Mascota: {{mascota}}
+👤 Propietario: {{propietario}}
+📅 Fecha: {{fecha}}
+🕐 Hora: {{hora}}
+🩺 Servicio: {{servicio}}
+
+¿Todo está correcto? Responde **Sí** para confirmar.`,
+
+      // Éxito al cancelar
+      cancelSuccess: `✅ **Cita cancelada**
+
+🐾 {{mascota}}
+📅 {{fecha:date}} a las {{hora:time}}
+
+La cita ha sido cancelada exitosamente. ¿Deseas agendar una nueva?`,
+
+      // Confirmación antes de cancelar
+      cancelConfirm: `⚠️ **¿Estás seguro de cancelar esta cita?**
+
+🐾 {{mascota}}
+📅 {{fecha}}
+
+Responde **Sí** para confirmar o **No** para mantenerla.`,
+
+      // Campo faltante
+      missingField: `Para continuar, necesito el **{{fieldLabel}}**. ¿Cuál es?`,
+
+      // Conflicto de horario
+      conflict: `⚠️ **Horario no disponible**
+
+{{veterinario}} ya tiene una cita el {{fecha}} a las {{hora}}.
+
+📅 **Horarios disponibles cercanos:**
+{{alternativas}}
+
+¿Cuál prefieres?`,
+
+      // No encontrado
+      notFound: `🔍 No encontré ninguna cita con esos datos. ¿Puedes darme más detalles como el nombre de la mascota o la fecha?`,
+
+      // Error genérico
+      error: `😔 Hubo un problema: {{error}}. Por favor intenta de nuevo.`,
+
+      // Mostrar disponibilidad
+      availability: `📅 **Disponibilidad para {{fecha}}:**
+
+{{horariosDisponibles}}
+
+¿A qué hora te gustaría agendar?`
+    },
+    
     instructions: [
       {
         title: "Identidad",
         actions: [
           "Eres el asistente virtual PRO de Veterinaria PetCare",
           "Usas flujos avanzados para validar disponibilidad y asignar veterinarios",
-          "Horario de atención: Lunes a Viernes 8:00-20:00, Sábados 9:00-14:00"
         ]
       },
       {
-        title: "Capacidades avanzadas",
+        title: "Capacidades",
         actions: [
-          "Verificas disponibilidad en tiempo real antes de agendar",
-          "Asignas automáticamente el veterinario adecuado según el servicio",
-          "Creas mascotas automáticamente si no existen",
-          "Validas que no haya conflictos de horarios"
+          "Verificas disponibilidad en tiempo real",
+          "Asignas automáticamente veterinario según servicio",
+          "Creas mascotas si no existen",
+          "Validas conflictos de horarios"
         ]
       },
     ],
@@ -301,7 +399,7 @@ async function seed() {
   };
   
   await agentsDb.insert(agentConFlujos);
-  console.log(`\n🤖 Agente CON FLUJOS: ${agentConFlujos.name}`);
+  console.log(`\n[+] Agente CON FLUJOS: ${agentConFlujos.name}`);
 
   // ========== AGENTE 2: SIN FLUJOS (Básico) ==========
   const agentSinFlujos = {
@@ -339,7 +437,7 @@ async function seed() {
   };
   
   await agentsDb.insert(agentSinFlujos);
-  console.log(`🤖 Agente SIN FLUJOS: ${agentSinFlujos.name}`);
+  console.log(`[+] Agente SIN FLUJOS: ${agentSinFlujos.name}`);
 
   // 4. Crear Flujos (solo para el agente con flujos)
   const flowsDb = await connectDB(getFlowsDbName(workspaceId));
@@ -359,116 +457,293 @@ async function seed() {
     mainTable: citasTable?.id || null,
     trigger: "create",
     isActive: true,
+    enabled: true,
+    
     nodes: [
       {
         id: "trigger-1",
         type: "trigger",
         position: { x: 300, y: 50 },
-        data: { label: "🚀 Trigger", trigger: "create" },
-      },
-      {
-        id: "table-mascotas",
-        type: "table",
-        position: { x: 100, y: 180 },
-        data: { label: "📋 Mascotas", tableId: mascotasTable?.id, action: "validate" },
-      },
-      {
-        id: "availability-1",
-        type: "availability",
-        position: { x: 500, y: 180 },
-        data: { label: "📅 Disponibilidad", staffTable: vetsTable?.id },
-      },
-      {
-        id: "action-autocreate",
-        type: "action",
-        position: { x: 100, y: 320 },
-        data: { label: "⚡ Auto-crear mascota", action: "auto_create" },
-      },
-      {
-        id: "action-assign",
-        type: "action",
-        position: { x: 500, y: 320 },
-        data: { label: "⚡ Asignar veterinario", action: "auto_assign" },
+        data: { 
+          label: "Agendar Cita",
+          triggerType: "intent",
+          intent: "create",
+          // Patrones personalizados para detectar intención de agendar
+          patterns: [
+            "\\b(agendar|reservar|sacar|hacer|quiero|necesito)\\b.*\\b(cita|turno|hora)\\b",
+            "\\bcita\\b.*\\b(para|el|mañana|hoy)\\b",
+            "\\bquiero\\b.*\\b(consulta|vacuna|control)\\b"
+          ]
+        },
       },
       {
         id: "table-citas",
         type: "table",
-        position: { x: 300, y: 450 },
-        data: { label: "📋 Crear Cita", tableId: citasTable?.id, action: "create" },
+        position: { x: 300, y: 180 },
+        data: { 
+          label: "Datos de Cita",
+          tableId: citasTable?.id,
+          action: "create",
+          // Orden de prioridad para preguntar campos
+          fieldOrder: ["servicio", "mascota", "fecha", "hora", "propietario", "telefono"],
+          // Configuración dinámica de cada campo
+          fieldsConfig: [
+            { 
+              fieldKey: "servicio", 
+              displayLabel: "🩺 Servicio",
+              required: true, 
+              askMessage: "🩺 ¿Qué servicio necesitas? (consulta, vacunación, baño, etc.)",
+              autoFill: "lookup",
+              lookupTable: serviciosTable?.id
+            },
+            { 
+              fieldKey: "mascota", 
+              displayLabel: "🐾 Mascota",
+              required: true, 
+              askMessage: "🐾 ¿Cuál es el nombre de tu mascota?",
+              autoFill: "lookup",
+              lookupTable: mascotasTable?.id
+            },
+            { 
+              fieldKey: "fecha", 
+              displayLabel: "📅 Fecha",
+              required: true, 
+              askMessage: "📅 ¿Para qué día deseas la cita?"
+            },
+            { 
+              fieldKey: "hora", 
+              displayLabel: "🕐 Hora",
+              required: true, 
+              askMessage: "🕐 ¿A qué hora te gustaría?"
+            },
+            { 
+              fieldKey: "propietario", 
+              displayLabel: "👤 Propietario",
+              required: true, 
+              askMessage: "👤 ¿Cuál es tu nombre completo?"
+            },
+            { 
+              fieldKey: "telefono", 
+              displayLabel: "📱 Teléfono",
+              required: true, 
+              askMessage: "📱 ¿A qué número podemos contactarte?",
+              validation: "^[0-9\\-\\s]{7,15}$",
+              validationError: "Por favor ingresa un número válido (solo dígitos)"
+            },
+            { 
+              fieldKey: "veterinario", 
+              displayLabel: "👨‍⚕️ Veterinario",
+              required: false, 
+              autoFill: "auto",
+              // Se asigna automáticamente basado en disponibilidad
+            },
+          ]
+        },
+      },
+      {
+        id: "table-mascotas",
+        type: "table",
+        position: { x: 100, y: 320 },
+        data: { 
+          label: "Validar/Crear Mascota",
+          tableId: mascotasTable?.id,
+          action: "validate",
+          autoCreate: true,
+          autoCreateFields: ["nombre", "propietario", "telefono", "especie"]
+        },
+      },
+      {
+        id: "availability-1",
+        type: "availability",
+        position: { x: 500, y: 320 },
+        data: { 
+          label: "Verificar Disponibilidad",
+          staffTable: vetsTable?.id,
+          appointmentsTable: citasTable?.id,
+          checkFields: ["fecha", "hora"],
+          conflictMessage: "⚠️ {{veterinario}} ya tiene una cita a esa hora. Horarios disponibles: {{alternativas}}"
+        },
+      },
+      {
+        id: "action-assign",
+        type: "action",
+        position: { x: 300, y: 460 },
+        data: { 
+          label: "Asignar Veterinario",
+          actionType: "assign",
+          assignConfig: {
+            sourceTable: vetsTable?.id,
+            targetField: "veterinario",
+            criteria: "availability",
+            matchField: "servicios" // Buscar vet que ofrezca el servicio
+          }
+        },
+      },
+      {
+        id: "action-create",
+        type: "action",
+        position: { x: 300, y: 580 },
+        data: { 
+          label: "Crear Cita",
+          actionType: "create",
+          tableId: citasTable?.id,
+          confirmationRequired: false, // Ya pedimos los datos, crear directo
+          successMessage: "{{agentTemplates.createSuccess}}",
+          errorMessage: "{{agentTemplates.error}}"
+        },
       },
       {
         id: "response-success",
         type: "response",
-        position: { x: 300, y: 580 },
-        data: { label: "💬 Confirmación", type: "success" },
+        position: { x: 300, y: 700 },
+        data: { 
+          label: "Confirmación",
+          responseTemplate: `✅ **¡Cita agendada!**
+
+🐾 **{{mascota}}**
+📅 {{fecha:date}} a las {{hora:time}}
+🩺 {{servicio}}
+👨‍⚕️ {{veterinario}}
+
+📱 Contacto: {{telefono}}
+
+¿Necesitas algo más?`
+        },
       },
     ],
     edges: [
-      { id: "e1", source: "trigger-1", target: "table-mascotas", animated: true },
-      { id: "e2", source: "trigger-1", target: "availability-1", animated: true },
-      { id: "e3", source: "table-mascotas", target: "action-autocreate", animated: true },
-      { id: "e4", source: "availability-1", target: "action-assign", animated: true },
-      { id: "e5", source: "action-autocreate", target: "table-citas", animated: true },
-      { id: "e6", source: "action-assign", target: "table-citas", animated: true },
-      { id: "e7", source: "table-citas", target: "response-success", animated: true },
+      { id: "e1", source: "trigger-1", target: "table-citas", animated: true },
+      { id: "e2", source: "table-citas", target: "table-mascotas", animated: true },
+      { id: "e3", source: "table-citas", target: "availability-1", animated: true },
+      { id: "e4", source: "table-mascotas", target: "action-assign", animated: true, label: "mascota válida" },
+      { id: "e5", source: "availability-1", sourceHandle: "available", target: "action-assign", animated: true, label: "disponible" },
+      { id: "e6", source: "action-assign", target: "action-create", animated: true },
+      { id: "e7", source: "action-create", target: "response-success", animated: true },
     ],
     connections: [
       { tableId: mascotasTable?.id, tableName: "Mascotas", type: "relation", config: { autoCreate: true } },
       { tableId: vetsTable?.id, tableName: "Veterinarios", type: "availability", config: { autoAssign: true } },
+      { tableId: serviciosTable?.id, tableName: "Servicios", type: "lookup" },
     ],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
   
   await flowsDb.insert(flowAgendarCitas);
-  console.log(`\n🔄 Flujo creado: ${flowAgendarCitas.name}`);
+  console.log(`\n[+] Flujo creado: ${flowAgendarCitas.name}`);
 
   // ========== FLUJO 2: Cancelar Citas ==========
   const flowCancelarCitas = {
     _id: uuidv4(),
     name: "Cancelar Citas",
-    description: "Flujo para cancelar citas existentes",
+    description: "Flujo para cancelar citas existentes con confirmación",
     agentId: agentConFlujos._id,
     mainTable: citasTable?.id || null,
     trigger: "update",
     isActive: true,
+    enabled: true,
+    
     nodes: [
       {
         id: "trigger-1",
         type: "trigger",
         position: { x: 300, y: 50 },
-        data: { label: "🚀 Cancelar", trigger: "update" },
+        data: { 
+          label: "Cancelar Cita",
+          triggerType: "intent",
+          intent: "delete",
+          patterns: [
+            "\\b(cancelar|anular|eliminar|borrar|quitar)\\b.*\\b(cita|turno|reserva)\\b",
+            "\\bno\\b.*\\b(puedo|voy)\\b.*\\b(ir|asistir)\\b",
+            "\\b(suspender|descartar)\\b.*\\b(cita|turno)\\b"
+          ]
+        },
       },
       {
         id: "condition-1",
         type: "condition",
         position: { x: 300, y: 180 },
-        data: { label: "❓ ¿Existe la cita?", condition: "exists" },
+        data: { 
+          label: "¿Existe la cita?",
+          condition: "recordExists",
+          searchFields: ["mascota", "fecha", "propietario"]
+        },
       },
       {
-        id: "action-cancel",
+        id: "action-confirm",
         type: "action",
         position: { x: 150, y: 320 },
-        data: { label: "⚡ Cambiar estado", action: "set_value", field: "estado", value: "Cancelada" },
+        data: { 
+          label: "Pedir Confirmación",
+          actionType: "confirm",
+          confirmationRequired: true,
+          confirmationMessage: `⚠️ **¿Estás seguro de cancelar esta cita?**
+
+🐾 {{mascota}}
+📅 {{fecha:date}} a las {{hora:time}}
+🩺 {{servicio}}
+
+Responde **Sí** para confirmar o **No** para mantenerla.`
+        },
       },
       {
         id: "response-error",
         type: "response",
         position: { x: 450, y: 320 },
-        data: { label: "💬 No encontrada", type: "error" },
+        data: { 
+          label: "No encontrada",
+          responseTemplate: `🔍 No encontré ninguna cita con esos datos.
+
+¿Puedes darme más detalles como:
+- Nombre de la mascota
+- Fecha de la cita
+- Nombre del propietario
+
+O simplemente escribe "mis citas" para ver las citas pendientes.`
+        },
+      },
+      {
+        id: "action-cancel",
+        type: "action",
+        position: { x: 150, y: 460 },
+        data: { 
+          label: "Ejecutar Cancelación",
+          actionType: "update",
+          fieldsToUpdate: { estado: "Cancelada" }
+        },
       },
       {
         id: "response-success",
         type: "response",
-        position: { x: 150, y: 450 },
-        data: { label: "💬 Cancelada", type: "success" },
+        position: { x: 150, y: 580 },
+        data: { 
+          label: "Cancelada",
+          responseTemplate: `✅ **Cita cancelada**
+
+🐾 {{mascota}}
+📅 {{fecha:date}} a las {{hora:time}}
+
+La cita ha sido cancelada. ¿Deseas agendar una nueva?`
+        },
+      },
+      {
+        id: "response-kept",
+        type: "response",
+        position: { x: 300, y: 460 },
+        data: { 
+          label: "Mantenida",
+          responseTemplate: `✅ Entendido, la cita de **{{mascota}}** se mantiene como estaba.
+
+¿En qué más puedo ayudarte?`
+        },
       },
     ],
     edges: [
       { id: "e1", source: "trigger-1", target: "condition-1", animated: true },
-      { id: "e2", source: "condition-1", target: "action-cancel", sourceHandle: "yes", animated: true },
-      { id: "e3", source: "condition-1", target: "response-error", sourceHandle: "no", animated: true },
-      { id: "e4", source: "action-cancel", target: "response-success", animated: true },
+      { id: "e2", source: "condition-1", sourceHandle: "yes", target: "action-confirm", animated: true, label: "Existe" },
+      { id: "e3", source: "condition-1", sourceHandle: "no", target: "response-error", animated: true, label: "No existe" },
+      { id: "e4", source: "action-confirm", target: "action-cancel", animated: true },
+      { id: "e5", source: "action-cancel", target: "response-success", animated: true },
     ],
     connections: [],
     createdAt: new Date().toISOString(),
@@ -476,7 +751,7 @@ async function seed() {
   };
   
   await flowsDb.insert(flowCancelarCitas);
-  console.log(`🔄 Flujo creado: ${flowCancelarCitas.name}`);
+  console.log(`[+] Flujo creado: ${flowCancelarCitas.name}`);
 
   // ========== FLUJO 3: Consultar Disponibilidad ==========
   const flowDisponibilidad = {
@@ -492,31 +767,31 @@ async function seed() {
         id: "trigger-1",
         type: "trigger",
         position: { x: 300, y: 50 },
-        data: { label: "🚀 Disponibilidad", trigger: "availability" },
+        data: { label: "Disponibilidad", trigger: "availability" },
       },
       {
         id: "table-citas",
         type: "table",
         position: { x: 150, y: 180 },
-        data: { label: "📋 Buscar Citas", tableId: citasTable?.id, action: "read" },
+        data: { label: "Buscar Citas", tableId: citasTable?.id, action: "read" },
       },
       {
         id: "table-vets",
         type: "table",
         position: { x: 450, y: 180 },
-        data: { label: "📋 Veterinarios", tableId: vetsTable?.id, action: "read" },
+        data: { label: "Veterinarios", tableId: vetsTable?.id, action: "read" },
       },
       {
         id: "action-calc",
         type: "action",
         position: { x: 300, y: 320 },
-        data: { label: "⚡ Calcular horarios libres", action: "calculate_availability" },
+        data: { label: "Calcular horarios libres", action: "calculate_availability" },
       },
       {
         id: "response-1",
         type: "response",
         position: { x: 300, y: 450 },
-        data: { label: "💬 Mostrar disponibilidad", type: "options" },
+        data: { label: "Mostrar disponibilidad", type: "options" },
       },
     ],
     edges: [
@@ -535,7 +810,7 @@ async function seed() {
   };
   
   await flowsDb.insert(flowDisponibilidad);
-  console.log(`🔄 Flujo creado: ${flowDisponibilidad.name}`);
+  console.log(`[+] Flujo creado: ${flowDisponibilidad.name}`);
 
   // ========== FLUJO 4: Vender Producto ==========
   const flowVenderProducto = {
@@ -551,31 +826,31 @@ async function seed() {
         id: "trigger-1",
         type: "trigger",
         position: { x: 300, y: 50 },
-        data: { label: "🚀 Vender", trigger: "update" },
+        data: { label: "Vender", trigger: "update" },
       },
       {
         id: "condition-stock",
         type: "condition",
         position: { x: 300, y: 180 },
-        data: { label: "❓ ¿Hay stock?", condition: "greater", field: "stock", value: 0 },
+        data: { label: "¿Hay stock?", condition: "greater", field: "stock", value: 0 },
       },
       {
         id: "action-reduce",
         type: "action",
         position: { x: 150, y: 320 },
-        data: { label: "⚡ Reducir stock", action: "decrement", field: "stock" },
+        data: { label: "Reducir stock", action: "decrement", field: "stock" },
       },
       {
         id: "response-nostock",
         type: "response",
         position: { x: 450, y: 320 },
-        data: { label: "💬 Sin stock", type: "error", message: "No hay stock disponible" },
+        data: { label: "Sin stock", type: "error", message: "No hay stock disponible" },
       },
       {
         id: "response-success",
         type: "response",
         position: { x: 150, y: 450 },
-        data: { label: "💬 Vendido", type: "success" },
+        data: { label: "Vendido", type: "success" },
       },
     ],
     edges: [
@@ -590,29 +865,29 @@ async function seed() {
   };
   
   await flowsDb.insert(flowVenderProducto);
-  console.log(`🔄 Flujo creado: ${flowVenderProducto.name}`);
+  console.log(`[+] Flujo creado: ${flowVenderProducto.name}`);
 
   // Resumen
   console.log("\n" + "=".repeat(60));
-  console.log("🎉 SEED COMPLETADO");
+  console.log("SEED COMPLETADO");
   console.log("=".repeat(60));
-  console.log(`\n📦 Workspace ID: ${workspaceId}`);
-  console.log(`📋 Tablas creadas: ${createdTables.length}`);
+  console.log(`\nWorkspace ID: ${workspaceId}`);
+  console.log(`Tablas creadas: ${createdTables.length}`);
   createdTables.forEach(t => console.log(`   - ${t.name} (${t.id})`));
-  console.log(`\n🤖 Agentes creados:`);
+  console.log(`\nAgentes creados:`);
   console.log(`   - ${agentConFlujos.name} (CON FLUJOS) - ID: ${agentConFlujos._id}`);
   console.log(`   - ${agentSinFlujos.name} (SIN FLUJOS) - ID: ${agentSinFlujos._id}`);
-  console.log(`\n🔄 Flujos creados: 4`);
+  console.log(`\nFlujos creados: 4`);
   console.log(`   - ${flowAgendarCitas.name}`);
   console.log(`   - ${flowCancelarCitas.name}`);
   console.log(`   - ${flowDisponibilidad.name}`);
   console.log(`   - ${flowVenderProducto.name}`);
-  console.log("\n💡 Copia el Workspace ID para usarlo en el frontend.\n");
+  console.log("\nCopia el Workspace ID para usarlo en el frontend.\n");
 }
 
 seed()
   .then(() => process.exit(0))
   .catch((err) => {
-    console.error("❌ Error en seed:", err);
+    console.error("[ERROR] Error en seed:", err);
     process.exit(1);
   });

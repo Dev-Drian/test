@@ -12,8 +12,111 @@
     "createdBy": { "type": "string" },
     "createdAt": { "type": "string", "format": "date-time" },
     "updatedAt": { "type": "string", "format": "date-time" },
-    "nodes": { "type": "array", "description": "Nodos del flujo" },
-    "edges": { "type": "array", "description": "Conexiones entre nodos" },
+    "enabled": { "type": "boolean", "default": true },
+    "nodes": { 
+      "type": "array", 
+      "description": "Nodos del flujo",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "type": { 
+            "type": "string", 
+            "enum": ["trigger", "table", "condition", "action", "availability", "response"]
+          },
+          "position": {
+            "type": "object",
+            "properties": {
+              "x": { "type": "number" },
+              "y": { "type": "number" }
+            }
+          },
+          "data": {
+            "type": "object",
+            "description": "Configuración específica según el tipo de nodo",
+            "properties": {
+              "label": { "type": "string" },
+              "triggerType": { 
+                "type": "string", 
+                "enum": ["message", "keyword", "intent", "schedule", "webhook"],
+                "description": "Tipo de trigger (solo para nodo trigger)"
+              },
+              "patterns": { 
+                "type": "array", 
+                "items": { "type": "string" },
+                "description": "Patrones regex para detectar intención" 
+              },
+              "intent": { 
+                "type": "string", 
+                "enum": ["create", "read", "update", "delete", "query", "availability"],
+                "description": "Intención detectada"
+              },
+              "tableId": { "type": "string", "description": "ID de tabla para operaciones" },
+              "fieldsConfig": {
+                "type": "array",
+                "description": "Configuración de campos a solicitar/usar",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "fieldKey": { "type": "string" },
+                    "required": { "type": "boolean" },
+                    "askMessage": { "type": "string", "description": "Mensaje para pedir este campo" },
+                    "validation": { "type": "string", "description": "Regex de validación" },
+                    "validationError": { "type": "string", "description": "Mensaje si falla validación" },
+                    "autoFill": { "type": "string", "enum": ["none", "auto", "lookup"], "default": "none" },
+                    "lookupTable": { "type": "string", "description": "Tabla para buscar valor (si autoFill=lookup)" }
+                  }
+                }
+              },
+              "condition": { "type": "string", "description": "Expresión de condición" },
+              "actionType": { 
+                "type": "string", 
+                "enum": ["create", "update", "delete", "notify", "webhook", "assign"],
+                "description": "Tipo de acción a ejecutar"
+              },
+              "assignConfig": {
+                "type": "object",
+                "description": "Configuración para auto-asignación",
+                "properties": {
+                  "sourceTable": { "type": "string" },
+                  "targetField": { "type": "string" },
+                  "criteria": { "type": "string", "enum": ["availability", "random", "round-robin"] }
+                }
+              },
+              "responseTemplate": { 
+                "type": "string", 
+                "description": "Template de respuesta. Soporta {{campo}}, {{fecha}}, etc." 
+              },
+              "confirmationRequired": { "type": "boolean", "default": false },
+              "confirmationMessage": { "type": "string" },
+              "successMessage": { "type": "string" },
+              "errorMessage": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "edges": { 
+      "type": "array", 
+      "description": "Conexiones entre nodos",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "source": { "type": "string" },
+          "target": { "type": "string" },
+          "sourceHandle": { "type": "string" },
+          "targetHandle": { "type": "string" },
+          "label": { "type": "string" },
+          "condition": { "type": "string", "description": "Condición para seguir este edge" }
+        }
+      }
+    },
+    "variables": {
+      "type": "object",
+      "description": "Variables globales del flujo",
+      "additionalProperties": { "type": "string" }
+    },
     "apiExecutionHistory": {
       "type": "array",
       "items": {

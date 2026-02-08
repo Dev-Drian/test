@@ -19,6 +19,8 @@ export const listAgents = (workspaceId) => api.get("/agent/list", { params: { wo
 export const getAgent = (workspaceId, agentId) => api.get(`/agent/${workspaceId}/${agentId}`);
 export const updateAgent = (workspaceId, agentId, data) =>
   api.put(`/agent/${workspaceId}/${agentId}`, data);
+export const deleteAgent = (workspaceId, agentId) =>
+  api.delete(`/agent/${workspaceId}/${agentId}`);
 
 // Tables
 export const createTable = (data) => api.post("/table/create", data);
@@ -32,3 +34,9 @@ export const addTableRow = (workspaceId, tableId, row) =>
 export const getOrCreateChat = (workspaceId, agentId, chatId) =>
   api.get("/chat/get-or-create", { params: { workspaceId, agentId, chatId } });
 export const sendChatMessage = (data) => api.post("/chat/send", data);
+export const listChats = (workspaceId, agentId) =>
+  api.get("/chat/list", { params: { workspaceId, agentId } });
+export const deleteChat = (workspaceId, chatId) =>
+  api.delete(`/chat/${workspaceId}/${chatId}`);
+export const renameChat = (workspaceId, chatId, title) =>
+  api.put(`/chat/${workspaceId}/${chatId}/rename`, { title });

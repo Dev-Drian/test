@@ -4,6 +4,7 @@ import * as agents from "../controllers/agentsController.js";
 import * as tables from "../controllers/tablesController.js";
 import * as chat from "../controllers/chatController.js";
 import * as flows from "../controllers/flowsController.js";
+import * as notifications from "../controllers/notificationsController.js";
 
 const router = Router();
 
@@ -18,6 +19,7 @@ router.post("/agent/create", agents.createAgent);
 router.get("/agent/list", agents.listAgents);
 router.get("/agent/:workspaceId/:agentId", agents.getAgentById);
 router.put("/agent/:workspaceId/:agentId", agents.updateAgent);
+router.delete("/agent/:workspaceId/:agentId", agents.deleteAgent);
 
 // Tables
 router.post("/table/create", tables.createTable);
@@ -38,5 +40,17 @@ router.get("/flow/node-types", flows.getNodeTypes);
 // Chat (mensaje + detección intenciones + acciones tablas)
 router.post("/chat/send", chat.sendMessage);
 router.get("/chat/get-or-create", chat.getOrCreateChat);
+router.get("/chat/list", chat.listChats);
+router.delete("/chat/:workspaceId/:chatId", chat.deleteChat);
+router.put("/chat/:workspaceId/:chatId/rename", chat.renameChat);
+
+// Notifications (notificaciones in-app)
+router.get("/notifications/list", notifications.listNotifications);
+router.get("/notifications/unread-count", notifications.getUnreadCount);
+router.put("/notifications/:notificationId/read", notifications.markAsRead);
+router.put("/notifications/read-all", notifications.markAllAsRead);
+router.post("/notifications/send", notifications.sendNotification);
+router.get("/notifications/config", notifications.getConfig);
+router.put("/notifications/config", notifications.updateConfig);
 
 export default router;

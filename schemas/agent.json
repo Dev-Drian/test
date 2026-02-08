@@ -18,15 +18,41 @@
       "description": "Modelo(s) elegidos por el usuario al crear el agente",
       "oneOf": [
         { "type": "string" },
-        {
-          "type": "array",
-          "items": { "type": "string" }
-        }
+        { "type": "array", "items": { "type": "string" } }
       ]
     },
     "language": { "type": "string" },
-    "tone": { "type": "number" },
+    "tone": { "type": "number", "description": "0=formal, 100=casual" },
     "answer": { "type": "number" },
+    "systemPrompt": { 
+      "type": "string", 
+      "description": "Prompt base del agente. Soporta variables: {{agentName}}, {{agentDesc}}, {{tables}}" 
+    },
+    "communicationStyle": {
+      "type": "object",
+      "description": "Configuración del estilo de comunicación",
+      "properties": {
+        "maxSentences": { "type": "number", "default": 3 },
+        "useEmojis": { "type": "boolean", "default": true },
+        "greeting": { "type": "string" },
+        "farewell": { "type": "string" }
+      }
+    },
+    "responseTemplates": {
+      "type": "object",
+      "description": "Templates para respuestas comunes. Soporta {{campo}} dinámicos",
+      "properties": {
+        "createSuccess": { "type": "string", "description": "Mensaje al crear exitosamente" },
+        "createConfirm": { "type": "string", "description": "Confirmación antes de crear" },
+        "updateSuccess": { "type": "string", "description": "Mensaje al actualizar" },
+        "cancelConfirm": { "type": "string", "description": "Confirmación antes de cancelar" },
+        "cancelSuccess": { "type": "string", "description": "Mensaje tras cancelar" },
+        "missingField": { "type": "string", "description": "Cuando falta un campo requerido" },
+        "conflict": { "type": "string", "description": "Cuando hay conflicto de horario/disponibilidad" },
+        "notFound": { "type": "string", "description": "Cuando no se encuentra el registro" },
+        "error": { "type": "string", "description": "Mensaje de error genérico" }
+      }
+    },
     "instructions": {
       "type": "array",
       "items": {

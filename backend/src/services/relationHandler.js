@@ -2,6 +2,24 @@ import { v4 as uuidv4 } from "uuid";
 import { connectDB, getWorkspaceDbName, getTableDataDbName } from "../config/db.js";
 
 /**
+ * Convierte hora de formato 24h a 12h con AM/PM
+ */
+function formatTo12Hour(time24) {
+  if (!time24 || typeof time24 !== 'string') return time24;
+  const match = time24.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return time24;
+  
+  let hours = parseInt(match[1], 10);
+  const minutes = match[2];
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  
+  if (hours === 0) hours = 12;
+  else if (hours > 12) hours -= 12;
+  
+  return `${hours}:${minutes} ${ampm}`;
+}
+
+/**
  * Genera mensaje amigable para pedir campos faltantes de un registro relacionado
  * Ahora incluye opciones disponibles si el campo es de tipo select o tiene relación
  */
@@ -30,7 +48,7 @@ function generateFieldQuestion(entityName, field) {
   
   // Preguntas naturales por campo conocido
   const naturalQuestions = {
-    especie: `¿Qué tipo de mascota es ${entityName}? 🐾`,
+    especie: `¿Qué tipo de mascota es ${entityName}?`,
     propietario: `¿Quién es el dueño de ${entityName}?`,
     telefono: `¿Cuál es el teléfono de contacto para ${entityName}?`,
     raza: `¿De qué raza es ${entityName}?`,
@@ -43,7 +61,7 @@ function generateFieldQuestion(entityName, field) {
   if (type === 'select' && options && options.length > 0) {
     const optionsStr = options.slice(0, 5).join(', ');
     const moreStr = options.length > 5 ? ` (+${options.length - 5} más)` : '';
-    question += `\n📋 Opciones: ${optionsStr}${moreStr}`;
+    question += `\nOpciones: ${optionsStr}${moreStr}`;
   }
   
   return question;
@@ -145,14 +163,19 @@ async function checkUniqueConstraint(workspaceId, tableId, tableMeta, fields) {
   
   if (conflict) {
     const conflictDetails = constraint.fields
-      .map(f => `${f}: ${conflict[f]}`)
+      .map(f => {
+        let val = conflict[f];
+        // Formatear hora a 12h si es campo hora
+        if (f === 'hora' && val) val = formatTo12Hour(val);
+        return `${f}: ${val}`;
+      })
       .join(", ");
     return {
       valid: false,
       conflict: conflict,
       message: constraint.errorMessage 
-        ? `⚠️ ${constraint.errorMessage} (${conflictDetails})`
-        : `⚠️ Ya existe un registro con ${conflictDetails}`,
+        ? `${constraint.errorMessage} (${conflictDetails})`
+        : `Ya existe un registro con ${conflictDetails}`,
     };
   }
   
@@ -437,7 +460,7 @@ export function formatRelationsMessage(createdRelations) {
   if (!createdRelations.length) return "";
   
   const messages = createdRelations.map(r => 
-    `📝 También registré a "${r.value}" en ${r.table}`
+    `También registré a "${r.value}" en ${r.table}`
   );
   
   return messages.join("\n");
@@ -451,6 +474,6 @@ export function formatOptionsMessage(optionErrors) {
   
   return optionErrors.map(e => {
     const options = e.availableOptions.slice(0, 5).join(", ");
-    return `⚠️ ${e.message}. Opciones disponibles: ${options}`;
+    return `${e.message}. Opciones disponibles: ${options}`;
   }).join("\n");
 }

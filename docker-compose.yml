@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  couchdb:
+    image: couchdb:3
+    container_name: couchdb_veterinaria
+    ports:
+      - "5984:5984"
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=password
+    volumes:
+      - couchdb_data:/opt/couchdb/data
+    restart: unless-stopped
+
+volumes:
+  couchdb_data:

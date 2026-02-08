@@ -30,25 +30,33 @@ export async function connectDB(tableName) {
 }
 
 export function getWorkspaceDbName(workspaceId) {
-  return `migracion_${workspaceId}_table`;
+  return `chatbot_tables_${workspaceId}`;
 }
 
 export function getTableDataDbName(workspaceId, tableId) {
-  return `migracion_${workspaceId}_table_${tableId}`;
+  return `chatbot_tabledata_${workspaceId}`;
 }
 
 export function getAgentsDbName(workspaceId) {
-  return `migracion_${workspaceId}_agents`;
+  return `chatbot_agents_${workspaceId}`;
 }
 
 export function getChatDbName(workspaceId) {
-  return `migracion_${workspaceId}_chat`;
+  return `chatbot_chat_${workspaceId}`;
 }
 
 export function getProjectDbName(workspaceId) {
-  return `migracion_${workspaceId}_project`;
+  return `chatbot_project_${workspaceId}`;
 }
 
 export function getAutomationsDbName(workspaceId) {
-  return `migracion_${workspaceId}_automations`;
+  return `chatbot_automations_${workspaceId}`;
+}
+
+export function getFlowsDbName(workspaceId) {
+  return `chatbot_flows_${workspaceId}`;
+}
+
+export function getTableDbName(workspaceId) {
+  return `chatbot_tables_${workspaceId}`;
 }

@@ -3,10 +3,7 @@
  * Los flujos definen comportamientos específicos (agendar, cancelar, etc.)
  */
 import { v4 as uuidv4 } from "uuid";
-import { connectDB, getWorkspaceDbName } from "../config/db.js";
-
-// Base de datos de flujos por workspace
-const getFlowsDbName = (workspaceId) => `migracion_${workspaceId}_flows`;
+import { connectDB, getWorkspaceDbName, getFlowsDbName } from "../config/db.js";
 
 /**
  * Obtener todos los flujos de un workspace
@@ -214,7 +211,7 @@ export async function getNodeTypes(req, res) {
   const nodeTypes = [
     {
       type: "trigger",
-      label: "🚀 Trigger",
+      label: "Trigger",
       description: "Inicio del flujo",
       category: "triggers",
       config: {
@@ -223,7 +220,7 @@ export async function getNodeTypes(req, res) {
     },
     {
       type: "table",
-      label: "📋 Tabla",
+      label: "Tabla",
       description: "Conectar tabla de datos",
       category: "data",
       config: {
@@ -232,7 +229,7 @@ export async function getNodeTypes(req, res) {
     },
     {
       type: "condition",
-      label: "❓ Condición",
+      label: "Condición",
       description: "Si/Entonces",
       category: "logic",
       config: {
@@ -241,7 +238,7 @@ export async function getNodeTypes(req, res) {
     },
     {
       type: "action",
-      label: "⚡ Acción",
+      label: "Acción",
       description: "Ejecutar acción",
       category: "actions",
       config: {
@@ -250,7 +247,7 @@ export async function getNodeTypes(req, res) {
     },
     {
       type: "availability",
-      label: "📅 Disponibilidad",
+      label: "Disponibilidad",
       description: "Verificar horarios libres",
       category: "validation",
       config: {
@@ -260,7 +257,7 @@ export async function getNodeTypes(req, res) {
     },
     {
       type: "response",
-      label: "💬 Respuesta",
+      label: "Respuesta",
       description: "Mensaje al usuario",
       category: "output",
       config: {

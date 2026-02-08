@@ -1,14 +1,31 @@
 import { v4 as uuidv4 } from "uuid";
 import { connectDB, getTableDataDbName } from "../config/db.js";
 
+// Selector base para excluir documento de metadatos
+// CouchDB: $ne no funciona con campos que no existen, usar $or
+const NON_META_SELECTOR = {
+  $or: [
+    { main: { $exists: false } },
+    { main: { $eq: false } },
+    { main: { $type: "null" } }
+  ]
+};
+
 /**
  * Ejecuta consulta sobre tabla (query/search)
+ * Excluye el documento de metadatos (main: true)
  */
 export async function runQuery(workspaceId, tableId, options = {}) {
   const db = await connectDB(getTableDataDbName(workspaceId, tableId));
   const { sortBy, sortOrder = "desc", limit = 10, filters = {} } = options;
-  const selector = { main: { $ne: true } };
-  Object.assign(selector, filters);
+  
+  // Combinar con filtros adicionales usando $and si hay filtros
+  let selector;
+  if (Object.keys(filters).length > 0) {
+    selector = { $and: [NON_META_SELECTOR, filters] };
+  } else {
+    selector = NON_META_SELECTOR;
+  }
 
   const sort = sortBy ? [{ [sortBy]: sortOrder }] : [];
   const result = await db.find({
@@ -40,7 +57,7 @@ export async function runCreate(workspaceId, tableId, fields) {
 export async function runUpdate(workspaceId, tableId, searchCriteria, fieldsToUpdate) {
   const db = await connectDB(getTableDataDbName(workspaceId, tableId));
   const result = await db.find({
-    selector: { main: { $ne: true }, ...searchCriteria },
+    selector: { $and: [NON_META_SELECTOR, searchCriteria] },
     limit: 1,
   });
   if (!result.docs?.length) return null;
@@ -60,7 +77,7 @@ export async function runUpdate(workspaceId, tableId, searchCriteria, fieldsToUp
 export async function runAnalyze(workspaceId, tableId, operation, field) {
   const db = await connectDB(getTableDataDbName(workspaceId, tableId));
   const result = await db.find({
-    selector: { main: { $ne: true } },
+    selector: NON_META_SELECTOR,
     limit: 5000,
   });
   const docs = result.docs || [];
@@ -89,7 +106,7 @@ export async function checkAvailability(workspaceId, citasTableId, veterinariosT
   // 1. Obtener citas del día (excluyendo canceladas)
   const citasDb = await connectDB(getTableDataDbName(workspaceId, citasTableId));
   const citasResult = await citasDb.find({
-    selector: { main: { $ne: true } },
+    selector: NON_META_SELECTOR,
     limit: 200,
   });
   
@@ -112,7 +129,7 @@ export async function checkAvailability(workspaceId, citasTableId, veterinariosT
   if (veterinariosTableId) {
     const vetsDb = await connectDB(getTableDataDbName(workspaceId, veterinariosTableId));
     const vetsResult = await vetsDb.find({
-      selector: { main: { $ne: true } },
+      selector: NON_META_SELECTOR,
       limit: 50,
     });
     veterinarios = (vetsResult.docs || []).filter(v => v.activo === "Sí");
@@ -180,42 +197,88 @@ export async function findBestVeterinarian(workspaceId, veterinariosTableId, cit
   
   if (!veterinariosTableId) return null;
   
-  // Obtener veterinarios activos
-  const vetsDb = await connectDB(getTableDataDbName(workspaceId, veterinariosTableId));
-  const vetsResult = await vetsDb.find({
-    selector: { main: { $ne: true } },
-    limit: 50,
-  });
-  const veterinarios = (vetsResult.docs || []).filter(v => v.activo === "Sí");
-  
-  // Obtener citas del día
-  const citasDb = await connectDB(getTableDataDbName(workspaceId, citasTableId));
-  const citasResult = await citasDb.find({
-    selector: { main: { $ne: true } },
-    limit: 200,
-  });
-  const citasDelDia = (citasResult.docs || []).filter(c => 
-    c.fecha === fecha && c.estado !== "Cancelada"
-  );
-  
-  // Buscar veterinario que ofrezca el servicio y esté libre
-  for (const vet of veterinarios) {
-    // ¿Ofrece el servicio?
-    if (servicio && vet.servicios) {
-      const serviciosVet = vet.servicios.toLowerCase();
-      const servicioKey = servicio.toLowerCase().split(' ')[0]; // "Consulta general" → "consulta"
-      if (!serviciosVet.includes(servicioKey)) continue;
+  try {
+    // Obtener veterinarios activos
+    const vetsDb = await connectDB(getTableDataDbName(workspaceId, veterinariosTableId));
+    const vetsResult = await vetsDb.find({
+      selector: NON_META_SELECTOR,
+      limit: 50,
+    });
+    // Más flexible con el campo activo (Sí, sí, Si, si, true, 1)
+    const veterinarios = (vetsResult.docs || []).filter(v => {
+      const activo = String(v.activo || '').toLowerCase();
+      return activo === 'sí' || activo === 'si' || activo === 'true' || activo === '1' || v.activo === true;
+    });
+    
+    if (veterinarios.length === 0) {
+      // Si no hay filtro activo, usar todos los veterinarios
+      const allVets = vetsResult.docs || [];
+      if (allVets.length > 0) {
+        return allVets[0].nombre; // Retornar el primero disponible
+      }
+      return null;
     }
     
-    // ¿Está libre a esa hora?
-    const tieneConflicto = citasDelDia.some(c => 
-      c.veterinario === vet.nombre && c.hora === hora
+    // Normalizar hora a formato 24h para comparación
+    function normalizarHora(h) {
+      if (!h) return null;
+      const hStr = String(h).toLowerCase().trim();
+      // Ya es formato 24h
+      const match24 = hStr.match(/^(\d{1,2}):(\d{2})$/);
+      if (match24) return `${match24[1].padStart(2, '0')}:${match24[2]}`;
+      // Formato 12h con AM/PM
+      const match12 = hStr.match(/^(\d{1,2}):?(\d{2})?\s*(am|pm|a\.m\.|p\.m\.)?$/i);
+      if (match12) {
+        let hours = parseInt(match12[1], 10);
+        const mins = match12[2] || '00';
+        const period = (match12[3] || '').toLowerCase().replace('.', '');
+        if (period === 'pm' && hours < 12) hours += 12;
+        if (period === 'am' && hours === 12) hours = 0;
+        return `${String(hours).padStart(2, '0')}:${mins}`;
+      }
+      return hStr;
+    }
+    
+    const horaTarget = normalizarHora(hora);
+    
+    // Obtener citas del día
+    const citasDb = await connectDB(getTableDataDbName(workspaceId, citasTableId));
+    const citasResult = await citasDb.find({
+      selector: NON_META_SELECTOR,
+      limit: 200,
+    });
+    const citasDelDia = (citasResult.docs || []).filter(c => 
+      c.fecha === fecha && c.estado !== "Cancelada"
     );
     
-    if (!tieneConflicto) {
-      return vet.nombre;
+    // Buscar veterinario que ofrezca el servicio y esté libre
+    for (const vet of veterinarios) {
+      // ¿Ofrece el servicio? (ser flexible con la búsqueda)
+      if (servicio && vet.servicios) {
+        const serviciosVet = String(vet.servicios).toLowerCase();
+        const servicioLower = servicio.toLowerCase();
+        // Buscar cualquier palabra del servicio
+        const palabrasServicio = servicioLower.split(/\s+/).filter(p => p.length > 2);
+        const encontro = palabrasServicio.some(p => serviciosVet.includes(p)) || 
+                        serviciosVet.includes(servicioLower);
+        if (!encontro) continue;
+      }
+      
+      // ¿Está libre a esa hora?
+      const tieneConflicto = citasDelDia.some(c => {
+        const horaC = normalizarHora(c.hora);
+        return c.veterinario === vet.nombre && horaC === horaTarget;
+      });
+      
+      if (!tieneConflicto) {
+        return vet.nombre;
+      }
     }
+    
+    // Si todos tienen conflicto, retornar el primero (mejor que nada)
+    return veterinarios[0]?.nombre || null;
+  } catch (err) {
+    console.error("findBestVeterinarian error:", err.message);
+    return null;
   }
-  
-  return null; // No hay veterinario disponible
 }
