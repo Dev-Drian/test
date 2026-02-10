@@ -15,6 +15,7 @@ import { fileURLToPath } from 'url';
 import seedRestaurant from './generic-restaurant.js';
 import seedSalon from './generic-salon.js';
 import seedClinic from './generic-clinic.js';
+import seedPremiumCRM from './premium-crm.js';
 
 // Importar configuración dinámica de DB
 import { getDbPrefix } from '../config/db.js';
@@ -116,6 +117,7 @@ async function main() {
   console.log('   1. 🍽️  Restaurante (generic-restaurant)');
   console.log('   2. 💇  Salón de Belleza (generic-salon)');
   console.log('   3. 🏥  Clínica/Veterinaria (generic-clinic)');
+  console.log('   4. 💼  CRM Premium (premium-crm)');
 
   let success = 0;
   let failed = 0;
@@ -125,6 +127,7 @@ async function main() {
     { name: 'Restaurante', fn: seedRestaurant },
     { name: 'Salón de Belleza', fn: seedSalon },
     { name: 'Clínica', fn: seedClinic },
+    { name: 'CRM Premium', fn: seedPremiumCRM },
   ];
 
   for (const { name, fn } of seedFunctions) {
@@ -150,6 +153,7 @@ async function main() {
   console.log('   🍽️  Restaurante Demo        - Sistema de reservas');
   console.log('   💇  Salón de Belleza Demo   - Sistema de citas');
   console.log('   🏥  Clínica Demo             - Sistema de citas médicas');
+  console.log('   💼  CRM Premium              - 5 tablas + 2 agentes especializados');
   console.log('\n   ✨ Todos configurados dinámicamente desde fieldsConfig');
   console.log('   ✨ Sin código hardcodeado - todo desde BD');
   console.log('\n');
