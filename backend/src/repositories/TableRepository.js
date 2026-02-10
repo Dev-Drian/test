@@ -136,6 +136,74 @@ export class TableRepository extends BaseRepository {
     
     return tablesInfo;
   }
+  
+  /**
+   * Obtiene las opciones disponibles para un campo de tipo select o relation
+   * @param {string} workspaceId 
+   * @param {string} tableId 
+   * @param {string} fieldKey 
+   * @returns {Promise<array>}
+   */
+  async getFieldOptions(workspaceId, tableId, fieldKey) {
+    const headers = await this.getHeaders(workspaceId, tableId);
+    const header = headers.find(h => (h.key || h.label) === fieldKey);
+    
+    if (!header) return [];
+    
+    // Si es tipo select con opciones definidas
+    if (header.type === 'select' && Array.isArray(header.options)) {
+      return header.options;
+    }
+    
+    // Si es relación, obtener valores de la tabla relacionada
+    if (header.type === 'relation' && header.relation?.tableName) {
+      const relatedTable = await this.findByName(workspaceId, header.relation.tableName);
+      if (!relatedTable) return [];
+      
+      const displayField = header.relation.displayField || 'nombre';
+      const TableDataRepository = (await import('./TableDataRepository.js')).TableDataRepository;
+      const dataRepo = new TableDataRepository();
+      const records = await dataRepo.findAll(workspaceId, relatedTable._id, { limit: 50 });
+      
+      return records.map(r => r[displayField]).filter(Boolean);
+    }
+    
+    return [];
+  }
+  
+  /**
+   * Valida que una tabla existe
+   * @param {string} workspaceId 
+   * @param {string} tableId 
+   * @returns {Promise<boolean>}
+   */
+  async exists(workspaceId, tableId) {
+    const table = await this.findById(tableId, workspaceId);
+    return !!table;
+  }
+  
+  /**
+   * Obtiene estadísticas básicas de una tabla
+   * @param {string} workspaceId 
+   * @param {string} tableId 
+   * @returns {Promise<object>}
+   */
+  async getStats(workspaceId, tableId) {
+    const table = await this.findById(tableId, workspaceId);
+    if (!table) return null;
+    
+    const TableDataRepository = (await import('./TableDataRepository.js')).TableDataRepository;
+    const dataRepo = new TableDataRepository();
+    const records = await dataRepo.findAll(workspaceId, tableId);
+    
+    return {
+      tableId,
+      tableName: table.name,
+      totalRecords: records.length,
+      fieldCount: (table.headers || []).length,
+      requiredFields: (table.headers || []).filter(h => h.required).length,
+    };
+  }
 }
 
 // Singleton

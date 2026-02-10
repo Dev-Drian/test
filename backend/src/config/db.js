@@ -1,7 +1,11 @@
 import nano from "nano";
+import { SystemConfig } from "./system.js";
 
-const COUCHDB_URL = process.env.COUCHDB_URL || "http://admin:password@127.0.0.1:5984";
+const COUCHDB_URL = process.env.COUCHDB_URL || SystemConfig.database.url;
 const client = nano(COUCHDB_URL);
+
+// Obtener prefijo desde configuración (puede cambiarse con variable de entorno)
+const DB_PREFIX = SystemConfig.database.prefix;
 
 export function sanitizeDatabaseName(name) {
   if (!name || typeof name !== "string") return "default";
@@ -29,34 +33,49 @@ export async function connectDB(tableName) {
   }
 }
 
+/**
+ * Genera nombre de BD con prefijo dinámico
+ * Ejemplo: chatbot_workspaces, custom_workspaces, etc.
+ */
+export function getWorkspacesDbName() {
+  return `${DB_PREFIX}workspaces`;
+}
+
 export function getWorkspaceDbName(workspaceId) {
-  return `chatbot_tables_${workspaceId}`;
+  return `${DB_PREFIX}tables_${workspaceId}`;
 }
 
 export function getTableDataDbName(workspaceId, tableId) {
-  return `chatbot_tabledata_${workspaceId}`;
+  return `${DB_PREFIX}tabledata_${workspaceId}`;
 }
 
 export function getAgentsDbName(workspaceId) {
-  return `chatbot_agents_${workspaceId}`;
+  return `${DB_PREFIX}agents_${workspaceId}`;
 }
 
 export function getChatDbName(workspaceId) {
-  return `chatbot_chat_${workspaceId}`;
+  return `${DB_PREFIX}chat_${workspaceId}`;
 }
 
 export function getProjectDbName(workspaceId) {
-  return `chatbot_project_${workspaceId}`;
+  return `${DB_PREFIX}project_${workspaceId}`;
 }
 
 export function getAutomationsDbName(workspaceId) {
-  return `chatbot_automations_${workspaceId}`;
+  return `${DB_PREFIX}automations_${workspaceId}`;
 }
 
 export function getFlowsDbName(workspaceId) {
-  return `chatbot_flows_${workspaceId}`;
+  return `${DB_PREFIX}flows_${workspaceId}`;
 }
 
 export function getTableDbName(workspaceId) {
-  return `chatbot_tables_${workspaceId}`;
+  return `${DB_PREFIX}tables_${workspaceId}`;
+}
+
+/**
+ * Obtiene el prefijo actual de BD (útil para debugging)
+ */
+export function getDbPrefix() {
+  return DB_PREFIX;
 }

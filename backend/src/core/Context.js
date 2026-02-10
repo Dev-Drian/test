@@ -166,20 +166,65 @@ export class Context {
   
   /**
    * Fusiona nuevos campos con los ya recolectados
-   * Solo acepta valores para campos que realmente faltan
+   * Solo acepta valores para campos que realmente faltan Y que sean válidos
+   * @param {object} newFields - Campos a fusionar
+   * @param {object} options - Opciones { validate: true, normalize: true }
+   * @returns {object} { accepted: array, rejected: array }
    */
-  mergeFields(newFields) {
+  mergeFields(newFields, options = {}) {
+    const { validate = true, normalize = true } = options;
+    
     const requiredFields = this.pendingCreate?.requiredFields || [];
+    const fieldsConfig = this.pendingCreate?.fieldsConfig || [];
+    
+    // Crear mapa de configuración
+    const configMap = {};
+    fieldsConfig.forEach(fc => {
+      configMap[fc.key] = fc;
+    });
+    
+    // Determinar qué campos realmente faltan
     const currentMissing = requiredFields.filter(k => {
       const v = this.collectedFields[k];
       return v === undefined || v === null || v === '';
     });
     
+    const accepted = [];
+    const rejected = [];
+    
     for (const [key, value] of Object.entries(newFields)) {
-      // Solo aceptar si el campo está faltante y tiene valor válido
-      if (currentMissing.includes(key) && value !== undefined && value !== null && value !== '') {
-        this.collectedFields[key] = value;
+      // Solo procesar si el campo está faltante
+      if (!currentMissing.includes(key)) {
+        rejected.push({ key, reason: 'Campo no está faltante' });
+        continue;
       }
+      
+      // Verificar que tenga valor válido
+      if (value === undefined || value === null || value === '') {
+        rejected.push({ key, reason: 'Valor vacío' });
+        continue;
+      }
+      
+      const config = configMap[key];
+      let finalValue = value;
+      
+      // Validar si está habilitado
+      if (validate && config) {
+        const validation = this._validateField(key, value, config);
+        if (!validation.valid) {
+          rejected.push({ key, reason: validation.error });
+          continue;
+        }
+      }
+      
+      // Normalizar si está habilitado
+      if (normalize && config) {
+        finalValue = this._normalizeField(key, value, config);
+      }
+      
+      // Aceptar el campo
+      this.collectedFields[key] = finalValue;
+      accepted.push(key);
     }
     
     // Actualizar pendingCreate
@@ -189,6 +234,88 @@ export class Context {
     
     // Recalcular campos faltantes
     this.updateMissingFields();
+    
+    return { accepted, rejected };
+  }
+  
+  /**
+   * Valida un campo según su configuración
+   * @private
+   */
+  _validateField(fieldKey, value, fieldConfig) {
+    if (!value) {
+      return { valid: false, error: `${fieldKey} es requerido` };
+    }
+    
+    const validation = fieldConfig?.validation;
+    if (!validation) return { valid: true };
+    
+    // Validación por tipo
+    switch (fieldConfig.type) {
+      case 'phone':
+      case 'telefono':
+        const digits = String(value).replace(/\D/g, '');
+        const requiredDigits = validation.digits || 10;
+        if (digits.length !== requiredDigits) {
+          return { valid: false, error: `El teléfono debe tener ${requiredDigits} dígitos` };
+        }
+        return { valid: true };
+        
+      case 'email':
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) {
+          return { valid: false, error: 'Email inválido' };
+        }
+        return { valid: true };
+        
+      case 'date':
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(value)) {
+          return { valid: false, error: 'Formato de fecha inválido (use YYYY-MM-DD)' };
+        }
+        return { valid: true };
+        
+      case 'time':
+        const timeRegex = /^\d{1,2}:\d{2}$/;
+        if (!timeRegex.test(value)) {
+          return { valid: false, error: 'Formato de hora inválido (use HH:MM)' };
+        }
+        return { valid: true };
+        
+      default:
+        // Validaciones genéricas
+        if (validation.minLength && String(value).length < validation.minLength) {
+          return { valid: false, error: `Mínimo ${validation.minLength} caracteres` };
+        }
+        if (validation.maxLength && String(value).length > validation.maxLength) {
+          return { valid: false, error: `Máximo ${validation.maxLength} caracteres` };
+        }
+        return { valid: true };
+    }
+  }
+  
+  /**
+   * Normaliza un campo según su tipo
+   * @private
+   */
+  _normalizeField(fieldKey, value, fieldConfig) {
+    switch (fieldConfig?.type) {
+      case 'phone':
+      case 'telefono':
+        return String(value).replace(/\D/g, '');
+        
+      case 'text':
+        return String(value).trim();
+        
+      case 'date':
+        return value; // Ya debería estar en YYYY-MM-DD
+        
+      case 'time':
+        return value; // Ya debería estar en HH:MM
+        
+      default:
+        return value;
+    }
   }
   
   /**
@@ -218,16 +345,22 @@ export class Context {
    * @param {object[]} fieldsConfig - configuración completa de campos de la tabla
    */
   initPendingCreate(tableId, tableName, requiredFields, fieldsConfig = []) {
+    // Filtrar campos con hiddenFromChat = true (campos administrativos)
+    const visibleRequiredFields = requiredFields.filter(key => {
+      const config = fieldsConfig.find(fc => fc.key === key);
+      return config?.hiddenFromChat !== true;
+    });
+    
     this.pendingCreate = {
       tableId,
       tableName,
       actionType: 'create',
       fields: {},
-      requiredFields: requiredFields || [],
+      requiredFields: visibleRequiredFields,  // Solo campos visibles
       fieldsConfig: fieldsConfig || [],
     };
     this.collectedFields = {};
-    this.missingFields = requiredFields || [];
+    this.missingFields = visibleRequiredFields;
   }
   
   /**

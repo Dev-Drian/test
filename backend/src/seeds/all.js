@@ -1,14 +1,23 @@
 /**
- * Seed All - Ejecuta todos los seeds en orden
+ * Seed All - Ejecuta todos los seeds genéricos
  * 
  * Uso:
  *   node src/seeds/all.js          # Ejecuta todos los seeds
  *   node src/seeds/all.js --clean  # Limpia BD y ejecuta todos los seeds
  */
 
+import 'dotenv/config';
 import { execSync } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+// Importar los nuevos seeds genéricos
+import seedRestaurant from './generic-restaurant.js';
+import seedSalon from './generic-salon.js';
+import seedClinic from './generic-clinic.js';
+
+// Importar configuración dinámica de DB
+import { getDbPrefix } from '../config/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,14 +25,14 @@ const __dirname = path.dirname(__filename);
 const COUCHDB_URL = process.env.COUCHDB_URL || 'http://admin:password@127.0.0.1:5984';
 const CLEAN_MODE = process.argv.includes('--clean');
 
-// Bases de datos a limpiar (incluye ambos prefijos legacy y nuevo)
+// Obtener prefijo dinámico desde configuración
+const DB_PREFIX = getDbPrefix();
+
+// Patrones de bases de datos a limpiar (incluye legacy 'chatbot_')
 const DB_PATTERNS = [
-  // Nuevo prefijo
-  'chatbot_workspaces',
-  'chatbot_',
-  // Prefijo legacy
-  'db_workspaces',
-  'migracion_',
+  `${DB_PREFIX}workspaces`,
+  DB_PREFIX,
+  'chatbot_', // Limpiar también legacy si existe
 ];
 
 // Extraer credenciales y URL base
@@ -68,7 +77,7 @@ async function deleteDatabase(dbName) {
 
 async function cleanDatabases() {
   console.log('\n🧹 ════════════════════════════════════════════════════════');
-  console.log('   LIMPIANDO BASES DE DATOS');
+  console.log(`   LIMPIANDO BASES DE DATOS (Prefijo: ${DB_PREFIX})`);
   console.log('════════════════════════════════════════════════════════════\n');
 
   const allDbs = await listDatabases();
@@ -90,27 +99,10 @@ async function cleanDatabases() {
   console.log('\n✅ Limpieza completada\n');
 }
 
-async function runSeed(seedFile) {
-  const seedPath = path.join(__dirname, seedFile);
-  console.log(`\n📦 Ejecutando: ${seedFile}`);
-  console.log('─'.repeat(60));
-  
-  try {
-    execSync(`node "${seedPath}"`, { 
-      stdio: 'inherit',
-      cwd: path.join(__dirname, '..', '..')
-    });
-    return true;
-  } catch (error) {
-    console.error(`❌ Error ejecutando ${seedFile}`);
-    return false;
-  }
-}
-
 async function main() {
   console.log('\n');
   console.log('╔══════════════════════════════════════════════════════════╗');
-  console.log('║           🌱 SEED ALL - CHATBOT PLATFORM                 ║');
+  console.log('║      🌱 SEED ALL - SISTEMA DINÁMICO MULTI-EMPRESA       ║');
   console.log('╚══════════════════════════════════════════════════════════╝');
   console.log(`\nModo: ${CLEAN_MODE ? '🧹 LIMPIEZA + SEED' : '📦 SOLO SEED'}`);
   console.log(`Database: ${COUCHDB_URL.replace(/\/\/.*@/, '//<hidden>@')}`);
@@ -120,24 +112,31 @@ async function main() {
     await cleanDatabases();
   }
 
-  // Lista de seeds a ejecutar en orden
-  const seeds = [
-    'tiendaBasica.js',   // Tienda (PLAN BÁSICO - sin flujos)
-    'veterinaria.js',    // Veterinaria (Premium)
-    'restaurante.js',    // Restaurante La Casona (Premium)
-    'salonBelleza.js',   // Salón Bella Vida (Premium)
-  ];
-
-  console.log('\n📋 Seeds a ejecutar:');
-  seeds.forEach((s, i) => console.log(`   ${i + 1}. ${s}`));
+  console.log('\n📋 Seeds genéricos a ejecutar:');
+  console.log('   1. 🍽️  Restaurante (generic-restaurant)');
+  console.log('   2. 💇  Salón de Belleza (generic-salon)');
+  console.log('   3. 🏥  Clínica/Veterinaria (generic-clinic)');
 
   let success = 0;
   let failed = 0;
 
-  for (const seed of seeds) {
-    const result = await runSeed(seed);
-    if (result) success++;
-    else failed++;
+  // Ejecutar seeds directamente (ya están importados)
+  const seedFunctions = [
+    { name: 'Restaurante', fn: seedRestaurant },
+    { name: 'Salón de Belleza', fn: seedSalon },
+    { name: 'Clínica', fn: seedClinic },
+  ];
+
+  for (const { name, fn } of seedFunctions) {
+    try {
+      console.log(`\n📦 Ejecutando seed: ${name}`);
+      console.log('─'.repeat(60));
+      await fn();
+      success++;
+    } catch (error) {
+      console.error(`❌ Error ejecutando seed ${name}:`, error.message);
+      failed++;
+    }
   }
 
   console.log('\n');
@@ -146,12 +145,13 @@ async function main() {
   console.log('╚══════════════════════════════════════════════════════════╝');
   console.log(`\n   ✅ Exitosos: ${success}`);
   console.log(`   ❌ Fallidos: ${failed}`);
-  console.log('\n   Workspaces creados:');
+  console.log('\n   Workspaces creados (100% dinámicos):');
   console.log('   ─────────────────────────────────────────────────────');
-  console.log('   🏪 Tienda El Ahorro         - Plan BÁSICO (sin flujos)');
-  console.log('   🐾 Veterinaria PetCare      - Plan Premium (con flujos)');
-  console.log('   🍽️  Restaurante La Casona   - Plan Premium (con flujos)');
-  console.log('   💇‍♀️ Salón Bella Vida        - Plan Premium (con flujos)');
+  console.log('   🍽️  Restaurante Demo        - Sistema de reservas');
+  console.log('   💇  Salón de Belleza Demo   - Sistema de citas');
+  console.log('   🏥  Clínica Demo             - Sistema de citas médicas');
+  console.log('\n   ✨ Todos configurados dinámicamente desde fieldsConfig');
+  console.log('   ✨ Sin código hardcodeado - todo desde BD');
   console.log('\n');
 }
 

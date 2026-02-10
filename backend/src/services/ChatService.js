@@ -15,6 +15,7 @@ import { ChatRepository } from '../repositories/ChatRepository.js';
 import { AgentRepository } from '../repositories/AgentRepository.js';
 import { TableRepository } from '../repositories/TableRepository.js';
 import { TableDataRepository } from '../repositories/TableDataRepository.js';
+import { EntityRepository } from '../repositories/EntityRepository.js';
 import { ActionFactory } from '../domain/actions/ActionFactory.js';
 import { ResponseBuilder } from '../domain/responses/ResponseBuilder.js';
 import { FieldCollector } from '../domain/fields/FieldCollector.js';
@@ -27,6 +28,7 @@ export class ChatService {
     this.agentRepo = new AgentRepository();
     this.tableRepo = new TableRepository();
     this.tableDataRepo = new TableDataRepository();
+    this.entityRepo = new EntityRepository();
     
     // AI Provider
     this.aiProvider = new OpenAIProvider();
@@ -39,6 +41,7 @@ export class ChatService {
     ActionFactory.initialize({
       tableDataRepository: this.tableDataRepo,
       tableRepository: this.tableRepo,
+      entityRepository: this.entityRepo,
       aiProvider: this.aiProvider,
       fieldCollector: this.fieldCollector,
       responseBuilder: this.responseBuilder,

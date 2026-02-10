@@ -14,13 +14,26 @@ export async function createAgent(req, res) {
       description: agent.description || "",
       workspaceId,
       type: agent.type || "private",
-      aiModel: agent.aiModel || [],
+      aiModel: agent.aiModel || ["gpt-4o-mini"],
       language: agent.language || "es",
       tables: agent.tables || [],
       workflows: agent.workflows || [],
       instructions: agent.instructions || [],
       tone: agent.tone ?? 50,
       answer: agent.answer ?? 50,
+      prompt: agent.prompt || `Eres un asistente virtual amable y profesional.
+      
+Ayuda al usuario con sus consultas sobre la información disponible en las tablas.
+Sé conciso y claro en tus respuestas.`,
+      useFlows: agent.useFlows ?? true,  // Habilitar validación por defecto
+      hasFlows: agent.hasFlows ?? true,  // Habilitar CreateHandler
+      planFeatures: agent.planFeatures || {
+        canCreate: true,
+        canUpdate: true,
+        canQuery: true,
+        canDelete: false
+      },
+      active: agent.active ?? true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       ...agent,

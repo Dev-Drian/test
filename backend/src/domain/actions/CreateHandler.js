@@ -9,11 +9,14 @@
 
 import { ActionHandler } from './ActionHandler.js';
 import { getEventEmitter, EVENTS } from '../../core/EventEmitter.js';
+import { EntityRepository } from '../../repositories/EntityRepository.js';
+import { processRelations } from '../../services/relationHandler.js';
 
 export class CreateHandler extends ActionHandler {
   constructor(dependencies = {}) {
     super(dependencies);
     this.eventEmitter = dependencies.eventEmitter || getEventEmitter();
+    this.entityRepo = new EntityRepository();
   }
   
   /**
@@ -95,7 +98,34 @@ export class CreateHandler extends ActionHandler {
         }
         
         if (extracted?.extractedFields && Object.keys(extracted.extractedFields).length > 0) {
-          context.mergeFields(extracted.extractedFields);
+          // Fusionar con validación y normalización
+          const mergeResult = context.mergeFields(extracted.extractedFields, {
+            validate: true,
+            normalize: true,
+          });
+          
+          console.log('[CreateHandler] Merge result:', mergeResult);
+          
+          // Si hubo campos rechazados, generar mensaje de error
+          if (mergeResult.rejected.length > 0) {
+            const errors = mergeResult.rejected.map(r => `${r.key}: ${r.reason}`).join('\n');
+            console.warn('[CreateHandler] Some fields were rejected:', errors);
+            
+            // Preguntar de nuevo el primer campo rechazado
+            const firstRejected = mergeResult.rejected[0];
+            const fieldsConfig = await this.tableRepository.getFieldsConfig(
+              context.workspaceId,
+              context.pendingCreate.tableId
+            );
+            const fieldConfig = fieldsConfig.find(fc => fc.key === firstRejected.key);
+            
+            if (fieldConfig) {
+              return {
+                handled: true,
+                response: `⚠️ ${firstRejected.reason}\n\n${this._generateQuestion(fieldConfig, context)}`,
+              };
+            }
+          }
         }
       } catch (error) {
         console.error('[CreateHandler] Error extracting fields:', error);
@@ -263,19 +293,30 @@ export class CreateHandler extends ActionHandler {
   }
   
   /**
-   * Crea el registro en la base de datos
+   * Crea el registro en la base de datos usando EntityRepository
    */
   async _createRecord(context) {
     const { workspaceId, pendingCreate, collectedFields } = context;
     const { tableId, tableName } = pendingCreate;
     
     try {
-      // Obtener valores por defecto
-      const defaultValues = await this.tableRepository.getDefaultValues(workspaceId, tableId);
-      const finalFields = { ...defaultValues, ...collectedFields };
+      // Usar EntityRepository para crear con validación automática
+      const result = await this.entityRepo.create(workspaceId, tableId, collectedFields, {
+        validate: true,
+        normalize: true,
+        applyDefaults: true,
+      });
       
-      // Crear el registro
-      const created = await this.tableDataRepository.create(workspaceId, tableId, finalFields);
+      if (!result.success) {
+        // Hubo errores de validación
+        const errorMessages = result.errors.map(e => `${e.field}: ${e.message}`).join('\n');
+        return {
+          handled: true,
+          response: `❌ No se pudo crear el registro:\n${errorMessages}`,
+        };
+      }
+      
+      const created = result.record;
       
       // Emitir evento para notificaciones
       this.eventEmitter.emit(EVENTS.RECORD_CREATED, {
@@ -283,7 +324,7 @@ export class CreateHandler extends ActionHandler {
         tableId,
         tableName,
         record: created,
-        fields: finalFields,
+        fields: collectedFields,
       });
       
       // Limpiar pendingCreate
@@ -291,7 +332,7 @@ export class CreateHandler extends ActionHandler {
       context.savePendingState();
       
       // Construir respuesta de éxito
-      const response = await this._buildSuccessResponse(context, tableName, finalFields);
+      const response = await this._buildSuccessResponse(context, tableName, collectedFields);
       
       return {
         handled: true,
@@ -310,26 +351,56 @@ export class CreateHandler extends ActionHandler {
   }
   
   /**
-   * Crea el registro para plan básico (sin flujos automáticos)
-   * El registro se crea pero el usuario es notificado que será procesado manualmente
+   * Crea el registro para plan básico usando EntityRepository
    */
   async _createRecordBasicPlan(context) {
     const { workspaceId, pendingCreate, collectedFields } = context;
     const { tableId, tableName } = pendingCreate;
     
     try {
-      // Obtener valores por defecto
-      const defaultValues = await this.tableRepository.getDefaultValues(workspaceId, tableId);
-      const finalFields = { 
-        ...defaultValues, 
+      // Validar relaciones ANTES de crear el registro
+      const relationResult = await processRelations(workspaceId, tableId, collectedFields);
+      
+      // Si hay error de opciones (showOptionsOnNotFound)
+      if (!relationResult.success && relationResult.optionRequired) {
+        return {
+          handled: true,
+          response: relationResult.message,
+        };
+      }
+      
+      // Si hay otros errores de relación
+      if (!relationResult.success && relationResult.errors.length > 0) {
+        return {
+          handled: true,
+          response: `❌ ${relationResult.errors.join('\n')}`,
+        };
+      }
+      
+      // Preparar datos con campos de plan básico
+      const dataWithMeta = {
         ...collectedFields,
-        estado: 'Pendiente', // Siempre pendiente para plan básico
+        estado: 'Pendiente',
         procesadoPor: 'bot',
         requiereRevision: true,
       };
       
-      // Crear el registro
-      const created = await this.tableDataRepository.create(workspaceId, tableId, finalFields);
+      // Usar EntityRepository
+      const result = await this.entityRepo.create(workspaceId, tableId, dataWithMeta, {
+        validate: true,
+        normalize: true,
+        applyDefaults: true,
+      });
+      
+      if (!result.success) {
+        const errorMessages = result.errors.map(e => `${e.field}: ${e.message}`).join('\n');
+        return {
+          handled: true,
+          response: `❌ No se pudo registrar:\n${errorMessages}`,
+        };
+      }
+      
+      const created = result.record;
       
       // Emitir evento para notificaciones (importante para el admin)
       this.eventEmitter.emit(EVENTS.RECORD_CREATED, {
@@ -337,17 +408,17 @@ export class CreateHandler extends ActionHandler {
         tableId,
         tableName,
         record: created,
-        fields: finalFields,
+        fields: dataWithMeta,
         isBasicPlan: true,
         requiresManualProcessing: true,
       });
       
-      // Limpiar pendingCreate
+      // Respuesta para plan básico (ANTES de limpiar pendingCreate)
+      const response = await this._buildBasicPlanResponse(context, tableName, collectedFields);
+      
+      // Limpiar pendingCreate (DESPUÉS de construir la respuesta)
       context.clearPendingCreate();
       context.savePendingState();
-      
-      // Respuesta para plan básico
-      const response = await this._buildBasicPlanResponse(context, tableName, finalFields);
       
       return {
         handled: true,

@@ -67,7 +67,9 @@ export async function listTables(req, res) {
     if (!workspaceId) return res.status(400).json({ error: "workspaceId required" });
     const db = await connectDB(getWorkspaceDbName(workspaceId));
     const result = await db.find({
-      selector: {},
+      selector: {
+        headers: { $exists: true }  // Solo documentos que tienen headers (tablas)
+      },
       limit: 200,
     });
     res.json(result.docs || []);

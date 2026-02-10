@@ -15,6 +15,39 @@ export class FieldCollector {
   }
   
   /**
+   * Valida un campo extraído antes de aceptarlo
+   * @param {string} fieldKey - Nombre del campo
+   * @param {*} value - Valor extraído
+   * @param {object} fieldConfig - Configuración del campo
+   * @param {object} pendingCreate - Estado actual
+   * @returns {object} { valid: boolean, normalizedValue?: any, error?: string }
+   */
+  validateExtractedField(fieldKey, value, fieldConfig, pendingCreate) {
+    // 1. Verificar que el campo realmente esté faltante
+    const currentValue = pendingCreate.fields?.[fieldKey];
+    if (currentValue !== undefined && currentValue !== null && currentValue !== '') {
+      return {
+        valid: false,
+        error: 'Campo ya tiene valor',
+      };
+    }
+    
+    // 2. Validar según configuración
+    const validation = this.validateField(fieldKey, value, fieldConfig);
+    if (!validation.valid) {
+      return validation;
+    }
+    
+    // 3. Normalizar valor
+    const normalizedValue = this.normalizeFieldValue(fieldKey, value, fieldConfig);
+    
+    return {
+      valid: true,
+      normalizedValue,
+    };
+  }
+  
+  /**
    * Extrae campos del mensaje del usuario
    * @param {string} message - Mensaje del usuario
    * @param {object} pendingCreate - Estado del borrador (incluye fieldsConfig)
@@ -80,7 +113,36 @@ export class FieldCollector {
       
       const content = response.content || '{}';
       const cleaned = content.replace(/```json?\s*/g, '').replace(/```/g, '').trim();
-      return JSON.parse(cleaned);
+      const extracted = JSON.parse(cleaned);
+      
+      // Validar y normalizar campos extraídos
+      if (extracted.extractedFields && Object.keys(extracted.extractedFields).length > 0) {
+        const validatedFields = {};
+        const configMap = {};
+        fieldsConfig.forEach(fc => {
+          configMap[fc.key] = fc;
+        });
+        
+        for (const [key, value] of Object.entries(extracted.extractedFields)) {
+          const config = configMap[key];
+          if (!config) {
+            console.warn(`[FieldCollector] Unknown field: ${key}`);
+            continue;
+          }
+          
+          // Validar campo
+          const validation = this.validateExtractedField(key, value, config, pendingCreate);
+          if (validation.valid) {
+            validatedFields[key] = validation.normalizedValue;
+          } else {
+            console.warn(`[FieldCollector] Field validation failed: ${key} - ${validation.error}`);
+          }
+        }
+        
+        extracted.extractedFields = validatedFields;
+      }
+      
+      return extracted;
       
     } catch (error) {
       console.error('[FieldCollector] Error extracting fields:', error);
@@ -247,13 +309,16 @@ REGLAS CRÍTICAS:
 8. SOLO si el usuario MENCIONA una hora ("a las 3", "7pm", etc.), conviértela a HH:MM 24h. Si NO menciona hora, NO incluyas hora en extractedFields.
 9. Si el usuario pregunta algo ("qué servicios tienen?", "cuánto cuesta?", "hay disponibilidad?") → isDataResponse: false, wantsToChangeFlow: true, newIntent: "query".
 10. "cancelar", "no quiero" → isDataResponse: false, wantsToChangeFlow: true, newIntent: "cancel".
+11. MENSAJES DE INTENCIÓN ("quiero agendar", "necesito una cita") SIN detalles específicos → isDataResponse: false, extractedFields: {}
+12. Si el mensaje NO responde a una pregunta específica ni da datos concretos → isDataResponse: false
 
 REGLA FINAL CRÍTICA:
 - Estás preguntando por el campo "${currentlyAsking || '(ninguno)'}".
 - Extrae SOLO ese campo del mensaje del usuario.
 - NO auto-rellenes NINGÚN otro campo (especialmente fecha u hora) a menos que el usuario los diga EXPLÍCITAMENTE en ESTE mensaje.
 - Un nombre propio (ej: "Adrian Castro") SOLO es un nombre. NO contiene fecha ni hora.
-- Si el mensaje es una sola palabra o frase simple, es la respuesta al campo que se preguntó. NADA MÁS.`;
+- Si el mensaje es una sola palabra o frase simple, es la respuesta al campo que se preguntó. NADA MÁS.
+- Si NO hay campo siendo preguntado (currentlyAsking = ninguno) y el mensaje es solo intención general, NO extraigas nada.`;
   }
   
   /**
