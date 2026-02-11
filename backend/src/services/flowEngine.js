@@ -27,8 +27,31 @@ import { connectDB, getTableDbName, getTableDataDbName } from "../config/db.js";
 export function processTemplate(template, context = {}) {
   if (!template || typeof template !== 'string') return template || '';
   
+  // Variables especiales de fecha
+  const today = new Date();
+  const specialVars = {
+    'today': today.toISOString().split('T')[0],
+    'now': today.toISOString(),
+    'timestamp': today.getTime().toString(),
+  };
+  
+  // Calcular nextWeek
+  const nextWeek = new Date(today);
+  nextWeek.setDate(nextWeek.getDate() + 7);
+  specialVars['nextWeek'] = nextWeek.toISOString().split('T')[0];
+  
+  // Calcular tomorrow
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  specialVars['tomorrow'] = tomorrow.toISOString().split('T')[0];
+  
   return template.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
     const trimmedKey = key.trim();
+    
+    // Primero verificar si es una variable especial
+    if (specialVars[trimmedKey]) {
+      return specialVars[trimmedKey];
+    }
     
     // Soportar acceso anidado como {{mascota.nombre}}
     const keys = trimmedKey.split('.');

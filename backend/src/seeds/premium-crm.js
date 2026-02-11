@@ -668,7 +668,83 @@ Sé analítico, objetivo y orientado a resultados. Usa gráficos de texto cuando
     await flowsDb.insert(flow4);
     console.log('✅ Flujo 4: Seguimiento Post-Venta');
 
-    console.log('✅ Flujos simplificados creados (4 flujos funcionales)');
+    // FLUJO 5: Validar/Crear Cliente en Venta
+    // Cuando se crea una venta, verifica si el cliente existe. Si no, lo crea.
+    const flow5Id = uuidv4();
+    const flow5 = {
+      _id: flow5Id,
+      name: 'Validar Cliente en Venta',
+      description: 'Verifica si el cliente existe, si no lo crea automáticamente',
+      triggerType: 'create',
+      triggerTable: ventasTableId,
+      triggerTableName: 'Ventas',
+      active: true,
+      nodes: [
+        {
+          id: 'trigger-1',
+          type: 'trigger',
+          position: { x: 250, y: 50 },
+          data: {
+            label: 'Nueva Venta',
+            triggerType: 'create',
+            table: ventasTableId,
+            tableName: 'Ventas'
+          }
+        },
+        {
+          id: 'query-1',
+          type: 'query',
+          position: { x: 250, y: 180 },
+          data: {
+            label: '¿Cliente existe?',
+            targetTable: clientesTableId,
+            targetTableName: 'Clientes',
+            filterField: 'nombre',
+            filterValueType: 'trigger',
+            filterValueField: 'cliente',
+            outputVar: 'clienteData'
+          }
+        },
+        {
+          id: 'action-yes',
+          type: 'action',
+          position: { x: 80, y: 350 },
+          data: {
+            label: 'Cliente encontrado ✓',
+            actionType: 'notification',
+            message: 'Cliente {{cliente}} ya existe en el sistema'
+          }
+        },
+        {
+          id: 'action-no',
+          type: 'action',
+          position: { x: 420, y: 350 },
+          data: {
+            label: 'Crear Cliente',
+            actionType: 'create',
+            targetTable: clientesTableId,
+            targetTableName: 'Clientes',
+            fields: {
+              nombre: '{{cliente}}',
+              tipo: 'Lead',
+              fechaRegistro: '{{today}}',
+              estado: 'Activo'
+            }
+          }
+        }
+      ],
+      edges: [
+        { id: 'e1-2', source: 'trigger-1', target: 'query-1' },
+        { id: 'e2-yes', source: 'query-1', sourceHandle: 'yes', target: 'action-yes' },
+        { id: 'e2-no', source: 'query-1', sourceHandle: 'no', target: 'action-no' }
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    await flowsDb.insert(flow5);
+    console.log('✅ Flujo 5: Validar Cliente en Venta');
+
+    console.log('✅ Flujos simplificados creados (5 flujos funcionales)');
     
     // ========== DATOS DE EJEMPLO ==========
     
