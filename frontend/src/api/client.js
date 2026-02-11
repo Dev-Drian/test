@@ -12,6 +12,7 @@ export const createWorkspace = (data) => api.post("/workspace/create", data);
 export const listWorkspaces = () => api.get("/workspace/list");
 export const getWorkspace = (id) => api.get(`/workspace/${id}`);
 export const updateWorkspace = (id, data) => api.put(`/workspace/${id}`, data);
+export const deleteWorkspace = (id) => api.delete(`/workspace/${id}`);
 
 // Agents
 export const createAgent = (data) => api.post("/agent/create", data);

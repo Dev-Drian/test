@@ -1,9 +1,9 @@
 /**
  * TriggerNode - Nodo de inicio del flujo
+ * Color: Esmeralda (#10b981)
  */
 import { Handle, Position, useReactFlow } from '@xyflow/react';
 import { useCallback } from 'react';
-import styles from './NodeStyles.module.css';
 
 export default function TriggerNode({ id, data, selected }) {
   const { setNodes } = useReactFlow();
@@ -18,23 +18,57 @@ export default function TriggerNode({ id, data, selected }) {
   }, [id, setNodes]);
 
   return (
-    <div className={`${styles.node} ${styles.triggerNode} ${selected ? styles.selected : ''}`}>
-      <div className={styles.nodeHeader}>
-        <span className={styles.nodeTitle}>Trigger</span>
+    <div className={`min-w-[220px] rounded-xl overflow-hidden transition-all shadow-xl ${
+      selected 
+        ? 'ring-2 ring-emerald-400 shadow-emerald-500/30' 
+        : 'shadow-black/40'
+    }`} style={{ background: '#0c0c0f' }}>
+      {/* Header */}
+      <div className="px-4 py-3 flex items-center gap-3" style={{ background: 'rgba(16, 185, 129, 0.15)', borderBottom: '1px solid rgba(16, 185, 129, 0.2)' }}>
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-lg" style={{ background: '#10b981' }}>
+          🚀
+        </div>
+        <div>
+          <span className="text-sm font-semibold text-emerald-400">Inicio</span>
+          <p className="text-[10px] text-emerald-400/60">Cuando sucede algo...</p>
+        </div>
       </div>
-      <div className={styles.nodeBody}>
+      
+      {/* Content */}
+      <div className="p-4">
+        <label className="block text-[10px] uppercase tracking-wider mb-2" style={{ color: '#71717a' }}>
+          ¿Cuándo se activa?
+        </label>
         <select 
-          className={styles.nodeSelect}
+          className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all cursor-pointer appearance-none"
+          style={{ 
+            background: '#18181b', 
+            border: '1px solid rgba(255,255,255,0.1)',
+            color: 'white',
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2371717a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'right 0.5rem center',
+            backgroundSize: '1.5em 1.5em',
+            paddingRight: '2.5rem'
+          }}
           value={data?.trigger || 'create'}
           onChange={(e) => updateNodeData('trigger', e.target.value)}
         >
-          <option value="create">Cuando quiera CREAR</option>
-          <option value="query">Cuando quiera CONSULTAR</option>
-          <option value="update">Cuando quiera ACTUALIZAR</option>
-          <option value="availability">Cuando pregunte DISPONIBILIDAD</option>
+          <option value="create" style={{ background: '#18181b', color: 'white' }}>📝 Cuando quiera CREAR</option>
+          <option value="query" style={{ background: '#18181b', color: 'white' }}>🔍 Cuando quiera CONSULTAR</option>
+          <option value="update" style={{ background: '#18181b', color: 'white' }}>✏️ Cuando quiera ACTUALIZAR</option>
+          <option value="availability" style={{ background: '#18181b', color: 'white' }}>📅 Cuando pregunte DISPONIBILIDAD</option>
+          <option value="message" style={{ background: '#18181b', color: 'white' }}>💬 Cuando reciba un mensaje</option>
         </select>
       </div>
-      <Handle type="source" position={Position.Bottom} className={styles.handle} />
+      
+      {/* Handle de salida */}
+      <Handle 
+        type="source" 
+        position={Position.Bottom} 
+        className="!w-4 !h-4 !rounded-full !border-2"
+        style={{ background: '#10b981', borderColor: '#0c0c0f' }}
+      />
     </div>
   );
 }

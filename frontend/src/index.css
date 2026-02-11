@@ -1,47 +1,44 @@
-:root {
-  --bg: #0f0f12;
-  --bg-card: #18181c;
-  --bg-hover: #1f1f24;
-  --border: #2a2a32;
-  --text: #e4e4e7;
-  --text-muted: #71717a;
-  --accent: #22c55e;
-  --accent-hover: #16a34a;
-  --danger: #ef4444;
-  --radius: 12px;
-  --font: "DM Sans", system-ui, sans-serif;
-}
+@import "tailwindcss";
 
-* {
-  box-sizing: border-box;
-}
+/* ============================================
+   🎨 PREMIUM DARK THEME - SaaS Grade
+   ============================================ */
 
-body {
-  margin: 0;
-  font-family: var(--font);
-  background: var(--bg);
-  color: var(--text);
-  line-height: 1.5;
+html, body, #root {
+  height: 100%;
+  background: #09090b;
+  color: #fafafa;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-#root {
-  min-height: 100vh;
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-a {
-  color: var(--accent);
-  text-decoration: none;
-}
-a:hover {
-  text-decoration: underline;
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-button {
-  font-family: var(--font);
-  cursor: pointer;
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
 }
 
-input, textarea {
-  font-family: var(--font);
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Selection */
+::selection {
+  background: rgba(16, 185, 129, 0.3);
+}
+
+/* Focus */
+:focus-visible {
+  outline: 2px solid rgba(16, 185, 129, 0.5);
+  outline-offset: 2px;
 }
