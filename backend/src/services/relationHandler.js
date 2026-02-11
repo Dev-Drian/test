@@ -203,9 +203,10 @@ function normalizeForComparison(value) {
  */
 async function findRecordInTable(workspaceId, tableId, searchField, searchValue) {
   const dataDb = await connectDB(getTableDataDbName(workspaceId, tableId));
-  // Búsqueda case-insensitive
+  // Búsqueda case-insensitive, filtrando por tableId para obtener solo registros de esta tabla
   const result = await dataDb.find({
     selector: {
+      tableId: tableId, // <- IMPORTANTE: filtrar por tableId
       $or: [
         { main: { $exists: false } },
         { main: { $ne: true } },
@@ -216,6 +217,8 @@ async function findRecordInTable(workspaceId, tableId, searchField, searchValue)
   
   const docs = result.docs || [];
   const searchLower = String(searchValue).toLowerCase().trim();
+  
+  console.log(`[relationHandler] findRecordInTable: tableId=${tableId}, searchField=${searchField}, value=${searchValue}, docsFound=${docs.length}`);
   
   return docs.find(doc => {
     const fieldValue = doc[searchField];
@@ -230,6 +233,7 @@ async function getFieldOptions(workspaceId, tableId, fieldName) {
   const dataDb = await connectDB(getTableDataDbName(workspaceId, tableId));
   const result = await dataDb.find({
     selector: {
+      tableId: tableId, // <- IMPORTANTE: filtrar por tableId
       $or: [
         { main: { $exists: false } },
         { main: { $ne: true } },
@@ -240,6 +244,9 @@ async function getFieldOptions(workspaceId, tableId, fieldName) {
   
   const docs = result.docs || [];
   const options = [...new Set(docs.map(d => d[fieldName]).filter(Boolean))];
+  
+  console.log(`[relationHandler] getFieldOptions: tableId=${tableId}, field=${fieldName}, options=${options.length}`);
+  
   return options;
 }
 
@@ -476,4 +483,88 @@ export function formatOptionsMessage(optionErrors) {
     const options = e.availableOptions.slice(0, 5).join(", ");
     return `${e.message}. Opciones disponibles: ${options}`;
   }).join("\n");
+}
+
+/**
+ * Valida un campo de tipo relation contra la tabla relacionada
+ * Se usa durante la recolección de campos para validar en tiempo real
+ * 
+ * Configuración de relación soportada:
+ * - tableName: Nombre de la tabla relacionada
+ * - searchField: Campo para buscar en la tabla relacionada  
+ * - displayField: Campo a mostrar en opciones
+ * - autoCreate: Si es true, permite crear el registro automáticamente (no valida)
+ * - validateOnInput: Si es false, no valida durante la recolección (default: true)
+ * - showOptionsOnNotFound: Si es true, muestra opciones cuando no encuentra
+ * 
+ * @param {string} workspaceId - ID del workspace
+ * @param {*} value - Valor a validar
+ * @param {object} fieldConfig - Configuración del campo (debe incluir relation)
+ * @returns {Promise<{valid: boolean, error?: string, availableOptions?: array}>}
+ */
+export async function validateRelationField(workspaceId, value, fieldConfig) {
+  if (!fieldConfig.relation) {
+    return { valid: true }; // No tiene configuración de relación
+  }
+  
+  const { tableName, searchField, displayField, showOptionsOnNotFound, autoCreate, validateOnInput } = fieldConfig.relation;
+  
+  // Si autoCreate es true o validateOnInput es false, no validar
+  if (autoCreate === true || validateOnInput === false) {
+    console.log(`[relationHandler] Skipping validation: autoCreate=${autoCreate}, validateOnInput=${validateOnInput}`);
+    return { valid: true };
+  }
+  
+  // Si no hay workspaceId, no podemos validar
+  if (!workspaceId) {
+    console.warn(`[relationHandler] No workspaceId provided for relation validation`);
+    return { valid: true }; // Permitir si no hay workspaceId
+  }
+  
+  console.log(`[relationHandler] Validating relation: workspace=${workspaceId}, table=${tableName}, value=${value}`);
+  
+  // Buscar la tabla relacionada
+  const relatedTable = await findTableByName(workspaceId, tableName);
+  if (!relatedTable) {
+    console.warn(`[relationHandler] Table not found: ${tableName} in workspace ${workspaceId}`);
+    return { valid: true }; // Si no encuentra la tabla, permitir (puede ser config incompleta)
+  }
+  
+  console.log(`[relationHandler] Found table: ${relatedTable._id} (${relatedTable.name})`);
+  
+  // Buscar si existe el registro
+  const mainSearchField = searchField || displayField || "nombre";
+  const existingRecord = await findRecordInTable(workspaceId, relatedTable._id, mainSearchField, value);
+  
+  if (existingRecord) {
+    console.log(`[relationHandler] Record found: ${value}`);
+    return { valid: true }; // El registro existe
+  }
+  
+  console.log(`[relationHandler] Record NOT found: ${value}`);
+  
+  // El registro NO existe
+  // Obtener opciones disponibles para mostrar al usuario
+  const availableOptions = await getFieldOptions(workspaceId, relatedTable._id, displayField || mainSearchField);
+  
+  console.log(`[relationHandler] Available options: ${availableOptions.length} found`);
+  
+  // Si no hay opciones disponibles, mensaje amigable
+  if (availableOptions.length === 0) {
+    return {
+      valid: false,
+      error: `"${value}" no está registrado. Actualmente no hay ${tableName.toLowerCase()} disponibles. Primero debes registrar ${tableName.toLowerCase()} antes de continuar.`,
+      availableOptions: [],
+      noDataAvailable: true,
+    };
+  }
+  
+  const optionsStr = availableOptions.slice(0, 6).join(', ');
+  const moreStr = availableOptions.length > 6 ? ` (+${availableOptions.length - 6} más)` : '';
+  
+  return {
+    valid: false,
+    error: `"${value}" no está registrado como ${tableName.slice(0, -1)}. Opciones disponibles: ${optionsStr}${moreStr}`,
+    availableOptions: availableOptions,
+  };
 }

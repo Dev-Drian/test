@@ -59,14 +59,19 @@ export class CreateHandler extends ActionHandler {
       context.mergeFields(context.analysis.create.fields);
     }
     
-    // Si se acaba de inicializar el pendingCreate, NO correr FieldCollector.
-    // El mensaje que inicia ("quiero agendar una cita") es un INTENT, no datos.
-    // Ir directo a preguntar el primer campo.
-    if (isNewPendingCreate) {
+    // Si es un nuevo pendingCreate Y el mensaje no contiene datos (solo intención),
+    // ir directo a preguntar el primer campo sin correr FieldCollector
+    const analysisHasFields = context.analysis?.create?.fields && 
+      Object.keys(context.analysis.create.fields).length > 0;
+    
+    if (isNewPendingCreate && !analysisHasFields) {
+      // Mensaje de intención pura ("quiero registrar una venta") sin datos
+      // No correr FieldCollector, ir directo a preguntar el primer campo
       return await this._askForNextField(context);
     }
     
-    // 2b. Si hay pendingCreate y faltan campos, usar FieldCollector para extraer del mensaje
+    // 2b. Usar FieldCollector si hay campos faltantes
+    // Esto permite que "quiero registrar venta para Juan, producto CRM, 5 unidades" extraiga todos los campos
     if (context.pendingCreate && this.fieldCollector && !context.isComplete()) {
       try {
         console.log('[CreateHandler] Extracting fields with FieldCollector...');
@@ -95,6 +100,98 @@ export class CreateHandler extends ActionHandler {
           // Para query, availability, thanks → dejar que otro handler lo maneje
           // Devolver handled: false para que el Engine pase al siguiente handler
           return { handled: false };
+        }
+        
+        // Si hubo error de validación de relación, mostrar mensaje con opciones
+        if (extracted?.relationError) {
+          const { field, value, error, availableOptions } = extracted.relationError;
+          console.log('[CreateHandler] Relation validation error:', error);
+          
+          // Obtener la configuración del campo para re-preguntar
+          const fieldsConfig = await this.tableRepository.getFieldsConfig(
+            context.workspaceId,
+            context.pendingCreate.tableId
+          );
+          const fieldConfig = fieldsConfig.find(fc => fc.key === field);
+          const label = fieldConfig?.label || field;
+          
+          // Construir mensaje con opciones disponibles
+          const optionsStr = availableOptions?.slice(0, 8).join(', ') || '';
+          
+          return {
+            handled: true,
+            response: `⚠️ "${value}" no está registrado como ${label}.\n\n📋 Opciones disponibles: ${optionsStr}\n\n¿Cuál ${label} deseas seleccionar?`,
+          };
+        }
+        
+        // Si el usuario quiere cambiar un campo ya recolectado
+        if (extracted?.wantsToChangeField) {
+          const { field, newValue } = extracted.wantsToChangeField;
+          console.log('[CreateHandler] User wants to change field:', field, 'to:', newValue);
+          
+          // Obtener la configuración del campo
+          const fieldsConfig = await this.tableRepository.getFieldsConfig(
+            context.workspaceId,
+            context.pendingCreate.tableId
+          );
+          const fieldConfig = fieldsConfig.find(fc => fc.key === field);
+          
+          if (!fieldConfig) {
+            // Campo no encontrado, buscar por label
+            const fieldByLabel = fieldsConfig.find(fc => 
+              fc.label?.toLowerCase().includes(field.toLowerCase()) ||
+              fc.key.toLowerCase().includes(field.toLowerCase())
+            );
+            
+            if (fieldByLabel) {
+              const changeResult = context.changeField(fieldByLabel.key, newValue);
+              if (changeResult.success) {
+                const label = fieldByLabel.label || fieldByLabel.key;
+                context.savePendingState();
+                
+                // Continuar con el flujo preguntando el siguiente campo faltante
+                return await this._askForNextFieldWithChange(context, label, changeResult.oldValue, newValue);
+              } else {
+                return {
+                  handled: true,
+                  response: `⚠️ No pude cambiar el ${fieldByLabel.label}: ${changeResult.error}`,
+                };
+              }
+            }
+            
+            return {
+              handled: true,
+              response: `No encontré el campo "${field}" para cambiar. ¿Cuál campo deseas modificar?`,
+            };
+          }
+          
+          // Validar el nuevo valor para campos de tipo relation
+          if (fieldConfig.type === 'relation' && fieldConfig.relation) {
+            const { validateRelationField } = await import('../../services/relationHandler.js');
+            const relationValidation = await validateRelationField(context.workspaceId, newValue, fieldConfig);
+            
+            if (!relationValidation.valid) {
+              const optionsStr = relationValidation.availableOptions?.slice(0, 8).join(', ') || '';
+              return {
+                handled: true,
+                response: `⚠️ "${newValue}" no está registrado como ${fieldConfig.label}.\n\n📋 Opciones disponibles: ${optionsStr}\n\n¿Cuál ${fieldConfig.label} deseas?`,
+              };
+            }
+          }
+          
+          const changeResult = context.changeField(field, newValue);
+          if (changeResult.success) {
+            const label = fieldConfig.label || field;
+            context.savePendingState();
+            
+            // Continuar con el flujo preguntando el siguiente campo faltante
+            return await this._askForNextFieldWithChange(context, label, changeResult.oldValue, newValue);
+          } else {
+            return {
+              handled: true,
+              response: `⚠️ No pude cambiar el ${fieldConfig.label}: ${changeResult.error}`,
+            };
+          }
         }
         
         if (extracted?.extractedFields && Object.keys(extracted.extractedFields).length > 0) {
@@ -188,6 +285,7 @@ export class CreateHandler extends ActionHandler {
   
   /**
    * Genera pregunta para el siguiente campo faltante
+   * Si es la primera pregunta (ningún campo recolectado), pide TODOS los campos a la vez
    */
   async _askForNextField(context) {
     const fieldsConfig = await this.tableRepository.getFieldsConfig(
@@ -197,6 +295,31 @@ export class CreateHandler extends ActionHandler {
     
     // Ordenar por prioridad
     const sortedConfig = fieldsConfig.sort((a, b) => (a.priority || 99) - (b.priority || 99));
+    
+    // Campos recolectados
+    const collectedCount = Object.keys(context.collectedFields || {}).filter(k => {
+      const v = context.collectedFields[k];
+      return v !== undefined && v !== null && v !== '';
+    }).length;
+    
+    // Si es la primera pregunta (ningún campo recolectado), pedir TODOS los campos requeridos
+    if (collectedCount === 0 && context.missingFields.length > 1) {
+      const tableName = context.pendingCreate.tableName || 'registro';
+      const fieldsList = sortedConfig
+        .filter(fc => context.missingFields.includes(fc.key))
+        .map(fc => `• ${fc.emoji || '📝'} ${fc.label || fc.key}`)
+        .join('\n');
+      
+      const question = `Para registrar ${tableName}, necesito los siguientes datos:\n\n${fieldsList}\n\n💡 Puedes escribirlos todos juntos o uno por uno.`;
+      
+      context.savePendingState();
+      
+      return {
+        handled: true,
+        response: question,
+        formatted: true,
+      };
+    }
     
     // Encontrar el primer campo faltante
     const nextField = sortedConfig.find(fc => context.missingFields.includes(fc.key));
@@ -221,6 +344,49 @@ export class CreateHandler extends ActionHandler {
     return {
       handled: true,
       response: progress + question,
+      formatted: true,
+    };
+  }
+  
+  /**
+   * Genera pregunta para el siguiente campo después de un cambio
+   * Incluye confirmación del cambio realizado
+   */
+  async _askForNextFieldWithChange(context, changedLabel, oldValue, newValue) {
+    const fieldsConfig = await this.tableRepository.getFieldsConfig(
+      context.workspaceId,
+      context.pendingCreate.tableId
+    );
+    
+    // Mensaje de confirmación del cambio
+    const changeConfirmation = `✅ Cambié ${changedLabel}: "${oldValue}" → "${newValue}"\n\n`;
+    
+    // Verificar si ya tenemos todos los campos
+    if (context.isComplete()) {
+      // Ya está completo, proceder a crear
+      return await this._createRecord(context);
+    }
+    
+    // Ordenar por prioridad
+    const sortedConfig = fieldsConfig.sort((a, b) => (a.priority || 99) - (b.priority || 99));
+    
+    // Encontrar el primer campo faltante
+    const nextField = sortedConfig.find(fc => context.missingFields.includes(fc.key));
+    
+    if (!nextField) {
+      // No hay más campos, mostrar resumen y crear
+      return await this._createRecord(context);
+    }
+    
+    // Generar pregunta
+    const question = this._generateQuestion(nextField, context);
+    
+    // Construir resumen de progreso
+    const progress = this._buildProgressSummary(context.collectedFields, fieldsConfig);
+    
+    return {
+      handled: true,
+      response: changeConfirmation + progress + question,
       formatted: true,
     };
   }
@@ -327,12 +493,12 @@ export class CreateHandler extends ActionHandler {
         fields: collectedFields,
       });
       
+      // Construir respuesta de éxito ANTES de limpiar pendingCreate
+      const response = await this._buildSuccessResponse(context, tableName, collectedFields, tableId);
+      
       // Limpiar pendingCreate
       context.clearPendingCreate();
       context.savePendingState();
-      
-      // Construir respuesta de éxito
-      const response = await this._buildSuccessResponse(context, tableName, collectedFields);
       
       return {
         handled: true,
@@ -477,8 +643,12 @@ _Estado: Pendiente de confirmación_`;
 
   /**
    * Construye la respuesta de éxito dinámicamente
+   * @param {object} context - Contexto de la conversación
+   * @param {string} tableName - Nombre de la tabla
+   * @param {object} fields - Campos del registro creado
+   * @param {string} tableId - ID de la tabla (opcional, para cuando pendingCreate ya fue limpiado)
    */
-  async _buildSuccessResponse(context, tableName, fields) {
+  async _buildSuccessResponse(context, tableName, fields, tableId = null) {
     // Obtener templates del agente
     const templates = context.agent?.responseTemplates || {};
     
@@ -492,10 +662,18 @@ _Estado: Pendiente de confirmación_`;
       });
     }
     
+    // Obtener tableId de donde sea disponible
+    const resolvedTableId = tableId || context.pendingCreate?.tableId || context.analysis?.tableId;
+    
+    if (!resolvedTableId) {
+      // Fallback simple si no hay tableId
+      return `✅ **¡${tableName} registrado con éxito!**\n\n¡Gracias! 🎉`;
+    }
+    
     // Construir respuesta dinámica basada en la configuración de la tabla
     const fieldsConfig = await this.tableRepository.getFieldsConfig(
       context.workspaceId,
-      context.pendingCreate?.tableId || context.analysis?.tableId
+      resolvedTableId
     );
     
     const configMap = {};

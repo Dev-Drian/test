@@ -127,6 +127,10 @@ export class Context {
   loadPendingState() {
     if (this.chat?.data?.pendingCreate) {
       this.pendingCreate = this.chat.data.pendingCreate;
+      // Asegurar que tenga workspaceId (para validación de relaciones)
+      if (!this.pendingCreate.workspaceId) {
+        this.pendingCreate.workspaceId = this.workspaceId;
+      }
       this.collectedFields = this.pendingCreate.fields || {};
     }
     if (this.chat?.data?.pendingRelation) {
@@ -236,6 +240,67 @@ export class Context {
     this.updateMissingFields();
     
     return { accepted, rejected };
+  }
+  
+  /**
+   * Cambia el valor de un campo ya recolectado
+   * Permite al usuario corregir datos durante el flujo de creación
+   * @param {string} fieldKey - Clave del campo a cambiar
+   * @param {*} newValue - Nuevo valor
+   * @param {object} options - Opciones { validate: true, normalize: true }
+   * @returns {object} { success: boolean, error?: string, oldValue?: any }
+   */
+  changeField(fieldKey, newValue, options = {}) {
+    const { validate = true, normalize = true } = options;
+    
+    const fieldsConfig = this.pendingCreate?.fieldsConfig || [];
+    const configMap = {};
+    fieldsConfig.forEach(fc => {
+      configMap[fc.key] = fc;
+    });
+    
+    const config = configMap[fieldKey];
+    
+    // Verificar que el campo exista en la configuración
+    if (!config) {
+      return { success: false, error: `Campo "${fieldKey}" no existe en la configuración` };
+    }
+    
+    // Verificar que tenga valor válido
+    if (newValue === undefined || newValue === null || newValue === '') {
+      return { success: false, error: 'Valor vacío' };
+    }
+    
+    const oldValue = this.collectedFields[fieldKey];
+    let finalValue = newValue;
+    
+    // Validar si está habilitado
+    if (validate && config) {
+      const validation = this._validateField(fieldKey, newValue, config);
+      if (!validation.valid) {
+        return { success: false, error: validation.error };
+      }
+    }
+    
+    // Normalizar si está habilitado
+    if (normalize && config) {
+      finalValue = this._normalizeField(fieldKey, newValue, config);
+    }
+    
+    // Cambiar el campo
+    this.collectedFields[fieldKey] = finalValue;
+    
+    // Actualizar pendingCreate
+    if (this.pendingCreate) {
+      this.pendingCreate.fields = this.collectedFields;
+    }
+    
+    // Recalcular campos faltantes
+    this.updateMissingFields();
+    
+    console.log(`[Context] Field "${fieldKey}" changed from "${oldValue}" to "${finalValue}"`);
+    
+    return { success: true, oldValue, newValue: finalValue };
   }
   
   /**
@@ -352,6 +417,7 @@ export class Context {
     });
     
     this.pendingCreate = {
+      workspaceId: this.workspaceId,  // IMPORTANTE: Guardar workspaceId para validación de relaciones
       tableId,
       tableName,
       actionType: 'create',

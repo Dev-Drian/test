@@ -43,9 +43,7 @@ export class ActionHandler {
    */
   async formatResponse(context, result) {
     // Implementación por defecto - puede ser sobrescrita
-    if (this.responseBuilder) {
-      return this.responseBuilder.build(context, result);
-    }
+    // ResponseBuilder no tiene método build() genérico, usar métodos específicos o retornar respuesta directa
     return result.response || 'Operación completada.';
   }
   

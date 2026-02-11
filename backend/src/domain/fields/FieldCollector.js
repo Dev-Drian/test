@@ -8,6 +8,8 @@
  * NO tiene campos hardcodeados — todo se genera dinámicamente.
  */
 
+import { validateRelationField } from '../../services/relationHandler.js';
+
 export class FieldCollector {
   constructor(dependencies = {}) {
     this.aiProvider = dependencies.aiProvider;
@@ -22,7 +24,7 @@ export class FieldCollector {
    * @param {object} pendingCreate - Estado actual
    * @returns {object} { valid: boolean, normalizedValue?: any, error?: string }
    */
-  validateExtractedField(fieldKey, value, fieldConfig, pendingCreate) {
+  async validateExtractedField(fieldKey, value, fieldConfig, pendingCreate) {
     // 1. Verificar que el campo realmente esté faltante
     const currentValue = pendingCreate.fields?.[fieldKey];
     if (currentValue !== undefined && currentValue !== null && currentValue !== '') {
@@ -32,13 +34,27 @@ export class FieldCollector {
       };
     }
     
-    // 2. Validar según configuración
+    // 2. Validar campos de tipo relation contra la tabla relacionada
+    if (fieldConfig.type === 'relation' && fieldConfig.relation) {
+      const workspaceId = pendingCreate.workspaceId;
+      const relationValidation = await validateRelationField(workspaceId, value, fieldConfig);
+      
+      if (!relationValidation.valid) {
+        return {
+          valid: false,
+          error: relationValidation.error,
+          availableOptions: relationValidation.availableOptions,
+        };
+      }
+    }
+    
+    // 3. Validar según configuración
     const validation = this.validateField(fieldKey, value, fieldConfig);
     if (!validation.valid) {
       return validation;
     }
     
-    // 3. Normalizar valor
+    // 4. Normalizar valor
     const normalizedValue = this.normalizeFieldValue(fieldKey, value, fieldConfig);
     
     return {
@@ -130,12 +146,21 @@ export class FieldCollector {
             continue;
           }
           
-          // Validar campo
-          const validation = this.validateExtractedField(key, value, config, pendingCreate);
+          // Validar campo (ahora es async para validar relaciones)
+          const validation = await this.validateExtractedField(key, value, config, pendingCreate);
           if (validation.valid) {
             validatedFields[key] = validation.normalizedValue;
           } else {
             console.warn(`[FieldCollector] Field validation failed: ${key} - ${validation.error}`);
+            // Si hay opciones disponibles (campo de tipo relation), guardarlas para mostrar al usuario
+            if (validation.availableOptions) {
+              extracted.relationError = {
+                field: key,
+                value: value,
+                error: validation.error,
+                availableOptions: validation.availableOptions,
+              };
+            }
           }
         }
         
@@ -295,30 +320,33 @@ Responde SOLO con JSON válido:
   "extractedFields": { "campo_key": "valor" },
   "wantsToChangeFlow": true/false,
   "newIntent": null o "query" o "cancel" o "thanks",
+  "wantsToChangeField": null o { "field": "campo_key", "newValue": "nuevo_valor" },
   "clarificationNeeded": null o "mensaje"
 }
 
 REGLAS CRÍTICAS:
 1. Las keys en "extractedFields" DEBEN ser EXACTAMENTE las keys listadas en CAMPOS QUE FALTAN (${missingFields.join(', ')}). NO uses otras keys.
-2. Si el campo que se pregunta es "${currentlyAsking || '(ninguno)'}" y el usuario da un valor simple, asígnalo a ESE campo.
-3. NO inventes datos. Solo extrae lo que el usuario dice EXPLÍCITAMENTE en su mensaje.
-4. Si un nombre tiene varias palabras (ej: "Adrian Castro"), es UN solo valor para UN solo campo.
-5. "gracias", "ok", "perfecto" → isDataResponse: false, newIntent: "thanks"
-6. Si el usuario dice algo como "el que te pasé antes", "el mismo", etc., revisa el CONTEXTO para encontrar el valor.
-7. SOLO si el usuario MENCIONA una fecha ("hoy", "mañana", "lunes", "el 15", etc.), conviértela a YYYY-MM-DD. Si NO menciona fecha, NO incluyas fecha en extractedFields.
-8. SOLO si el usuario MENCIONA una hora ("a las 3", "7pm", etc.), conviértela a HH:MM 24h. Si NO menciona hora, NO incluyas hora en extractedFields.
-9. Si el usuario pregunta algo ("qué servicios tienen?", "cuánto cuesta?", "hay disponibilidad?") → isDataResponse: false, wantsToChangeFlow: true, newIntent: "query".
-10. "cancelar", "no quiero" → isDataResponse: false, wantsToChangeFlow: true, newIntent: "cancel".
-11. MENSAJES DE INTENCIÓN ("quiero agendar", "necesito una cita") SIN detalles específicos → isDataResponse: false, extractedFields: {}
-12. Si el mensaje NO responde a una pregunta específica ni da datos concretos → isDataResponse: false
+2. EXTRAE TODOS LOS CAMPOS que el usuario mencione en su mensaje, no solo uno. Si dice "Juan Pérez, producto Software CRM, 5 unidades", extrae cliente, producto Y cantidad.
+3. Si el campo que se pregunta es "${currentlyAsking || '(ninguno)'}" y el usuario da un valor simple (sin otros datos), asígnalo a ESE campo.
+4. NO inventes datos. Solo extrae lo que el usuario dice EXPLÍCITAMENTE en su mensaje.
+5. Si un nombre tiene varias palabras (ej: "Adrian Castro"), es UN solo valor para UN solo campo.
+6. "gracias", "ok", "perfecto" → isDataResponse: false, newIntent: "thanks"
+7. Si el usuario dice algo como "el que te pasé antes", "el mismo", etc., revisa el CONTEXTO para encontrar el valor.
+8. Si el usuario MENCIONA una fecha ("hoy", "mañana", "lunes", "el 15", etc.), conviértela a YYYY-MM-DD e inclúyela.
+9. Si el usuario MENCIONA una hora ("a las 3", "7pm", etc.), conviértela a HH:MM 24h e inclúyela.
+10. Si el usuario pregunta algo ("qué servicios tienen?", "cuánto cuesta?", "hay disponibilidad?") → isDataResponse: false, wantsToChangeFlow: true, newIntent: "query".
+11. "cancelar", "no quiero" → isDataResponse: false, wantsToChangeFlow: true, newIntent: "cancel".
+12. MENSAJES DE INTENCIÓN ("quiero agendar", "necesito una cita") SIN detalles específicos → isDataResponse: false, extractedFields: {}
+13. Si el mensaje NO responde a una pregunta específica ni da datos concretos → isDataResponse: false
+14. Si el usuario dice "cambiar X", "el X es otro", "no, el X es...", "corregir X", "en lugar de X quiero Y" → wantsToChangeField: { "field": "campo_key", "newValue": "nuevo_valor" }. Aplica para CUALQUIER campo ya recolectado.
 
-REGLA FINAL CRÍTICA:
-- Estás preguntando por el campo "${currentlyAsking || '(ninguno)'}".
-- Extrae SOLO ese campo del mensaje del usuario.
-- NO auto-rellenes NINGÚN otro campo (especialmente fecha u hora) a menos que el usuario los diga EXPLÍCITAMENTE en ESTE mensaje.
-- Un nombre propio (ej: "Adrian Castro") SOLO es un nombre. NO contiene fecha ni hora.
-- Si el mensaje es una sola palabra o frase simple, es la respuesta al campo que se preguntó. NADA MÁS.
-- Si NO hay campo siendo preguntado (currentlyAsking = ninguno) y el mensaje es solo intención general, NO extraigas nada.`;
+REGLA FINAL - EXTRACCIÓN MÚLTIPLE:
+- Si el usuario proporciona VARIOS datos en un mensaje, EXTRÁELOS TODOS.
+- Ejemplo: "quiero registrar venta para Juan Pérez del producto CRM Pro, 3 unidades" → { "cliente": "Juan Pérez", "producto": "CRM Pro", "cantidad": 3 }
+- Ejemplo: "Adrian Castro, Software CRM Pro, 5" → { "cliente": "Adrian Castro", "producto": "Software CRM Pro", "cantidad": 5 }
+- NO limites la extracción a un solo campo cuando el usuario da más información.
+- Si el mensaje es una sola palabra o frase simple, es la respuesta al campo que se preguntó (${currentlyAsking || 'ninguno'}).
+- Analiza el mensaje completo y extrae TODOS los campos faltantes que puedas identificar.`;
   }
   
   /**
@@ -329,8 +357,15 @@ REGLA FINAL CRÍTICA:
    * @returns {object} - { valid: boolean, error?: string }
    */
   validateField(fieldKey, value, fieldConfig) {
-    if (!value) {
-      return { valid: false, error: `${fieldKey} es requerido` };
+    // Si no hay valor y el campo NO es requerido, es válido
+    if (!value && !fieldConfig?.required) {
+      return { valid: true };
+    }
+    
+    // Si no hay valor y el campo ES requerido, error
+    if (!value && fieldConfig?.required) {
+      const label = fieldConfig?.label || fieldKey;
+      return { valid: false, error: `${label} es requerido` };
     }
     
     const validation = fieldConfig?.validation;

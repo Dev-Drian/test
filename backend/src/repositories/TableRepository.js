@@ -59,8 +59,9 @@ export class TableRepository extends BaseRepository {
    */
   async getRequiredFields(workspaceId, tableId) {
     const headers = await this.getHeaders(workspaceId, tableId);
+    // Excluir campos hiddenFromChat (se llenan automáticamente)
     return headers
-      .filter(h => h.required === true)
+      .filter(h => h.required === true && !h.hiddenFromChat)
       .map(h => h.key || h.label);
   }
   
@@ -77,6 +78,7 @@ export class TableRepository extends BaseRepository {
       label: h.label || h.key,
       type: h.type || 'text',
       required: h.required || false,
+      hiddenFromChat: h.hiddenFromChat || false,
       emoji: h.emoji || null,
       askMessage: h.askMessage || null,
       confirmLabel: h.confirmLabel || h.label || h.key,

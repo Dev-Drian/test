@@ -85,6 +85,7 @@ export async function seed() {
             displayField: 'nombre',
             searchField: 'nombre',
             autoCreate: false,
+            validateOnInput: false,
             showOptionsOnNotFound: true
           }
         },
@@ -100,13 +101,14 @@ export async function seed() {
             displayField: 'nombre',
             searchField: 'nombre',
             autoCreate: false,
+            validateOnInput: true,
             showOptionsOnNotFound: true
           }
         },
         { key: 'cantidad', label: 'Cantidad', type: 'number', required: true, emoji: '🔢', priority: 3, validation: { min: 1 } },
-        { key: 'total', label: 'Total', type: 'number', required: true, emoji: '💵', priority: 4, validation: { min: 0 } },
-        { key: 'fecha', label: 'Fecha', type: 'date', required: true, emoji: '📅', priority: 5, defaultValue: 'today' },
-        { key: 'estadoPago', label: 'Estado Pago', type: 'select', required: true, emoji: '💳', options: ['Pendiente', 'Pagado', 'Cancelado'], defaultValue: 'Pendiente' },
+        { key: 'total', label: 'Total', type: 'number', required: false, hiddenFromChat: true, emoji: '💵', priority: 4, validation: { min: 0 }, defaultValue: 0, autoCalculate: true },
+        { key: 'fecha', label: 'Fecha', type: 'date', required: false, hiddenFromChat: true, emoji: '📅', priority: 5, defaultValue: 'today' },
+        { key: 'estadoPago', label: 'Estado Pago', type: 'select', required: false, hiddenFromChat: true, emoji: '💳', options: ['Pendiente', 'Pagado', 'Cancelado'], defaultValue: 'Pendiente' },
         { key: 'notas', label: 'Notas', type: 'text', required: false, emoji: '📝' }
       ],
       createdAt: new Date().toISOString()
@@ -135,6 +137,7 @@ export async function seed() {
             displayField: 'nombre',
             searchField: 'nombre',
             autoCreate: false,
+            validateOnInput: false,
             showOptionsOnNotFound: true
           }
         },
@@ -170,6 +173,87 @@ export async function seed() {
     await workspaceDb.insert(tareasTable);
     console.log('✅ Tabla Tareas creada');
     
+    // ========== TABLA 6: PROVEEDORES ==========
+    const proveedoresTableId = uuidv4();
+    const proveedoresTable = {
+      _id: proveedoresTableId,
+      name: 'Proveedores',
+      type: 'suppliers',
+      displayField: 'nombre',
+      description: 'Proveedores de productos',
+      headers: [
+        { key: 'nombre', label: 'Nombre', type: 'text', required: true, emoji: '🏭', priority: 1 },
+        { key: 'contacto', label: 'Contacto', type: 'text', required: true, emoji: '👤', priority: 2 },
+        { key: 'telefono', label: 'Teléfono', type: 'phone', required: true, emoji: '📱', priority: 3, validation: { digits: 10 } },
+        { key: 'email', label: 'Email', type: 'email', required: true, emoji: '📧', priority: 4 },
+        { key: 'categoria', label: 'Categoría', type: 'select', required: true, emoji: '🏷️', options: ['Tecnología', 'Oficina', 'Servicios'], priority: 5 },
+        { key: 'calificacion', label: 'Calificación', type: 'number', required: false, emoji: '⭐', validation: { min: 1, max: 5 } }
+      ],
+      createdAt: new Date().toISOString()
+    };
+    await workspaceDb.insert(proveedoresTable);
+    console.log('✅ Tabla Proveedores creada');
+    
+    // ========== TABLA 7: FACTURAS ==========
+    const facturasTableId = uuidv4();
+    const facturasTable = {
+      _id: facturasTableId,
+      name: 'Facturas',
+      type: 'invoices',
+      displayField: 'numeroFactura',
+      description: 'Facturas generadas',
+      headers: [
+        { key: 'numeroFactura', label: 'Número', type: 'text', required: true, emoji: '🧾', priority: 1 },
+        { 
+          key: 'cliente', 
+          label: 'Cliente', 
+          type: 'relation', 
+          required: true, 
+          emoji: '👤', 
+          priority: 2,
+          relation: {
+            tableName: 'Clientes',
+            displayField: 'nombre',
+            searchField: 'nombre',
+            autoCreate: false,
+            validateOnInput: true,
+            showOptionsOnNotFound: true
+          }
+        },
+        { key: 'fecha', label: 'Fecha', type: 'date', required: true, emoji: '📅', priority: 3, defaultValue: 'today' },
+        { key: 'subtotal', label: 'Subtotal', type: 'number', required: true, emoji: '💵', validation: { min: 0 } },
+        { key: 'iva', label: 'IVA', type: 'number', required: true, emoji: '📊', validation: { min: 0 } },
+        { key: 'total', label: 'Total', type: 'number', required: true, emoji: '💰', validation: { min: 0 } },
+        { key: 'estadoFactura', label: 'Estado', type: 'select', required: true, emoji: '✅', options: ['Pendiente', 'Pagada', 'Vencida'], defaultValue: 'Pendiente' }
+      ],
+      createdAt: new Date().toISOString()
+    };
+    await workspaceDb.insert(facturasTable);
+    console.log('✅ Tabla Facturas creada');
+    
+    // ========== TABLA 8: CAMPAÑAS ==========
+    const campanasTableId = uuidv4();
+    const campanasTable = {
+      _id: campanasTableId,
+      name: 'Campañas',
+      type: 'marketing',
+      displayField: 'nombre',
+      description: 'Campañas de marketing',
+      headers: [
+        { key: 'nombre', label: 'Nombre', type: 'text', required: true, emoji: '📢', priority: 1 },
+        { key: 'tipo', label: 'Tipo', type: 'select', required: true, emoji: '🎯', options: ['Email', 'WhatsApp', 'SMS', 'Redes Sociales'], priority: 2 },
+        { key: 'fechaInicio', label: 'Fecha Inicio', type: 'date', required: true, emoji: '📅', priority: 3 },
+        { key: 'fechaFin', label: 'Fecha Fin', type: 'date', required: false, emoji: '📅' },
+        { key: 'presupuesto', label: 'Presupuesto', type: 'number', required: false, emoji: '💰', validation: { min: 0 } },
+        { key: 'alcance', label: 'Alcance', type: 'number', required: false, emoji: '👥', validation: { min: 0 } },
+        { key: 'conversiones', label: 'Conversiones', type: 'number', required: false, emoji: '✅', validation: { min: 0 }, defaultValue: 0 },
+        { key: 'estadoCampana', label: 'Estado', type: 'select', required: true, emoji: '📊', options: ['Borrador', 'Activa', 'Pausada', 'Finalizada'], defaultValue: 'Borrador' }
+      ],
+      createdAt: new Date().toISOString()
+    };
+    await workspaceDb.insert(campanasTable);
+    console.log('✅ Tabla Campañas creada');
+    
     // ========== AGENTE 1: VENTAS ==========
     const agenteVentasId = uuidv4();
     const agenteVentas = {
@@ -177,12 +261,13 @@ export async function seed() {
       type: 'agent',
       name: 'Asistente de Ventas',
       description: 'Especializado en registrar ventas y gestionar clientes',
-      tables: [clientesTableId, productosTableId, ventasTableId],
+      tables: [clientesTableId, productosTableId, ventasTableId, proveedoresTableId, facturasTableId],
       prompt: `Eres el asistente de ventas del CRM ${WORKSPACE_NAME}.
 
 TU FUNCIÓN:
-- Registrar nuevos clientes y ventas
-- Consultar productos disponibles
+- Registrar nuevos clientes, productos y ventas
+- Gestionar proveedores y facturas
+- Consultar productos disponibles y su stock
 - Calcular totales de ventas
 - Actualizar información de clientes
 
@@ -201,15 +286,19 @@ PROCESO DE VENTA:
 
 VALIDACIONES:
 - Cliente debe existir en la tabla Clientes
-- Producto debe existir en la tabla Productos
+VALIDACIONES IMPORTANTES:
+- Cliente debe existir en tabla Clientes
+- Producto debe existir en tabla Productos
 - Cantidad debe ser mayor a 0
-- Total = precio × cantidad
+- NUNCA pidas el Total, se calcula automáticamente (precio × cantidad)
+- El sistema valida stock disponible automáticamente
 
 REGLAS:
 - Sé proactivo: si el cliente no existe, ofrece registrarlo
-- Muestra productos con precios cuando te pregunten
+- Muestra productos con precios y stock cuando te pregunten
+- Al registrar venta, solo pide: cliente, producto, cantidad
 - Confirma todos los datos antes de crear la venta
-- Usa formato claro: "Cliente: X, Producto: Y, Total: $Z"
+- Usa formato claro: "Cliente: X, Producto: Y, Cantidad: Z"
 
 Mantén un tono profesional y amigable. Usa emojis apropiados.`,
       aiModel: ['gpt-4o-mini'],
@@ -235,14 +324,14 @@ Mantén un tono profesional y amigable. Usa emojis apropiados.`,
       type: 'agent',
       name: 'Analista de Datos',
       description: 'Especializado en análisis y reportes',
-      tables: [clientesTableId, productosTableId, ventasTableId, seguimientosTableId, tareasTableId],
+      tables: [clientesTableId, productosTableId, ventasTableId, seguimientosTableId, tareasTableId, proveedoresTableId, facturasTableId, campanasTableId],
       prompt: `Eres el analista de datos del CRM ${WORKSPACE_NAME}.
 
 TU FUNCIÓN:
-- Generar reportes y estadísticas
-- Analizar tendencias de ventas
-- Mostrar métricas clave del negocio
-- Identificar oportunidades y problemas
+- Generar reportes y estadísticas de ventas, clientes, campañas
+- Analizar tendencias de ventas y rendimiento de productos
+- Mostrar métricas clave del negocio (ROI, conversiones, facturación)
+- Identificar oportunidades y problemas (stock bajo, clientes inactivos)
 
 ACCESO A DATOS:
 - Clientes (total, tipos, nuevos)
@@ -586,6 +675,337 @@ Sé analítico, objetivo y orientado a resultados. Usa gráficos de texto cuando
     await flowsDb.insert(flow4);
     console.log('✅ Flujo 4: Upgrade Cliente a VIP');
     
+    // ========== FLUJO 5: VALIDAR STOCK ANTES DE VENTA ==========
+    const flow5Id = uuidv4();
+    const flow5 = {
+      _id: flow5Id,
+      name: 'Validar Stock Disponible',
+      description: 'Valida que haya stock suficiente antes de crear una venta',
+      triggerType: 'beforeCreate',
+      triggerTable: ventasTableId,
+      active: true,
+      nodes: [
+        {
+          id: 'trigger-1',
+          type: 'trigger',
+          position: { x: 150, y: 50 },
+          data: {
+            label: 'Antes de crear Venta',
+            event: 'beforeCreate',
+            table: ventasTableId
+          }
+        },
+        {
+          id: 'query-1',
+          type: 'query',
+          position: { x: 150, y: 150 },
+          data: {
+            label: 'Obtener stock actual',
+            queryType: 'findOne',
+            targetTable: productosTableId,
+            filter: { nombre: '{{producto}}' },
+            outputVar: 'productoData'
+          }
+        },
+        {
+          id: 'condition-1',
+          type: 'condition',
+          position: { x: 150, y: 250 },
+          data: {
+            label: 'Stock suficiente?',
+            field: 'productoData.stock',
+            operator: '>=',
+            value: '{{cantidad}}'
+          }
+        },
+        {
+          id: 'action-error',
+          type: 'action',
+          position: { x: 50, y: 380 },
+          data: {
+            label: 'Rechazar venta',
+            actionType: 'error',
+            message: '❌ Stock insuficiente. Disponible: {{productoData.stock}} unidades'
+          }
+        },
+        {
+          id: 'action-allow',
+          type: 'action',
+          position: { x: 250, y: 380 },
+          data: {
+            label: 'Permitir venta',
+            actionType: 'allow'
+          }
+        }
+      ],
+      edges: [
+        { id: 'e1-2', source: 'trigger-1', target: 'query-1' },
+        { id: 'e2-3', source: 'query-1', target: 'condition-1' },
+        { id: 'e3-error', source: 'condition-1', target: 'action-error', label: 'No' },
+        { id: 'e3-allow', source: 'condition-1', target: 'action-allow', label: 'Sí' }
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    await flowsDb.insert(flow5);
+    console.log('✅ Flujo 5: Validar Stock Disponible');
+    
+    // ========== FLUJO 6: AUTO-CALCULAR TOTAL DE VENTA ==========
+    const flow6Id = uuidv4();
+    const flow6 = {
+      _id: flow6Id,
+      name: 'Calcular Total de Venta',
+      description: 'Calcula automáticamente el total multiplicando precio × cantidad',
+      triggerType: 'create',
+      triggerTable: ventasTableId,
+      active: true,
+      nodes: [
+        {
+          id: 'trigger-1',
+          type: 'trigger',
+          position: { x: 150, y: 50 },
+          data: {
+            label: 'Venta creada',
+            event: 'create',
+            table: ventasTableId
+          }
+        },
+        {
+          id: 'query-1',
+          type: 'query',
+          position: { x: 150, y: 150 },
+          data: {
+            label: 'Obtener precio producto',
+            queryType: 'findOne',
+            targetTable: productosTableId,
+            filter: { nombre: '{{producto}}' },
+            outputVar: 'productoData'
+          }
+        },
+        {
+          id: 'action-1',
+          type: 'action',
+          position: { x: 150, y: 280 },
+          data: {
+            label: 'Actualizar Total',
+            actionType: 'update',
+            targetTable: ventasTableId,
+            filter: { _id: '{{_id}}' },
+            fields: {
+              total: '{{productoData.precio * cantidad}}'
+            }
+          }
+        }
+      ],
+      edges: [
+        { id: 'e1-2', source: 'trigger-1', target: 'query-1' },
+        { id: 'e2-3', source: 'query-1', target: 'action-1' }
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    await flowsDb.insert(flow6);
+    console.log('✅ Flujo 6: Calcular Total de Venta');
+    
+    // ========== FLUJO 7: ACTUALIZAR STOCK DESPUÉS DE VENTA ==========
+    const flow7Id = uuidv4();
+    const flow7 = {
+      _id: flow7Id,
+      name: 'Descontar Stock',
+      description: 'Descuenta el stock del producto después de una venta',
+      triggerType: 'create',
+      triggerTable: ventasTableId,
+      active: true,
+      nodes: [
+        {
+          id: 'trigger-1',
+          type: 'trigger',
+          position: { x: 150, y: 50 },
+          data: {
+            label: 'Venta creada',
+            event: 'create',
+            table: ventasTableId
+          }
+        },
+        {
+          id: 'query-1',
+          type: 'query',
+          position: { x: 150, y: 150 },
+          data: {
+            label: 'Obtener producto',
+            queryType: 'findOne',
+            targetTable: productosTableId,
+            filter: { nombre: '{{producto}}' },
+            outputVar: 'productoData'
+          }
+        },
+        {
+          id: 'action-1',
+          type: 'action',
+          position: { x: 150, y: 280 },
+          data: {
+            label: 'Descontar stock',
+            actionType: 'update',
+            targetTable: productosTableId,
+            filter: { nombre: '{{producto}}' },
+            fields: {
+              stock: '{{productoData.stock - cantidad}}'
+            }
+          }
+        }
+      ],
+      edges: [
+        { id: 'e1-2', source: 'trigger-1', target: 'query-1' },
+        { id: 'e2-3', source: 'query-1', target: 'action-1' }
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    await flowsDb.insert(flow7);
+    console.log('✅ Flujo 7: Descontar Stock');
+    
+    // ========== FLUJO 8: ALERTA STOCK BAJO ==========
+    const flow8Id = uuidv4();
+    const flow8 = {
+      _id: flow8Id,
+      name: 'Alerta Stock Bajo',
+      description: 'Crea tarea cuando stock baja de 10 unidades',
+      triggerType: 'update',
+      triggerTable: productosTableId,
+      active: true,
+      nodes: [
+        {
+          id: 'trigger-1',
+          type: 'trigger',
+          position: { x: 150, y: 50 },
+          data: {
+            label: 'Producto actualizado',
+            event: 'update',
+            table: productosTableId
+          }
+        },
+        {
+          id: 'condition-1',
+          type: 'condition',
+          position: { x: 150, y: 150 },
+          data: {
+            label: 'Stock < 10',
+            field: 'stock',
+            operator: '<',
+            value: 10
+          }
+        },
+        {
+          id: 'action-1',
+          type: 'action',
+          position: { x: 150, y: 280 },
+          data: {
+            label: 'Crear tarea reabastecimiento',
+            actionType: 'create',
+            targetTable: tareasTableId,
+            fields: {
+              titulo: 'Reabastecer: {{nombre}}',
+              descripcion: 'Stock crítico: {{stock}} unidades. Contactar proveedor.',
+              prioridad: 'Alta',
+              fechaVencimiento: '{{today + 3}}',
+              estadoTarea: 'Pendiente'
+            }
+          }
+        },
+        {
+          id: 'notification-1',
+          type: 'notification',
+          position: { x: 150, y: 410 },
+          data: {
+            label: 'Notificar equipo',
+            channel: 'email',
+            message: '⚠️ Stock bajo de {{nombre}}: quedan {{stock}} unidades'
+          }
+        }
+      ],
+      edges: [
+        { id: 'e1-2', source: 'trigger-1', target: 'condition-1' },
+        { id: 'e2-3', source: 'condition-1', target: 'action-1', label: 'Sí' },
+        { id: 'e3-4', source: 'action-1', target: 'notification-1' }
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    await flowsDb.insert(flow8);
+    console.log('✅ Flujo 8: Alerta Stock Bajo');
+    
+    // ========== FLUJO 9: GENERACIÓN AUTOMÁTICA DE FACTURA ==========
+    const flow9Id = uuidv4();
+    const flow9 = {
+      _id: flow9Id,
+      name: 'Generar Factura Automática',
+      description: 'Crea factura automáticamente cuando estado de pago = Pagada',
+      triggerType: 'update',
+      triggerTable: ventasTableId,
+      active: true,
+      nodes: [
+        {
+          id: 'trigger-1',
+          type: 'trigger',
+          position: { x: 150, y: 50 },
+          data: {
+            label: 'Venta actualizada',
+            event: 'update',
+            table: ventasTableId
+          }
+        },
+        {
+          id: 'condition-1',
+          type: 'condition',
+          position: { x: 150, y: 150 },
+          data: {
+            label: 'Estado = Pagada',
+            field: 'estadoPago',
+            operator: '==',
+            value: 'Pagada'
+          }
+        },
+        {
+          id: 'action-1',
+          type: 'action',
+          position: { x: 150, y: 280 },
+          data: {
+            label: 'Crear Factura',
+            actionType: 'create',
+            targetTable: facturasTableId,
+            fields: {
+              numeroFactura: 'FAC-{{timestamp}}',
+              cliente: '{{cliente}}',
+              fecha: '{{today}}',
+              subtotal: '{{total / 1.19}}',
+              iva: '{{total * 0.19 / 1.19}}',
+              total: '{{total}}',
+              estadoFactura: 'Pagada'
+            }
+          }
+        },
+        {
+          id: 'notification-1',
+          type: 'notification',
+          position: { x: 150, y: 410 },
+          data: {
+            label: 'Enviar factura por email',
+            channel: 'email',
+            message: 'Factura generada para {{cliente}}. Total: ${{total}}'
+          }
+        }
+      ],
+      edges: [
+        { id: 'e1-2', source: 'trigger-1', target: 'condition-1' },
+        { id: 'e2-3', source: 'condition-1', target: 'action-1', label: 'Sí' },
+        { id: 'e3-4', source: 'action-1', target: 'notification-1' }
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    await flowsDb.insert(flow9);
+    console.log('✅ Flujo 9: Generar Factura Automática');
+    
     // ========== DATOS DE EJEMPLO ==========
     
     // CLIENTES
@@ -638,13 +1058,43 @@ Sé analítico, objetivo y orientado a resultados. Usa gráficos de texto cuando
     for (const tarea of tareasEjemplo) await tareasDb.insert(tarea);
     console.log('✅ Tareas de ejemplo creadas');
     
+    // PROVEEDORES
+    const proveedoresDb = await connectDB(getTableDataDbName(WORKSPACE_ID, proveedoresTableId));
+    const proveedoresEjemplo = [
+      { _id: uuidv4(), tableId: proveedoresTableId, nombre: 'Tech Solutions SA', contacto: 'Roberto Gómez', telefono: '3201234567', email: 'ventas@techsolutions.com', categoria: 'Tecnología', calificacion: 5, createdAt: new Date().toISOString() },
+      { _id: uuidv4(), tableId: proveedoresTableId, nombre: 'Oficina Total', contacto: 'Laura Martínez', telefono: '3109876543', email: 'contacto@oficinatotal.co', categoria: 'Oficina', calificacion: 4, createdAt: new Date().toISOString() },
+      { _id: uuidv4(), tableId: proveedoresTableId, nombre: 'Consultoría Digital', contacto: 'Pedro Silva', telefono: '3157894561', email: 'info@consultoria.com', categoria: 'Servicios', calificacion: 5, createdAt: new Date().toISOString() }
+    ];
+    for (const proveedor of proveedoresEjemplo) await proveedoresDb.insert(proveedor);
+    console.log('✅ Proveedores de ejemplo creados');
+    
+    // FACTURAS
+    const facturasDb = await connectDB(getTableDataDbName(WORKSPACE_ID, facturasTableId));
+    const facturasEjemplo = [
+      { _id: uuidv4(), tableId: facturasTableId, numeroFactura: 'FAC-2026-001', cliente: 'Juan Pérez', fecha: '2026-01-20', subtotal: 420168, iva: 79832, total: 500000, estadoFactura: 'Pagada', createdAt: new Date().toISOString() },
+      { _id: uuidv4(), tableId: facturasTableId, numeroFactura: 'FAC-2026-002', cliente: 'María García', fecha: '2026-02-05', subtotal: 1008403, iva: 191597, total: 1200000, estadoFactura: 'Pagada', createdAt: new Date().toISOString() },
+      { _id: uuidv4(), tableId: facturasTableId, numeroFactura: 'FAC-2026-003', cliente: 'Carlos Ruiz', fecha: '2026-02-10', subtotal: 126050, iva: 23950, total: 150000, estadoFactura: 'Pendiente', createdAt: new Date().toISOString() }
+    ];
+    for (const factura of facturasEjemplo) await facturasDb.insert(factura);
+    console.log('✅ Facturas de ejemplo creadas');
+    
+    // CAMPAÑAS
+    const campanasDb = await connectDB(getTableDataDbName(WORKSPACE_ID, campanasTableId));
+    const campanasEjemplo = [
+      { _id: uuidv4(), tableId: campanasTableId, nombre: 'Lanzamiento Software CRM 2.0', tipo: 'Email', fechaInicio: '2026-01-01', fechaFin: '2026-01-31', presupuesto: 5000000, alcance: 1500, conversiones: 45, estadoCampana: 'Finalizada', createdAt: new Date().toISOString() },
+      { _id: uuidv4(), tableId: campanasTableId, nombre: 'Promoción Consultoría', tipo: 'WhatsApp', fechaInicio: '2026-02-01', fechaFin: '2026-02-28', presupuesto: 3000000, alcance: 800, conversiones: 12, estadoCampana: 'Activa', createdAt: new Date().toISOString() },
+      { _id: uuidv4(), tableId: campanasTableId, nombre: 'Expansión Redes Sociales', tipo: 'Redes Sociales', fechaInicio: '2026-03-01', fechaFin: '2026-03-31', presupuesto: 8000000, alcance: 5000, conversiones: 0, estadoCampana: 'Borrador', createdAt: new Date().toISOString() }
+    ];
+    for (const campana of campanasEjemplo) await campanasDb.insert(campana);
+    console.log('✅ Campañas de ejemplo creadas');
+    
     console.log(`\n✅ Seed PREMIUM completado para ${WORKSPACE_NAME}`);
     console.log(`   Workspace ID: ${WORKSPACE_ID}`);
-    console.log(`   Tablas: 5 (Clientes, Productos, Ventas, Seguimientos, Tareas)`);
+    console.log(`   Tablas: 8 (Clientes, Productos, Ventas, Seguimientos, Tareas, Proveedores, Facturas, Campañas)`);
     console.log(`   Agentes: 2 (Ventas, Analista)`);
-    console.log(`   Flujos: 4 (Seguimiento Post-Venta, Bienvenida, Recordatorio, Upgrade VIP)`);
-    console.log(`   Datos: ${clientesEjemplo.length} clientes, ${productosEjemplo.length} productos, ${ventasEjemplo.length} ventas`);
-    console.log(`   Plan: PREMIUM con automatizaciones`);
+    console.log(`   Flujos: 9 (Post-Venta, Bienvenida, Recordatorio, Upgrade VIP, Validar Stock, Calcular Total, Descontar Stock, Alerta Stock, Facturación)`);
+    console.log(`   Datos: ${clientesEjemplo.length} clientes, ${productosEjemplo.length} productos, ${ventasEjemplo.length} ventas, ${proveedoresEjemplo.length} proveedores, ${facturasEjemplo.length} facturas, ${campanasEjemplo.length} campañas`);
+    console.log(`   Plan: PREMIUM con automatizaciones avanzadas`);
     
   } catch (error) {
     console.error(`❌ Error en seed PREMIUM:`, error);

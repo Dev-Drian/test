@@ -34,13 +34,23 @@ export class EntityRepository {
     
     // 1. Obtener configuración de la tabla
     const fieldsConfig = await this.tableRepo.getFieldsConfig(workspaceId, tableId);
-    const requiredFields = fieldsConfig.filter(f => f.required).map(f => f.key);
+    // Excluir campos hiddenFromChat de la validación de requeridos (se asignan automáticamente)
+    const requiredFields = fieldsConfig
+      .filter(f => f.required && !f.hiddenFromChat)
+      .map(f => f.key);
     
     // 2. Aplicar valores por defecto si aplica
     let finalData = { ...data };
     if (applyDefaults) {
       const defaults = await this.tableRepo.getDefaultValues(workspaceId, tableId);
-      finalData = { ...defaults, ...finalData };
+      // Procesar valores especiales como 'today'
+      const processedDefaults = this._processDefaultValues(defaults);
+      // Solo aplicar defaults si el campo no tiene valor
+      for (const [key, value] of Object.entries(processedDefaults)) {
+        if (finalData[key] === undefined || finalData[key] === null || finalData[key] === '') {
+          finalData[key] = value;
+        }
+      }
     }
     
     // 3. Validar campos requeridos
@@ -59,14 +69,18 @@ export class EntityRepository {
       finalData = this._normalizeFields(finalData, fieldsConfig);
     }
     
+    console.log('[EntityRepository] Creating record:', { workspaceId, tableId, finalData });
+    
     // 5. Crear el registro
     try {
       const created = await this.tableDataRepo.create(workspaceId, tableId, finalData);
+      console.log('[EntityRepository] Record created successfully:', created._id);
       return {
         success: true,
         record: created,
       };
     } catch (error) {
+      console.error('[EntityRepository] Error creating record:', error);
       return {
         success: false,
         errors: [{ field: 'general', message: error.message }],
@@ -314,10 +328,33 @@ export class EntityRepository {
       const date = new Date(dateStr + 'T12:00:00');
       const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
       const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-      return `${dias[date.getDay()]} ${date.getDate()} de ${meses[date.getMonth()]}`;
+      return `${dias[date.getDay()]} ${date.getMonth() + 1 > 0 ? date.getDate() : date.getDate()} de ${meses[date.getMonth()]}`;
     } catch {
       return dateStr;
     }
+  }
+  
+  /**
+   * Procesa valores por defecto especiales como 'today', 'now'
+   * @private
+   */
+  _processDefaultValues(defaults) {
+    const processed = { ...defaults };
+    const today = new Date();
+    
+    for (const [key, value] of Object.entries(processed)) {
+      if (value === 'today') {
+        // Formato YYYY-MM-DD
+        processed[key] = today.toISOString().split('T')[0];
+      } else if (value === 'now') {
+        // Formato HH:MM
+        processed[key] = today.toTimeString().substring(0, 5);
+      } else if (value === 'timestamp') {
+        processed[key] = today.toISOString();
+      }
+    }
+    
+    return processed;
   }
 }
 
