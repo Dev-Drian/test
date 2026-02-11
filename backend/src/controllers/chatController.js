@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ChatService } from '../services/ChatService.js';
 import { connectDB, getChatDbName, getAgentsDbName, getWorkspaceDbName, getTableDataDbName } from '../config/db.js';
 import { EVENTS } from '../core/EventEmitter.js';
+import { executeFlowsForTrigger } from '../services/FlowExecutor.js';
 
 // Cache de servicios por workspace
 const serviceCache = new Map();
@@ -37,12 +38,33 @@ async function getService(workspaceId) {
 function setupEventListeners(service) {
   
   service.on(EVENTS.RECORD_CREATED, async (data) => {
-    console.log('[Notification] Record created:', data.recordId);
-    // Aquí se pueden integrar: WhatsApp, Email, Webhooks, etc.
+    console.log('[Notification] Record created:', data.record?._id || data.recordId);
+    
+    // Ejecutar flujos automáticos
+    try {
+      const { workspaceId, tableId, record } = data;
+      if (workspaceId && tableId && record) {
+        const flowResult = await executeFlowsForTrigger(workspaceId, 'create', tableId, record);
+        console.log(`[Notification] Flows executed: ${flowResult.executed}`);
+      }
+    } catch (error) {
+      console.error('[Notification] Error executing flows:', error);
+    }
   });
   
   service.on(EVENTS.RECORD_UPDATED, async (data) => {
-    console.log('[Notification] Record updated:', data.recordId);
+    console.log('[Notification] Record updated:', data.record?._id || data.recordId);
+    
+    // Ejecutar flujos de update
+    try {
+      const { workspaceId, tableId, record } = data;
+      if (workspaceId && tableId && record) {
+        const flowResult = await executeFlowsForTrigger(workspaceId, 'update', tableId, record);
+        console.log(`[Notification] Update flows executed: ${flowResult.executed}`);
+      }
+    } catch (error) {
+      console.error('[Notification] Error executing update flows:', error);
+    }
   });
   
   service.on(EVENTS.RECORD_DELETED, async (data) => {

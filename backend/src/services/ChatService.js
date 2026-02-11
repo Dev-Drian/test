@@ -10,7 +10,7 @@
 
 import { Engine } from '../core/Engine.js';
 import { Context } from '../core/Context.js';
-import { EventEmitter, EVENTS } from '../core/EventEmitter.js';
+import { getEventEmitter, EVENTS } from '../core/EventEmitter.js';
 import { ChatRepository } from '../repositories/ChatRepository.js';
 import { AgentRepository } from '../repositories/AgentRepository.js';
 import { TableRepository } from '../repositories/TableRepository.js';
@@ -47,8 +47,8 @@ export class ChatService {
       responseBuilder: this.responseBuilder,
     });
     
-    // Events
-    this.emitter = new EventEmitter();
+    // Events - usar el singleton global para que los handlers emitan al mismo emitter
+    this.emitter = getEventEmitter();
     
     // Contextos activos por chat
     this.activeContexts = new Map();

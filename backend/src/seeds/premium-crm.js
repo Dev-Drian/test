@@ -254,6 +254,35 @@ export async function seed() {
     await workspaceDb.insert(campanasTable);
     console.log('✅ Tabla Campañas creada');
     
+    // ========== TABLA 9: LOG DE FLUJOS ==========
+    const flowLogsTableId = uuidv4();
+    const flowLogsTable = {
+      _id: flowLogsTableId,
+      name: 'Log de Flujos',
+      type: 'system_logs',
+      displayField: 'flowName',
+      description: 'Registro de ejecución de flujos automatizados',
+      isSystemTable: true,
+      headers: [
+        { key: 'flowId', label: 'Flow ID', type: 'text', required: true, emoji: '🔗', priority: 1 },
+        { key: 'flowName', label: 'Nombre del Flujo', type: 'text', required: true, emoji: '⚡', priority: 2 },
+        { key: 'triggerType', label: 'Tipo Trigger', type: 'select', required: true, emoji: '🎯', options: ['create', 'update', 'delete', 'beforeCreate', 'manual'], priority: 3 },
+        { key: 'triggerTable', label: 'Tabla Origen', type: 'text', required: true, emoji: '📋', priority: 4 },
+        { key: 'triggerRecordId', label: 'Registro Origen', type: 'text', required: false, emoji: '🔍' },
+        { key: 'status', label: 'Estado', type: 'select', required: true, emoji: '📊', options: ['pending', 'running', 'completed', 'failed', 'skipped'], defaultValue: 'pending', priority: 5 },
+        { key: 'startedAt', label: 'Inicio', type: 'datetime', required: false, emoji: '🕐' },
+        { key: 'completedAt', label: 'Fin', type: 'datetime', required: false, emoji: '🕑' },
+        { key: 'duration', label: 'Duración (ms)', type: 'number', required: false, emoji: '⏱️' },
+        { key: 'nodesExecuted', label: 'Nodos Ejecutados', type: 'number', required: false, emoji: '🔢', defaultValue: 0 },
+        { key: 'errorMessage', label: 'Error', type: 'text', required: false, emoji: '❌' },
+        { key: 'resultSummary', label: 'Resumen', type: 'text', required: false, emoji: '📝' },
+        { key: 'executionDetails', label: 'Detalles JSON', type: 'text', required: false, emoji: '📄' }
+      ],
+      createdAt: new Date().toISOString()
+    };
+    await workspaceDb.insert(flowLogsTable);
+    console.log('✅ Tabla Log de Flujos creada');
+    
     // ========== AGENTE 1: VENTAS ==========
     const agenteVentasId = uuidv4();
     const agenteVentas = {
