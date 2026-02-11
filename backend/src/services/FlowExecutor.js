@@ -118,19 +118,41 @@ async function getFlowsForTrigger(workspaceId, triggerType, tableId) {
  * Ejecuta una acción de un nodo de flujo
  */
 async function executeAction(action, context, workspaceId) {
-  const { actionType, targetTable, fields, filter, createIfNotFound } = action;
+  const { actionType, targetTable, fields, filter, createIfNotFound, filterField, filterValueType, filterValueField, filterValueFixed } = action;
   
-  console.log(`[FlowExecutor] Executing action: ${actionType}`, { targetTable, fields, createIfNotFound });
+  console.log(`[FlowExecutor] Executing action: ${actionType}`, { 
+    targetTable, 
+    fields, 
+    createIfNotFound,
+    filterField,
+    filterValueType,
+    filterValueField,
+    filterValueFixed,
+    contextTableId: context._tableId,
+    contextId: context._id
+  });
   
   switch (actionType) {
     case 'create':
       return await executeCreateAction(workspaceId, targetTable, fields, context);
     
     case 'update':
-      return await executeUpdateAction(workspaceId, targetTable, filter, fields, context, { createIfNotFound });
+      return await executeUpdateAction(workspaceId, targetTable, filter, fields, context, { 
+        createIfNotFound, 
+        filterField, 
+        filterValueType, 
+        filterValueField, 
+        filterValueFixed 
+      });
     
     case 'upsert': // update or create
-      return await executeUpdateAction(workspaceId, targetTable, filter, fields, context, { createIfNotFound: true });
+      return await executeUpdateAction(workspaceId, targetTable, filter, fields, context, { 
+        createIfNotFound: true, 
+        filterField, 
+        filterValueType, 
+        filterValueField, 
+        filterValueFixed 
+      });
     
     case 'notification':
       console.log(`[FlowExecutor] Notification: ${action.message || action.template}`);
@@ -190,18 +212,40 @@ async function executeCreateAction(workspaceId, targetTableId, fields, context) 
 
 /**
  * Ejecuta una acción de actualización
- * Si createIfNotFound=true y no existe el registro, lo crea
+ * Soporta filtros viejos y nuevos, y auto-detecta el registro actual si targetTable = triggerTable
  */
 async function executeUpdateAction(workspaceId, targetTableId, filter, fields, context, options = {}) {
-  const { createIfNotFound = false } = options;
+  const { createIfNotFound = false, filterField, filterValueType, filterValueField, filterValueFixed } = options;
   
   try {
     const dataDb = await connectDB(getTableDataDbName(workspaceId, targetTableId));
     
-    // Procesar templates en el filtro
-    const processedFilter = {};
-    for (const [key, value] of Object.entries(filter || {})) {
-      processedFilter[key] = processTemplate(String(value), context);
+    // Construir el filtro
+    let processedFilter = {};
+    
+    // Si es la misma tabla que disparó el trigger y no hay filtro, usar _id del registro actual
+    if (targetTableId === context._tableId && !filter && !filterField) {
+      processedFilter._id = context._id;
+      console.log(`[FlowExecutor] Auto-filter: updating current record ${context._id}`);
+    }
+    // Nuevo formato simplificado
+    else if (filterField) {
+      let filterValue;
+      if (filterValueType === 'trigger' && filterValueField) {
+        filterValue = context[filterValueField];
+      } else if (filterValueType === 'fixed') {
+        filterValue = filterValueFixed;
+      }
+      
+      if (filterValue !== undefined) {
+        processedFilter[filterField] = filterValue;
+      }
+    }
+    // Formato viejo con objeto filter
+    else if (filter) {
+      for (const [key, value] of Object.entries(filter)) {
+        processedFilter[key] = processTemplate(String(value), context);
+      }
     }
     
     // Buscar el registro
@@ -275,17 +319,37 @@ async function executeUpdateAction(workspaceId, targetTableId, filter, fields, c
 
 /**
  * Ejecuta una consulta de un nodo query
+ * Soporta formato viejo (filter: {}) y nuevo (filterField, filterValueType, filterValueField)
  */
 async function executeQuery(query, context, workspaceId) {
-  const { targetTable, filter, outputVar } = query;
+  const { targetTable, filter, outputVar, filterField, filterValueType, filterValueField, filterValueFixed } = query;
   
   try {
     const dataDb = await connectDB(getTableDataDbName(workspaceId, targetTable));
     
-    // Procesar templates en el filtro
+    // Construir el filtro
     const processedFilter = { tableId: targetTable };
-    for (const [key, value] of Object.entries(filter || {})) {
-      processedFilter[key] = processTemplate(String(value), context);
+    
+    // Nuevo formato simplificado
+    if (filterField) {
+      let filterValue;
+      if (filterValueType === 'trigger' && filterValueField) {
+        // Valor del registro que disparó el flujo
+        filterValue = context[filterValueField];
+      } else if (filterValueType === 'fixed') {
+        filterValue = filterValueFixed;
+      }
+      
+      if (filterValue !== undefined) {
+        processedFilter[filterField] = filterValue;
+      }
+      console.log(`[FlowExecutor] Query filter: ${filterField} = ${filterValue}`);
+    }
+    // Formato viejo con objeto filter
+    else if (filter) {
+      for (const [key, value] of Object.entries(filter)) {
+        processedFilter[key] = processTemplate(String(value), context);
+      }
     }
     
     const result = await dataDb.find({
@@ -301,10 +365,10 @@ async function executeQuery(query, context, workspaceId) {
     
     console.log(`[FlowExecutor] Query result for ${outputVar}:`, doc ? 'found' : 'not found');
     
-    return { success: true, data: doc };
+    return { success: true, found: !!doc, data: doc };
   } catch (error) {
     console.error('[FlowExecutor] Error executing query:', error);
-    return { success: false, error: error.message };
+    return { success: false, found: false, error: error.message };
   }
 }
 
@@ -482,6 +546,7 @@ async function runFlow(flow, context, workspaceId) {
     
     let nextNodeId = null;
     let conditionResult = null;
+    let queryFound = null;
     
     switch (node.type) {
       case 'trigger':
@@ -490,6 +555,7 @@ async function runFlow(flow, context, workspaceId) {
         
       case 'query':
         const queryResult = await executeQuery(node.data, context, workspaceId);
+        queryFound = queryResult.found;
         results.push({ node: node.id, type: 'query', result: queryResult });
         break;
         
@@ -527,14 +593,25 @@ async function runFlow(flow, context, workspaceId) {
       // Solo un camino
       nextNodeId = outgoingEdges[0].target;
     } else {
-      // Múltiples caminos (condición)
+      // Múltiples caminos - puede ser condición o query con yes/no
       if (conditionResult !== null) {
+        // Es una condición
         const yesEdge = outgoingEdges.find(e => e.label === 'Sí' || e.label === 'Yes' || e.label === 'true');
         const noEdge = outgoingEdges.find(e => e.label === 'No' || e.label === 'false');
         
         nextNodeId = conditionResult 
           ? (yesEdge?.target || outgoingEdges[0].target)
           : (noEdge?.target || null);
+      } else if (queryFound !== null) {
+        // Es un query con salidas yes/no
+        const yesEdge = outgoingEdges.find(e => e.sourceHandle === 'yes' || e.label === 'Sí');
+        const noEdge = outgoingEdges.find(e => e.sourceHandle === 'no' || e.label === 'No');
+        
+        nextNodeId = queryFound 
+          ? (yesEdge?.target || outgoingEdges[0].target)
+          : (noEdge?.target || null);
+          
+        console.log(`[FlowExecutor] Query route: ${queryFound ? 'YES' : 'NO'} -> ${nextNodeId || 'END'}`);
       } else {
         nextNodeId = outgoingEdges[0].target;
       }
