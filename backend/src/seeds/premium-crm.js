@@ -436,390 +436,55 @@ Sé analítico, objetivo y orientado a resultados. Usa gráficos de texto cuando
     await workspacesDb.insert(centralWorkspaceDoc);
     console.log('✅ Workspace configurado');
     
-    // ========== FLUJOS AUTOMATIZADOS ==========
+    // ========== FLUJOS AUTOMATIZADOS (FORMATO SIMPLIFICADO) ==========
     const flowsDb = await connectDB(getFlowsDbName(WORKSPACE_ID));
     
-    // FLUJO 1: Seguimiento automático después de venta
+    // FLUJO 1: Calcular Total de Venta
+    // Cuando se crea una venta, busca el producto y calcula total = precio × cantidad
     const flow1Id = uuidv4();
     const flow1 = {
       _id: flow1Id,
-      name: 'Seguimiento Post-Venta',
-      description: 'Crea un seguimiento automático cuando se registra una venta',
-      agentId: agenteVentasId,
-      mainTable: ventasTableId,
-      trigger: 'create',
-      isActive: true,
-      nodes: [
-        {
-          id: 'trigger-1',
-          type: 'trigger',
-          position: { x: 100, y: 50 },
-          data: {
-            label: 'Nueva Venta',
-            trigger: 'create',
-            description: 'Cuando se crea una venta'
-          }
-        },
-        {
-          id: 'condition-1',
-          type: 'condition',
-          position: { x: 100, y: 150 },
-          data: {
-            label: 'Venta > $500k',
-            field: 'total',
-            operator: '>',
-            value: 500000
-          }
-        },
-        {
-          id: 'action-1',
-          type: 'action',
-          position: { x: 50, y: 280 },
-          data: {
-            label: 'Crear Seguimiento VIP',
-            actionType: 'create',
-            targetTable: seguimientosTableId,
-            fields: {
-              cliente: '{{cliente}}',
-              fecha: '{{nextWeek}}',
-              hora: '10:00',
-              tipo: 'Reunión',
-              notas: 'Seguimiento VIP - Venta mayor a $500k'
-            }
-          }
-        },
-        {
-          id: 'action-2',
-          type: 'action',
-          position: { x: 200, y: 280 },
-          data: {
-            label: 'Crear Seguimiento Normal',
-            actionType: 'create',
-            targetTable: seguimientosTableId,
-            fields: {
-              cliente: '{{cliente}}',
-              fecha: '{{nextWeek}}',
-              hora: '14:00',
-              tipo: 'Llamada',
-              notas: 'Seguimiento post-venta'
-            }
-          }
-        }
-      ],
-      edges: [
-        { id: 'e1-2', source: 'trigger-1', target: 'condition-1' },
-        { id: 'e2-3', source: 'condition-1', target: 'action-1', label: 'Sí' },
-        { id: 'e2-4', source: 'condition-1', target: 'action-2', label: 'No' }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    await flowsDb.insert(flow1);
-    console.log('✅ Flujo 1: Seguimiento Post-Venta');
-    
-    // FLUJO 2: Bienvenida a nuevo cliente
-    const flow2Id = uuidv4();
-    const flow2 = {
-      _id: flow2Id,
-      name: 'Bienvenida Cliente Nuevo',
-      description: 'Crea tarea de bienvenida cuando se registra un cliente',
-      agentId: agenteVentasId,
-      mainTable: clientesTableId,
-      trigger: 'create',
-      isActive: true,
-      nodes: [
-        {
-          id: 'trigger-1',
-          type: 'trigger',
-          position: { x: 150, y: 50 },
-          data: {
-            label: 'Nuevo Cliente',
-            trigger: 'create',
-            description: 'Cuando se registra un cliente'
-          }
-        },
-        {
-          id: 'action-1',
-          type: 'action',
-          position: { x: 150, y: 180 },
-          data: {
-            label: 'Crear Tarea de Bienvenida',
-            actionType: 'create',
-            targetTable: tareasTableId,
-            fields: {
-              titulo: 'Llamar a {{nombre}}',
-              descripcion: 'Primera llamada de bienvenida al cliente nuevo',
-              prioridad: 'Alta',
-              fechaVencimiento: '{{tomorrow}}',
-              estadoTarea: 'Pendiente'
-            }
-          }
-        },
-        {
-          id: 'action-2',
-          type: 'action',
-          position: { x: 150, y: 310 },
-          data: {
-            label: 'Enviar Email',
-            actionType: 'notification',
-            notificationType: 'email',
-            template: 'Bienvenido {{nombre}}! Gracias por registrarte.'
-          }
-        }
-      ],
-      edges: [
-        { id: 'e1-2', source: 'trigger-1', target: 'action-1' },
-        { id: 'e2-3', source: 'action-1', target: 'action-2' }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    await flowsDb.insert(flow2);
-    console.log('✅ Flujo 2: Bienvenida Cliente Nuevo');
-    
-    // FLUJO 3: Recordatorio de pago pendiente
-    const flow3Id = uuidv4();
-    const flow3 = {
-      _id: flow3Id,
-      name: 'Recordatorio Pago Pendiente',
-      description: 'Crea tarea de recordatorio para ventas pendientes',
-      agentId: agenteVentasId,
-      mainTable: ventasTableId,
-      trigger: 'create',
-      isActive: true,
-      nodes: [
-        {
-          id: 'trigger-1',
-          type: 'trigger',
-          position: { x: 150, y: 50 },
-          data: {
-            label: 'Venta Creada',
-            trigger: 'create',
-            description: 'Cuando se registra una venta'
-          }
-        },
-        {
-          id: 'condition-1',
-          type: 'condition',
-          position: { x: 150, y: 150 },
-          data: {
-            label: 'Estado = Pendiente',
-            field: 'estadoPago',
-            operator: '==',
-            value: 'Pendiente'
-          }
-        },
-        {
-          id: 'action-1',
-          type: 'action',
-          position: { x: 150, y: 280 },
-          data: {
-            label: 'Crear Tarea Recordatorio',
-            actionType: 'create',
-            targetTable: tareasTableId,
-            fields: {
-              titulo: 'Recordar pago a {{cliente}}',
-              descripcion: 'Venta #{{_id}} - Total: ${{total}}',
-              prioridad: 'Media',
-              fechaVencimiento: '{{in3Days}}',
-              estadoTarea: 'Pendiente'
-            }
-          }
-        }
-      ],
-      edges: [
-        { id: 'e1-2', source: 'trigger-1', target: 'condition-1' },
-        { id: 'e2-3', source: 'condition-1', target: 'action-1', label: 'Sí' }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    await flowsDb.insert(flow3);
-    console.log('✅ Flujo 3: Recordatorio Pago Pendiente');
-    
-    // FLUJO 4: Actualización de tipo de cliente
-    const flow4Id = uuidv4();
-    const flow4 = {
-      _id: flow4Id,
-      name: 'Upgrade Cliente a VIP',
-      description: 'Actualiza cliente a VIP cuando acumula 3 ventas',
-      agentId: agenteVentasId,
-      mainTable: ventasTableId,
-      trigger: 'create',
-      isActive: true,
-      nodes: [
-        {
-          id: 'trigger-1',
-          type: 'trigger',
-          position: { x: 150, y: 50 },
-          data: {
-            label: 'Nueva Venta',
-            trigger: 'create'
-          }
-        },
-        {
-          id: 'query-1',
-          type: 'query',
-          position: { x: 150, y: 150 },
-          data: {
-            label: 'Contar Ventas del Cliente',
-            sourceTable: ventasTableId,
-            filter: { cliente: '{{cliente}}' }
-          }
-        },
-        {
-          id: 'condition-1',
-          type: 'condition',
-          position: { x: 150, y: 250 },
-          data: {
-            label: '>=3 ventas',
-            field: 'count',
-            operator: '>=',
-            value: 3
-          }
-        },
-        {
-          id: 'action-1',
-          type: 'action',
-          position: { x: 150, y: 380 },
-          data: {
-            label: 'Actualizar a VIP',
-            actionType: 'update',
-            targetTable: clientesTableId,
-            filter: { nombre: '{{cliente}}' },
-            fields: {
-              tipo: 'VIP'
-            }
-          }
-        }
-      ],
-      edges: [
-        { id: 'e1-2', source: 'trigger-1', target: 'query-1' },
-        { id: 'e2-3', source: 'query-1', target: 'condition-1' },
-        { id: 'e3-4', source: 'condition-1', target: 'action-1', label: 'Sí' }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    await flowsDb.insert(flow4);
-    console.log('✅ Flujo 4: Upgrade Cliente a VIP');
-    
-    // ========== FLUJO 5: VALIDAR STOCK ANTES DE VENTA ==========
-    const flow5Id = uuidv4();
-    const flow5 = {
-      _id: flow5Id,
-      name: 'Validar Stock Disponible',
-      description: 'Valida que haya stock suficiente antes de crear una venta',
-      triggerType: 'beforeCreate',
-      triggerTable: ventasTableId,
-      active: true,
-      nodes: [
-        {
-          id: 'trigger-1',
-          type: 'trigger',
-          position: { x: 150, y: 50 },
-          data: {
-            label: 'Antes de crear Venta',
-            event: 'beforeCreate',
-            table: ventasTableId
-          }
-        },
-        {
-          id: 'query-1',
-          type: 'query',
-          position: { x: 150, y: 150 },
-          data: {
-            label: 'Obtener stock actual',
-            queryType: 'findOne',
-            targetTable: productosTableId,
-            filter: { nombre: '{{producto}}' },
-            outputVar: 'productoData'
-          }
-        },
-        {
-          id: 'condition-1',
-          type: 'condition',
-          position: { x: 150, y: 250 },
-          data: {
-            label: 'Stock suficiente?',
-            field: 'productoData.stock',
-            operator: '>=',
-            value: '{{cantidad}}'
-          }
-        },
-        {
-          id: 'action-error',
-          type: 'action',
-          position: { x: 50, y: 380 },
-          data: {
-            label: 'Rechazar venta',
-            actionType: 'error',
-            message: '❌ Stock insuficiente. Disponible: {{productoData.stock}} unidades'
-          }
-        },
-        {
-          id: 'action-allow',
-          type: 'action',
-          position: { x: 250, y: 380 },
-          data: {
-            label: 'Permitir venta',
-            actionType: 'allow'
-          }
-        }
-      ],
-      edges: [
-        { id: 'e1-2', source: 'trigger-1', target: 'query-1' },
-        { id: 'e2-3', source: 'query-1', target: 'condition-1' },
-        { id: 'e3-error', source: 'condition-1', target: 'action-error', label: 'No' },
-        { id: 'e3-allow', source: 'condition-1', target: 'action-allow', label: 'Sí' }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    await flowsDb.insert(flow5);
-    console.log('✅ Flujo 5: Validar Stock Disponible');
-    
-    // ========== FLUJO 6: AUTO-CALCULAR TOTAL DE VENTA ==========
-    const flow6Id = uuidv4();
-    const flow6 = {
-      _id: flow6Id,
       name: 'Calcular Total de Venta',
-      description: 'Calcula automáticamente el total multiplicando precio × cantidad',
+      description: 'Calcula automáticamente el total (precio × cantidad)',
       triggerType: 'create',
       triggerTable: ventasTableId,
+      triggerTableName: 'Ventas',
       active: true,
       nodes: [
         {
           id: 'trigger-1',
           type: 'trigger',
-          position: { x: 150, y: 50 },
+          position: { x: 200, y: 50 },
           data: {
-            label: 'Venta creada',
-            event: 'create',
-            table: ventasTableId
+            label: 'Nueva Venta',
+            triggerType: 'create',
+            table: ventasTableId,
+            tableName: 'Ventas'
           }
         },
         {
           id: 'query-1',
           type: 'query',
-          position: { x: 150, y: 150 },
+          position: { x: 200, y: 180 },
           data: {
-            label: 'Obtener precio producto',
-            queryType: 'findOne',
+            label: 'Buscar Producto',
             targetTable: productosTableId,
-            filter: { nombre: '{{producto}}' },
+            targetTableName: 'Productos',
+            filterField: 'nombre',
+            filterValueType: 'trigger',
+            filterValueField: 'producto',
             outputVar: 'productoData'
           }
         },
         {
           id: 'action-1',
           type: 'action',
-          position: { x: 150, y: 280 },
+          position: { x: 100, y: 340 },
           data: {
             label: 'Actualizar Total',
             actionType: 'update',
             targetTable: ventasTableId,
-            filter: { _id: '{{_id}}' },
+            targetTableName: 'Ventas',
             fields: {
               total: '{{productoData.precio * cantidad}}'
             }
@@ -828,55 +493,63 @@ Sé analítico, objetivo y orientado a resultados. Usa gráficos de texto cuando
       ],
       edges: [
         { id: 'e1-2', source: 'trigger-1', target: 'query-1' },
-        { id: 'e2-3', source: 'query-1', target: 'action-1' }
+        { id: 'e2-3', source: 'query-1', sourceHandle: 'yes', target: 'action-1' }
       ],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    await flowsDb.insert(flow6);
-    console.log('✅ Flujo 6: Calcular Total de Venta');
+    await flowsDb.insert(flow1);
+    console.log('✅ Flujo 1: Calcular Total de Venta');
     
-    // ========== FLUJO 7: ACTUALIZAR STOCK DESPUÉS DE VENTA ==========
-    const flow7Id = uuidv4();
-    const flow7 = {
-      _id: flow7Id,
+    // FLUJO 2: Descontar Stock
+    // Cuando se crea una venta, descuenta stock del producto
+    const flow2Id = uuidv4();
+    const flow2 = {
+      _id: flow2Id,
       name: 'Descontar Stock',
-      description: 'Descuenta el stock del producto después de una venta',
+      description: 'Descuenta el stock del producto cuando se vende',
       triggerType: 'create',
       triggerTable: ventasTableId,
+      triggerTableName: 'Ventas',
       active: true,
       nodes: [
         {
           id: 'trigger-1',
           type: 'trigger',
-          position: { x: 150, y: 50 },
+          position: { x: 200, y: 50 },
           data: {
-            label: 'Venta creada',
-            event: 'create',
-            table: ventasTableId
+            label: 'Nueva Venta',
+            triggerType: 'create',
+            table: ventasTableId,
+            tableName: 'Ventas'
           }
         },
         {
           id: 'query-1',
           type: 'query',
-          position: { x: 150, y: 150 },
+          position: { x: 200, y: 180 },
           data: {
-            label: 'Obtener producto',
-            queryType: 'findOne',
+            label: 'Buscar Producto',
             targetTable: productosTableId,
-            filter: { nombre: '{{producto}}' },
+            targetTableName: 'Productos',
+            filterField: 'nombre',
+            filterValueType: 'trigger',
+            filterValueField: 'producto',
             outputVar: 'productoData'
           }
         },
         {
           id: 'action-1',
           type: 'action',
-          position: { x: 150, y: 280 },
+          position: { x: 100, y: 340 },
           data: {
-            label: 'Descontar stock',
+            label: 'Descontar Stock',
             actionType: 'update',
             targetTable: productosTableId,
-            filter: { nombre: '{{producto}}' },
+            targetTableName: 'Productos',
+            filterField: 'nombre',
+            filterValueType: 'trigger',
+            filterValueField: 'producto',
             fields: {
               stock: '{{productoData.stock - cantidad}}'
             }
@@ -885,155 +558,117 @@ Sé analítico, objetivo y orientado a resultados. Usa gráficos de texto cuando
       ],
       edges: [
         { id: 'e1-2', source: 'trigger-1', target: 'query-1' },
-        { id: 'e2-3', source: 'query-1', target: 'action-1' }
+        { id: 'e2-3', source: 'query-1', sourceHandle: 'yes', target: 'action-1' }
       ],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    await flowsDb.insert(flow7);
-    console.log('✅ Flujo 7: Descontar Stock');
+    await flowsDb.insert(flow2);
+    console.log('✅ Flujo 2: Descontar Stock');
     
-    // ========== FLUJO 8: ALERTA STOCK BAJO ==========
-    const flow8Id = uuidv4();
-    const flow8 = {
-      _id: flow8Id,
-      name: 'Alerta Stock Bajo',
-      description: 'Crea tarea cuando stock baja de 10 unidades',
-      triggerType: 'update',
-      triggerTable: productosTableId,
+    // FLUJO 3: Bienvenida Cliente Nuevo
+    // Cuando se crea un cliente, crea una tarea de bienvenida
+    const flow3Id = uuidv4();
+    const flow3 = {
+      _id: flow3Id,
+      name: 'Bienvenida Cliente Nuevo',
+      description: 'Crea tarea de bienvenida al registrar un cliente',
+      triggerType: 'create',
+      triggerTable: clientesTableId,
+      triggerTableName: 'Clientes',
       active: true,
       nodes: [
         {
           id: 'trigger-1',
           type: 'trigger',
-          position: { x: 150, y: 50 },
+          position: { x: 200, y: 50 },
           data: {
-            label: 'Producto actualizado',
-            event: 'update',
-            table: productosTableId
-          }
-        },
-        {
-          id: 'condition-1',
-          type: 'condition',
-          position: { x: 150, y: 150 },
-          data: {
-            label: 'Stock < 10',
-            field: 'stock',
-            operator: '<',
-            value: 10
+            label: 'Nuevo Cliente',
+            triggerType: 'create',
+            table: clientesTableId,
+            tableName: 'Clientes'
           }
         },
         {
           id: 'action-1',
           type: 'action',
-          position: { x: 150, y: 280 },
+          position: { x: 200, y: 200 },
           data: {
-            label: 'Crear tarea reabastecimiento',
+            label: 'Crear Tarea Bienvenida',
             actionType: 'create',
             targetTable: tareasTableId,
+            targetTableName: 'Tareas',
             fields: {
-              titulo: 'Reabastecer: {{nombre}}',
-              descripcion: 'Stock crítico: {{stock}} unidades. Contactar proveedor.',
+              titulo: 'Llamar a {{nombre}}',
+              descripcion: 'Primera llamada de bienvenida',
               prioridad: 'Alta',
-              fechaVencimiento: '{{today + 3}}',
+              fechaVencimiento: '{{tomorrow}}',
               estadoTarea: 'Pendiente'
             }
           }
-        },
-        {
-          id: 'notification-1',
-          type: 'notification',
-          position: { x: 150, y: 410 },
-          data: {
-            label: 'Notificar equipo',
-            channel: 'email',
-            message: '⚠️ Stock bajo de {{nombre}}: quedan {{stock}} unidades'
-          }
         }
       ],
       edges: [
-        { id: 'e1-2', source: 'trigger-1', target: 'condition-1' },
-        { id: 'e2-3', source: 'condition-1', target: 'action-1', label: 'Sí' },
-        { id: 'e3-4', source: 'action-1', target: 'notification-1' }
+        { id: 'e1-2', source: 'trigger-1', target: 'action-1' }
       ],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    await flowsDb.insert(flow8);
-    console.log('✅ Flujo 8: Alerta Stock Bajo');
+    await flowsDb.insert(flow3);
+    console.log('✅ Flujo 3: Bienvenida Cliente Nuevo');
     
-    // ========== FLUJO 9: GENERACIÓN AUTOMÁTICA DE FACTURA ==========
-    const flow9Id = uuidv4();
-    const flow9 = {
-      _id: flow9Id,
-      name: 'Generar Factura Automática',
-      description: 'Crea factura automáticamente cuando estado de pago = Pagada',
-      triggerType: 'update',
+    // FLUJO 4: Seguimiento Post-Venta
+    // Cuando se crea una venta, crea un seguimiento para la próxima semana
+    const flow4Id = uuidv4();
+    const flow4 = {
+      _id: flow4Id,
+      name: 'Seguimiento Post-Venta',
+      description: 'Crea seguimiento automático después de una venta',
+      triggerType: 'create',
       triggerTable: ventasTableId,
+      triggerTableName: 'Ventas',
       active: true,
       nodes: [
         {
           id: 'trigger-1',
           type: 'trigger',
-          position: { x: 150, y: 50 },
+          position: { x: 200, y: 50 },
           data: {
-            label: 'Venta actualizada',
-            event: 'update',
-            table: ventasTableId
-          }
-        },
-        {
-          id: 'condition-1',
-          type: 'condition',
-          position: { x: 150, y: 150 },
-          data: {
-            label: 'Estado = Pagada',
-            field: 'estadoPago',
-            operator: '==',
-            value: 'Pagada'
+            label: 'Nueva Venta',
+            triggerType: 'create',
+            table: ventasTableId,
+            tableName: 'Ventas'
           }
         },
         {
           id: 'action-1',
           type: 'action',
-          position: { x: 150, y: 280 },
+          position: { x: 200, y: 200 },
           data: {
-            label: 'Crear Factura',
+            label: 'Crear Seguimiento',
             actionType: 'create',
-            targetTable: facturasTableId,
+            targetTable: seguimientosTableId,
+            targetTableName: 'Seguimientos',
             fields: {
-              numeroFactura: 'FAC-{{timestamp}}',
               cliente: '{{cliente}}',
-              fecha: '{{today}}',
-              subtotal: '{{total / 1.19}}',
-              iva: '{{total * 0.19 / 1.19}}',
-              total: '{{total}}',
-              estadoFactura: 'Pagada'
+              fecha: '{{nextWeek}}',
+              hora: '10:00',
+              tipo: 'Llamada',
+              notas: 'Seguimiento post-venta automático'
             }
-          }
-        },
-        {
-          id: 'notification-1',
-          type: 'notification',
-          position: { x: 150, y: 410 },
-          data: {
-            label: 'Enviar factura por email',
-            channel: 'email',
-            message: 'Factura generada para {{cliente}}. Total: ${{total}}'
           }
         }
       ],
       edges: [
-        { id: 'e1-2', source: 'trigger-1', target: 'condition-1' },
-        { id: 'e2-3', source: 'condition-1', target: 'action-1', label: 'Sí' },
-        { id: 'e3-4', source: 'action-1', target: 'notification-1' }
+        { id: 'e1-2', source: 'trigger-1', target: 'action-1' }
       ],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    await flowsDb.insert(flow9);
-    console.log('✅ Flujo 9: Generar Factura Automática');
+    await flowsDb.insert(flow4);
+    console.log('✅ Flujo 4: Seguimiento Post-Venta');
+
+    console.log('✅ Flujos simplificados creados (4 flujos funcionales)');
     
     // ========== DATOS DE EJEMPLO ==========
     
@@ -1119,11 +754,11 @@ Sé analítico, objetivo y orientado a resultados. Usa gráficos de texto cuando
     
     console.log(`\n✅ Seed PREMIUM completado para ${WORKSPACE_NAME}`);
     console.log(`   Workspace ID: ${WORKSPACE_ID}`);
-    console.log(`   Tablas: 8 (Clientes, Productos, Ventas, Seguimientos, Tareas, Proveedores, Facturas, Campañas)`);
+    console.log(`   Tablas: 9 (Clientes, Productos, Ventas, Seguimientos, Tareas, Proveedores, Facturas, Campañas, Log de Flujos)`);
     console.log(`   Agentes: 2 (Ventas, Analista)`);
-    console.log(`   Flujos: 9 (Post-Venta, Bienvenida, Recordatorio, Upgrade VIP, Validar Stock, Calcular Total, Descontar Stock, Alerta Stock, Facturación)`);
+    console.log(`   Flujos: 4 (Calcular Total, Descontar Stock, Bienvenida, Seguimiento Post-Venta)`);
     console.log(`   Datos: ${clientesEjemplo.length} clientes, ${productosEjemplo.length} productos, ${ventasEjemplo.length} ventas, ${proveedoresEjemplo.length} proveedores, ${facturasEjemplo.length} facturas, ${campanasEjemplo.length} campañas`);
-    console.log(`   Plan: PREMIUM con automatizaciones avanzadas`);
+    console.log(`   Plan: PREMIUM con automatizaciones simplificadas`);
     
   } catch (error) {
     console.error(`❌ Error en seed PREMIUM:`, error);

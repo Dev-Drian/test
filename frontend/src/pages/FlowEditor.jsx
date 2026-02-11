@@ -25,6 +25,7 @@ import ConditionNode from '../components/nodes/ConditionNode';
 import ActionNode from '../components/nodes/ActionNode';
 import AvailabilityNode from '../components/nodes/AvailabilityNode';
 import ResponseNode from '../components/nodes/ResponseNode';
+import QueryNode from '../components/nodes/QueryNode';
 
 const nodeTypes = {
   trigger: TriggerNode,
@@ -33,6 +34,7 @@ const nodeTypes = {
   action: ActionNode,
   availability: AvailabilityNode,
   response: ResponseNode,
+  query: QueryNode,
 };
 
 // Iconos SVG
@@ -84,11 +86,11 @@ const availableBlocks = [
     description: 'Cuando algo sucede',
   },
   { 
-    type: 'table', 
-    emoji: '📊',
-    label: 'Datos', 
+    type: 'query', 
+    emoji: '🔍',
+    label: 'Consulta', 
     color: '#3b82f6',
-    description: 'Buscar o guardar',
+    description: 'Buscar datos',
   },
   { 
     type: 'condition', 
@@ -129,6 +131,10 @@ export default function FlowEditor() {
   const [isSaving, setIsSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showHelp, setShowHelp] = useState(false);
+  
+  // Estado para edición de nodos
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null);
 
   // Estado de React Flow
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -245,11 +251,39 @@ export default function FlowEditor() {
   const handleSelectFlow = (flow) => {
     setSelectedFlow(flow);
     setFlowName(flow.name);
-    const nodesWithTables = (flow.nodes || []).map(node => ({
-      ...node,
-      data: { ...node.data, tables }
-    }));
-    setNodes(nodesWithTables);
+    
+    // Crear un mapa de ID -> Nombre de tabla
+    const tableIdToName = {};
+    tables.forEach(t => {
+      tableIdToName[t._id] = t.name;
+    });
+    
+    // Enriquecer los nodos con nombres de tabla
+    const nodesWithTableNames = (flow.nodes || []).map(node => {
+      const enrichedData = { ...node.data, tables };
+      
+      // Resolver nombre de tabla destino
+      if (node.data?.targetTable) {
+        enrichedData.targetTableName = tableIdToName[node.data.targetTable] || node.data.targetTable;
+      }
+      
+      // Resolver nombre de tabla en trigger
+      if (node.data?.table) {
+        enrichedData.tableName = tableIdToName[node.data.table] || node.data.table;
+      }
+      
+      // Si es un trigger, usar triggerTable del flujo
+      if (node.type === 'trigger' && flow.triggerTable) {
+        enrichedData.tableName = tableIdToName[flow.triggerTable] || flow.triggerTable;
+      }
+      
+      return {
+        ...node,
+        data: enrichedData
+      };
+    });
+    
+    setNodes(nodesWithTableNames);
     setEdges(flow.edges || []);
   };
 
@@ -302,6 +336,85 @@ export default function FlowEditor() {
       console.error('Error deleting flow:', err);
     }
   };
+
+  // Clic en nodo para editar
+  const onNodeClick = useCallback((event, node) => {
+    setSelectedNode(node);
+    setContextMenu(null);
+  }, []);
+
+  // Clic derecho en nodo
+  const onNodeContextMenu = useCallback((event, node) => {
+    event.preventDefault();
+    setContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      nodeId: node.id,
+      nodeName: node.data?.label || node.type
+    });
+  }, []);
+
+  // Clic en canvas para cerrar menú
+  const onPaneClick = useCallback(() => {
+    setContextMenu(null);
+    setSelectedNode(null);
+  }, []);
+
+  // Eliminar nodo
+  const handleDeleteNode = useCallback((nodeId) => {
+    setNodes(nds => nds.filter(n => n.id !== nodeId));
+    setEdges(eds => eds.filter(e => e.source !== nodeId && e.target !== nodeId));
+    setContextMenu(null);
+    setSelectedNode(null);
+  }, [setNodes, setEdges]);
+
+  // Actualizar datos del nodo seleccionado
+  const updateSelectedNodeData = useCallback((key, value) => {
+    if (!selectedNode) return;
+    
+    setNodes(nds => nds.map(node => {
+      if (node.id === selectedNode.id) {
+        const updatedNode = {
+          ...node,
+          data: { ...node.data, [key]: value }
+        };
+        setSelectedNode(updatedNode);
+        return updatedNode;
+      }
+      return node;
+    }));
+  }, [selectedNode, setNodes]);
+
+  // Obtener variables disponibles de los nodos anteriores
+  const getAvailableVariables = useCallback(() => {
+    const variables = [
+      { name: 'recordData', description: 'Datos del registro que disparó el flujo' },
+    ];
+    
+    // Buscar nodos de tipo query que definen variables
+    nodes.forEach(node => {
+      if (node.type === 'query' && node.data?.outputVar) {
+        const tableName = node.data?.targetTableName || 'datos';
+        variables.push({
+          name: node.data.outputVar,
+          description: `Datos de ${tableName}`
+        });
+      }
+    });
+    
+    return variables;
+  }, [nodes]);
+
+  // Obtener campos disponibles de una tabla
+  const getTableFields = useCallback((tableId) => {
+    const table = tables.find(t => t._id === tableId);
+    if (!table || !table.headers) return [];
+    return table.headers.map(h => ({
+      name: h.key,
+      label: h.label || h.key,
+      type: h.type
+    }));
+  }, [tables]);
 
   // Sin workspace
   if (!workspaceId) {
@@ -476,8 +589,15 @@ export default function FlowEditor() {
                 onConnect={onConnect}
                 onDrop={onDrop}
                 onDragOver={onDragOver}
+                onNodeClick={onNodeClick}
+                onNodeContextMenu={onNodeContextMenu}
+                onPaneClick={onPaneClick}
                 nodeTypes={nodeTypes}
                 fitView
+                fitViewOptions={{ padding: 0.3, maxZoom: 1 }}
+                minZoom={0.3}
+                maxZoom={2}
+                defaultViewport={{ x: 100, y: 100, zoom: 0.9 }}
                 defaultEdgeOptions={{
                   animated: true,
                   style: { stroke: '#10b981', strokeWidth: 2 },
@@ -516,6 +636,619 @@ export default function FlowEditor() {
                   </Panel>
                 )}
               </ReactFlow>
+
+              {/* Menú contextual (clic derecho) */}
+              {contextMenu && (
+                <div 
+                  className="fixed z-50 rounded-xl overflow-hidden shadow-2xl"
+                  style={{ 
+                    left: contextMenu.x, 
+                    top: contextMenu.y,
+                    background: '#18181b',
+                    border: '1px solid rgba(255,255,255,0.1)'
+                  }}
+                >
+                  <div className="px-3 py-2 text-xs text-zinc-500" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    {contextMenu.nodeName}
+                  </div>
+                  <button
+                    onClick={() => {
+                      const node = nodes.find(n => n.id === contextMenu.nodeId);
+                      if (node) setSelectedNode(node);
+                      setContextMenu(null);
+                    }}
+                    className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-amber-500/20 flex items-center gap-2"
+                  >
+                    ✏️ Editar
+                  </button>
+                  <button
+                    onClick={() => handleDeleteNode(contextMenu.nodeId)}
+                    className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-red-500/20 flex items-center gap-2"
+                  >
+                    🗑️ Eliminar
+                  </button>
+                </div>
+              )}
+
+              {/* Panel de edición de nodo */}
+              {selectedNode && (
+                <div 
+                  className="absolute right-4 top-4 w-80 rounded-xl overflow-hidden shadow-2xl z-40"
+                  style={{ 
+                    background: '#0c0c0f',
+                    border: '1px solid rgba(255,255,255,0.1)'
+                  }}
+                >
+                  <div className="px-4 py-3 flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">
+                        {availableBlocks.find(b => b.type === selectedNode.type)?.emoji || '📦'}
+                      </span>
+                      <span className="text-sm font-medium text-white">
+                        Editar {availableBlocks.find(b => b.type === selectedNode.type)?.label || 'Nodo'}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setSelectedNode(null)}
+                      className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/10 transition-all"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  
+                  <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
+                    {/* Etiqueta */}
+                    <div>
+                      <label className="block text-xs text-zinc-500 mb-1.5">Etiqueta</label>
+                      <input
+                        type="text"
+                        value={selectedNode.data?.label || ''}
+                        onChange={(e) => updateSelectedNodeData('label', e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                        style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                        placeholder="Nombre descriptivo"
+                      />
+                    </div>
+
+                    {/* Campos específicos por tipo de nodo */}
+                    {selectedNode.type === 'trigger' && (
+                      <>
+                        <div>
+                          <label className="block text-xs text-zinc-500 mb-1.5">Evento</label>
+                          <select
+                            value={selectedNode.data?.triggerType || ''}
+                            onChange={(e) => updateSelectedNodeData('triggerType', e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer"
+                            style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                          >
+                            <option value="">Seleccionar evento...</option>
+                            <option value="create">Cuando se crea un registro</option>
+                            <option value="update">Cuando se actualiza</option>
+                            <option value="delete">Cuando se elimina</option>
+                            <option value="message">Cuando llega un mensaje</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-zinc-500 mb-1.5">Tabla</label>
+                          <select
+                            value={selectedNode.data?.table || ''}
+                            onChange={(e) => {
+                              const tableId = e.target.value;
+                              const tableName = tables.find(t => t._id === tableId)?.name || '';
+                              updateSelectedNodeData('table', tableId);
+                              updateSelectedNodeData('tableName', tableName);
+                            }}
+                            className="w-full px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer"
+                            style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                          >
+                            <option value="">Seleccionar tabla...</option>
+                            {tables.map(t => (
+                              <option key={t._id} value={t._id}>{t.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </>
+                    )}
+
+                    {selectedNode.type === 'query' && (
+                      <>
+                        {/* Paso 1: Seleccionar tabla donde buscar */}
+                        <div>
+                          <label className="block text-xs text-zinc-400 mb-1.5 font-medium">📋 Buscar en tabla</label>
+                          <select
+                            value={selectedNode.data?.targetTable || ''}
+                            onChange={(e) => {
+                              const tableId = e.target.value;
+                              const table = tables.find(t => t._id === tableId);
+                              const tableName = table?.name || '';
+                              const autoVarName = tableName 
+                                ? tableName.toLowerCase().replace(/s$/, '') + 'Data'
+                                : '';
+                              updateSelectedNodeData('targetTable', tableId);
+                              updateSelectedNodeData('targetTableName', tableName);
+                              updateSelectedNodeData('outputVar', autoVarName);
+                              updateSelectedNodeData('filterField', '');
+                              updateSelectedNodeData('filterValueType', 'trigger');
+                              updateSelectedNodeData('filterValueField', '');
+                              updateSelectedNodeData('filterValueFixed', '');
+                            }}
+                            className="w-full px-3 py-2.5 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer"
+                            style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                          >
+                            <option value="">Seleccionar tabla...</option>
+                            {tables.map(t => (
+                              <option key={t._id} value={t._id}>{t.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        
+                        {/* Paso 2: Filtro simple */}
+                        {selectedNode.data?.targetTable && (
+                          <div className="p-3 rounded-lg space-y-3" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                            <label className="block text-xs text-zinc-400 font-medium">🔍 Buscar donde</label>
+                            
+                            {/* Campo de la tabla a buscar */}
+                            <div>
+                              <span className="text-[10px] text-zinc-500 mb-1 block">Campo de {selectedNode.data?.targetTableName}:</span>
+                              <select
+                                value={selectedNode.data?.filterField || ''}
+                                onChange={(e) => updateSelectedNodeData('filterField', e.target.value)}
+                                className="w-full px-3 py-2 rounded-lg text-white text-sm cursor-pointer"
+                                style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                              >
+                                <option value="">Seleccionar campo...</option>
+                                {getTableFields(selectedNode.data.targetTable).map(f => (
+                                  <option key={f.name} value={f.name}>{f.label}</option>
+                                ))}
+                              </select>
+                            </div>
+                            
+                            {/* Signo igual */}
+                            <div className="text-center">
+                              <span className="text-amber-400 font-bold text-lg">=</span>
+                            </div>
+                            
+                            {/* Valor: de dónde viene */}
+                            <div>
+                              <span className="text-[10px] text-zinc-500 mb-1 block">Valor a comparar:</span>
+                              <div className="space-y-2">
+                                {/* Opción 1: Del registro que disparó */}
+                                <label className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all ${
+                                  selectedNode.data?.filterValueType === 'trigger' ? 'ring-2 ring-amber-500' : ''
+                                }`} style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                  <input
+                                    type="radio"
+                                    name="valueType"
+                                    checked={selectedNode.data?.filterValueType === 'trigger'}
+                                    onChange={() => updateSelectedNodeData('filterValueType', 'trigger')}
+                                    className="text-amber-500"
+                                  />
+                                  <div className="flex-1">
+                                    <span className="text-xs text-white">Del registro que activó el flujo</span>
+                                    {selectedNode.data?.filterValueType === 'trigger' && (
+                                      <select
+                                        value={selectedNode.data?.filterValueField || ''}
+                                        onChange={(e) => updateSelectedNodeData('filterValueField', e.target.value)}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="w-full mt-2 px-2 py-1.5 rounded text-amber-300 text-xs cursor-pointer"
+                                        style={{ background: '#1a1a1f', border: '1px solid rgba(245, 158, 11, 0.4)', color: '#fbbf24' }}
+                                      >
+                                        <option value="" style={{ background: '#1a1a1f', color: '#a1a1aa' }}>Elegir campo...</option>
+                                        {/* Campos del trigger (si hay tabla trigger seleccionada) */}
+                                        {nodes.find(n => n.type === 'trigger')?.data?.table && 
+                                          getTableFields(nodes.find(n => n.type === 'trigger').data.table).map(f => (
+                                            <option key={f.name} value={f.name} style={{ background: '#1a1a1f', color: '#fbbf24' }}>{f.label}</option>
+                                          ))
+                                        }
+                                        {/* Si no hay trigger, mostrar campos genéricos */}
+                                        {!nodes.find(n => n.type === 'trigger')?.data?.table && (
+                                          <>
+                                            <option value="nombre" style={{ background: '#1a1a1f', color: '#fbbf24' }}>Nombre</option>
+                                            <option value="producto" style={{ background: '#1a1a1f', color: '#fbbf24' }}>Producto</option>
+                                            <option value="cliente" style={{ background: '#1a1a1f', color: '#fbbf24' }}>Cliente</option>
+                                            <option value="total" style={{ background: '#1a1a1f', color: '#fbbf24' }}>Total</option>
+                                            <option value="cantidad" style={{ background: '#1a1a1f', color: '#fbbf24' }}>Cantidad</option>
+                                          </>
+                                        )}
+                                      </select>
+                                    )}
+                                  </div>
+                                </label>
+                                
+                                {/* Opción 2: Valor fijo */}
+                                <label className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all ${
+                                  selectedNode.data?.filterValueType === 'fixed' ? 'ring-2 ring-amber-500' : ''
+                                }`} style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                  <input
+                                    type="radio"
+                                    name="valueType"
+                                    checked={selectedNode.data?.filterValueType === 'fixed'}
+                                    onChange={() => updateSelectedNodeData('filterValueType', 'fixed')}
+                                    className="text-amber-500"
+                                  />
+                                  <div className="flex-1">
+                                    <span className="text-xs text-white">Valor específico</span>
+                                    {selectedNode.data?.filterValueType === 'fixed' && (
+                                      <input
+                                        type="text"
+                                        value={selectedNode.data?.filterValueFixed || ''}
+                                        onChange={(e) => updateSelectedNodeData('filterValueFixed', e.target.value)}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="w-full mt-2 px-2 py-1.5 rounded text-white text-xs"
+                                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                                        placeholder="Escribir valor..."
+                                      />
+                                    )}
+                                  </div>
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Resultado */}
+                        {selectedNode.data?.targetTable && (
+                          <div className="space-y-2">
+                            <label className="block text-xs text-zinc-400 font-medium">📤 Resultado</label>
+                            <div className="flex gap-2">
+                              <div className="flex-1 p-2 rounded-lg text-center" style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                                <span className="text-xs text-emerald-400">✓ Sí encuentra</span>
+                              </div>
+                              <div className="flex-1 p-2 rounded-lg text-center" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                                <span className="text-xs text-red-400">✗ No encuentra</span>
+                              </div>
+                            </div>
+                            <p className="text-[10px] text-zinc-500">
+                              Conecta cada salida a la acción correspondiente
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {selectedNode.type === 'condition' && (
+                      <>
+                        <div>
+                          <label className="block text-xs text-zinc-500 mb-1.5">Campo a evaluar</label>
+                          <select
+                            value={selectedNode.data?.field || ''}
+                            onChange={(e) => updateSelectedNodeData('field', e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer"
+                            style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                          >
+                            <option value="">Seleccionar campo...</option>
+                            <optgroup label="📦 Registro que disparó el flujo">
+                              <option value="recordData.cantidad">Cantidad</option>
+                              <option value="recordData.total">Total</option>
+                              <option value="recordData.estado">Estado</option>
+                            </optgroup>
+                            {getAvailableVariables().filter(v => v.name !== 'recordData').map(variable => (
+                              <optgroup key={variable.name} label={`📋 ${variable.description}`}>
+                                <option value={`${variable.name}.stock`}>Stock</option>
+                                <option value={`${variable.name}.precio`}>Precio</option>
+                                <option value={`${variable.name}.nombre`}>Nombre</option>
+                                <option value={`${variable.name}.cantidad`}>Cantidad</option>
+                                <option value={`${variable.name}.total`}>Total</option>
+                              </optgroup>
+                            ))}
+                          </select>
+                          <input
+                            type="text"
+                            value={selectedNode.data?.field || ''}
+                            onChange={(e) => updateSelectedNodeData('field', e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg text-white text-xs mt-2 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                            style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                            placeholder="O escribe manualmente: variable.campo"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-zinc-500 mb-1.5">Operador</label>
+                          <select
+                            value={selectedNode.data?.operator || ''}
+                            onChange={(e) => updateSelectedNodeData('operator', e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer"
+                            style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                          >
+                            <option value="">Seleccionar...</option>
+                            <option value="==">es igual a</option>
+                            <option value="!=">es diferente de</option>
+                            <option value=">">es mayor que</option>
+                            <option value="<">es menor que</option>
+                            <option value=">=">es mayor o igual a</option>
+                            <option value="<=">es menor o igual a</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-zinc-500 mb-1.5">Valor</label>
+                          <input
+                            type="text"
+                            value={selectedNode.data?.value || ''}
+                            onChange={(e) => updateSelectedNodeData('value', e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                            style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                            placeholder="Ej: 0"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {selectedNode.type === 'action' && (
+                      <>
+                        <div>
+                          <label className="block text-xs text-zinc-500 mb-1.5">Tipo de acción</label>
+                          <select
+                            value={selectedNode.data?.actionType || ''}
+                            onChange={(e) => {
+                              updateSelectedNodeData('actionType', e.target.value);
+                              updateSelectedNodeData('filter', {});
+                              updateSelectedNodeData('fields', {});
+                            }}
+                            className="w-full px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer"
+                            style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                          >
+                            <option value="">Seleccionar...</option>
+                            <option value="create">➕ Crear registro</option>
+                            <option value="update">✏️ Actualizar registro</option>
+                            <option value="notification">🔔 Enviar notificación</option>
+                            <option value="decrement">➖ Restar cantidad</option>
+                            <option value="increment">➕ Sumar cantidad</option>
+                          </select>
+                        </div>
+                        
+                        {selectedNode.data?.actionType && selectedNode.data.actionType !== 'notification' && (
+                          <div>
+                            <label className="block text-xs text-zinc-500 mb-1.5">Tabla destino</label>
+                            <select
+                              value={selectedNode.data?.targetTable || ''}
+                              onChange={(e) => {
+                                const tableId = e.target.value;
+                                const tableName = tables.find(t => t._id === tableId)?.name || '';
+                                updateSelectedNodeData('targetTable', tableId);
+                                updateSelectedNodeData('targetTableName', tableName);
+                                updateSelectedNodeData('filter', {});
+                                updateSelectedNodeData('fields', {});
+                              }}
+                              className="w-full px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer"
+                              style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                            >
+                              <option value="">Seleccionar tabla...</option>
+                              {tables.map(t => (
+                                <option key={t._id} value={t._id}>{t.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                        
+                        {/* Filtros para update/decrement/increment */}
+                        {selectedNode.data?.targetTable && ['update', 'decrement', 'increment'].includes(selectedNode.data?.actionType) && (
+                          <div>
+                            <label className="block text-xs text-zinc-500 mb-1.5">Buscar registro donde...</label>
+                            <div className="space-y-2">
+                              {Object.entries(selectedNode.data?.filter || {}).map(([field, value], idx) => (
+                                <div key={idx} className="flex items-center gap-2">
+                                  <select
+                                    value={field}
+                                    onChange={(e) => {
+                                      const newFilter = { ...selectedNode.data?.filter };
+                                      delete newFilter[field];
+                                      if (e.target.value) {
+                                        newFilter[e.target.value] = value;
+                                      }
+                                      updateSelectedNodeData('filter', newFilter);
+                                    }}
+                                    className="flex-1 px-2 py-1.5 rounded text-white text-xs"
+                                    style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                                  >
+                                    <option value="">Campo...</option>
+                                    {getTableFields(selectedNode.data.targetTable)
+                                      .filter(f => f.name === field || !Object.keys(selectedNode.data?.filter || {}).includes(f.name))
+                                      .map(f => (
+                                        <option key={f.name} value={f.name}>{f.label}</option>
+                                      ))}
+                                  </select>
+                                  <span className="text-zinc-600 text-xs">=</span>
+                                  <input
+                                    type="text"
+                                    value={value}
+                                    onChange={(e) => {
+                                      const newFilter = { ...selectedNode.data?.filter, [field]: e.target.value };
+                                      updateSelectedNodeData('filter', newFilter);
+                                    }}
+                                    className="flex-1 px-2 py-1.5 rounded text-white text-xs"
+                                    style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                                    placeholder="{{variable}}"
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      const newFilter = { ...selectedNode.data?.filter };
+                                      delete newFilter[field];
+                                      updateSelectedNodeData('filter', newFilter);
+                                    }}
+                                    className="p-1 text-red-400 hover:bg-red-500/20 rounded"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              ))}
+                              
+                              {getTableFields(selectedNode.data.targetTable).length > Object.keys(selectedNode.data?.filter || {}).length && (
+                                <button
+                                  onClick={() => {
+                                    const usedFields = Object.keys(selectedNode.data?.filter || {});
+                                    const availableField = getTableFields(selectedNode.data.targetTable)
+                                      .find(f => !usedFields.includes(f.name));
+                                    if (availableField) {
+                                      const newFilter = { ...selectedNode.data?.filter, [availableField.name]: '' };
+                                      updateSelectedNodeData('filter', newFilter);
+                                    }
+                                  }}
+                                  className="w-full px-3 py-2 rounded-lg text-xs text-amber-400 hover:bg-amber-500/10 flex items-center justify-center gap-1"
+                                  style={{ border: '1px dashed rgba(245, 158, 11, 0.3)' }}
+                                >
+                                  + Agregar filtro
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Campos a modificar */}
+                        {selectedNode.data?.targetTable && ['create', 'update', 'decrement', 'increment'].includes(selectedNode.data?.actionType) && (
+                          <div>
+                            <label className="block text-xs text-zinc-500 mb-1.5">
+                              {selectedNode.data.actionType === 'create' ? 'Valores a crear' : 
+                               selectedNode.data.actionType === 'decrement' ? 'Campo a restar' :
+                               selectedNode.data.actionType === 'increment' ? 'Campo a sumar' : 'Valores a cambiar'}
+                            </label>
+                            <div className="space-y-2">
+                              {Object.entries(selectedNode.data?.fields || {}).map(([field, value], idx) => (
+                                <div key={idx} className="flex items-center gap-2">
+                                  <select
+                                    value={field}
+                                    onChange={(e) => {
+                                      const newFields = { ...selectedNode.data?.fields };
+                                      delete newFields[field];
+                                      if (e.target.value) {
+                                        newFields[e.target.value] = value;
+                                      }
+                                      updateSelectedNodeData('fields', newFields);
+                                    }}
+                                    className="flex-1 px-2 py-1.5 rounded text-white text-xs"
+                                    style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                                  >
+                                    <option value="">Campo...</option>
+                                    {getTableFields(selectedNode.data.targetTable)
+                                      .filter(f => f.name === field || !Object.keys(selectedNode.data?.fields || {}).includes(f.name))
+                                      .map(f => (
+                                        <option key={f.name} value={f.name}>{f.label}</option>
+                                      ))}
+                                  </select>
+                                  <span className="text-zinc-600 text-xs">→</span>
+                                  <input
+                                    type="text"
+                                    value={value}
+                                    onChange={(e) => {
+                                      const newFields = { ...selectedNode.data?.fields, [field]: e.target.value };
+                                      updateSelectedNodeData('fields', newFields);
+                                    }}
+                                    className="flex-1 px-2 py-1.5 rounded text-white text-xs"
+                                    style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                                    placeholder="{{variable}} o valor"
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      const newFields = { ...selectedNode.data?.fields };
+                                      delete newFields[field];
+                                      updateSelectedNodeData('fields', newFields);
+                                    }}
+                                    className="p-1 text-red-400 hover:bg-red-500/20 rounded"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              ))}
+                              
+                              {getTableFields(selectedNode.data.targetTable).length > Object.keys(selectedNode.data?.fields || {}).length && (
+                                <button
+                                  onClick={() => {
+                                    const usedFields = Object.keys(selectedNode.data?.fields || {});
+                                    const availableField = getTableFields(selectedNode.data.targetTable)
+                                      .find(f => !usedFields.includes(f.name));
+                                    if (availableField) {
+                                      const newFields = { ...selectedNode.data?.fields, [availableField.name]: '' };
+                                      updateSelectedNodeData('fields', newFields);
+                                    }
+                                  }}
+                                  className="w-full px-3 py-2 rounded-lg text-xs text-emerald-400 hover:bg-emerald-500/10 flex items-center justify-center gap-1"
+                                  style={{ border: '1px dashed rgba(16, 185, 129, 0.3)' }}
+                                >
+                                  + Agregar campo
+                                </button>
+                              )}
+                            </div>
+                            
+                            {/* Ayuda de variables */}
+                            <div className="mt-3 p-2 rounded-lg" style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                              <p className="text-[10px] text-blue-400 font-medium mb-2">💡 Variables disponibles:</p>
+                              <div className="space-y-2">
+                                <div>
+                                  <p className="text-[10px] text-blue-300 font-medium">📦 Del registro inicial:</p>
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    <code className="text-[9px] bg-blue-500/20 px-1 rounded text-blue-200">{"{{recordData.producto}}"}</code>
+                                    <code className="text-[9px] bg-blue-500/20 px-1 rounded text-blue-200">{"{{recordData.cliente}}"}</code>
+                                    <code className="text-[9px] bg-blue-500/20 px-1 rounded text-blue-200">{"{{recordData.cantidad}}"}</code>
+                                  </div>
+                                </div>
+                                {getAvailableVariables().filter(v => v.name !== 'recordData').map(v => (
+                                  <div key={v.name}>
+                                    <p className="text-[10px] text-blue-300 font-medium">📋 {v.description}:</p>
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      <code className="text-[9px] bg-emerald-500/20 px-1 rounded text-emerald-200">{`{{${v.name}.precio}}`}</code>
+                                      <code className="text-[9px] bg-emerald-500/20 px-1 rounded text-emerald-200">{`{{${v.name}.stock}}`}</code>
+                                      <code className="text-[9px] bg-emerald-500/20 px-1 rounded text-emerald-200">{`{{${v.name}.nombre}}`}</code>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Notificación */}
+                        {selectedNode.data?.actionType === 'notification' && (
+                          <>
+                            <div>
+                              <label className="block text-xs text-zinc-500 mb-1.5">Título</label>
+                              <input
+                                type="text"
+                                value={selectedNode.data?.title || ''}
+                                onChange={(e) => updateSelectedNodeData('title', e.target.value)}
+                                className="w-full px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                                style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                                placeholder="Título de la notificación"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-zinc-500 mb-1.5">Mensaje</label>
+                              <textarea
+                                value={selectedNode.data?.message || ''}
+                                onChange={(e) => updateSelectedNodeData('message', e.target.value)}
+                                rows={2}
+                                className="w-full px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 resize-none"
+                                style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                                placeholder="Contenido del mensaje"
+                              />
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
+
+                    {selectedNode.type === 'response' && (
+                      <div>
+                        <label className="block text-xs text-zinc-500 mb-1.5">Mensaje</label>
+                        <textarea
+                          value={selectedNode.data?.message || ''}
+                          onChange={(e) => updateSelectedNodeData('message', e.target.value)}
+                          rows={3}
+                          className="w-full px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 resize-none"
+                          style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                          placeholder="Escribe el mensaje..."
+                        />
+                      </div>
+                    )}
+
+                    {/* Botón eliminar */}
+                    <button
+                      onClick={() => handleDeleteNode(selectedNode.id)}
+                      className="w-full px-4 py-2.5 rounded-lg text-red-400 text-sm hover:bg-red-500/10 flex items-center justify-center gap-2 transition-all"
+                      style={{ border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                    >
+                      🗑️ Eliminar nodo
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         ) : (
@@ -599,12 +1332,14 @@ export default function FlowEditor() {
           </div>
 
           {/* Tip */}
-          <div className="p-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="p-4 space-y-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             <div className="p-3 rounded-xl" style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
-              <p className="text-xs text-amber-400 font-medium mb-1">💡 Tip</p>
-              <p className="text-xs text-amber-400/60">
-                Conecta los bloques arrastrando desde los puntos de conexión
-              </p>
+              <p className="text-xs text-amber-400 font-medium mb-1">💡 Tips</p>
+              <ul className="text-xs text-amber-400/60 space-y-1">
+                <li>• <strong>Clic</strong> en un nodo para editarlo</li>
+                <li>• <strong>Clic derecho</strong> para menú de opciones</li>
+                <li>• <strong>Arrastra</strong> los puntos para conectar</li>
+              </ul>
             </div>
           </div>
         </aside>

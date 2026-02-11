@@ -5,6 +5,99 @@
 import { Handle, Position, useReactFlow } from '@xyflow/react';
 import { useCallback } from 'react';
 
+/**
+ * Convierte nombres técnicos de campos a nombres amigables
+ */
+function getFieldDisplayName(fieldName) {
+  // Mapeo de campos conocidos
+  const fieldMappings = {
+    'nombre': 'Nombre',
+    'total': 'Total',
+    'stock': 'Stock',
+    'precio': 'Precio',
+    'producto': 'Producto',
+    'cliente': 'Cliente',
+    'cantidad': 'Cantidad',
+    'fechaCreacion': 'Fecha de creación',
+    'fechaActualizacion': 'Fecha de actualización',
+    'estadoPago': 'Estado de pago',
+    'prioridad': 'Prioridad',
+    'estado': 'Estado',
+    'titulo': 'Título',
+    'descripcion': 'Descripción',
+    'productoData.stock': 'Stock del producto',
+    'productoData.precio': 'Precio del producto',
+    'productoData.nombre': 'Nombre del producto',
+    'clienteData.nombre': 'Nombre del cliente',
+    'clienteData.email': 'Email del cliente',
+    'clienteData.telefono': 'Teléfono del cliente',
+    'recordData.producto': 'Producto',
+    'recordData.cliente': 'Cliente',
+    'recordData.cantidad': 'Cantidad',
+    'recordData.total': 'Total',
+  };
+  
+  if (fieldMappings[fieldName]) {
+    return fieldMappings[fieldName];
+  }
+  
+  // Si contiene un punto, es una referencia anidada (ej: productoData.stock)
+  if (fieldName.includes('.')) {
+    const parts = fieldName.split('.');
+    const lastPart = parts[parts.length - 1];
+    const parentPart = parts[0].replace('Data', '').replace('data', '');
+    
+    // Capitalizar
+    const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+    const humanParent = capitalize(parentPart);
+    const humanField = fieldMappings[lastPart] || capitalize(lastPart);
+    
+    return `${humanField} del ${humanParent.toLowerCase()}`;
+  }
+  
+  // Convertir camelCase a texto normal
+  const humanReadable = fieldName
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/^./, str => str.toUpperCase())
+    .trim();
+  
+  return humanReadable;
+}
+
+/**
+ * Formatea los campos de forma amigable
+ */
+function formatFields(fields) {
+  if (!fields || typeof fields !== 'object') return null;
+  
+  return Object.entries(fields).map(([key, value]) => ({
+    field: key,
+    value: typeof value === 'object' ? JSON.stringify(value) : String(value)
+  }));
+}
+
+/**
+ * Obtiene el emoji y texto para el tipo de acción
+ */
+function getActionDisplay(actionType) {
+  const actions = {
+    'create': { emoji: '➕', label: 'Crear registro', color: 'emerald' },
+    'update': { emoji: '✏️', label: 'Actualizar registro', color: 'amber' },
+    'upsert': { emoji: '🔄', label: 'Crear o actualizar', color: 'blue' },
+    'notification': { emoji: '🔔', label: 'Notificación', color: 'purple' },
+    'error': { emoji: '❌', label: 'Mostrar error', color: 'red' },
+    'allow': { emoji: '✅', label: 'Permitir', color: 'emerald' },
+    'auto_create': { emoji: '➕', label: 'Crear automático', color: 'emerald' },
+    'auto_assign': { emoji: '🎯', label: 'Asignar automático', color: 'blue' },
+    'set_value': { emoji: '✏️', label: 'Establecer valor', color: 'amber' },
+    'decrement': { emoji: '➖', label: 'Restar cantidad', color: 'red' },
+    'increment': { emoji: '➕', label: 'Sumar cantidad', color: 'emerald' },
+    'send_notification': { emoji: '🔔', label: 'Enviar notificación', color: 'purple' },
+    'send_email': { emoji: '📧', label: 'Enviar email', color: 'blue' },
+  };
+  return actions[actionType] || { emoji: '⚡', label: actionType || 'Acción', color: 'purple' };
+}
+
 export default function ActionNode({ id, data, selected }) {
   const { setNodes } = useReactFlow();
 
@@ -17,8 +110,12 @@ export default function ActionNode({ id, data, selected }) {
     }));
   }, [id, setNodes]);
 
+  const actionInfo = getActionDisplay(data?.actionType || data?.action);
+  const formattedFields = formatFields(data?.fields);
+  const isViewMode = data?.actionType; // Si tiene actionType, viene de un flujo guardado
+
   return (
-    <div className={`min-w-[220px] rounded-xl overflow-hidden transition-all shadow-xl ${
+    <div className={`min-w-[240px] rounded-xl overflow-hidden transition-all shadow-xl ${
       selected 
         ? 'ring-2 ring-purple-400 shadow-purple-500/30' 
         : 'shadow-black/40'
@@ -34,82 +131,178 @@ export default function ActionNode({ id, data, selected }) {
       {/* Header */}
       <div className="px-4 py-3 flex items-center gap-3" style={{ background: 'rgba(139, 92, 246, 0.15)', borderBottom: '1px solid rgba(139, 92, 246, 0.2)' }}>
         <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-lg" style={{ background: '#8b5cf6' }}>
-          ⚡
+          {actionInfo.emoji}
         </div>
-        <div>
+        <div className="flex-1">
           <span className="text-sm font-semibold text-purple-400">Acción</span>
-          <p className="text-[10px] text-purple-400/60">Hacer algo automático</p>
+          <p className="text-[10px] text-purple-400/60">{actionInfo.label}</p>
         </div>
       </div>
       
       {/* Content */}
       <div className="p-4 space-y-3">
-        <div>
-          <label className="block text-[10px] uppercase tracking-wider mb-2" style={{ color: '#71717a' }}>
-            ¿Qué acción ejecutar?
-          </label>
-          <select 
-            className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all cursor-pointer appearance-none"
-            style={{ 
-              background: '#18181b', 
-              border: '1px solid rgba(255,255,255,0.1)',
-              color: 'white',
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2371717a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 0.5rem center',
-              backgroundSize: '1.5em 1.5em',
-              paddingRight: '2.5rem'
-            }}
-            value={data?.action || 'auto_create'}
-            onChange={(e) => updateNodeData('action', e.target.value)}
-          >
-            <option value="auto_create" style={{ background: '#18181b', color: 'white' }}>➕ Crear registro automático</option>
-            <option value="auto_assign" style={{ background: '#18181b', color: 'white' }}>🎯 Asignar automáticamente</option>
-            <option value="set_value" style={{ background: '#18181b', color: 'white' }}>✏️ Establecer un valor</option>
-            <option value="decrement" style={{ background: '#18181b', color: 'white' }}>➖ Restar cantidad</option>
-            <option value="increment" style={{ background: '#18181b', color: 'white' }}>➕ Sumar cantidad</option>
-            <option value="send_notification" style={{ background: '#18181b', color: 'white' }}>🔔 Enviar notificación</option>
-            <option value="send_email" style={{ background: '#18181b', color: 'white' }}>📧 Enviar email</option>
-          </select>
-        </div>
+        {/* Label si existe */}
+        {data?.label && (
+          <div className="text-sm font-medium text-white">
+            {data.label}
+          </div>
+        )}
         
-        {(data?.action === 'set_value' || data?.action === 'decrement' || data?.action === 'increment') && (
+        {/* Modo Vista (flujo guardado) */}
+        {isViewMode ? (
+          <>
+            {/* Tabla destino */}
+            {data?.targetTable && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                style={{ 
+                  background: 'rgba(139, 92, 246, 0.1)', 
+                  border: '1px solid rgba(139, 92, 246, 0.2)',
+                }}
+              >
+                <span className="text-purple-400">📋</span>
+                <span className="text-sm text-purple-300">
+                  En <span className="font-semibold text-purple-400">{data.targetTableName || 'Tabla'}</span>
+                </span>
+              </div>
+            )}
+            
+            {/* Filtro para updates */}
+            {data?.filter && Object.keys(data.filter).length > 0 && (
+              <div className="space-y-1">
+                <label className="block text-[10px] uppercase tracking-wider" style={{ color: '#71717a' }}>
+                  Donde
+                </label>
+                {Object.entries(data.filter).map(([key, val], idx) => (
+                  <div 
+                    key={idx}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs"
+                    style={{ 
+                      background: 'rgba(139, 92, 246, 0.05)', 
+                      border: '1px solid rgba(139, 92, 246, 0.1)',
+                    }}
+                  >
+                    <span className="text-purple-300">{getFieldDisplayName(key)}</span>
+                    <span className="text-zinc-600">=</span>
+                    <span className="text-amber-400">{String(val)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Campos a modificar/crear */}
+            {formattedFields && formattedFields.length > 0 && (
+              <div className="space-y-1">
+                <label className="block text-[10px] uppercase tracking-wider" style={{ color: '#71717a' }}>
+                  {data.actionType === 'create' ? 'Crear con' : 'Cambiar'}
+                </label>
+                {formattedFields.slice(0, 4).map((field, idx) => (
+                  <div 
+                    key={idx}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs"
+                    style={{ 
+                      background: 'rgba(16, 185, 129, 0.05)', 
+                      border: '1px solid rgba(16, 185, 129, 0.1)',
+                    }}
+                  >
+                    <span className="text-emerald-400">{getFieldDisplayName(field.field)}</span>
+                    <span className="text-zinc-600">→</span>
+                    <span className="text-amber-400 truncate max-w-[120px]" title={field.value}>
+                      {field.value}
+                    </span>
+                  </div>
+                ))}
+                {formattedFields.length > 4 && (
+                  <div className="text-[10px] text-zinc-500 pl-3">
+                    +{formattedFields.length - 4} campos más...
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Mensaje de error/notificación */}
+            {data?.message && (
+              <div className="px-3 py-2 rounded-lg text-xs"
+                style={{ 
+                  background: data.actionType === 'error' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(139, 92, 246, 0.1)', 
+                  border: data.actionType === 'error' ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(139, 92, 246, 0.2)',
+                  color: data.actionType === 'error' ? '#fca5a5' : '#c4b5fd'
+                }}
+              >
+                {data.message}
+              </div>
+            )}
+          </>
+        ) : (
+          /* Modo Edición (nuevo nodo) */
           <>
             <div>
               <label className="block text-[10px] uppercase tracking-wider mb-2" style={{ color: '#71717a' }}>
-                ¿Qué campo modificar?
+                ¿Qué acción ejecutar?
               </label>
-              <input 
-                type="text" 
-                placeholder="ej: stock, estado, puntos..."
-                className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all placeholder-zinc-500"
+              <select 
+                className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all cursor-pointer appearance-none"
                 style={{ 
                   background: '#18181b', 
                   border: '1px solid rgba(255,255,255,0.1)',
-                  color: 'white'
+                  color: 'white',
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2371717a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 0.5rem center',
+                  backgroundSize: '1.5em 1.5em',
+                  paddingRight: '2.5rem'
                 }}
-                value={data?.field || ''}
-                onChange={(e) => updateNodeData('field', e.target.value)}
-              />
+                value={data?.action || 'auto_create'}
+                onChange={(e) => updateNodeData('action', e.target.value)}
+              >
+                <option value="auto_create">➕ Crear registro</option>
+                <option value="auto_assign">🎯 Asignar automáticamente</option>
+                <option value="set_value">✏️ Establecer valor</option>
+                <option value="decrement">➖ Restar cantidad</option>
+                <option value="increment">➕ Sumar cantidad</option>
+                <option value="send_notification">🔔 Enviar notificación</option>
+                <option value="send_email">📧 Enviar email</option>
+              </select>
             </div>
             
-            <div>
-              <label className="block text-[10px] uppercase tracking-wider mb-2" style={{ color: '#71717a' }}>
-                {data?.action === 'set_value' ? 'Nuevo valor' : 'Cantidad'}
-              </label>
-              <input 
-                type="text" 
-                placeholder={data?.action === 'set_value' ? 'ej: confirmado, 100...' : 'ej: 1, 5, 10...'}
-                className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all placeholder-zinc-500"
-                style={{ 
-                  background: '#18181b', 
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: 'white'
-                }}
-                value={data?.value || ''}
-                onChange={(e) => updateNodeData('value', e.target.value)}
-              />
-            </div>
+            {(data?.action === 'set_value' || data?.action === 'decrement' || data?.action === 'increment') && (
+              <>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider mb-2" style={{ color: '#71717a' }}>
+                    ¿Qué campo modificar?
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="ej: stock, estado, puntos..."
+                    className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all placeholder-zinc-500"
+                    style={{ 
+                      background: '#18181b', 
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      color: 'white'
+                    }}
+                    value={data?.field || ''}
+                    onChange={(e) => updateNodeData('field', e.target.value)}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider mb-2" style={{ color: '#71717a' }}>
+                    {data?.action === 'set_value' ? 'Nuevo valor' : 'Cantidad'}
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder={data?.action === 'set_value' ? 'ej: confirmado, 100...' : 'ej: 1, 5, 10...'}
+                    className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all placeholder-zinc-500"
+                    style={{ 
+                      background: '#18181b', 
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      color: 'white'
+                    }}
+                    value={data?.value || ''}
+                    onChange={(e) => updateNodeData('value', e.target.value)}
+                  />
+                </div>
+              </>
+            )}
           </>
         )}
       </div>

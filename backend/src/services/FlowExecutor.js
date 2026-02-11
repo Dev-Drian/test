@@ -118,16 +118,19 @@ async function getFlowsForTrigger(workspaceId, triggerType, tableId) {
  * Ejecuta una acción de un nodo de flujo
  */
 async function executeAction(action, context, workspaceId) {
-  const { actionType, targetTable, fields, filter } = action;
+  const { actionType, targetTable, fields, filter, createIfNotFound } = action;
   
-  console.log(`[FlowExecutor] Executing action: ${actionType}`, { targetTable, fields });
+  console.log(`[FlowExecutor] Executing action: ${actionType}`, { targetTable, fields, createIfNotFound });
   
   switch (actionType) {
     case 'create':
       return await executeCreateAction(workspaceId, targetTable, fields, context);
     
     case 'update':
-      return await executeUpdateAction(workspaceId, targetTable, filter, fields, context);
+      return await executeUpdateAction(workspaceId, targetTable, filter, fields, context, { createIfNotFound });
+    
+    case 'upsert': // update or create
+      return await executeUpdateAction(workspaceId, targetTable, filter, fields, context, { createIfNotFound: true });
     
     case 'notification':
       console.log(`[FlowExecutor] Notification: ${action.message || action.template}`);
@@ -187,8 +190,11 @@ async function executeCreateAction(workspaceId, targetTableId, fields, context) 
 
 /**
  * Ejecuta una acción de actualización
+ * Si createIfNotFound=true y no existe el registro, lo crea
  */
-async function executeUpdateAction(workspaceId, targetTableId, filter, fields, context) {
+async function executeUpdateAction(workspaceId, targetTableId, filter, fields, context, options = {}) {
+  const { createIfNotFound = false } = options;
+  
   try {
     const dataDb = await connectDB(getTableDataDbName(workspaceId, targetTableId));
     
@@ -208,6 +214,12 @@ async function executeUpdateAction(workspaceId, targetTableId, filter, fields, c
     });
     
     if (!result.docs || result.docs.length === 0) {
+      // Si createIfNotFound está activo, crear el registro
+      if (createIfNotFound) {
+        console.log('[FlowExecutor] Record not found, creating new one with createIfNotFound');
+        return await executeCreateAction(workspaceId, targetTableId, { ...processedFilter, ...fields }, context);
+      }
+      
       console.warn('[FlowExecutor] No record found to update with filter:', processedFilter);
       return { success: false, error: 'Record not found' };
     }
@@ -216,16 +228,27 @@ async function executeUpdateAction(workspaceId, targetTableId, filter, fields, c
     
     // Procesar templates en los campos
     const processedFields = {};
+    const mergedContext = { ...context, ...doc };
+    
     for (const [key, value] of Object.entries(fields || {})) {
-      // Evaluar expresiones matemáticas simples
-      let processedValue = processTemplate(String(value), { ...context, ...doc });
+      let processedValue = String(value);
       
-      // Si parece ser una expresión matemática, evaluarla
-      if (processedValue.includes(' - ') || processedValue.includes(' + ') || processedValue.includes(' * ')) {
-        try {
-          processedValue = evaluateSimpleExpression(processedValue);
-        } catch (e) {
-          console.warn('[FlowExecutor] Could not evaluate expression:', processedValue);
+      // Detectar si es una expresión matemática con variables {{a * b}}
+      const mathMatch = processedValue.match(/\{\{([^}]+\s*[\+\-\*\/]\s*[^}]+)\}\}/);
+      if (mathMatch) {
+        processedValue = evaluateExpressionWithContext(mathMatch[1], mergedContext);
+        console.log(`[FlowExecutor] Evaluated expression: ${mathMatch[1]} = ${processedValue}`);
+      } else {
+        // Procesar template normal
+        processedValue = processTemplate(processedValue, mergedContext);
+        
+        // Si después de procesar sigue siendo una expresión matemática
+        if (processedValue.includes(' - ') || processedValue.includes(' + ') || processedValue.includes(' * ')) {
+          try {
+            processedValue = evaluateSimpleExpression(processedValue);
+          } catch (e) {
+            console.warn('[FlowExecutor] Could not evaluate expression:', processedValue);
+          }
         }
       }
       
@@ -389,7 +412,45 @@ function evaluateSimpleExpression(expr) {
     return expr;
   }
 }
-
+/**
+ * Evalúa una expresión matemática con variables del contexto
+ * Ejemplo: "productoData.precio * cantidad" con contexto { productoData: { precio: 100 }, cantidad: 2 }
+ * => 200
+ */
+function evaluateExpressionWithContext(expression, context) {
+  try {
+    // Reemplazar variables con sus valores
+    let evalExpr = expression.trim();
+    
+    // Buscar todas las variables (palabras o con puntos como productoData.precio)
+    const varPattern = /([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)/g;
+    const matches = evalExpr.match(varPattern) || [];
+    
+    for (const varName of matches) {
+      // Obtener valor del contexto (soporta acceso anidado)
+      let value = context;
+      const keys = varName.split('.');
+      for (const k of keys) {
+        if (value === null || value === undefined) break;
+        value = value[k];
+      }
+      
+      // Reemplazar la variable con su valor
+      if (value !== null && value !== undefined && !isNaN(Number(value))) {
+        evalExpr = evalExpr.replace(new RegExp(varName.replace('.', '\\.'), 'g'), Number(value));
+      }
+    }
+    
+    console.log(`[FlowExecutor] Expression after substitution: ${evalExpr}`);
+    
+    // Evaluar la expresión resultante
+    const result = evaluateSimpleExpression(evalExpr);
+    return result;
+  } catch (error) {
+    console.error('[FlowExecutor] Error evaluating expression:', error);
+    return 0;
+  }
+}
 /**
  * Ejecuta un flujo completo
  */
