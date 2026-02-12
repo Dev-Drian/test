@@ -169,6 +169,13 @@ export class ChatService {
       name: t.name,
       type: t.type,
       fields: (t.headers || []).map(h => h.key || h.label),
+      // Incluir permisos para que el LLM los conozca
+      permissions: {
+        canQuery: t.permissions?.allowQuery !== false,
+        canCreate: t.permissions?.allowCreate !== false,
+        canUpdate: t.permissions?.allowUpdate !== false,
+        canDelete: t.permissions?.allowDelete === true, // Solo true si explícitamente habilitado
+      },
     }));
     
     const intent = await this.aiProvider.detectIntent(message, agent);

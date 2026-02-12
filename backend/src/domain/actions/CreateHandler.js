@@ -11,6 +11,7 @@ import { ActionHandler } from './ActionHandler.js';
 import { getEventEmitter, EVENTS } from '../../core/EventEmitter.js';
 import { EntityRepository } from '../../repositories/EntityRepository.js';
 import { processRelations } from '../../services/relationHandler.js';
+import { TablePermissions } from '../../services/TablePermissions.js';
 
 export class CreateHandler extends ActionHandler {
   constructor(dependencies = {}) {
@@ -42,8 +43,22 @@ export class CreateHandler extends ActionHandler {
    * Ejecuta el flujo de creación
    */
   async execute(context) {
-    const { workspaceId } = context;
+    const { workspaceId, tables, analysis } = context;
     const hasFlows = context.agent?.hasFlows === true;
+    
+    // Verificar permisos de la tabla ANTES de empezar (permiso directo + dependencias)
+    if (!context.pendingCreate && analysis?.tableId) {
+      const targetTable = tables?.find(t => t._id === analysis.tableId);
+      
+      // Verificar permiso completo (directo + dependencias)
+      const permission = TablePermissions.checkFullPermissions(targetTable, 'create', tables);
+      if (!permission.allowed) {
+        return {
+          handled: true,
+          response: permission.reason,
+        };
+      }
+    }
     
     // 1. Si no hay pendingCreate, inicializar uno nuevo
     let isNewPendingCreate = false;

@@ -30,6 +30,13 @@ export async function seed() {
       type: 'catalog',
       displayField: 'nombre',
       description: 'Tipos de servicio del restaurante',
+      // Servicios: solo consulta (catálogo protegido)
+      permissions: {
+        allowQuery: true,
+        allowCreate: false,
+        allowUpdate: false,
+        allowDelete: false
+      },
       headers: [
         {
           key: 'nombre',
@@ -68,6 +75,13 @@ export async function seed() {
       type: 'schedule',
       displayField: 'dia',
       description: 'Horarios de atención del restaurante',
+      // Horarios: solo consulta
+      permissions: {
+        allowQuery: true,
+        allowCreate: false,
+        allowUpdate: false,
+        allowDelete: false
+      },
       headers: [
         {
           key: 'dia',
@@ -116,6 +130,13 @@ export async function seed() {
       type: 'bookings',
       displayField: 'cliente',
       description: 'Reservas de mesas del restaurante',
+      // Reservas: puede consultar, crear, actualizar (cancelar), NO eliminar
+      permissions: {
+        allowQuery: true,
+        allowCreate: true,
+        allowUpdate: true,
+        allowDelete: false
+      },
       headers: [
         {
           key: 'cliente',
@@ -230,7 +251,11 @@ export async function seed() {
       type: 'agent',  // IMPORTANTE: Identificar como agente, no como tabla
       name: 'Asistente de Reservas',
       description: 'Ayuda a los clientes a hacer reservas',
-      tables: [reservasTableId, serviciosTableId, horariosTableId],  // Acceso a las 3 tablas
+      tables: [
+        { tableId: reservasTableId, fullAccess: false },  // Reservas: filtrado por cliente
+        { tableId: serviciosTableId, fullAccess: true },  // Servicios: todos ven
+        { tableId: horariosTableId, fullAccess: true },   // Horarios: todos ven
+      ],
       prompt: `Eres el asistente virtual de ${WORKSPACE_NAME}.
 
 Tu función principal es ayudar a los clientes a hacer reservas de mesa.

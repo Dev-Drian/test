@@ -66,21 +66,46 @@
     },
     "tables": {
       "type": "array",
-      "items": { "type": "string" },
-      "description": "IDs de tablas vinculadas al agente (solo del mismo workspace)"
+      "description": "Tablas vinculadas al agente con su tipo de acceso",
+      "items": {
+        "type": "object",
+        "properties": {
+          "tableId": { "type": "string", "description": "ID de la tabla" },
+          "fullAccess": { "type": "boolean", "default": false, "description": "Si true, ve todos los datos. Si false, filtra por identidad del usuario." }
+        },
+        "required": ["tableId"]
+      }
     },
     "workflows": {
       "type": "array",
       "items": { "type": "string" },
       "description": "IDs de automatizaciones vinculadas"
     },
-    "Capabilities": {
+    "capabilities": {
       "type": "object",
+      "description": "Capacidades del agente. Si no se configura, se infiere de las tablas.",
       "properties": {
         "webSearch": { "type": "boolean" },
         "dallEImageGeneration": { "type": "boolean" },
-        "aythenCodeInterpretor": { "type": "boolean" }
+        "codeInterpreter": { "type": "boolean" }
       }
+    },
+    "businessInfo": {
+      "type": "object",
+      "description": "Info del negocio (opcional). Si no se pone, usa nombre del agente.",
+      "properties": {
+        "companyName": { "type": "string", "description": "Nombre de la empresa/negocio" },
+        "industry": { 
+          "type": "string", 
+          "enum": ["clinic", "restaurant", "salon", "veterinary", "retail", "services", "other"],
+          "description": "Tipo de negocio (opcional, se infiere de tablas)"
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Cosas que el bot NO puede hacer (opcional). Ej: 'No puedo dar diagnósticos médicos'"
     }
   }
 }

@@ -29,6 +29,13 @@ export async function seed() {
       type: 'catalog',
       displayField: 'nombre',
       description: 'Catálogo de servicios del salón',
+      // Servicios: solo consulta (catálogo protegido)
+      permissions: {
+        allowQuery: true,
+        allowCreate: false,
+        allowUpdate: false,
+        allowDelete: false
+      },
       headers: [
         {
           key: 'nombre',
@@ -67,6 +74,13 @@ export async function seed() {
       type: 'appointments',
       displayField: 'cliente',
       description: 'Citas agendadas en el salón',
+      // Citas: puede consultar, crear, actualizar (cancelar), NO eliminar
+      permissions: {
+        allowQuery: true,
+        allowCreate: true,
+        allowUpdate: true,
+        allowDelete: false
+      },
       headers: [
         {
           key: 'cliente',
@@ -153,7 +167,10 @@ export async function seed() {
       _id: agentId,
       name: 'Asistente del Salón',
       description: 'Ayuda a agendar citas y consultar servicios',
-      tables: [citasTableId, serviciosTableId],
+      tables: [
+        { tableId: citasTableId, fullAccess: false },     // Citas: filtrado por cliente
+        { tableId: serviciosTableId, fullAccess: true },  // Servicios: todos ven
+      ],
       prompt: `Eres el asistente virtual de ${WORKSPACE_NAME}.
 
 Tu función es ayudar a los clientes a agendar citas y consultar servicios.

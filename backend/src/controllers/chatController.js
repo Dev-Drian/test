@@ -84,7 +84,7 @@ export async function sendMessage(req, res) {
       chatId, 
       agentId, 
       message, 
-      token 
+      token,
     } = req.body;
     
     // Validaciones

@@ -6,6 +6,7 @@
 
 import { ActionHandler } from './ActionHandler.js';
 import { getEventEmitter, EVENTS } from '../../core/EventEmitter.js';
+import { TablePermissions } from '../../services/TablePermissions.js';
 
 export class UpdateHandler extends ActionHandler {
   constructor(dependencies = {}) {
@@ -30,16 +31,41 @@ export class UpdateHandler extends ActionHandler {
    * Ejecuta la actualización
    */
   async execute(context) {
-    const { workspaceId, analysis, pendingConfirmation, message } = context;
+    const { workspaceId, analysis, pendingConfirmation, message, tables } = context;
     
     // Manejar confirmación pendiente
     if (pendingConfirmation?.action === 'cancel') {
       return this._handleConfirmation(context);
     }
     
-    // Verificar si es cancelación
+    // Verificar permisos de la tabla ANTES de proceder
+    const tableId = context.getEffectiveTableId() || analysis?.tableId;
+    const targetTable = tables?.find(t => t._id === tableId);
+    
+    // Verificar si es cancelación/eliminación
     const fieldsToUpdate = analysis?.update?.fieldsToUpdate || {};
     const isCancelacion = (fieldsToUpdate.estado || '').toLowerCase().includes('cancel');
+    const actionType = context.intent?.actionType;
+    
+    // Si es delete o cancelación, verificar permiso de delete
+    if (actionType === 'delete' || isCancelacion) {
+      const permission = TablePermissions.check(targetTable, 'delete');
+      if (!permission.allowed) {
+        return {
+          handled: true,
+          response: permission.reason,
+        };
+      }
+    } else {
+      // Es update normal, verificar permiso de update
+      const permission = TablePermissions.check(targetTable, 'update');
+      if (!permission.allowed) {
+        return {
+          handled: true,
+          response: permission.reason,
+        };
+      }
+    }
     
     if (isCancelacion) {
       return this._askForConfirmation(context);

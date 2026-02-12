@@ -91,11 +91,20 @@ const DEFAULT_FIELD = {
   validation: {},
 };
 
+// Permisos por defecto - delete desactivado por seguridad
+const DEFAULT_PERMISSIONS = {
+  allowQuery: true,
+  allowCreate: true,
+  allowUpdate: true,
+  allowDelete: false,
+};
+
 export default function TableBuilder({ onSave, onCancel, availableTables = [], loading }) {
   const [step, setStep] = useState(1);
   const [tableName, setTableName] = useState("");
   const [tableDescription, setTableDescription] = useState("");
   const [fields, setFields] = useState([{ ...DEFAULT_FIELD, id: Date.now() }]);
+  const [permissions, setPermissions] = useState({ ...DEFAULT_PERMISSIONS });
   const [errors, setErrors] = useState({});
   const [expandedField, setExpandedField] = useState(null);
 
@@ -169,6 +178,7 @@ export default function TableBuilder({ onSave, onCancel, availableTables = [], l
       name: tableName,
       description: tableDescription,
       headers,
+      permissions,
     });
   };
 
@@ -556,6 +566,71 @@ export default function TableBuilder({ onSave, onCancel, availableTables = [], l
                     </tr>
                   </tbody>
                 </table>
+              </div>
+            </div>
+
+            {/* Permissions section */}
+            <div className="rounded-xl border border-white/[0.06] overflow-hidden">
+              <div className="bg-white/[0.02] px-4 py-3 border-b border-white/[0.06]">
+                <h4 className="text-sm font-medium text-zinc-400">Permisos del Bot</h4>
+                <p className="text-xs text-zinc-500 mt-1">Controla qué acciones puede realizar el asistente sobre esta tabla</p>
+              </div>
+              <div className="p-4 grid grid-cols-2 gap-4">
+                {/* Query permission */}
+                <label className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] cursor-pointer hover:bg-white/[0.04] transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={permissions.allowQuery}
+                    onChange={(e) => setPermissions({ ...permissions, allowQuery: e.target.checked })}
+                    className="w-4 h-4 rounded border-zinc-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 bg-zinc-800"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-zinc-300">🔍 Consultar</span>
+                    <p className="text-xs text-zinc-500">Buscar y ver registros</p>
+                  </div>
+                </label>
+
+                {/* Create permission */}
+                <label className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] cursor-pointer hover:bg-white/[0.04] transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={permissions.allowCreate}
+                    onChange={(e) => setPermissions({ ...permissions, allowCreate: e.target.checked })}
+                    className="w-4 h-4 rounded border-zinc-600 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0 bg-zinc-800"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-zinc-300">➕ Crear</span>
+                    <p className="text-xs text-zinc-500">Agregar nuevos registros</p>
+                  </div>
+                </label>
+
+                {/* Update permission */}
+                <label className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] cursor-pointer hover:bg-white/[0.04] transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={permissions.allowUpdate}
+                    onChange={(e) => setPermissions({ ...permissions, allowUpdate: e.target.checked })}
+                    className="w-4 h-4 rounded border-zinc-600 text-amber-500 focus:ring-amber-500 focus:ring-offset-0 bg-zinc-800"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-zinc-300">✏️ Editar</span>
+                    <p className="text-xs text-zinc-500">Modificar registros existentes</p>
+                  </div>
+                </label>
+
+                {/* Delete permission */}
+                <label className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-red-500/20 cursor-pointer hover:bg-white/[0.04] transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={permissions.allowDelete}
+                    onChange={(e) => setPermissions({ ...permissions, allowDelete: e.target.checked })}
+                    className="w-4 h-4 rounded border-zinc-600 text-red-500 focus:ring-red-500 focus:ring-offset-0 bg-zinc-800"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-red-400">🗑️ Eliminar</span>
+                    <p className="text-xs text-zinc-500">Borrar registros (desactivado por defecto)</p>
+                  </div>
+                </label>
               </div>
             </div>
 

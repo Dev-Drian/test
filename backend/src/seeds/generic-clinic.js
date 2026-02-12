@@ -26,6 +26,13 @@ export async function seed() {
       type: 'appointments',
       displayField: 'paciente',
       description: 'Citas médicas agendadas',
+      // Citas: puede consultar, crear y actualizar (cancelar), NO eliminar
+      permissions: {
+        allowQuery: true,
+        allowCreate: true,
+        allowUpdate: true,
+        allowDelete: false
+      },
       headers: [
         {
           key: 'paciente',
@@ -138,7 +145,9 @@ export async function seed() {
       _id: agentId,
       name: 'Asistente de Citas',
       description: 'Ayuda a agendar citas médicas',
-      tables: [citasTableId],
+      tables: [
+        { tableId: citasTableId, fullAccess: false },  // Citas: filtrado por paciente
+      ],
       prompt: `Eres el asistente virtual de ${WORKSPACE_NAME}.
 
 Tu función principal es ayudar a los clientes a agendar citas médicas.

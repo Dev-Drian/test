@@ -146,9 +146,15 @@ TABLAS DISPONIBLES:
 ${JSON.stringify(tablesInfo, null, 2)}
 
 Cada tabla tiene:
-- "_id": ID de la tabla
+- "id": ID de la tabla
 - "name": nombre de la tabla  
-- "fields": campos OBLIGATORIOS que el usuario debe proporcionar
+- "fields": campos que puede tener
+- "permissions": qué acciones están permitidas (canQuery, canCreate, canUpdate, canDelete)
+
+IMPORTANTE SOBRE PERMISOS:
+- Si "canCreate: false" → NO se pueden crear registros en esa tabla
+- Si "canQuery: false" → NO se pueden consultar datos de esa tabla
+- Si una tabla tiene relaciones a otra tabla con canQuery: false, NO se puede crear porque no se pueden resolver las relaciones
 
 MENSAJE DEL USUARIO:
 "${String(userMessage).slice(0, 500)}"
@@ -173,6 +179,7 @@ REGLAS IMPORTANTES:
 6. En "create.missingFields" pon SOLO los campos de "fields" que NO hayan sido proporcionados.
 7. Si ya tienes TODOS los campos de "fields" con valores, marca "create.isComplete": true.
 8. NUNCA inventes datos que el usuario NO dijo. Si dice "quiero agendar" sin más detalles, fields debe estar vacío o solo con lo explícito.
+9. Si la acción no está permitida por permisos, incluye "permissionDenied: true" en la respuesta.
 
 EJEMPLOS de extracción:
 - "una consulta general" → motivo: "Consulta general"
@@ -186,6 +193,8 @@ Formato de salida (SOLO JSON válido, sin markdown ni explicaciones):
   "actionType": "${actionType}",
   "tableId": "id de la tabla",
   "tableName": "nombre de la tabla",
+  "permissionDenied": false,
+  "permissionReason": null,
   "query": { "filters": {}, "limit": 10 },
   "create": { "isComplete": false, "missingFields": [], "fields": {} },
   "update": { "searchCriteria": {}, "fieldsToUpdate": {} }

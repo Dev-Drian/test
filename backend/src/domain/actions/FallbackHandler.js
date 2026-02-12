@@ -9,6 +9,19 @@
  */
 
 import { ActionHandler } from './ActionHandler.js';
+import { AgentCapabilities } from '../../services/AgentCapabilities.js';
+
+// Patrones para detectar si el usuario pregunta qué puede hacer el bot
+const HELP_PATTERNS = [
+  /qu[eé]\s+(puedes|sabes)\s+hacer/i,
+  /qu[eé]\s+servicios/i,
+  /c[oó]mo\s+(me\s+)?puedes\s+ayudar/i,
+  /ayuda/i,
+  /help/i,
+  /what\s+can\s+you\s+do/i,
+  /men[uú]/i,
+  /opciones/i,
+];
 
 export class FallbackHandler extends ActionHandler {
   constructor(dependencies = {}) {
@@ -26,11 +39,21 @@ export class FallbackHandler extends ActionHandler {
    * Genera respuesta con el LLM
    */
   async execute(context) {
-    const { agent, tablesData, message, history, token, intent } = context;
+    const { agent, tablesData, tables, message, history, token, intent } = context;
     
     try {
-      // Construir system prompt dinámico
-      const systemPrompt = this._buildSystemPrompt(agent, tablesData, intent);
+      // Detectar si pregunta qué puede hacer
+      if (this._isHelpRequest(message)) {
+        const helpText = AgentCapabilities.generateHelpText(agent, tables || []);
+        return {
+          handled: true,
+          response: helpText,
+          formatted: true,
+        };
+      }
+      
+      // Construir system prompt dinámico con capacidades
+      const systemPrompt = this._buildSystemPrompt(agent, tablesData, tables, intent);
       
       // Construir mensajes
       const messages = [
@@ -71,14 +94,25 @@ export class FallbackHandler extends ActionHandler {
   }
   
   /**
+   * Detecta si el usuario pregunta qué puede hacer el bot
+   */
+  _isHelpRequest(message) {
+    const msg = (message || '').toLowerCase().trim();
+    return HELP_PATTERNS.some(pattern => pattern.test(msg));
+  }
+  
+  /**
    * Construye el system prompt dinámicamente
    */
-  _buildSystemPrompt(agent, tablesData = [], intent = null) {
+  _buildSystemPrompt(agent, tablesData = [], tables = [], intent = null) {
     const agentName = agent?.name || 'Asistente';
     const agentDesc = agent?.description || '';
     const style = agent?.communicationStyle || {};
     const hasFlows = agent?.hasFlows === true;
     const planFeatures = agent?.planFeatures || {};
+    
+    // Obtener contexto de capacidades automáticamente
+    const capabilitiesContext = AgentCapabilities.generateSystemContext(agent, tables);
     
     // Verificar si el usuario intentó una acción sobre tablas pero no se ejecutó
     const triedTableAction = intent?.hasTableAction && intent?.actionType;
@@ -91,6 +125,9 @@ export class FallbackHandler extends ActionHandler {
         tables: tablesData.map(t => t.tableName).join(', '),
         date: new Date().toLocaleDateString('es-CO'),
       });
+      
+      // Agregar contexto de capacidades
+      prompt += '\n\n' + capabilitiesContext;
       
       // Agregar datos de tablas
       if (tablesData.length > 0) {
@@ -137,6 +174,9 @@ ESTILO DE COMUNICACIÓN:
       prompt += '\n';
     }
     
+    // Agregar contexto de capacidades (servicios y limitaciones)
+    prompt += capabilitiesContext + '\n';
+    
     // Datos de tablas
     if (tablesData.length > 0) {
       prompt += 'DATOS DISPONIBLES:\n';
@@ -148,6 +188,7 @@ REGLAS CRÍTICAS:
 - NUNCA menciones que eres IA, ChatGPT u OpenAI
 - Actúa siempre como "${agentName}"
 - Si no tienes información, dilo brevemente
+- Si el usuario pregunta qué puedes hacer, lista tus servicios de forma clara
 
 ⚠️ HONESTIDAD OBLIGATORIA:
 - NUNCA digas que registraste, creaste, agendaste, guardaste o actualizaste algo.

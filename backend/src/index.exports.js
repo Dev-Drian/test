@@ -38,3 +38,8 @@ export { OpenAIProvider, getOpenAIProvider } from './integrations/ai/OpenAIProvi
 
 // Services
 export { ChatService, createChatService } from './services/ChatService.js';
+export { AgentCapabilities } from './services/AgentCapabilities.js';
+
+// Parsing
+export { QueryParser } from './parsing/QueryParser.js';
+export { DateRangeParser } from './parsing/DateRangeParser.js';

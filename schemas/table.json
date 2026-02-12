@@ -17,6 +17,16 @@
         "name": { "type": "string" }
       }
     },
+    "permissions": {
+      "type": "object",
+      "description": "Permisos de acciones del bot sobre esta tabla",
+      "properties": {
+        "allowQuery": { "type": "boolean", "default": true, "description": "Permitir consultar/leer datos" },
+        "allowCreate": { "type": "boolean", "default": true, "description": "Permitir crear registros" },
+        "allowUpdate": { "type": "boolean", "default": true, "description": "Permitir actualizar registros" },
+        "allowDelete": { "type": "boolean", "default": false, "description": "Permitir eliminar registros (false por defecto)" }
+      }
+    },
     "headers": {
       "type": "array",
       "items": {

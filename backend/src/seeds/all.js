@@ -16,6 +16,7 @@ import seedRestaurant from './generic-restaurant.js';
 import seedSalon from './generic-salon.js';
 import seedClinic from './generic-clinic.js';
 import seedPremiumCRM from './premium-crm.js';
+import { seed as seedBraseria } from './braseria-restaurant.js';
 
 // Importar configuración dinámica de DB
 import { getDbPrefix } from '../config/db.js';
@@ -113,21 +114,23 @@ async function main() {
     await cleanDatabases();
   }
 
-  console.log('\n📋 Seeds genéricos a ejecutar:');
-  console.log('   1. 🍽️  Restaurante (generic-restaurant)');
+  console.log('\n📋 Seeds a ejecutar:');
+  console.log('   1. 🍽️  Restaurante Genérico (generic-restaurant)');
   console.log('   2. 💇  Salón de Belleza (generic-salon)');
   console.log('   3. 🏥  Clínica/Veterinaria (generic-clinic)');
   console.log('   4. 💼  CRM Premium (premium-crm)');
+  console.log('   5. 🔥  La Brasería del Chef (braseria-restaurant)');
 
   let success = 0;
   let failed = 0;
 
   // Ejecutar seeds directamente (ya están importados)
   const seedFunctions = [
-    { name: 'Restaurante', fn: seedRestaurant },
+    { name: 'Restaurante Genérico', fn: seedRestaurant },
     { name: 'Salón de Belleza', fn: seedSalon },
     { name: 'Clínica', fn: seedClinic },
     { name: 'CRM Premium', fn: seedPremiumCRM },
+    { name: 'La Brasería del Chef', fn: seedBraseria },
   ];
 
   for (const { name, fn } of seedFunctions) {
@@ -150,12 +153,14 @@ async function main() {
   console.log(`   ❌ Fallidos: ${failed}`);
   console.log('\n   Workspaces creados (100% dinámicos):');
   console.log('   ─────────────────────────────────────────────────────');
-  console.log('   🍽️  Restaurante Demo        - Sistema de reservas');
+  console.log('   🍽️  Restaurante Demo        - Sistema de reservas básico');
   console.log('   💇  Salón de Belleza Demo   - Sistema de citas');
-  console.log('   🏥  Clínica Demo             - Sistema de citas médicas');
-  console.log('   💼  CRM Premium              - 5 tablas + 2 agentes especializados');
+  console.log('   🏥  Clínica Demo            - Sistema de citas médicas');
+  console.log('   💼  CRM Premium             - 5 tablas + 2 agentes');
+  console.log('   🔥  La Brasería del Chef    - Restaurante premium con filtros');
   console.log('\n   ✨ Todos configurados dinámicamente desde fieldsConfig');
   console.log('   ✨ Sin código hardcodeado - todo desde BD');
+  console.log('   ✨ Filtros automáticos por identidad en tablas privadas');
   console.log('\n');
 }
 

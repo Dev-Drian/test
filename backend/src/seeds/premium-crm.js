@@ -30,6 +30,13 @@ export async function seed() {
       type: 'customers',
       displayField: 'nombre',
       description: 'Base de datos de clientes',
+      // Clientes: solo consulta y creación, NO editar ni eliminar (datos sensibles)
+      permissions: {
+        allowQuery: true,
+        allowCreate: true,
+        allowUpdate: false,
+        allowDelete: false
+      },
       headers: [
         { key: 'nombre', label: 'Nombre Completo', type: 'text', required: true, emoji: '👤', priority: 1 },
         { key: 'email', label: 'Email', type: 'email', required: true, emoji: '📧', priority: 2 },
@@ -52,6 +59,13 @@ export async function seed() {
       type: 'catalog',
       displayField: 'nombre',
       description: 'Catálogo de productos/servicios',
+      // Productos: SOLO consulta (catálogo protegido, solo admin lo modifica)
+      permissions: {
+        allowQuery: true,
+        allowCreate: false,
+        allowUpdate: false,
+        allowDelete: false
+      },
       headers: [
         { key: 'nombre', label: 'Producto', type: 'text', required: true, emoji: '📦', priority: 1 },
         { key: 'categoria', label: 'Categoría', type: 'select', required: true, emoji: '🏷️', options: ['Software', 'Hardware', 'Servicio', 'Consultoría'], priority: 2 },
@@ -72,6 +86,13 @@ export async function seed() {
       type: 'transactions',
       displayField: 'cliente',
       description: 'Registro de ventas realizadas',
+      // Ventas: consulta, crear y editar (para cambiar estado), NO eliminar
+      permissions: {
+        allowQuery: true,
+        allowCreate: true,
+        allowUpdate: true,
+        allowDelete: false
+      },
       headers: [
         { 
           key: 'cliente', 
@@ -124,6 +145,13 @@ export async function seed() {
       type: 'followups',
       displayField: 'cliente',
       description: 'Seguimiento a clientes potenciales',
+      // Seguimientos: todos los permisos (gestión completa)
+      permissions: {
+        allowQuery: true,
+        allowCreate: true,
+        allowUpdate: true,
+        allowDelete: true
+      },
       headers: [
         { 
           key: 'cliente', 
@@ -160,6 +188,13 @@ export async function seed() {
       type: 'tasks',
       displayField: 'titulo',
       description: 'Gestión de tareas del equipo',
+      // Tareas: todos los permisos (gestión completa)
+      permissions: {
+        allowQuery: true,
+        allowCreate: true,
+        allowUpdate: true,
+        allowDelete: true
+      },
       headers: [
         { key: 'titulo', label: 'Título', type: 'text', required: true, emoji: '✏️', priority: 1 },
         { key: 'descripcion', label: 'Descripción', type: 'text', required: false, emoji: '📝' },
@@ -181,6 +216,13 @@ export async function seed() {
       type: 'suppliers',
       displayField: 'nombre',
       description: 'Proveedores de productos',
+      // Proveedores: solo consulta (datos de proveedores protegidos)
+      permissions: {
+        allowQuery: true,
+        allowCreate: false,
+        allowUpdate: false,
+        allowDelete: false
+      },
       headers: [
         { key: 'nombre', label: 'Nombre', type: 'text', required: true, emoji: '🏭', priority: 1 },
         { key: 'contacto', label: 'Contacto', type: 'text', required: true, emoji: '👤', priority: 2 },
@@ -202,6 +244,13 @@ export async function seed() {
       type: 'invoices',
       displayField: 'numeroFactura',
       description: 'Facturas generadas',
+      // Facturas: solo consulta (documentos fiscales, no se modifican)
+      permissions: {
+        allowQuery: true,
+        allowCreate: false,
+        allowUpdate: false,
+        allowDelete: false
+      },
       headers: [
         { key: 'numeroFactura', label: 'Número', type: 'text', required: true, emoji: '🧾', priority: 1 },
         { 
@@ -239,6 +288,13 @@ export async function seed() {
       type: 'marketing',
       displayField: 'nombre',
       description: 'Campañas de marketing',
+      // Campañas: consulta, crear y editar, NO eliminar
+      permissions: {
+        allowQuery: true,
+        allowCreate: true,
+        allowUpdate: true,
+        allowDelete: false
+      },
       headers: [
         { key: 'nombre', label: 'Nombre', type: 'text', required: true, emoji: '📢', priority: 1 },
         { key: 'tipo', label: 'Tipo', type: 'select', required: true, emoji: '🎯', options: ['Email', 'WhatsApp', 'SMS', 'Redes Sociales'], priority: 2 },
@@ -263,6 +319,13 @@ export async function seed() {
       displayField: 'flowName',
       description: 'Registro de ejecución de flujos automatizados',
       isSystemTable: true,
+      // Log de Flujos: SOLO consulta (tabla de sistema, solo lectura)
+      permissions: {
+        allowQuery: true,
+        allowCreate: false,
+        allowUpdate: false,
+        allowDelete: false
+      },
       headers: [
         { key: 'flowId', label: 'Flow ID', type: 'text', required: true, emoji: '🔗', priority: 1 },
         { key: 'flowName', label: 'Nombre del Flujo', type: 'text', required: true, emoji: '⚡', priority: 2 },
@@ -290,7 +353,13 @@ export async function seed() {
       type: 'agent',
       name: 'Asistente de Ventas',
       description: 'Especializado en registrar ventas y gestionar clientes',
-      tables: [clientesTableId, productosTableId, ventasTableId, proveedoresTableId, facturasTableId],
+      tables: [
+        { tableId: clientesTableId, fullAccess: true },
+        { tableId: productosTableId, fullAccess: true },
+        { tableId: ventasTableId, fullAccess: true },
+        { tableId: proveedoresTableId, fullAccess: true },
+        { tableId: facturasTableId, fullAccess: true },
+      ],
       prompt: `Eres el asistente de ventas del CRM ${WORKSPACE_NAME}.
 
 TU FUNCIÓN:
@@ -353,7 +422,16 @@ Mantén un tono profesional y amigable. Usa emojis apropiados.`,
       type: 'agent',
       name: 'Analista de Datos',
       description: 'Especializado en análisis y reportes',
-      tables: [clientesTableId, productosTableId, ventasTableId, seguimientosTableId, tareasTableId, proveedoresTableId, facturasTableId, campanasTableId],
+      tables: [
+        { tableId: clientesTableId, fullAccess: true },
+        { tableId: productosTableId, fullAccess: true },
+        { tableId: ventasTableId, fullAccess: true },
+        { tableId: seguimientosTableId, fullAccess: true },
+        { tableId: tareasTableId, fullAccess: true },
+        { tableId: proveedoresTableId, fullAccess: true },
+        { tableId: facturasTableId, fullAccess: true },
+        { tableId: campanasTableId, fullAccess: true },
+      ],
       prompt: `Eres el analista de datos del CRM ${WORKSPACE_NAME}.
 
 TU FUNCIÓN:

@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { WorkspaceContext } from "../context/WorkspaceContext";
-import { listAgents, createAgent, listTables, deleteAgent } from "../api/client";
+import { listAgents, createAgent, listTables, deleteAgent, updateAgent } from "../api/client";
 
 // Iconos SVG
 const Icons = {
@@ -46,6 +46,11 @@ const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
     </svg>
   ),
+  edit: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+    </svg>
+  ),
 };
 
 // Modelos de IA disponibles
@@ -64,11 +69,12 @@ export default function Agents() {
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(null);
   const [error, setError] = useState(null);
+  const [editingAgent, setEditingAgent] = useState(null); // Agente en edición
   
   // Form state
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [selectedTables, setSelectedTables] = useState([]);
+  const [selectedTables, setSelectedTables] = useState([]); // [{tableId, fullAccess}]
   const [aiModel, setAiModel] = useState("gpt-4o-mini");
 
   useEffect(() => {
@@ -88,10 +94,23 @@ export default function Agents() {
   }, [workspaceId]);
 
   const toggleTable = (tableId) => {
+    setSelectedTables((prev) => {
+      const exists = prev.find(t => t.tableId === tableId);
+      if (exists) {
+        return prev.filter(t => t.tableId !== tableId);
+      }
+      return [...prev, { tableId, fullAccess: false }];
+    });
+  };
+
+  const toggleFullAccess = (tableId) => {
     setSelectedTables((prev) =>
-      prev.includes(tableId) ? prev.filter((id) => id !== tableId) : [...prev, tableId]
+      prev.map(t => t.tableId === tableId ? { ...t, fullAccess: !t.fullAccess } : t)
     );
   };
+
+  const isTableSelected = (tableId) => selectedTables.some(t => t.tableId === tableId);
+  const hasFullAccess = (tableId) => selectedTables.find(t => t.tableId === tableId)?.fullAccess || false;
 
   const resetForm = () => {
     setName("");
@@ -99,6 +118,20 @@ export default function Agents() {
     setSelectedTables([]);
     setAiModel("gpt-4o-mini");
     setShowForm(false);
+    setEditingAgent(null);
+  };
+
+  const startEdit = (agent) => {
+    setEditingAgent(agent);
+    setName(agent.name || "");
+    setDescription(agent.description || "");
+    // Convertir formato de tablas
+    const tablesConfig = (agent.tables || []).map(t => 
+      typeof t === 'object' ? t : { tableId: t, fullAccess: true }
+    );
+    setSelectedTables(tablesConfig);
+    setAiModel(agent.aiModel?.[0] || "gpt-4o-mini");
+    setShowForm(true);
   };
 
   const handleCreate = async (e) => {
@@ -106,16 +139,23 @@ export default function Agents() {
     if (!name.trim() || !workspaceId) return;
     setCreating(true);
     try {
-      const res = await createAgent({
-        workspaceId,
-        agent: {
-          name: name.trim(),
-          description: description.trim(),
-          tables: selectedTables,
-          aiModel: [aiModel],
-        },
-      });
-      setAgents((prev) => [...prev, res.data]);
+      const agentData = {
+        name: name.trim(),
+        description: description.trim(),
+        tables: selectedTables,
+        aiModel: [aiModel],
+      };
+
+      let res;
+      if (editingAgent) {
+        // Actualizar agente existente
+        res = await updateAgent(workspaceId, editingAgent._id, agentData);
+        setAgents(prev => prev.map(a => a._id === editingAgent._id ? res.data : a));
+      } else {
+        // Crear nuevo agente
+        res = await createAgent({ workspaceId, agent: agentData });
+        setAgents(prev => [...prev, res.data]);
+      }
       resetForm();
     } catch (err) {
       setError(err.message);
@@ -222,11 +262,13 @@ export default function Agents() {
           </div>
         )}
 
-        {/* Formulario de creación */}
+        {/* Formulario de creación/edición */}
         {showForm && (
           <div className="mb-8 p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-white">Crear nuevo agente</h2>
+              <h2 className="text-lg font-semibold text-white">
+                {editingAgent ? `Editar: ${editingAgent.name}` : "Crear nuevo agente"}
+              </h2>
               <button onClick={resetForm} className="text-zinc-500 hover:text-white transition-colors">
                 {Icons.close}
               </button>
@@ -328,27 +370,57 @@ export default function Agents() {
                     </Link>
                   </div>
                 ) : (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="space-y-2">
                     {tables.map((t) => (
-                      <button
+                      <div
                         key={t._id}
-                        type="button"
-                        onClick={() => toggleTable(t._id)}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all ${
-                          selectedTables.includes(t._id)
-                            ? "bg-purple-500/10 border-purple-500/50 text-purple-400"
-                            : "bg-white/[0.02] border-white/[0.06] text-zinc-400 hover:border-white/[0.12]"
+                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                          isTableSelected(t._id)
+                            ? "bg-purple-500/10 border-purple-500/50"
+                            : "bg-white/[0.02] border-white/[0.06]"
                         }`}
                       >
-                        {selectedTables.includes(t._id) && (
-                          <span className="w-4 h-4 rounded bg-purple-500 flex items-center justify-center">
-                            {Icons.check}
+                        {/* Checkbox para seleccionar tabla */}
+                        <button
+                          type="button"
+                          onClick={() => toggleTable(t._id)}
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                            isTableSelected(t._id) ? "bg-purple-500 border-purple-500" : "border-zinc-600"
+                          }`}
+                        >
+                          {isTableSelected(t._id) && Icons.check}
+                        </button>
+                        
+                        {/* Nombre de la tabla */}
+                        <div className="flex-1 min-w-0">
+                          <span className={`text-sm font-medium ${isTableSelected(t._id) ? "text-purple-400" : "text-zinc-400"}`}>
+                            {t.name}
                           </span>
+                          <span className="text-xs text-zinc-600 ml-2">{t.headers?.length || 0} campos</span>
+                        </div>
+                        
+                        {/* Toggle de acceso completo (solo si está seleccionada) */}
+                        {isTableSelected(t._id) && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); toggleFullAccess(t._id); }}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                              hasFullAccess(t._id)
+                                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+                                : "bg-amber-500/10 text-amber-400 border border-amber-500/30"
+                            }`}
+                          >
+                            {hasFullAccess(t._id) ? "🔓 Todo" : "🔒 Filtrado"}
+                          </button>
                         )}
-                        <span className="text-sm font-medium">{t.name}</span>
-                        <span className="text-xs text-zinc-600">{t.headers?.length || 0} campos</span>
-                      </button>
+                      </div>
                     ))}
+                    
+                    {/* Leyenda */}
+                    <div className="flex gap-4 pt-2 text-xs text-zinc-500">
+                      <span>🔓 Todo = ve todos los registros</span>
+                      <span>🔒 Filtrado = solo sus datos</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -358,17 +430,19 @@ export default function Agents() {
                 <button 
                   type="submit" 
                   disabled={creating || !name.trim()}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-purple-500 text-white text-sm font-medium hover:bg-purple-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
+                    editingAgent ? "bg-emerald-500 hover:bg-emerald-400" : "bg-purple-500 hover:bg-purple-400"
+                  }`}
                 >
                   {creating ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Creando...</span>
+                      <span>{editingAgent ? "Guardando..." : "Creando..."}</span>
                     </>
                   ) : (
                     <>
                       {Icons.check}
-                      <span>Crear agente</span>
+                      <span>{editingAgent ? "Guardar cambios" : "Crear agente"}</span>
                     </>
                   )}
                 </button>
@@ -425,6 +499,13 @@ export default function Agents() {
                         {Icons.chat}
                       </Link>
                       <button
+                        onClick={() => startEdit(agent)}
+                        className="p-2 rounded-lg text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10 transition-all"
+                        title="Editar agente"
+                      >
+                        {Icons.edit}
+                      </button>
+                      <button
                         onClick={() => handleDelete(agent)}
                         disabled={deleting === agent._id}
                         className="p-2 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-all disabled:opacity-50"
@@ -451,14 +532,23 @@ export default function Agents() {
                     <div className="mb-4">
                       <p className="text-xs text-zinc-600 mb-2">Tablas vinculadas:</p>
                       <div className="flex flex-wrap gap-1.5">
-                        {agent.tables.map((tableId) => {
+                        {agent.tables.map((tableConfig, idx) => {
+                          // Soportar formato viejo (string) y nuevo ({tableId, fullAccess})
+                          const tableId = typeof tableConfig === 'object' ? tableConfig.tableId : tableConfig;
+                          const fullAccess = typeof tableConfig === 'object' ? tableConfig.fullAccess : true;
                           const tableInfo = tables.find(t => t._id === tableId);
+                          
                           return (
                             <span 
-                              key={tableId}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-500/10 text-blue-400 text-xs border border-blue-500/20"
+                              key={tableId || idx}
+                              className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs border ${
+                                fullAccess 
+                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                  : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                              }`}
+                              title={fullAccess ? "Acceso completo" : "Filtrado por usuario"}
                             >
-                              {Icons.table}
+                              {fullAccess ? "🔓" : "🔒"}
                               {tableInfo?.name || 'Tabla'}
                             </span>
                           );
@@ -490,19 +580,21 @@ export default function Agents() {
           </div>
         )}
 
-        {/* Tip */}
+        {/* Leyenda */}
         {agents.length > 0 && (
-          <div className="mt-8 p-4 rounded-xl bg-purple-500/5 border border-purple-500/10 flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0 text-purple-400">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+          <div className="mt-8 p-4 rounded-xl bg-zinc-800/50 border border-white/[0.06] flex items-center gap-6">
+            <p className="text-xs text-zinc-500">Acceso a tablas:</p>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-400 text-xs border border-emerald-500/20">
+                🔓 Todo
+              </span>
+              <span className="text-xs text-zinc-600">Ve todos los registros</span>
             </div>
-            <div>
-              <p className="text-sm text-purple-400 font-medium">Tip</p>
-              <p className="text-xs text-purple-400/60 mt-0.5">
-                Los agentes pueden acceder a las tablas que vincules para consultar y modificar datos mediante conversación natural.
-              </p>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-amber-500/10 text-amber-400 text-xs border border-amber-500/20">
+                🔒 Filtrado
+              </span>
+              <span className="text-xs text-zinc-600">Solo datos del usuario</span>
             </div>
           </div>
         )}

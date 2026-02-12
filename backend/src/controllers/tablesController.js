@@ -8,17 +8,27 @@ import {
 
 export async function createTable(req, res) {
   try {
-    const { workspaceId, name, type, headers, color, icon, projectId } = req.body;
+    const { workspaceId, name, type, headers, color, icon, projectId, permissions } = req.body;
     if (!workspaceId || !name) {
       return res.status(400).json({ error: "workspaceId and name are required" });
     }
     const tableDb = await connectDB(getWorkspaceDbName(workspaceId));
+    
+    // Permisos por defecto - delete desactivado por seguridad
+    const defaultPermissions = {
+      allowQuery: true,
+      allowCreate: true,
+      allowUpdate: true,
+      allowDelete: false,
+    };
+    
     const table = {
       _id: uuidv4(),
       name,
       description: req.body.description || "",
       type: type || "contacts",
       headers: headers || [],
+      permissions: { ...defaultPermissions, ...(permissions || {}) },
       color: color || "#4CAF50",
       icon: icon || { name: "table" },
       createdAt: new Date().toISOString(),
