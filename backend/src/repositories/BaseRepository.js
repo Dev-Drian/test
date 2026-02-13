@@ -2,10 +2,13 @@
  * BaseRepository - Clase base para todos los repositorios
  * 
  * Proporciona operaciones CRUD genéricas sobre CouchDB
+ * Con soporte para cache y logging centralizado
  */
 
 import { v4 as uuidv4 } from 'uuid';
 import { connectDB } from '../config/db.js';
+import cache from '../config/cache.js';
+import logger from '../config/logger.js';
 
 // Selector para excluir documentos de metadatos
 export const NON_META_SELECTOR = {
@@ -17,8 +20,18 @@ export const NON_META_SELECTOR = {
 };
 
 export class BaseRepository {
-  constructor(dbNameFn) {
+  constructor(dbNameFn, options = {}) {
     this.getDbName = dbNameFn;
+    this.cacheTTL = options.cacheTTL || cache.TTL.default;
+    this.cacheNamespace = options.cacheNamespace || 'repo';
+    this.log = logger.child(options.name || 'BaseRepository');
+  }
+  
+  /**
+   * Genera una clave de cache
+   */
+  _cacheKey(...parts) {
+    return cache.key(this.cacheNamespace, ...parts);
   }
   
   /**
@@ -32,17 +45,31 @@ export class BaseRepository {
   }
   
   /**
-   * Busca un documento por ID
+   * Busca un documento por ID (con cache)
    * @param {string} id - ID del documento
    * @param {...any} dbArgs - Argumentos para la BD
    * @returns {Promise<object|null>}
    */
   async findById(id, ...dbArgs) {
+    const cacheKey = this._cacheKey('id', ...dbArgs, id);
+    
+    // Intentar obtener del cache
+    const cached = cache.get(cacheKey);
+    if (cached !== undefined) {
+      return cached;
+    }
+    
     try {
       const db = await this.getDb(...dbArgs);
-      return await db.get(id);
+      const doc = await db.get(id);
+      cache.set(cacheKey, doc, this.cacheTTL);
+      return doc;
     } catch (error) {
-      if (error.status === 404) return null;
+      if (error.status === 404) {
+        cache.set(cacheKey, null, 30); // Cache negativo corto
+        return null;
+      }
+      this.log.error('findById error:', { id, error: error.message });
       throw error;
     }
   }
@@ -83,11 +110,11 @@ export class BaseRepository {
           });
           return result.docs || [];
         } catch (e) {
-          console.error('[BaseRepository] find error:', e.message);
+          this.log.error('find error (retry):', { error: e.message });
           return [];
         }
       }
-      console.error('[BaseRepository] find error:', error.message);
+      this.log.error('find error:', { error: error.message });
       return [];
     }
   }
@@ -136,6 +163,11 @@ export class BaseRepository {
     doc._id = data._id || uuidv4();
     
     await db.insert(doc);
+    this.log.info('Document created', { id: doc._id });
+    
+    // Invalidar cache relacionado
+    cache.invalidatePattern(`${this.cacheNamespace}:*`);
+    
     return doc;
   }
   
@@ -160,9 +192,16 @@ export class BaseRepository {
       };
       
       await db.insert(updated);
+      this.log.info('Document updated', { id });
+      
+      // Invalidar cache del documento
+      const cacheKey = this._cacheKey('id', ...dbArgs, id);
+      cache.del(cacheKey);
+      
       return updated;
     } catch (error) {
       if (error.status === 404) return null;
+      this.log.error('update error:', { id, error: error.message });
       throw error;
     }
   }
@@ -193,9 +232,16 @@ export class BaseRepository {
     try {
       const doc = await db.get(id);
       await db.destroy(doc._id, doc._rev);
+      this.log.info('Document deleted', { id });
+      
+      // Invalidar cache del documento
+      const cacheKey = this._cacheKey('id', ...dbArgs, id);
+      cache.del(cacheKey);
+      
       return true;
     } catch (error) {
       if (error.status === 404) return false;
+      this.log.error('delete error:', { id, error: error.message });
       throw error;
     }
   }

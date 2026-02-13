@@ -6,6 +6,9 @@
  */
 
 import { getEventEmitter, EVENTS } from './EventEmitter.js';
+import logger from '../config/logger.js';
+
+const log = logger.child('Engine');
 
 export class ChatEngine {
   constructor() {
@@ -42,9 +45,7 @@ export class ChatEngine {
         const canHandle = await handler.canHandle(context);
         
         if (canHandle) {
-          if (process.env.NODE_ENV !== 'production') {
-            console.log(`[Engine] Handler "${handler.constructor.name}" can handle`);
-          }
+          log.debug(`Handler "${handler.constructor.name}" can handle`);
           
           // Ejecutar el handler
           const result = await handler.execute(context);
@@ -86,7 +87,7 @@ export class ChatEngine {
       };
       
     } catch (error) {
-      console.error('[Engine] Error processing message:', error);
+      log.error('Error processing message', { error: error.message, stack: error.stack });
       
       this.eventEmitter.emit(EVENTS.MESSAGE_ERROR, {
         workspaceId: context.workspaceId,

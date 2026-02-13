@@ -2,6 +2,8 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import api from "./routers/index.js";
+import logger from "./config/logger.js";
+import cache from "./config/cache.js";
 
 const app = express();
 const PORT = process.env.PORT || 3010;
@@ -16,6 +18,11 @@ app.get("/health", (req, res) => {
   res.json({ ok: true, service: "migracion-backend" });
 });
 
+// Endpoint para estadísticas de cache
+app.get("/api/cache/stats", (req, res) => {
+  res.json(cache.getStats());
+});
+
 app.listen(PORT, () => {
-  console.log(`Migracion backend running on http://localhost:${PORT}`);
+  logger.info(`🚀 Migracion backend running on http://localhost:${PORT}`);
 });

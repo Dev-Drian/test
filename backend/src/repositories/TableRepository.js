@@ -1,17 +1,23 @@
 /**
  * TableRepository - Repositorio para metadatos de tablas
+ * Con cache optimizado para consultas frecuentes
  */
 
 import { BaseRepository } from './BaseRepository.js';
 import { getWorkspaceDbName } from '../config/db.js';
+import cache from '../config/cache.js';
 
 export class TableRepository extends BaseRepository {
   constructor() {
-    super((workspaceId) => getWorkspaceDbName(workspaceId));
+    super((workspaceId) => getWorkspaceDbName(workspaceId), {
+      cacheTTL: cache.TTL.tables,
+      cacheNamespace: 'tables',
+      name: 'TableRepository',
+    });
   }
   
   /**
-   * Busca una tabla por ID
+   * Busca una tabla por ID (con cache)
    * @param {string} workspaceId 
    * @param {string} tableId 
    * @returns {Promise<object|null>}
@@ -21,34 +27,46 @@ export class TableRepository extends BaseRepository {
   }
   
   /**
-   * Busca una tabla por nombre
+   * Busca una tabla por nombre (con cache)
    * @param {string} workspaceId 
    * @param {string} tableName 
    * @returns {Promise<object|null>}
    */
   async findByName(workspaceId, tableName) {
-    const tables = await this.find({ name: tableName }, { limit: 1 }, workspaceId);
-    return tables.length > 0 ? tables[0] : null;
+    const cacheKey = this._cacheKey('name', workspaceId, tableName);
+    
+    return cache.getOrSet(cacheKey, async () => {
+      const tables = await this.find({ name: tableName }, { limit: 1 }, workspaceId);
+      return tables.length > 0 ? tables[0] : null;
+    }, cache.TTL.tables);
   }
   
   /**
-   * Obtiene todas las tablas de un workspace
+   * Obtiene todas las tablas de un workspace (con cache)
    * @param {string} workspaceId 
    * @returns {Promise<object[]>}
    */
   async findAll(workspaceId) {
-    return super.findAll({}, workspaceId);
+    const cacheKey = this._cacheKey('all', workspaceId);
+    
+    return cache.getOrSet(cacheKey, async () => {
+      return super.findAll({}, workspaceId);
+    }, cache.TTL.tables);
   }
   
   /**
-   * Obtiene los headers/campos de una tabla
+   * Obtiene los headers/campos de una tabla (con cache)
    * @param {string} workspaceId 
    * @param {string} tableId 
    * @returns {Promise<object[]>}
    */
   async getHeaders(workspaceId, tableId) {
-    const table = await this.findById(tableId, workspaceId);
-    return table?.headers || [];
+    const cacheKey = this._cacheKey('headers', workspaceId, tableId);
+    
+    return cache.getOrSet(cacheKey, async () => {
+      const table = await this.findById(tableId, workspaceId);
+      return table?.headers || [];
+    }, cache.TTL.fieldsConfig);
   }
   
   /**
@@ -66,29 +84,33 @@ export class TableRepository extends BaseRepository {
   }
   
   /**
-   * Obtiene la configuración completa de campos (para preguntas dinámicas)
+   * Obtiene la configuración completa de campos (con cache - muy frecuente)
    * @param {string} workspaceId 
    * @param {string} tableId 
    * @returns {Promise<object[]>}
    */
   async getFieldsConfig(workspaceId, tableId) {
-    const headers = await this.getHeaders(workspaceId, tableId);
-    return headers.map(h => ({
-      key: h.key || h.label,
-      label: h.label || h.key,
-      type: h.type || 'text',
-      required: h.required || false,
-      hiddenFromChat: h.hiddenFromChat || false,
-      emoji: h.emoji || null,
-      askMessage: h.askMessage || null,
-      confirmLabel: h.confirmLabel || h.label || h.key,
-      priority: h.priority || 99,
-      options: h.options || null,
-      validation: h.validation || null,
-      defaultValue: h.defaultValue,
-      synonyms: h.synonyms || [],
-      relation: h.relation || null,
-    }));
+    const cacheKey = this._cacheKey('fieldsConfig', workspaceId, tableId);
+    
+    return cache.getOrSet(cacheKey, async () => {
+      const headers = await this.getHeaders(workspaceId, tableId);
+      return headers.map(h => ({
+        key: h.key || h.label,
+        label: h.label || h.key,
+        type: h.type || 'text',
+        required: h.required || false,
+        hiddenFromChat: h.hiddenFromChat || false,
+        emoji: h.emoji || null,
+        askMessage: h.askMessage || null,
+        confirmLabel: h.confirmLabel || h.label || h.key,
+        priority: h.priority || 99,
+        options: h.options || null,
+        validation: h.validation || null,
+        defaultValue: h.defaultValue,
+        synonyms: h.synonyms || [],
+        relation: h.relation || null,
+      }));
+    }, cache.TTL.fieldsConfig);
   }
   
   /**

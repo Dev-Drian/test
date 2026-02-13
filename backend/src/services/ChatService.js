@@ -20,6 +20,9 @@ import { ActionFactory } from '../domain/actions/ActionFactory.js';
 import { ResponseBuilder } from '../domain/responses/ResponseBuilder.js';
 import { FieldCollector } from '../domain/fields/FieldCollector.js';
 import { OpenAIProvider } from '../integrations/ai/OpenAIProvider.js';
+import logger from '../config/logger.js';
+
+const log = logger.child('ChatService');
 
 export class ChatService {
   constructor() {
@@ -81,7 +84,7 @@ export class ChatService {
    * @returns {Promise<{chatId, response, action}>}
    */
   async processMessage({ workspaceId, chatId, agentId, message, apiKey }) {
-    console.log('[ChatService] processMessage:', { workspaceId, chatId, agentId, message: message?.slice(0, 50) });
+    log.info('processMessage', { workspaceId, chatId, agentId, message: message?.slice(0, 50) });
     
     // Configurar API key
     if (apiKey) {
@@ -94,7 +97,7 @@ export class ChatService {
       : null;
     
     if (!chat) {
-      console.log('[ChatService] Creating new chat');
+      log.debug('Creating new chat');
       chat = await this.chatRepo.create({
         agentId,
         messages: [],
@@ -105,10 +108,10 @@ export class ChatService {
     // Cargar agente
     const agent = await this.agentRepo.findById(agentId, workspaceId);
     if (!agent) {
-      console.error('[ChatService] Agent not found:', agentId);
+      log.error('Agent not found', { agentId });
       throw new Error(`Agent not found: ${agentId}`);
     }
-    console.log('[ChatService] Agent loaded:', agent.name);
+    log.debug('Agent loaded', { name: agent.name });
     
     // Obtener o crear contexto
     let context = this.activeContexts.get(chatId);
@@ -145,7 +148,7 @@ export class ChatService {
           data: data || [],
         };
       } catch (e) {
-        console.error(`[ChatService] Error loading data for table ${t.name}:`, e.message);
+        log.warn('Error loading table data', { table: t.name, error: e.message });
         return { 
           tableName: t.name, 
           tableId: t._id,
@@ -163,7 +166,7 @@ export class ChatService {
     context.history = chat.messages || [];
     
     // ─── DETECTAR INTENCIÓN ───────────────────────────────────
-    console.log('[ChatService] Detecting intent...');
+    log.debug('Detecting intent...');
     const tablesInfo = tables.map(t => ({
       id: t._id,
       name: t.name,
@@ -179,7 +182,7 @@ export class ChatService {
     }));
     
     const intent = await this.aiProvider.detectIntent(message, agent);
-    console.log('[ChatService] Intent detected:', intent);
+    log.debug('Intent detected', intent);
     context.intent = intent;
     
     // Limpiar analysis anterior para evitar datos stale
@@ -187,7 +190,7 @@ export class ChatService {
     
     // Si hay acción sobre tablas, analizar el mensaje para extraer datos
     if (intent.hasTableAction && intent.actionType) {
-      console.log('[ChatService] Analyzing message for', intent.actionType);
+      log.debug('Analyzing message', { actionType: intent.actionType });
       const analysis = await this.aiProvider.analyzeMessage(
         message, 
         tablesInfo, 
@@ -195,20 +198,20 @@ export class ChatService {
         context.dateContext,
         agent
       );
-      console.log('[ChatService] Analysis:', JSON.stringify(analysis, null, 2));
+      log.debug('Analysis result', { analysis });
       context.analysis = analysis;
     }
     
     // Crear engine con handlers
     const engine = new Engine();
     const handlers = ActionFactory.createAll();
-    console.log('[ChatService] Handlers:', handlers.map(h => h.constructor.name));
+    log.debug('Handlers loaded', { handlers: handlers.map(h => h.constructor.name) });
     handlers.forEach(h => engine.addHandler(h));
     
     // Procesar
-    console.log('[ChatService] Processing message with engine...');
+    log.debug('Processing message with engine...');
     const result = await engine.process(context);
-    console.log('[ChatService] Engine result:', { handled: result.handled, handler: result.handler });
+    log.info('Engine result', { handled: result.handled, handler: result.handler });
     
     // Guardar estado pendiente (pendingCreate, etc.) en el chat
     if (context.chat) {
@@ -221,7 +224,7 @@ export class ChatService {
     // Guardar respuesta
     const responseContent = result.response || 'No se pudo procesar tu mensaje.';
     await this.chatRepo.addMessage(workspaceId, chatId, 'assistant', responseContent);
-    console.log('[ChatService] Messages saved');
+    log.debug('Messages saved', { chatId });
     
     // Generar título si es nuevo chat
     if (!chat.title) {

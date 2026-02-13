@@ -10,6 +10,9 @@ import { ChatService } from '../services/ChatService.js';
 import { connectDB, getChatDbName, getAgentsDbName, getWorkspaceDbName, getTableDataDbName } from '../config/db.js';
 import { EVENTS } from '../core/EventEmitter.js';
 import { executeFlowsForTrigger } from '../services/FlowExecutor.js';
+import logger from '../config/logger.js';
+
+const log = logger.child('ChatController');
 
 // Cache de servicios por workspace
 const serviceCache = new Map();
@@ -38,37 +41,37 @@ async function getService(workspaceId) {
 function setupEventListeners(service) {
   
   service.on(EVENTS.RECORD_CREATED, async (data) => {
-    console.log('[Notification] Record created:', data.record?._id || data.recordId);
+    log.info('Record created', { recordId: data.record?._id || data.recordId });
     
     // Ejecutar flujos automáticos
     try {
       const { workspaceId, tableId, record } = data;
       if (workspaceId && tableId && record) {
         const flowResult = await executeFlowsForTrigger(workspaceId, 'create', tableId, record);
-        console.log(`[Notification] Flows executed: ${flowResult.executed}`);
+        log.debug('Flows executed', { count: flowResult.executed });
       }
     } catch (error) {
-      console.error('[Notification] Error executing flows:', error);
+      log.error('Error executing flows', { error: error.message });
     }
   });
   
   service.on(EVENTS.RECORD_UPDATED, async (data) => {
-    console.log('[Notification] Record updated:', data.record?._id || data.recordId);
+    log.info('Record updated', { recordId: data.record?._id || data.recordId });
     
     // Ejecutar flujos de update
     try {
       const { workspaceId, tableId, record } = data;
       if (workspaceId && tableId && record) {
         const flowResult = await executeFlowsForTrigger(workspaceId, 'update', tableId, record);
-        console.log(`[Notification] Update flows executed: ${flowResult.executed}`);
+        log.debug('Update flows executed', { count: flowResult.executed });
       }
     } catch (error) {
-      console.error('[Notification] Error executing update flows:', error);
+      log.error('Error executing update flows', { error: error.message });
     }
   });
   
   service.on(EVENTS.RECORD_DELETED, async (data) => {
-    console.log('[Notification] Record deleted:', data.recordId);
+    log.info('Record deleted', { recordId: data.recordId });
   });
 }
 
@@ -115,7 +118,7 @@ export async function sendMessage(req, res) {
     });
     
   } catch (err) {
-    console.error('[ChatController] sendMessage error:', err);
+    log.error('sendMessage error', { error: err.message });
     res.status(500).json({ error: err.message });
   }
 }
@@ -174,7 +177,7 @@ export async function getOrCreateChat(req, res) {
     });
     
   } catch (err) {
-    console.error('[ChatController] getOrCreateChat error:', err);
+    log.error('getOrCreateChat error', { error: err.message });
     res.status(500).json({ error: err.message });
   }
 }
@@ -223,7 +226,7 @@ export async function listChats(req, res) {
     res.json(chatList);
     
   } catch (err) {
-    console.error('[ChatController] listChats error:', err);
+    log.error('listChats error', { error: err.message });
     res.status(500).json({ error: err.message });
   }
 }
@@ -257,7 +260,7 @@ export async function deleteChat(req, res) {
     res.json({ success: true, message: 'Chat deleted' });
     
   } catch (err) {
-    console.error('[ChatController] deleteChat error:', err);
+    log.error('deleteChat error', { error: err.message });
     res.status(500).json({ error: err.message });
   }
 }
@@ -293,7 +296,7 @@ export async function renameChat(req, res) {
     res.json({ success: true, chat });
     
   } catch (err) {
-    console.error('[ChatController] renameChat error:', err);
+    log.error('renameChat error', { error: err.message });
     res.status(500).json({ error: err.message });
   }
 }
