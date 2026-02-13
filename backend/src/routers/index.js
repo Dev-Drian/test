@@ -26,6 +26,8 @@ router.post("/table/create", tables.createTable);
 router.get("/table/list", tables.listTables);
 router.get("/table/:workspaceId/:tableId/data", tables.getTableData);
 router.post("/table/:workspaceId/:tableId/row", tables.addTableRow);
+router.put("/table/:workspaceId/:tableId/row/:rowId", tables.updateTableRow);
+router.delete("/table/:workspaceId/:tableId/row/:rowId", tables.deleteTableRow);
 
 // Flows (flujos de agentes - editor visual)
 router.get("/flow/list", flows.getFlows);
@@ -36,6 +38,7 @@ router.delete("/flow/delete", flows.deleteFlow);
 router.get("/flow/agent", flows.getAgentFlows);
 router.post("/flow/assign", flows.assignFlowToAgent);
 router.get("/flow/node-types", flows.getNodeTypes);
+router.get("/flow/templates", flows.getFlowTemplates);
 
 // Chat (mensaje + detección intenciones + acciones tablas)
 router.post("/chat/send", chat.sendMessage);

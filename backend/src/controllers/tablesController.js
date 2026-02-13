@@ -134,3 +134,53 @@ export async function addTableRow(req, res) {
     res.status(500).json({ error: err.message });
   }
 }
+
+export async function updateTableRow(req, res) {
+  try {
+    const { workspaceId, tableId, rowId } = req.params;
+    const updates = req.body;
+    const db = await connectDB(getTableDataDbName(workspaceId, tableId));
+    
+    // Obtener documento actual
+    const doc = await db.get(rowId);
+    
+    // Actualizar campos (excepto _id, _rev, tableId)
+    const updatedDoc = {
+      ...doc,
+      ...updates,
+      _id: doc._id,
+      _rev: doc._rev,
+      tableId: doc.tableId,
+      updatedAt: new Date().toISOString(),
+    };
+    
+    await db.insert(updatedDoc);
+    res.json(updatedDoc);
+  } catch (err) {
+    console.error(err);
+    if (err.statusCode === 404) {
+      return res.status(404).json({ error: 'Registro no encontrado' });
+    }
+    res.status(500).json({ error: err.message });
+  }
+}
+
+export async function deleteTableRow(req, res) {
+  try {
+    const { workspaceId, tableId, rowId } = req.params;
+    const db = await connectDB(getTableDataDbName(workspaceId, tableId));
+    
+    // Obtener documento actual para obtener _rev
+    const doc = await db.get(rowId);
+    
+    // Eliminar
+    await db.destroy(rowId, doc._rev);
+    res.json({ success: true, deleted: rowId });
+  } catch (err) {
+    console.error(err);
+    if (err.statusCode === 404) {
+      return res.status(404).json({ error: 'Registro no encontrado' });
+    }
+    res.status(500).json({ error: err.message });
+  }
+}

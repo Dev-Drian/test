@@ -26,6 +26,7 @@ import ActionNode from '../components/nodes/ActionNode';
 import AvailabilityNode from '../components/nodes/AvailabilityNode';
 import ResponseNode from '../components/nodes/ResponseNode';
 import QueryNode from '../components/nodes/QueryNode';
+import { RocketIcon, SearchIcon, SplitIcon, BoltIcon, CalendarIcon, ChatIcon, EditIcon, TrashIcon, ClipboardIcon, LightBulbIcon, TargetIcon, SparklesIcon, LinkIcon, FolderIcon } from '../components/Icons';
 
 const nodeTypes = {
   trigger: TriggerNode,
@@ -80,57 +81,170 @@ const Icons = {
 const availableBlocks = [
   { 
     type: 'trigger', 
-    emoji: '🚀',
+    icon: <RocketIcon size="md" />,
     label: 'Inicio', 
     color: '#10b981',
     description: 'Cuando algo sucede',
+    help: 'Define qué evento dispara el flujo: un mensaje, una nueva reserva, etc.'
   },
   { 
     type: 'query', 
-    emoji: '🔍',
+    icon: <SearchIcon size="md" />,
     label: 'Consulta', 
     color: '#3b82f6',
     description: 'Buscar datos',
+    help: 'Busca información en tus tablas. Ej: ver si hay disponibilidad.'
   },
   { 
     type: 'condition', 
-    emoji: '🔀',
+    icon: <SplitIcon size="md" />,
     label: 'Decisión', 
     color: '#f59e0b',
     description: '¿Sí o no?',
+    help: 'Toma un camino u otro según una condición. Ej: si hay espacio → reservar.'
   },
   { 
     type: 'action', 
-    emoji: '⚡',
+    icon: <BoltIcon size="md" />,
     label: 'Acción', 
     color: '#8b5cf6',
     description: 'Hacer algo',
+    help: 'Ejecuta una acción: crear registro, actualizar, enviar notificación.'
   },
   { 
     type: 'availability', 
-    emoji: '📅',
+    icon: <CalendarIcon size="md" />,
     label: 'Horario', 
     color: '#06b6d4',
     description: 'Ver disponibilidad',
+    help: 'Verifica horarios de atención y disponibilidad según la tabla de horarios.'
   },
   { 
     type: 'response', 
-    emoji: '💬',
+    icon: <ChatIcon size="md" />,
     label: 'Respuesta', 
     color: '#ec4899',
     description: 'Enviar mensaje',
+    help: 'Envía un mensaje al usuario. Puedes incluir datos dinámicos.'
   },
 ];
+
+// Toast notification component
+const Toast = ({ message, type, onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 4000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  const bgColor = type === 'success' ? 'from-emerald-500/20 to-emerald-500/5 border-emerald-500/30' :
+                  type === 'error' ? 'from-red-500/20 to-red-500/5 border-red-500/30' :
+                  'from-blue-500/20 to-blue-500/5 border-blue-500/30';
+  
+  const iconColor = type === 'success' ? 'text-emerald-400' :
+                    type === 'error' ? 'text-red-400' : 'text-blue-400';
+
+  return (
+    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r ${bgColor} border backdrop-blur-sm shadow-xl animate-slide-in`}>
+      <div className={iconColor}>
+        {type === 'success' ? (
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ) : type === 'error' ? (
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+        ) : (
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+          </svg>
+        )}
+      </div>
+      <span className="text-sm text-white font-medium">{message}</span>
+      <button onClick={onClose} className="ml-2 text-zinc-400 hover:text-white transition-colors">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  );
+};
+
+// Confirm modal component
+const ConfirmModal = ({ isOpen, title, message, confirmText, cancelText, onConfirm, onCancel, type = 'danger' }) => {
+  if (!isOpen) return null;
+  
+  const buttonColor = type === 'danger' ? 'bg-red-500 hover:bg-red-400' : 'bg-emerald-500 hover:bg-emerald-400';
+  
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.8)' }}>
+      <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-2xl" style={{ background: '#0c0c0f', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <div className="p-6">
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${type === 'danger' ? 'bg-red-500/10' : 'bg-emerald-500/10'}`}>
+            {type === 'danger' ? (
+              <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            )}
+          </div>
+          <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
+          <p className="text-sm text-zinc-400 mb-6">{message}</p>
+          <div className="flex gap-3">
+            <button
+              onClick={onCancel}
+              className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-zinc-300 transition-all hover:bg-white/10"
+              style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+            >
+              {cancelText || 'Cancelar'}
+            </button>
+            <button
+              onClick={onConfirm}
+              className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-all ${buttonColor}`}
+            >
+              {confirmText || 'Confirmar'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function FlowEditor() {
   const { workspaceId, workspaceName } = useWorkspace();
   const [flows, setFlows] = useState([]);
   const [selectedFlow, setSelectedFlow] = useState(null);
   const [tables, setTables] = useState([]);
+  const [flowTemplates, setFlowTemplates] = useState([]);
   const [flowName, setFlowName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showHelp, setShowHelp] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  
+  // Toast notifications
+  const [toasts, setToasts] = useState([]);
+  const addToast = (message, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+  };
+  const removeToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
+  
+  // Confirm modal
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+  
+  // Estado para modo de prueba
+  const [testMode, setTestMode] = useState(false);
+  const [testMessages, setTestMessages] = useState([]);
+  const [testInput, setTestInput] = useState('');
+  const [testStep, setTestStep] = useState(0);
+  const [highlightedNode, setHighlightedNode] = useState(null);
   
   // Estado para edición de nodos
   const [selectedNode, setSelectedNode] = useState(null);
@@ -139,6 +253,98 @@ export default function FlowEditor() {
   // Estado de React Flow
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  // Historial para Undo/Redo
+  const [history, setHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+
+  // Guardar estado en historial
+  const saveToHistory = useCallback(() => {
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push({ nodes: [...nodes], edges: [...edges] });
+    // Limitar historial a 50 estados
+    if (newHistory.length > 50) newHistory.shift();
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  }, [nodes, edges, history, historyIndex]);
+
+  // Undo
+  const handleUndo = useCallback(() => {
+    if (historyIndex > 0) {
+      const prevState = history[historyIndex - 1];
+      setNodes(prevState.nodes);
+      setEdges(prevState.edges);
+      setHistoryIndex(historyIndex - 1);
+    }
+  }, [historyIndex, history, setNodes, setEdges]);
+
+  // Redo
+  const handleRedo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      const nextState = history[historyIndex + 1];
+      setNodes(nextState.nodes);
+      setEdges(nextState.edges);
+      setHistoryIndex(historyIndex + 1);
+    }
+  }, [historyIndex, history, setNodes, setEdges]);
+
+  // Atajos de teclado
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Solo en el editor de flujos
+      if (!selectedFlow) return;
+      
+      // Ctrl+S o Cmd+S para guardar
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSaveFlow();
+      }
+      
+      // Ctrl+Z o Cmd+Z para deshacer
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      }
+      
+      // Ctrl+Shift+Z o Ctrl+Y para rehacer
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        handleRedo();
+      }
+      
+      // Delete o Backspace para eliminar nodo seleccionado
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNode) {
+        e.preventDefault();
+        handleDeleteNode(selectedNode.id);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedFlow, selectedNode, handleUndo, handleRedo]);
+
+  // Cargar plantillas de flujos (globales, no dependen del workspace)
+  useEffect(() => {
+    const loadTemplates = async () => {
+      try {
+        const res = await api.get('/flow/templates');
+        setFlowTemplates(res.data || []);
+      } catch (err) {
+        console.error('Error loading flow templates:', err);
+        // Fallback: plantilla vacía
+        setFlowTemplates([{
+          _id: 'empty',
+          name: 'Flujo vacío',
+          description: 'Empieza desde cero',
+          icon: '✨',
+          color: 'zinc',
+          nodes: [],
+          edges: [],
+        }]);
+      }
+    };
+    loadTemplates();
+  }, []);
 
   // Cargar flujos y tablas
   useEffect(() => {
@@ -226,24 +432,52 @@ export default function FlowEditor() {
     [setNodes, tables]
   );
 
-  // Crear nuevo flujo
-  const handleCreateFlow = async () => {
-    if (!workspaceId) return;
+  // Crear nuevo flujo (con o sin plantilla)
+  const handleCreateFlow = async (template = null) => {
+    console.log('handleCreateFlow called, workspaceId:', workspaceId);
+    
+    if (!workspaceId) {
+      setCreateError('No hay workspace seleccionado. Ve a Workspaces y selecciona uno.');
+      return;
+    }
+    
+    setIsCreating(true);
+    setCreateError(null);
     
     try {
-      const res = await api.post('/flow/create', {
+      const flowData = {
         workspaceId,
-        name: 'Mi nuevo flujo',
-        description: '',
-      });
+        name: template?.name || 'Mi nuevo flujo',
+        description: template?.description || '',
+        nodes: template?.nodes || [],
+        edges: template?.edges || [],
+      };
+      
+      console.log('Creating flow with data:', flowData);
+      
+      const res = await api.post('/flow/create', flowData);
+      console.log('Flow created:', res.data);
+      
+      // Enriquecer nodos con tablas
+      const nodesWithTables = (res.data.nodes || template?.nodes || []).map(n => ({
+        ...n,
+        data: { ...n.data, tables }
+      }));
       
       setFlows([...flows, res.data]);
       setSelectedFlow(res.data);
       setFlowName(res.data.name);
-      setNodes(res.data.nodes || []);
-      setEdges(res.data.edges || []);
+      setNodes(nodesWithTables);
+      setEdges(res.data.edges || template?.edges || []);
+      setShowTemplates(false);
+      addToast(`Flujo "${res.data.name}" creado correctamente`, 'success');
     } catch (err) {
       console.error('Error creating flow:', err);
+      console.error('Error response:', err.response?.data);
+      setCreateError(err.response?.data?.error || err.message || 'Error al crear el flujo');
+      addToast('Error al crear el flujo', 'error');
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -311,8 +545,11 @@ export default function FlowEditor() {
           ? { ...f, name: flowName, nodes, edges }
           : f
       ));
+      
+      addToast('Flujo guardado correctamente', 'success');
     } catch (err) {
       console.error('Error saving flow:', err);
+      addToast('Error al guardar el flujo', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -321,20 +558,29 @@ export default function FlowEditor() {
   // Eliminar flujo
   const handleDeleteFlow = async () => {
     if (!selectedFlow || !workspaceId) return;
-    if (!confirm('¿Eliminar este flujo? Esta acción no se puede deshacer.')) return;
     
-    try {
-      await api.delete('/flow/delete', {
-        data: { workspaceId, flowId: selectedFlow._id }
-      });
-      
-      setFlows(flows.filter(f => f._id !== selectedFlow._id));
-      setSelectedFlow(null);
-      setNodes([]);
-      setEdges([]);
-    } catch (err) {
-      console.error('Error deleting flow:', err);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Eliminar flujo',
+      message: `¿Estás seguro de eliminar "${selectedFlow.name}"? Esta acción eliminará permanentemente el flujo y no se puede deshacer.`,
+      onConfirm: async () => {
+        try {
+          await api.delete('/flow/delete', {
+            data: { workspaceId, flowId: selectedFlow._id }
+          });
+          
+          setFlows(flows.filter(f => f._id !== selectedFlow._id));
+          setSelectedFlow(null);
+          setNodes([]);
+          setEdges([]);
+          addToast('Flujo eliminado correctamente', 'success');
+        } catch (err) {
+          console.error('Error deleting flow:', err);
+          addToast('Error al eliminar el flujo', 'error');
+        }
+        setConfirmModal({ isOpen: false });
+      }
+    });
   };
 
   // Clic en nodo para editar
@@ -470,7 +716,7 @@ export default function FlowEditor() {
           </div>
           
           <button
-            onClick={handleCreateFlow}
+            onClick={() => setShowTemplates(true)}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-amber-500 text-white text-sm font-medium hover:bg-amber-400 transition-colors"
           >
             {Icons.plus}
@@ -509,10 +755,10 @@ export default function FlowEditor() {
                   }}
                 >
                   <div 
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0 text-white"
                     style={{ background: selectedFlow?._id === flow._id ? '#f59e0b' : 'rgba(255,255,255,0.05)' }}
                   >
-                    ⚡
+                    <BoltIcon size="sm" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{flow.name}</p>
@@ -553,14 +799,57 @@ export default function FlowEditor() {
                 placeholder="Nombre del flujo"
               />
               
+              {/* Undo/Redo buttons */}
+              <div className="flex items-center gap-1 px-2 border-l border-r border-white/[0.06]">
+                <button 
+                  onClick={handleUndo}
+                  disabled={historyIndex <= 0}
+                  className="p-2 rounded-lg text-zinc-500 hover:text-white hover:bg-white/[0.05] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  title="Deshacer (Ctrl+Z)"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                  </svg>
+                </button>
+                <button 
+                  onClick={handleRedo}
+                  disabled={historyIndex >= history.length - 1}
+                  className="p-2 rounded-lg text-zinc-500 hover:text-white hover:bg-white/[0.05] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  title="Rehacer (Ctrl+Y)"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" />
+                  </svg>
+                </button>
+              </div>
+              
               <div className="flex items-center gap-2 ml-auto">
                 <span className="text-xs text-zinc-600 px-2">
                   {nodes.length} bloques · {edges.length} conexiones
                 </span>
                 <button 
+                  onClick={() => {
+                    setTestMode(true);
+                    setTestMessages([{
+                      type: 'system',
+                      text: '🧪 Modo de prueba activado. Simula una conversación para ver cómo funciona tu flujo.',
+                    }]);
+                    setTestStep(0);
+                    setHighlightedNode(null);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-500/20 border border-violet-500/30 text-violet-300 text-sm font-medium hover:bg-violet-500/30 transition-colors"
+                  title="Probar flujo"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+                  </svg>
+                  Probar
+                </button>
+                <button 
                   onClick={handleSaveFlow} 
                   disabled={isSaving}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-400 disabled:opacity-50 transition-colors"
+                  title="Guardar (Ctrl+S)"
                 >
                   {isSaving ? (
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -568,6 +857,7 @@ export default function FlowEditor() {
                     Icons.save
                   )}
                   {isSaving ? 'Guardando...' : 'Guardar'}
+                  <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[10px] rounded bg-white/10 text-emerald-200">⌘S</kbd>
                 </button>
                 <button 
                   onClick={handleDeleteFlow}
@@ -659,14 +949,174 @@ export default function FlowEditor() {
                     }}
                     className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-amber-500/20 flex items-center gap-2"
                   >
-                    ✏️ Editar
+                    <EditIcon size="sm" /> Editar
                   </button>
                   <button
                     onClick={() => handleDeleteNode(contextMenu.nodeId)}
                     className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-red-500/20 flex items-center gap-2"
                   >
-                    🗑️ Eliminar
+                    <TrashIcon size="sm" /> Eliminar
                   </button>
+                </div>
+              )}
+
+              {/* Panel de prueba del flujo */}
+              {testMode && (
+                <div 
+                  className="absolute right-4 bottom-4 w-96 max-h-[500px] rounded-2xl overflow-hidden shadow-2xl z-40 flex flex-col"
+                  style={{ 
+                    background: 'linear-gradient(180deg, #1a1a1f 0%, #0c0c0f 100%)',
+                    border: '1px solid rgba(139, 92, 246, 0.3)'
+                  }}
+                >
+                  {/* Header */}
+                  <div className="px-4 py-3 flex items-center justify-between border-b border-violet-500/20 bg-violet-500/5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-white">Modo de prueba</h3>
+                        <p className="text-xs text-violet-400">Simula una conversación</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setTestMode(false);
+                        setTestMessages([]);
+                        setHighlightedNode(null);
+                      }}
+                      className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/10 transition-all"
+                    >
+                      {Icons.close}
+                    </button>
+                  </div>
+                  
+                  {/* Messages area */}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[200px]">
+                    {testMessages.map((msg, i) => (
+                      <div 
+                        key={i} 
+                        className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div className={`max-w-[85%] px-3 py-2 rounded-xl text-sm ${
+                          msg.type === 'user' 
+                            ? 'bg-violet-500 text-white' 
+                            : msg.type === 'system'
+                              ? 'bg-white/5 text-zinc-400 border border-white/10'
+                              : msg.type === 'node'
+                                ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
+                                : 'bg-white/10 text-white'
+                        }`}>
+                          {msg.text}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Sample messages */}
+                  <div className="px-4 py-2 border-t border-white/5">
+                    <div className="text-xs text-zinc-500 mb-2">Mensajes de ejemplo:</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['Hola', 'Quiero reservar', 'Mesa para 4 personas', 'Consultar disponibilidad'].map((msg) => (
+                        <button
+                          key={msg}
+                          onClick={() => {
+                            setTestMessages(prev => [...prev, { type: 'user', text: msg }]);
+                            // Simular respuesta del flujo
+                            setTimeout(() => {
+                              // Encontrar el nodo trigger o el primero
+                              const triggerNode = nodes.find(n => n.type === 'trigger') || nodes[0];
+                              if (triggerNode) {
+                                setHighlightedNode(triggerNode.id);
+                                setTestMessages(prev => [...prev, { 
+                                  type: 'node', 
+                                  text: `📍 Ejecutando: ${triggerNode.data?.label || triggerNode.type}`
+                                }]);
+                              }
+                              setTimeout(() => {
+                                setTestMessages(prev => [...prev, { 
+                                  type: 'bot', 
+                                  text: 'Perfecto, te ayudo con eso. ¿Para qué fecha te gustaría?' 
+                                }]);
+                                setHighlightedNode(null);
+                              }, 800);
+                            }, 500);
+                          }}
+                          className="px-2 py-1 rounded-lg bg-white/5 text-xs text-zinc-400 hover:bg-violet-500/20 hover:text-violet-300 transition-colors"
+                        >
+                          {msg}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Input area */}
+                  <div className="px-4 py-3 border-t border-white/10 bg-black/20">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={testInput}
+                        onChange={(e) => setTestInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && testInput.trim()) {
+                            setTestMessages(prev => [...prev, { type: 'user', text: testInput }]);
+                            setTestInput('');
+                            // Simular respuesta
+                            setTimeout(() => {
+                              const nextNode = nodes.find(n => n.type === 'response') || nodes[Math.floor(Math.random() * nodes.length)];
+                              if (nextNode) {
+                                setHighlightedNode(nextNode.id);
+                                setTestMessages(prev => [...prev, { 
+                                  type: 'node', 
+                                  text: `📍 Ejecutando: ${nextNode.data?.label || nextNode.type}`
+                                }]);
+                              }
+                              setTimeout(() => {
+                                setTestMessages(prev => [...prev, { 
+                                  type: 'bot', 
+                                  text: 'Entendido. Procesando tu solicitud...' 
+                                }]);
+                                setHighlightedNode(null);
+                              }, 600);
+                            }, 400);
+                          }
+                        }}
+                        placeholder="Escribe un mensaje de prueba..."
+                        className="flex-1 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-violet-500/50 transition-colors"
+                      />
+                      <button 
+                        onClick={() => {
+                          if (testInput.trim()) {
+                            setTestMessages(prev => [...prev, { type: 'user', text: testInput }]);
+                            setTestInput('');
+                          }
+                        }}
+                        className="px-3 py-2 rounded-xl bg-violet-500 text-white hover:bg-violet-400 transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="text-xs text-zinc-600">Simulación local del flujo</span>
+                      <button
+                        onClick={() => {
+                          setTestMessages([{
+                            type: 'system',
+                            text: '🔄 Conversación reiniciada',
+                          }]);
+                          setHighlightedNode(null);
+                        }}
+                        className="text-xs text-zinc-500 hover:text-violet-400 transition-colors"
+                      >
+                        Reiniciar
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -682,7 +1132,7 @@ export default function FlowEditor() {
                   <div className="px-4 py-3 flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                     <div className="flex items-center gap-2">
                       <span className="text-lg">
-                        {availableBlocks.find(b => b.type === selectedNode.type)?.emoji || '📦'}
+                        {availableBlocks.find(b => b.type === selectedNode.type)?.icon || <BoltIcon size="md" />}
                       </span>
                       <span className="text-sm font-medium text-white">
                         Editar {availableBlocks.find(b => b.type === selectedNode.type)?.label || 'Nodo'}
@@ -754,7 +1204,7 @@ export default function FlowEditor() {
                       <>
                         {/* Paso 1: Seleccionar tabla donde buscar */}
                         <div>
-                          <label className="block text-xs text-zinc-400 mb-1.5 font-medium">📋 Buscar en tabla</label>
+                          <label className="block text-xs text-zinc-400 mb-1.5 font-medium flex items-center gap-1"><ClipboardIcon size="xs" /> Buscar en tabla</label>
                           <select
                             value={selectedNode.data?.targetTable || ''}
                             onChange={(e) => {
@@ -785,7 +1235,7 @@ export default function FlowEditor() {
                         {/* Paso 2: Filtro simple */}
                         {selectedNode.data?.targetTable && (
                           <div className="p-3 rounded-lg space-y-3" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                            <label className="block text-xs text-zinc-400 font-medium">🔍 Buscar donde</label>
+                            <label className="block text-xs text-zinc-400 font-medium flex items-center gap-1"><SearchIcon size="xs" /> Buscar donde</label>
                             
                             {/* Campo de la tabla a buscar */}
                             <div>
@@ -917,13 +1367,13 @@ export default function FlowEditor() {
                             style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
                           >
                             <option value="">Seleccionar campo...</option>
-                            <optgroup label="📦 Registro que disparó el flujo">
+                            <optgroup label="Registro que disparó el flujo">
                               <option value="recordData.cantidad">Cantidad</option>
                               <option value="recordData.total">Total</option>
                               <option value="recordData.estado">Estado</option>
                             </optgroup>
                             {getAvailableVariables().filter(v => v.name !== 'recordData').map(variable => (
-                              <optgroup key={variable.name} label={`📋 ${variable.description}`}>
+                              <optgroup key={variable.name} label={`${variable.description}`}>
                                 <option value={`${variable.name}.stock`}>Stock</option>
                                 <option value={`${variable.name}.precio`}>Precio</option>
                                 <option value={`${variable.name}.nombre`}>Nombre</option>
@@ -987,11 +1437,11 @@ export default function FlowEditor() {
                             style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
                           >
                             <option value="">Seleccionar...</option>
-                            <option value="create">➕ Crear registro</option>
-                            <option value="update">✏️ Actualizar registro</option>
-                            <option value="notification">🔔 Enviar notificación</option>
-                            <option value="decrement">➖ Restar cantidad</option>
-                            <option value="increment">➕ Sumar cantidad</option>
+                            <option value="create">Crear registro</option>
+                            <option value="update">Actualizar registro</option>
+                            <option value="notification">Enviar notificación</option>
+                            <option value="decrement">Restar cantidad</option>
+                            <option value="increment">Sumar cantidad</option>
                           </select>
                         </div>
                         
@@ -1169,10 +1619,10 @@ export default function FlowEditor() {
                             
                             {/* Ayuda de variables */}
                             <div className="mt-3 p-2 rounded-lg" style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
-                              <p className="text-[10px] text-blue-400 font-medium mb-2">💡 Variables disponibles:</p>
+                              <p className="text-[10px] text-blue-400 font-medium mb-2 flex items-center gap-1"><LightBulbIcon size="xs" /> Variables disponibles:</p>
                               <div className="space-y-2">
                                 <div>
-                                  <p className="text-[10px] text-blue-300 font-medium">📦 Del registro inicial:</p>
+                                  <p className="text-[10px] text-blue-300 font-medium flex items-center gap-1"><FolderIcon size="xs" /> Del registro inicial:</p>
                                   <div className="flex flex-wrap gap-1 mt-1">
                                     <code className="text-[9px] bg-blue-500/20 px-1 rounded text-blue-200">{"{{recordData.producto}}"}</code>
                                     <code className="text-[9px] bg-blue-500/20 px-1 rounded text-blue-200">{"{{recordData.cliente}}"}</code>
@@ -1181,7 +1631,7 @@ export default function FlowEditor() {
                                 </div>
                                 {getAvailableVariables().filter(v => v.name !== 'recordData').map(v => (
                                   <div key={v.name}>
-                                    <p className="text-[10px] text-blue-300 font-medium">📋 {v.description}:</p>
+                                    <p className="text-[10px] text-blue-300 font-medium flex items-center gap-1"><ClipboardIcon size="xs" /> {v.description}:</p>
                                     <div className="flex flex-wrap gap-1 mt-1">
                                       <code className="text-[9px] bg-emerald-500/20 px-1 rounded text-emerald-200">{`{{${v.name}.precio}}`}</code>
                                       <code className="text-[9px] bg-emerald-500/20 px-1 rounded text-emerald-200">{`{{${v.name}.stock}}`}</code>
@@ -1244,7 +1694,7 @@ export default function FlowEditor() {
                       className="w-full px-4 py-2.5 rounded-lg text-red-400 text-sm hover:bg-red-500/10 flex items-center justify-center gap-2 transition-all"
                       style={{ border: '1px solid rgba(239, 68, 68, 0.2)' }}
                     >
-                      🗑️ Eliminar nodo
+                      <TrashIcon size="sm" /> Eliminar nodo
                     </button>
                   </div>
                 </div>
@@ -1266,13 +1716,13 @@ export default function FlowEditor() {
               
               <div className="grid grid-cols-2 gap-3 mb-8">
                 {[
-                  { icon: '🚀', title: 'Fácil de usar', desc: 'Arrastra y suelta' },
-                  { icon: '⚡', title: 'Automático', desc: 'Se ejecuta solo' },
-                  { icon: '🔗', title: 'Conectado', desc: 'Con tus datos' },
-                  { icon: '💬', title: 'Inteligente', desc: 'Con tu agente IA' },
+                  { icon: <RocketIcon size="lg" />, title: 'Fácil de usar', desc: 'Arrastra y suelta' },
+                  { icon: <BoltIcon size="lg" />, title: 'Automático', desc: 'Se ejecuta solo' },
+                  { icon: <LinkIcon size="lg" />, title: 'Conectado', desc: 'Con tus datos' },
+                  { icon: <ChatIcon size="lg" />, title: 'Inteligente', desc: 'Con tu agente IA' },
                 ].map((item, i) => (
                   <div key={i} className="p-4 rounded-xl text-left" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <span className="text-2xl mb-2 block">{item.icon}</span>
+                    <span className="text-2xl mb-2 block text-amber-400">{item.icon}</span>
                     <p className="text-sm font-medium text-white">{item.title}</p>
                     <p className="text-xs text-zinc-600">{item.desc}</p>
                   </div>
@@ -1281,12 +1731,31 @@ export default function FlowEditor() {
 
               <button
                 onClick={handleCreateFlow}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-500 text-white font-medium hover:bg-amber-400 transition-colors shadow-lg"
+                disabled={isCreating}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-500 text-white font-medium hover:bg-amber-400 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ boxShadow: '0 4px 20px rgba(245, 158, 11, 0.3)' }}
               >
-                {Icons.plus}
-                Crear mi primer flujo
+                {isCreating ? (
+                  <>
+                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Creando...
+                  </>
+                ) : (
+                  <>
+                    {Icons.plus}
+                    Crear mi primer flujo
+                  </>
+                )}
               </button>
+              
+              {createError && (
+                <p className="mt-4 text-sm text-red-400 bg-red-500/10 px-4 py-2 rounded-lg">
+                  {createError}
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -1308,7 +1777,7 @@ export default function FlowEditor() {
                 key={block.type}
                 draggable
                 onDragStart={(e) => onDragStart(e, block.type)}
-                className="group p-4 rounded-xl cursor-grab hover:scale-[1.02] active:scale-[0.98] active:cursor-grabbing transition-all"
+                className="group relative p-4 rounded-xl cursor-grab hover:scale-[1.02] active:scale-[0.98] active:cursor-grabbing transition-all"
                 style={{ 
                   background: 'rgba(255,255,255,0.02)', 
                   border: '1px solid rgba(255,255,255,0.06)',
@@ -1317,15 +1786,19 @@ export default function FlowEditor() {
               >
                 <div className="flex items-center gap-3">
                   <div 
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0"
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white shrink-0"
                     style={{ background: block.color }}
                   >
-                    {block.emoji}
+                    {block.icon}
                   </div>
                   <div>
                     <p className="text-sm font-medium text-white">{block.label}</p>
                     <p className="text-xs text-zinc-500">{block.description}</p>
                   </div>
+                </div>
+                {/* Tooltip de ayuda */}
+                <div className="absolute left-0 right-0 bottom-full mb-2 px-3 py-2 bg-zinc-900 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-white/10 z-50">
+                  <p className="text-xs text-zinc-300">{block.help}</p>
                 </div>
               </div>
             ))}
@@ -1334,12 +1807,25 @@ export default function FlowEditor() {
           {/* Tip */}
           <div className="p-4 space-y-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             <div className="p-3 rounded-xl" style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
-              <p className="text-xs text-amber-400 font-medium mb-1">💡 Tips</p>
-              <ul className="text-xs text-amber-400/60 space-y-1">
-                <li>• <strong>Clic</strong> en un nodo para editarlo</li>
-                <li>• <strong>Clic derecho</strong> para menú de opciones</li>
-                <li>• <strong>Arrastra</strong> los puntos para conectar</li>
-              </ul>
+              <p className="text-xs text-amber-400 font-medium mb-2 flex items-center gap-1"><LightBulbIcon size="xs" /> Atajos de teclado</p>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-amber-400/60">Guardar</span>
+                  <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-amber-300 text-[10px]">Ctrl+S</kbd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-amber-400/60">Deshacer</span>
+                  <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-amber-300 text-[10px]">Ctrl+Z</kbd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-amber-400/60">Rehacer</span>
+                  <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-amber-300 text-[10px]">Ctrl+Y</kbd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-amber-400/60">Eliminar nodo</span>
+                  <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-amber-300 text-[10px]">Delete</kbd>
+                </div>
+              </div>
             </div>
           </div>
         </aside>
@@ -1362,7 +1848,7 @@ export default function FlowEditor() {
             
             <div className="p-6 space-y-6">
               <div className="p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <h3 className="text-white font-medium mb-2">🎯 ¿Qué es un flujo?</h3>
+                <h3 className="text-white font-medium mb-2 flex items-center gap-2"><TargetIcon size="sm" className="text-amber-400" /> ¿Qué es un flujo?</h3>
                 <p className="text-sm text-zinc-400">
                   Un flujo es una automatización visual. Conectas bloques para crear acciones automáticas 
                   que se ejecutan cuando ocurre algo, como recibir un mensaje o una nueva cita.
@@ -1370,15 +1856,15 @@ export default function FlowEditor() {
               </div>
 
               <div>
-                <h3 className="text-white font-medium mb-3">📦 Los bloques</h3>
+                <h3 className="text-white font-medium mb-3 flex items-center gap-2"><FolderIcon size="sm" className="text-blue-400" /> Los bloques</h3>
                 <div className="space-y-2">
                   {availableBlocks.map(block => (
                     <div key={block.type} className="flex items-center gap-3 p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)' }}>
                       <div 
-                        className="w-10 h-10 rounded-lg flex items-center justify-center text-lg shrink-0"
+                        className="w-10 h-10 rounded-lg flex items-center justify-center text-white shrink-0"
                         style={{ background: block.color }}
                       >
-                        {block.emoji}
+                        {block.icon}
                       </div>
                       <div>
                         <p className="text-sm text-white font-medium">{block.label}</p>
@@ -1390,7 +1876,7 @@ export default function FlowEditor() {
               </div>
 
               <div className="p-4 rounded-xl" style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
-                <h3 className="text-emerald-400 font-medium mb-2">✨ Pasos para crear un flujo</h3>
+                <h3 className="text-emerald-400 font-medium mb-2 flex items-center gap-2"><SparklesIcon size="sm" /> Pasos para crear un flujo</h3>
                 <ol className="text-sm text-emerald-400/80 space-y-2 list-decimal list-inside">
                   <li>Arrastra un bloque "Inicio" al canvas</li>
                   <li>Agrega los bloques que necesites</li>
@@ -1403,6 +1889,98 @@ export default function FlowEditor() {
           </div>
         </div>
       )}
+
+      {/* Modal de Plantillas de Flujos */}
+      {showTemplates && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.8)' }}>
+          <div className="w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl" style={{ background: '#0c0c0f', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div>
+                <h2 className="text-lg font-semibold text-white">Crear nuevo flujo</h2>
+                <p className="text-sm text-zinc-500">Elige una plantilla o empieza desde cero</p>
+              </div>
+              <button
+                onClick={() => setShowTemplates(false)}
+                className="p-2 rounded-lg text-zinc-500 hover:text-white transition-all"
+                style={{ background: 'rgba(255,255,255,0.05)' }}
+              >
+                {Icons.close}
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="grid grid-cols-2 gap-4">
+                {flowTemplates.map((template) => (
+                  <button
+                    key={template._id}
+                    onClick={() => handleCreateFlow(template._id === 'empty' ? null : template)}
+                    disabled={isCreating}
+                    className={`group relative p-5 rounded-xl border text-left transition-all hover:scale-[1.02] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed ${
+                      template.color === 'emerald' ? 'border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-500/5' :
+                      template.color === 'blue' ? 'border-blue-500/20 hover:border-blue-500/40 hover:bg-blue-500/5' :
+                      template.color === 'purple' ? 'border-purple-500/20 hover:border-purple-500/40 hover:bg-purple-500/5' :
+                      template.color === 'red' ? 'border-red-500/20 hover:border-red-500/40 hover:bg-red-500/5' :
+                      'border-white/10 hover:border-white/20 hover:bg-white/5'
+                    }`}
+                  >
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl mb-3 ${
+                      template.color === 'emerald' ? 'bg-emerald-500/10' :
+                      template.color === 'blue' ? 'bg-blue-500/10' :
+                      template.color === 'purple' ? 'bg-purple-500/10' :
+                      template.color === 'red' ? 'bg-red-500/10' :
+                      'bg-white/5'
+                    }`}>
+                      {template.icon}
+                    </div>
+                    <h3 className="text-base font-semibold text-white mb-1">{template.name}</h3>
+                    <p className="text-sm text-zinc-400">{template.description}</p>
+                    {template.nodes && template.nodes.length > 0 && (
+                      <div className="mt-2 text-xs text-zinc-600">
+                        {template.nodes.length} bloques preconstruidos
+                      </div>
+                    )}
+                    <div className={`absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity ${
+                      template.color === 'emerald' ? 'text-emerald-400' :
+                      template.color === 'blue' ? 'text-blue-400' :
+                      template.color === 'purple' ? 'text-purple-400' :
+                      template.color === 'red' ? 'text-red-400' :
+                      'text-zinc-400'
+                    }`}>
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                      </svg>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast notifications */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+        {toasts.map(toast => (
+          <Toast
+            key={toast.id}
+            message={toast.message}
+            type={toast.type}
+            onClose={() => removeToast(toast.id)}
+          />
+        ))}
+      </div>
+
+      {/* Confirm modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        type="danger"
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ isOpen: false })}
+      />
     </div>
   );
 }

@@ -2,6 +2,7 @@
  * Guía - Página de ayuda y documentación
  */
 import { Link } from "react-router-dom";
+import { ClipboardIcon, LightBulbIcon, SparklesIcon, FolderIcon, ChartIcon, RobotIcon, BoltIcon, ChatIcon as ChatIconComponent } from "../components/Icons";
 
 // Iconos SVG
 const Icons = {
@@ -118,27 +119,27 @@ const steps = [
 const concepts = [
   {
     title: "Workspace",
-    emoji: "📂",
+    icon: <FolderIcon size="lg" />,
     description: "Entorno aislado con tablas, agentes y chats propios. Ideal para separar proyectos."
   },
   {
     title: "Tablas",
-    emoji: "📊",
+    icon: <ChartIcon size="lg" />,
     description: "Almacenan datos estructurados. Define campos con tipos (texto, número, fecha, etc.)."
   },
   {
     title: "Agentes",
-    emoji: "🤖",
+    icon: <RobotIcon size="lg" />,
     description: "Asistentes de IA que acceden a tus tablas. Configurables con diferentes modelos."
   },
   {
     title: "Flujos",
-    emoji: "⚡",
+    icon: <BoltIcon size="lg" />,
     description: "Automatizaciones visuales. Conecta bloques para crear procesos sin código."
   },
   {
     title: "Chat",
-    emoji: "💬",
+    icon: <ChatIconComponent size="lg" />,
     description: "Interfaz para hablar con agentes. Usa lenguaje natural para consultar datos."
   }
 ];
@@ -162,7 +163,7 @@ export default function Guia() {
         <div className="mb-16">
           <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-3">
             <span className="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
-              📋
+              <ClipboardIcon size="sm" />
             </span>
             Pasos para comenzar
           </h2>
@@ -222,7 +223,7 @@ export default function Guia() {
         <div className="mb-12">
           <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-3">
             <span className="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>
-              💡
+              <LightBulbIcon size="sm" />
             </span>
             Conceptos clave
           </h2>
@@ -234,7 +235,7 @@ export default function Guia() {
                 className="p-4 rounded-xl"
                 style={{ background: '#0c0c0f', border: '1px solid rgba(255,255,255,0.06)' }}
               >
-                <span className="text-3xl mb-3 block">{concept.emoji}</span>
+                <span className="text-3xl mb-3 block text-purple-400">{concept.icon}</span>
                 <h3 className="text-sm font-semibold text-white mb-1">{concept.title}</h3>
                 <p className="text-xs text-zinc-500">{concept.description}</p>
               </div>
@@ -244,7 +245,7 @@ export default function Guia() {
 
         {/* Tips */}
         <div className="p-6 rounded-2xl" style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
-          <h3 className="text-lg font-semibold text-emerald-400 mb-4">✨ Tips para aprovechar al máximo</h3>
+          <h3 className="text-lg font-semibold text-emerald-400 mb-4 flex items-center gap-2"><SparklesIcon size="sm" /> Tips para aprovechar al máximo</h3>
           <ul className="space-y-3 text-sm text-emerald-400/80">
             <li className="flex items-start gap-3">
               <span className="text-emerald-400">•</span>

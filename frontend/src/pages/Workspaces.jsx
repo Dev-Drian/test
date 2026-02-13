@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { WorkspaceContext } from "../context/WorkspaceContext";
 import { listWorkspaces, createWorkspace, deleteWorkspace } from "../api/client";
+import { useToast, useConfirm } from "../components/Toast";
 
 // Iconos SVG
 const Icons = {
@@ -60,6 +61,8 @@ const PRESET_COLORS = [
 
 export default function Workspaces() {
   const { workspaceId, setWorkspace } = useContext(WorkspaceContext);
+  const { toast } = useToast();
+  const { confirm, ConfirmModal } = useConfirm();
   const [workspaces, setWorkspaces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -94,8 +97,10 @@ export default function Workspaces() {
       const res = await createWorkspace({ name: name.trim(), color });
       setWorkspaces((prev) => [...prev, res.data]);
       setWorkspace(res.data._id, res.data.name);
+      toast.success(`Workspace "${name}" creado correctamente`);
       resetForm();
     } catch (err) {
+      toast.error(`Error al crear: ${err.message}`);
       setError(err.message);
     } finally {
       setCreating(false);
@@ -103,7 +108,15 @@ export default function Workspaces() {
   };
 
   const handleDelete = async (ws) => {
-    if (!confirm(`¿Eliminar workspace "${ws.name}"?`)) return;
+    const confirmed = await confirm({
+      title: 'Eliminar Workspace',
+      message: `¿Estás seguro de que deseas eliminar el workspace "${ws.name}"? Se eliminarán todas las tablas, agentes y configuraciones asociadas.`,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      variant: 'danger'
+    });
+    if (!confirmed) return;
+    
     setDeleting(ws._id);
     try {
       await deleteWorkspace(ws._id);
@@ -111,7 +124,9 @@ export default function Workspaces() {
       if (workspaceId === ws._id) {
         setWorkspace(null, null);
       }
+      toast.success(`Workspace "${ws.name}" eliminado correctamente`);
     } catch (err) {
+      toast.error(`Error al eliminar: ${err.message}`);
       setError(err.message);
     } finally {
       setDeleting(null);
@@ -296,40 +311,45 @@ export default function Workspaces() {
 
         {/* Workspace activo */}
         {workspaceId && (
-          <div className="mb-8">
-            <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">
+          <div className="mb-10">
+            <h2 className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               Workspace activo
             </h2>
             {workspaces.filter(ws => ws._id === workspaceId).map((ws) => (
               <div 
                 key={ws._id}
-                className="p-6 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20"
+                className="relative overflow-hidden p-8 rounded-3xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20 shadow-2xl shadow-emerald-500/5"
               >
-                <div className="flex items-center gap-5">
+                {/* Glow effect */}
+                <div className="absolute -top-20 -right-20 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl" />
+                <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-emerald-500/5 rounded-full blur-2xl" />
+                
+                <div className="relative flex items-center gap-6">
                   <div
-                    className="w-16 h-16 rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg"
+                    className="w-20 h-20 rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow-2xl ring-4 ring-white/10"
                     style={{ background: `linear-gradient(135deg, ${ws.color || '#10b981'}, ${ws.color || '#059669'})` }}
                   >
                     {ws.name?.charAt(0)?.toUpperCase() || "W"}
                   </div>
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h3 className="text-xl font-semibold text-white">{ws.name}</h3>
-                      <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-medium border border-emerald-500/30">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-2xl font-bold text-white">{ws.name}</h3>
+                      <span className="px-3 py-1 rounded-full bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-500/30">
                         Activo
                       </span>
                     </div>
-                    <p className="text-sm text-zinc-500">ID: {ws._id}</p>
+                    <p className="text-sm text-zinc-500 font-mono">ID: {ws._id}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.03] text-zinc-500 text-sm">
+                    <a href="/tables" className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 text-sm font-medium transition-all hover:scale-105">
                       {Icons.tables}
                       <span>Tablas</span>
-                    </div>
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.03] text-zinc-500 text-sm">
+                    </a>
+                    <a href="/agents" className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 text-sm font-medium transition-all hover:scale-105">
                       {Icons.agents}
                       <span>Agentes</span>
-                    </div>
+                    </a>
                   </div>
                 </div>
               </div>
@@ -366,31 +386,34 @@ export default function Workspaces() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {workspaces.filter(ws => ws._id !== workspaceId).map((ws) => (
                 <div
                   key={ws._id}
-                  className="group p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1] transition-all"
+                  className="group relative p-6 rounded-2xl bg-gradient-to-br from-white/[0.03] to-transparent border border-white/[0.06] hover:border-white/[0.15] hover:shadow-xl hover:shadow-black/20 transition-all duration-300 hover:-translate-y-1"
                 >
-                  <div className="flex items-center gap-4">
+                  {/* Hover glow */}
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  
+                  <div className="relative flex items-center gap-5">
                     <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-bold shadow-lg shrink-0"
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-xl shrink-0 ring-2 ring-white/10 group-hover:ring-white/20 transition-all group-hover:scale-110"
                       style={{ background: `linear-gradient(135deg, ${ws.color || '#10b981'}, ${ws.color || '#059669'})` }}
                     >
                       {ws.name?.charAt(0)?.toUpperCase() || "W"}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-white group-hover:text-emerald-400 transition-colors truncate">
+                      <h3 className="font-semibold text-lg text-white group-hover:text-emerald-400 transition-colors truncate">
                         {ws.name}
                       </h3>
-                      <p className="text-xs text-zinc-600 truncate mt-0.5">
-                        ID: {ws._id?.slice(0, 16)}...
+                      <p className="text-xs text-zinc-600 truncate mt-1 font-mono">
+                        ID: {ws._id?.slice(0, 20)}...
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setWorkspace(ws._id, ws.name)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition-colors border border-emerald-500/20"
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 text-white text-sm font-bold hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:scale-105"
                       >
                         Activar
                         {Icons.arrow}
@@ -398,7 +421,7 @@ export default function Workspaces() {
                       <button
                         onClick={() => handleDelete(ws)}
                         disabled={deleting === ws._id}
-                        className="p-2 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-all disabled:opacity-50"
+                        className="p-2.5 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all disabled:opacity-50"
                         title="Eliminar workspace"
                       >
                         {deleting === ws._id ? (
@@ -432,6 +455,9 @@ export default function Workspaces() {
           </div>
         )}
       </div>
+      
+      {/* Modal de confirmación */}
+      {ConfirmModal}
     </div>
   );
 }

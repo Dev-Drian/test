@@ -1,9 +1,10 @@
 /**
- * Chat - Interfaz de chat premium con agentes IA
+ * Chat - Interfaz de chat profesional estilo ChatGPT
  */
 import { useContext, useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { WorkspaceContext } from "../context/WorkspaceContext";
+import { useToast, useConfirm } from "../components/Toast";
 import { 
   listAgents, 
   getOrCreateChat, 
@@ -12,40 +13,7 @@ import {
   deleteChat,
   renameChat 
 } from "../api/client";
-
-// Iconos SVG
-const Icons = {
-  chat: (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-    </svg>
-  ),
-  plus: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-    </svg>
-  ),
-  send: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-    </svg>
-  ),
-  trash: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-    </svg>
-  ),
-  edit: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-    </svg>
-  ),
-  robot: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611l-1.397.233a3.61 3.61 0 01-1.785-.163L15 19.5M5 14.5l-1.402 1.402c-1.232 1.232-.65 3.318 1.067 3.611l1.397.233a3.61 3.61 0 001.785-.163L9 19.5" />
-    </svg>
-  ),
-};
+import { RobotIcon, SendIcon, PlusIcon, TrashIcon, EditIcon, ChatIcon, SparklesIcon } from "../components/Icons";
 
 /**
  * Renderiza Markdown básico en React
@@ -91,6 +59,8 @@ function renderMarkdown(text) {
 
 export default function Chat() {
   const { workspaceId, workspaceName } = useContext(WorkspaceContext);
+  const { toast } = useToast();
+  const { confirm, ConfirmModal } = useConfirm();
   const [agents, setAgents] = useState([]);
   const [selectedAgentId, setSelectedAgentId] = useState("");
   const [selectedAgentName, setSelectedAgentName] = useState("");
@@ -104,8 +74,9 @@ export default function Chat() {
   const [editingChatId, setEditingChatId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [newChatId, setNewChatId] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
+  const textareaRef = useRef(null);
 
   // Cargar agentes
   useEffect(() => {
@@ -163,8 +134,15 @@ export default function Chat() {
   }, [messages]);
 
   useEffect(() => {
-    if (chatId) inputRef.current?.focus();
+    if (chatId) textareaRef.current?.focus();
   }, [chatId]);
+
+  // Auto-resize textarea
+  const handleTextareaChange = (e) => {
+    setInput(e.target.value);
+    e.target.style.height = 'auto';
+    e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
+  };
 
   const handleAgentChange = (agentId) => {
     setSelectedAgentId(agentId);
@@ -192,13 +170,25 @@ export default function Chat() {
 
   const handleDeleteChat = async (e, chatIdToDelete) => {
     e.stopPropagation();
-    if (!confirm("¿Eliminar esta conversación?")) return;
+    
+    const confirmed = await confirm({
+      title: 'Eliminar conversación',
+      message: '¿Estás seguro de eliminar esta conversación? Se perderán todos los mensajes y no se puede deshacer.',
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      type: 'danger'
+    });
+    
+    if (!confirmed) return;
+    
     try {
       await deleteChat(workspaceId, chatIdToDelete);
       setChatList(prev => prev.filter(c => c._id !== chatIdToDelete));
       if (chatId === chatIdToDelete) { setChatId(""); setMessages([]); }
+      toast.success('Conversación eliminada correctamente');
     } catch (err) {
       console.error("Error deleting chat:", err);
+      toast.error('Error al eliminar la conversación');
     }
   };
 
@@ -241,6 +231,7 @@ export default function Chat() {
     }
 
     setInput("");
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
     setMessages((prev) => [...prev, { role: "user", content: text, id: Date.now(), ts: Date.now() }]);
     setSending(true);
 
@@ -268,29 +259,20 @@ export default function Chat() {
     }
   };
 
-  const formatTime = (timestamp) => {
-    if (!timestamp) return "";
-    return new Date(timestamp).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
-  };
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "";
-    const date = new Date(dateStr);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    if (date.toDateString() === today.toDateString()) return "Hoy";
-    if (date.toDateString() === yesterday.toDateString()) return "Ayer";
-    return date.toLocaleDateString("es-CO", { day: "numeric", month: "short" });
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend(e);
+    }
   };
 
   // Sin workspace
   if (!workspaceId) {
     return (
-      <div className="flex items-center justify-center h-full" style={{ background: '#09090b' }}>
+      <div className="flex items-center justify-center h-full bg-[#0a0a0a]">
         <div className="text-center">
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 text-emerald-400" style={{ background: 'rgba(16, 185, 129, 0.1)' }}>
-            {Icons.chat}
+          <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-6 text-emerald-400">
+            <ChatIcon size="lg" />
           </div>
           <h1 className="text-2xl font-semibold text-white mb-2">Chat con IA</h1>
           <p className="text-zinc-500 mb-6 max-w-sm">
@@ -308,237 +290,253 @@ export default function Chat() {
   }
 
   return (
-    <div className="h-[calc(100vh-60px)] flex" style={{ background: '#09090b' }}>
-      {/* Sidebar - Conversaciones */}
-      <aside className="w-72 flex flex-col" style={{ background: '#0c0c0f', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-        {/* Header */}
-        <div className="p-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
-              {Icons.chat}
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-white">Chat</h2>
-              <p className="text-xs text-zinc-600 truncate max-w-[140px]">{workspaceName}</p>
-            </div>
+    <div className="h-[calc(100vh-60px)] flex bg-[#0a0a0a]">
+      {/* Sidebar */}
+      <aside className={`${sidebarOpen ? 'w-64' : 'w-0'} flex-shrink-0 flex flex-col bg-[#0f0f0f] border-r border-white/5 transition-all duration-300 overflow-hidden`}>
+        <div className="flex flex-col h-full min-w-64">
+          {/* Header del sidebar */}
+          <div className="p-3">
+            <button
+              onClick={handleNewChat}
+              disabled={!selectedAgentId}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-white/10 text-zinc-300 text-sm hover:bg-white/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <PlusIcon size="sm" />
+              <span>Nueva conversación</span>
+            </button>
           </div>
 
           {/* Selector de agente */}
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase tracking-wider text-zinc-600">Agente</label>
-            <div className="grid grid-cols-1 gap-1.5">
-              {loading ? (
-                <div className="p-3 text-center text-zinc-600 text-xs">Cargando...</div>
-              ) : agents.length === 0 ? (
-                <Link to="/agents" className="p-3 rounded-lg text-center text-xs text-emerald-400 hover:bg-emerald-500/10 transition-all" style={{ border: '1px dashed rgba(16, 185, 129, 0.3)' }}>
-                  + Crear agente
-                </Link>
-              ) : (
-                agents.map(agent => (
+          <div className="px-3 pb-3 border-b border-white/5">
+            <p className="text-[10px] uppercase tracking-wider text-zinc-600 mb-2 px-1">Agente</p>
+            {loading ? (
+              <div className="px-3 py-2 text-zinc-600 text-sm">Cargando...</div>
+            ) : agents.length === 0 ? (
+              <Link to="/agents" className="flex items-center gap-2 px-3 py-2 rounded-lg text-emerald-400 text-sm hover:bg-emerald-500/10">
+                <PlusIcon size="sm" />
+                Crear agente
+              </Link>
+            ) : (
+              <div className="space-y-1">
+                {agents.map(agent => (
                   <button
                     key={agent._id}
                     onClick={() => handleAgentChange(agent._id)}
-                    className={`p-2.5 rounded-lg text-left transition-all flex items-center gap-2 ${
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all ${
                       selectedAgentId === agent._id
-                        ? 'text-purple-400'
-                        : 'text-zinc-400 hover:text-white'
+                        ? 'bg-white/10 text-white'
+                        : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
                     }`}
-                    style={{
-                      background: selectedAgentId === agent._id ? 'rgba(139, 92, 246, 0.1)' : 'transparent',
-                      border: selectedAgentId === agent._id ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid transparent'
-                    }}
                   >
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs" style={{ background: selectedAgentId === agent._id ? '#8b5cf6' : 'rgba(255,255,255,0.05)' }}>
-                      🤖
+                    <div className={`w-6 h-6 rounded-md flex items-center justify-center ${
+                      selectedAgentId === agent._id ? 'bg-emerald-500 text-white' : 'bg-white/10 text-zinc-400'
+                    }`}>
+                      <RobotIcon size="xs" />
                     </div>
-                    <span className="text-sm font-medium truncate">{agent.name}</span>
+                    <span className="truncate">{agent.name}</span>
                   </button>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Botón nueva conversación */}
-        {selectedAgentId && (
-          <div className="p-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <button
-              onClick={handleNewChat}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-400 transition-colors"
-            >
-              {Icons.plus}
-              Nueva conversación
-            </button>
-          </div>
-        )}
-
-        {/* Lista de chats */}
-        <div className="flex-1 overflow-y-auto p-3">
-          {loadingChats ? (
-            <div className="text-center py-8 text-zinc-600 text-sm">Cargando...</div>
-          ) : !selectedAgentId ? (
-            <div className="text-center py-8">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 text-zinc-600" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                {Icons.robot}
+                ))}
               </div>
-              <p className="text-sm text-zinc-500">Selecciona un agente</p>
-            </div>
-          ) : chatList.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-sm text-zinc-500 mb-1">Sin conversaciones</p>
-              <p className="text-xs text-zinc-600">Inicia una nueva</p>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {chatList.map((chat) => (
-                <div 
-                  key={chat._id} 
-                  className={`group relative p-3 rounded-xl cursor-pointer transition-all ${
-                    chatId === chat._id ? 'text-emerald-400' : 'text-zinc-400 hover:text-white'
-                  }`}
-                  style={{
-                    background: chatId === chat._id ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
-                    border: chatId === chat._id ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid transparent'
-                  }}
-                  onClick={() => handleSelectChat(chat)}
-                >
-                  {editingChatId === chat._id ? (
-                    <input 
-                      type="text" 
-                      value={editingTitle} 
-                      onChange={(e) => setEditingTitle(e.target.value)} 
-                      onBlur={handleSaveRename} 
-                      onKeyDown={(e) => e.key === "Enter" && handleSaveRename(e)} 
-                      onClick={(e) => e.stopPropagation()} 
-                      className="w-full px-2 py-1 rounded text-sm focus:outline-none"
-                      style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                      autoFocus 
-                    />
-                  ) : (
-                    <>
-                      <p className="text-sm font-medium truncate pr-14">{chat.title || "Nueva conversación"}</p>
-                      <p className="text-xs text-zinc-600 mt-0.5">
-                        {formatDate(chat.updatedAt || chat.createdAt)}
-                        {chat.messageCount > 0 && ` • ${chat.messageCount} msgs`}
-                      </p>
-                      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          className="p-1.5 rounded text-zinc-600 hover:text-emerald-400 hover:bg-emerald-500/10" 
-                          onClick={(e) => handleStartRename(e, chat)} 
-                          title="Renombrar"
-                        >
-                          {Icons.edit}
-                        </button>
-                        <button 
-                          className="p-1.5 rounded text-zinc-600 hover:text-red-400 hover:bg-red-500/10" 
-                          onClick={(e) => handleDeleteChat(e, chat._id)} 
-                          title="Eliminar"
-                        >
-                          {Icons.trash}
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+            )}
+          </div>
+
+          {/* Lista de conversaciones */}
+          <div className="flex-1 overflow-y-auto p-2">
+            {loadingChats ? (
+              <div className="px-3 py-4 text-zinc-600 text-sm text-center">Cargando...</div>
+            ) : !selectedAgentId ? (
+              <div className="px-3 py-8 text-center">
+                <p className="text-zinc-600 text-sm">Selecciona un agente</p>
+              </div>
+            ) : chatList.length === 0 ? (
+              <div className="px-3 py-8 text-center">
+                <p className="text-zinc-600 text-sm">Sin conversaciones</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {chatList.map((chat) => (
+                  <div 
+                    key={chat._id} 
+                    className={`group relative flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all ${
+                      chatId === chat._id 
+                        ? 'bg-white/10 text-white' 
+                        : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
+                    }`}
+                    onClick={() => handleSelectChat(chat)}
+                  >
+                    <ChatIcon size="sm" className="shrink-0 opacity-60" />
+                    {editingChatId === chat._id ? (
+                      <input 
+                        type="text" 
+                        value={editingTitle} 
+                        onChange={(e) => setEditingTitle(e.target.value)} 
+                        onBlur={handleSaveRename} 
+                        onKeyDown={(e) => e.key === "Enter" && handleSaveRename(e)} 
+                        onClick={(e) => e.stopPropagation()} 
+                        className="flex-1 px-2 py-0.5 rounded bg-black/50 border border-white/20 text-sm text-white focus:outline-none focus:border-emerald-500"
+                        autoFocus 
+                      />
+                    ) : (
+                      <>
+                        <span className="flex-1 text-sm truncate">{chat.title || "Nueva conversación"}</span>
+                        <div className="hidden group-hover:flex items-center gap-0.5 shrink-0">
+                          <button 
+                            className="p-1 rounded text-zinc-500 hover:text-white hover:bg-white/10" 
+                            onClick={(e) => handleStartRename(e, chat)} 
+                            title="Renombrar"
+                          >
+                            <EditIcon size="xs" />
+                          </button>
+                          <button 
+                            className="p-1 rounded text-zinc-500 hover:text-red-400 hover:bg-red-500/10" 
+                            onClick={(e) => handleDeleteChat(e, chat._id)} 
+                            title="Eliminar"
+                          >
+                            <TrashIcon size="xs" />
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </aside>
 
-      {/* Área principal del chat */}
-      <main className="flex-1 flex flex-col">
+      {/* Toggle sidebar button */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="absolute left-2 top-20 z-10 p-2 rounded-lg bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-all"
+        style={{ left: sidebarOpen ? '252px' : '8px' }}
+      >
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          {sidebarOpen ? (
+            <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+          ) : (
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+          )}
+        </svg>
+      </button>
+
+      {/* Área principal */}
+      <main className="flex-1 flex flex-col min-w-0">
         {!selectedAgentId ? (
+          /* Sin agente seleccionado */
           <div className="flex-1 flex items-center justify-center">
-            <div className="text-center max-w-md">
-              <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 text-purple-400" style={{ background: 'rgba(139, 92, 246, 0.1)' }}>
-                {Icons.robot}
+            <div className="text-center max-w-md px-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 flex items-center justify-center mx-auto mb-6 text-purple-400">
+                <RobotIcon size="lg" />
               </div>
-              <h2 className="text-2xl font-semibold text-white mb-3">Selecciona un agente</h2>
-              <p className="text-zinc-500">
+              <h2 className="text-xl font-medium text-white mb-2">Selecciona un agente</h2>
+              <p className="text-zinc-500 text-sm">
                 Elige un agente de la lista para comenzar a chatear
               </p>
             </div>
           </div>
-        ) : !chatId ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center max-w-md">
-              <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 text-emerald-400" style={{ background: 'rgba(16, 185, 129, 0.1)' }}>
-                {Icons.chat}
-              </div>
-              <h2 className="text-2xl font-semibold text-white mb-3">Inicia una conversación</h2>
-              <p className="text-zinc-500 mb-6">
-                Escribe un mensaje o selecciona una conversación existente
-              </p>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm" style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#a78bfa' }}>
-                🤖 {selectedAgentName}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Header del chat */}
-            <div className="px-6 py-4 flex items-center gap-3" style={{ background: '#0c0c0f', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' }}>
-                🤖
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-white">
-                  {chatList.find(c => c._id === chatId)?.title || "Conversación"}
+        ) : !chatId && messages.length === 0 ? (
+          /* Estado inicial - sin chat */
+          <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center max-w-2xl px-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center mx-auto mb-6 text-emerald-400">
+                  <SparklesIcon size="lg" />
+                </div>
+                <h1 className="text-2xl font-medium text-white mb-2">¿En qué puedo ayudarte?</h1>
+                <p className="text-zinc-500 mb-8">
+                  Estoy listo para responder tus preguntas sobre {workspaceName}
                 </p>
-                <p className="text-xs text-zinc-600">{selectedAgentName}</p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-zinc-400 text-sm">
+                  <RobotIcon size="sm" />
+                  <span>{selectedAgentName}</span>
+                </div>
               </div>
             </div>
             
-            {/* Mensajes */}
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="max-w-3xl mx-auto space-y-4">
-                {messages.length === 0 && (
-                  <div className="text-center py-12">
-                    <p className="text-zinc-600">Escribe un mensaje para comenzar</p>
-                  </div>
-                )}
+            {/* Input centrado en estado inicial */}
+            <div className="p-4 pb-8">
+              <form onSubmit={handleSend} className="max-w-3xl mx-auto">
+                <div className="relative bg-[#1a1a1a] rounded-2xl border border-white/10 focus-within:border-white/20 transition-colors shadow-lg">
+                  <textarea
+                    ref={textareaRef}
+                    placeholder="Escribe un mensaje..."
+                    value={input}
+                    onChange={handleTextareaChange}
+                    onKeyDown={handleKeyDown}
+                    rows={1}
+                    className="w-full px-4 py-4 pr-14 bg-transparent text-white text-sm placeholder-zinc-500 resize-none focus:outline-none max-h-48"
+                    disabled={sending}
+                  />
+                  <button
+                    type="submit"
+                    disabled={sending || !input.trim()}
+                    className="absolute right-2 bottom-2 p-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    <SendIcon size="sm" />
+                  </button>
+                </div>
+                <p className="text-center text-xs text-zinc-600 mt-3">
+                  Presiona Enter para enviar, Shift + Enter para nueva línea
+                </p>
+              </form>
+            </div>
+          </div>
+        ) : (
+          /* Chat activo con mensajes */
+          <>
+            {/* Área de mensajes */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="max-w-3xl mx-auto py-6 px-4">
                 {messages.map((m, idx) => (
                   <div 
                     key={m._id || m.id || `msg-${idx}`} 
-                    className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+                    className={`py-6 ${idx !== 0 ? 'border-t border-white/5' : ''}`}
                   >
-                    <div className={`flex items-start gap-3 max-w-[80%] ${m.role === "user" ? "flex-row-reverse" : ""}`}>
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs font-semibold ${
+                    <div className="flex gap-4">
+                      {/* Avatar */}
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                         m.role === "user" 
                           ? "bg-emerald-500 text-white" 
-                          : "text-purple-300"
-                      }`} style={m.role === "assistant" ? { background: 'rgba(139, 92, 246, 0.2)' } : {}}>
-                        {m.role === "user" ? "Tú" : "AI"}
+                          : "bg-purple-500/20 text-purple-400"
+                      }`}>
+                        {m.role === "user" ? (
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                          </svg>
+                        ) : (
+                          <SparklesIcon size="sm" />
+                        )}
                       </div>
-                      <div className={`px-4 py-3 rounded-2xl ${
-                        m.role === "user" 
-                          ? "bg-emerald-500 text-white rounded-br-md" 
-                          : "text-zinc-300 rounded-bl-md"
-                      }`} style={m.role === "assistant" ? { background: '#18181b', border: '1px solid rgba(255,255,255,0.06)' } : {}}>
-                        <div className="text-sm leading-relaxed">
+                      
+                      {/* Contenido */}
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs font-medium mb-1.5 ${
+                          m.role === "user" ? "text-emerald-400" : "text-purple-400"
+                        }`}>
+                          {m.role === "user" ? "Tú" : selectedAgentName}
+                        </p>
+                        <div className="text-zinc-200 text-sm leading-relaxed whitespace-pre-wrap">
                           {m.role === "user" ? m.content : renderMarkdown(m.content)}
                         </div>
-                        <span className={`text-[10px] mt-2 block ${
-                          m.role === "user" ? "text-white/60" : "text-zinc-600"
-                        }`}>
-                          {formatTime(m.ts)}
-                        </span>
                       </div>
                     </div>
                   </div>
                 ))}
+                
+                {/* Indicador de escritura */}
                 {sending && (
-                  <div className="flex justify-start">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-semibold text-purple-300" style={{ background: 'rgba(139, 92, 246, 0.2)' }}>
-                        AI
+                  <div className="py-6 border-t border-white/5">
+                    <div className="flex gap-4">
+                      <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center">
+                        <SparklesIcon size="sm" />
                       </div>
-                      <div className="px-4 py-3 rounded-2xl rounded-bl-md" style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.06)' }}>
-                        <div className="flex gap-1.5">
-                          <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce [animation-delay:0ms]"></span>
-                          <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce [animation-delay:150ms]"></span>
-                          <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce [animation-delay:300ms]"></span>
+                      <div className="flex-1">
+                        <p className="text-xs font-medium mb-2 text-purple-400">{selectedAgentName}</p>
+                        <div className="flex gap-1">
+                          <span className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce [animation-delay:0ms]"></span>
+                          <span className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce [animation-delay:150ms]"></span>
+                          <span className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce [animation-delay:300ms]"></span>
                         </div>
                       </div>
                     </div>
@@ -547,34 +545,36 @@ export default function Chat() {
                 <div ref={messagesEndRef} />
               </div>
             </div>
+
+            {/* Input fijo en la parte inferior */}
+            <div className="border-t border-white/5 bg-[#0a0a0a]">
+              <form onSubmit={handleSend} className="max-w-3xl mx-auto p-4">
+                <div className="relative bg-[#1a1a1a] rounded-2xl border border-white/10 focus-within:border-white/20 transition-colors shadow-lg">
+                  <textarea
+                    ref={textareaRef}
+                    placeholder="Escribe un mensaje..."
+                    value={input}
+                    onChange={handleTextareaChange}
+                    onKeyDown={handleKeyDown}
+                    rows={1}
+                    className="w-full px-4 py-4 pr-14 bg-transparent text-white text-sm placeholder-zinc-500 resize-none focus:outline-none max-h-48"
+                    disabled={sending}
+                  />
+                  <button
+                    type="submit"
+                    disabled={sending || !input.trim()}
+                    className="absolute right-2 bottom-2 p-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    <SendIcon size="sm" />
+                  </button>
+                </div>
+              </form>
+            </div>
           </>
         )}
-
-        {/* Input de mensaje */}
-        {selectedAgentId && (
-          <form onSubmit={handleSend} className="p-4" style={{ background: '#0c0c0f', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-            <div className="max-w-3xl mx-auto flex gap-3">
-              <input 
-                ref={inputRef} 
-                type="text" 
-                placeholder={chatId ? "Escribe un mensaje..." : "Escribe para iniciar una conversación..."} 
-                value={input} 
-                onChange={(e) => setInput(e.target.value)} 
-                className="flex-1 px-4 py-3 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all placeholder-zinc-600"
-                style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.08)', color: 'white' }}
-                disabled={sending} 
-              />
-              <button 
-                type="submit" 
-                className="px-4 py-3 rounded-xl bg-emerald-500 text-white font-medium hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" 
-                disabled={sending || !input.trim()}
-              >
-                {Icons.send}
-              </button>
-            </div>
-          </form>
-        )}
       </main>
+      
+      {ConfirmModal}
     </div>
   );
 }

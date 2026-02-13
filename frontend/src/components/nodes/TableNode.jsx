@@ -4,6 +4,7 @@
  */
 import { Handle, Position, useReactFlow } from '@xyflow/react';
 import { useCallback } from 'react';
+import { ChartIcon } from '../Icons';
 
 export default function TableNode({ id, data, selected }) {
   const { setNodes } = useReactFlow();
@@ -35,7 +36,7 @@ export default function TableNode({ id, data, selected }) {
       {/* Header */}
       <div className="px-4 py-3 flex items-center gap-3" style={{ background: 'rgba(59, 130, 246, 0.15)', borderBottom: '1px solid rgba(59, 130, 246, 0.2)' }}>
         <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-lg" style={{ background: '#3b82f6' }}>
-          📊
+          <ChartIcon size="sm" />
         </div>
         <div>
           <span className="text-sm font-semibold text-blue-400">Datos</span>
@@ -90,10 +91,10 @@ export default function TableNode({ id, data, selected }) {
             value={data?.action || 'read'}
             onChange={(e) => updateNodeData('action', e.target.value)}
           >
-            <option value="read" style={{ background: '#18181b', color: 'white' }}>🔍 Buscar datos</option>
-            <option value="create" style={{ background: '#18181b', color: 'white' }}>➕ Crear registro</option>
-            <option value="update" style={{ background: '#18181b', color: 'white' }}>✏️ Actualizar datos</option>
-            <option value="validate" style={{ background: '#18181b', color: 'white' }}>✅ Validar relación</option>
+            <option value="read" style={{ background: '#18181b', color: 'white' }}>Buscar datos</option>
+            <option value="create" style={{ background: '#18181b', color: 'white' }}>Crear registro</option>
+            <option value="update" style={{ background: '#18181b', color: 'white' }}>Actualizar datos</option>
+            <option value="validate" style={{ background: '#18181b', color: 'white' }}>Validar relación</option>
           </select>
         </div>
       </div>

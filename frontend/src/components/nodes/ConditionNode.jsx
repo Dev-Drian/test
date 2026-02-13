@@ -4,6 +4,7 @@
  */
 import { Handle, Position, useReactFlow } from '@xyflow/react';
 import { useCallback } from 'react';
+import { SplitIcon, CalendarIcon } from '../Icons';
 
 /**
  * Convierte operador a texto legible
@@ -121,8 +122,8 @@ export default function ConditionNode({ id, data, selected }) {
       
       {/* Header */}
       <div className="px-4 py-3 flex items-center gap-3" style={{ background: 'rgba(245, 158, 11, 0.15)', borderBottom: '1px solid rgba(245, 158, 11, 0.2)' }}>
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-lg" style={{ background: '#f59e0b' }}>
-          🔀
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ background: '#f59e0b' }}>
+          <SplitIcon size="sm" />
         </div>
         <div className="flex-1">
           <span className="text-sm font-semibold text-amber-400">Decisión</span>
@@ -187,7 +188,7 @@ export default function ConditionNode({ id, data, selected }) {
                 <option value="equals">= Si es igual a</option>
                 <option value="greater">&gt; Si es mayor que</option>
                 <option value="less">&lt; Si es menor que</option>
-                <option value="available">📅 Si está disponible</option>
+                <option value="available">▷ Si está disponible</option>
               </select>
             </div>
             

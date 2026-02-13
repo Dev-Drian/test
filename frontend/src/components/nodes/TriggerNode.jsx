@@ -4,6 +4,7 @@
  */
 import { Handle, Position, useReactFlow } from '@xyflow/react';
 import { useCallback } from 'react';
+import { RocketIcon, ClipboardIcon } from '../Icons';
 
 export default function TriggerNode({ id, data, selected }) {
   const { setNodes } = useReactFlow();
@@ -29,7 +30,7 @@ export default function TriggerNode({ id, data, selected }) {
       {/* Header */}
       <div className="px-4 py-3 flex items-center gap-3" style={{ background: 'rgba(16, 185, 129, 0.15)', borderBottom: '1px solid rgba(16, 185, 129, 0.2)' }}>
         <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-lg" style={{ background: '#10b981' }}>
-          🚀
+          <RocketIcon size="sm" />
         </div>
         <div>
           <span className="text-sm font-semibold text-emerald-400">Inicio</span>
@@ -59,12 +60,12 @@ export default function TriggerNode({ id, data, selected }) {
             value={data?.trigger || 'create'}
             onChange={(e) => updateNodeData('trigger', e.target.value)}
           >
-            <option value="create" style={{ background: '#18181b', color: 'white' }}>📝 Al CREAR registro</option>
-            <option value="update" style={{ background: '#18181b', color: 'white' }}>✏️ Al ACTUALIZAR registro</option>
-            <option value="delete" style={{ background: '#18181b', color: 'white' }}>🗑️ Al ELIMINAR registro</option>
-            <option value="beforeCreate" style={{ background: '#18181b', color: 'white' }}>⚠️ ANTES de crear</option>
-            <option value="query" style={{ background: '#18181b', color: 'white' }}>🔍 Al CONSULTAR</option>
-            <option value="availability" style={{ background: '#18181b', color: 'white' }}>📅 Al preguntar DISPONIBILIDAD</option>
+            <option value="create" style={{ background: '#18181b', color: 'white' }}>Al CREAR registro</option>
+            <option value="update" style={{ background: '#18181b', color: 'white' }}>Al ACTUALIZAR registro</option>
+            <option value="delete" style={{ background: '#18181b', color: 'white' }}>Al ELIMINAR registro</option>
+            <option value="beforeCreate" style={{ background: '#18181b', color: 'white' }}>ANTES de crear</option>
+            <option value="query" style={{ background: '#18181b', color: 'white' }}>Al CONSULTAR</option>
+            <option value="availability" style={{ background: '#18181b', color: 'white' }}>Al preguntar DISPONIBILIDAD</option>
           </select>
         </div>
         
@@ -74,14 +75,14 @@ export default function TriggerNode({ id, data, selected }) {
             Tabla
           </label>
           <div 
-            className="px-3 py-2 rounded-lg text-sm"
+            className="px-3 py-2 rounded-lg text-sm flex items-center gap-2"
             style={{ 
               background: 'rgba(16, 185, 129, 0.1)', 
               border: '1px solid rgba(16, 185, 129, 0.2)',
               color: '#10b981'
             }}
           >
-            📋 {tableName}
+            <ClipboardIcon size="sm" /> {tableName}
           </div>
         </div>
       </div>

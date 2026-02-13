@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { WorkspaceContext } from "./context/WorkspaceContext";
+import { ToastProvider } from "./components/Toast";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Workspaces from "./pages/Workspaces";
@@ -40,20 +41,22 @@ function App() {
   );
 
   return (
-    <WorkspaceContext.Provider value={workspaceContext}>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="workspaces" element={<Workspaces />} />
-          <Route path="agents" element={<Agents />} />
-          <Route path="tables" element={<Tables />} />
-          <Route path="flows" element={<FlowEditor />} />
-          <Route path="chat" element={<Chat />} />
-          <Route path="guia" element={<Guia />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
-    </WorkspaceContext.Provider>
+    <ToastProvider>
+      <WorkspaceContext.Provider value={workspaceContext}>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="workspaces" element={<Workspaces />} />
+            <Route path="agents" element={<Agents />} />
+            <Route path="tables" element={<Tables />} />
+            <Route path="flows" element={<FlowEditor />} />
+            <Route path="chat" element={<Chat />} />
+            <Route path="guia" element={<Guia />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </WorkspaceContext.Provider>
+    </ToastProvider>
   );
 }
 

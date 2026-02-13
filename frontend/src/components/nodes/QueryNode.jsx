@@ -3,6 +3,7 @@
  * Dos salidas: Sí encuentra / No encuentra
  */
 import { Handle, Position } from '@xyflow/react';
+import { SearchIcon } from '../Icons';
 
 export default function QueryNode({ data, selected }) {
   const { filterField, filterValueType, filterValueField, filterValueFixed, targetTableName, tables, targetTable, label } = data || {};
@@ -18,7 +19,7 @@ export default function QueryNode({ data, selected }) {
   // Valor a mostrar
   const valueDisplay = filterValueType === 'fixed' 
     ? (filterValueFixed || '?') 
-    : (filterValueField ? `📄 ${getFieldLabel(filterValueField)}` : '?');
+    : (filterValueField ? getFieldLabel(filterValueField) : '?');
 
   return (
     <div 
@@ -44,10 +45,10 @@ export default function QueryNode({ data, selected }) {
         style={{ background: 'rgba(59, 130, 246, 0.15)', borderBottom: '1px solid rgba(59, 130, 246, 0.2)' }}
       >
         <div 
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-lg"
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-lg text-white"
           style={{ background: '#3b82f6' }}
         >
-          🔍
+          <SearchIcon size="sm" />
         </div>
         <span className="text-sm font-semibold text-blue-400">{label || 'Consulta'}</span>
       </div>

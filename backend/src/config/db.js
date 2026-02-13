@@ -69,6 +69,10 @@ export function getFlowsDbName(workspaceId) {
   return `${DB_PREFIX}flows_${workspaceId}`;
 }
 
+export function getFlowTemplatesDbName() {
+  return `${DB_PREFIX}flow_templates`;
+}
+
 export function getTableDbName(workspaceId) {
   return `${DB_PREFIX}tables_${workspaceId}`;
 }

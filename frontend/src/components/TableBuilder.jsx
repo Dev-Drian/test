@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SearchIcon, PlusIcon, EditIcon, TrashIcon } from "./Icons";
 
 // Iconos SVG
 const Icons = {
@@ -72,13 +73,24 @@ const Icons = {
 
 // Tipos de campo disponibles
 const FIELD_TYPES = [
-  { value: "text", label: "Texto", icon: Icons.text, color: "blue", desc: "Texto libre" },
-  { value: "number", label: "Número", icon: Icons.number, color: "emerald", desc: "Valores numéricos" },
-  { value: "date", label: "Fecha", icon: Icons.date, color: "amber", desc: "Fecha y hora" },
-  { value: "email", label: "Email", icon: Icons.email, color: "cyan", desc: "Correo electrónico" },
-  { value: "phone", label: "Teléfono", icon: Icons.phone, color: "purple", desc: "Número telefónico" },
-  { value: "select", label: "Selección", icon: Icons.select, color: "pink", desc: "Opciones predefinidas" },
-  { value: "relation", label: "Relación", icon: Icons.relation, color: "orange", desc: "Enlace a otra tabla" },
+  { value: "text", label: "Texto", icon: Icons.text, color: "blue", desc: "Texto libre", help: "Para nombres, descripciones, notas. Ej: 'Juan Pérez', 'Mesa junto a la ventana'" },
+  { value: "number", label: "Número", icon: Icons.number, color: "emerald", desc: "Valores numéricos", help: "Para cantidades, precios, edades. Ej: 4 personas, $150.00" },
+  { value: "date", label: "Fecha", icon: Icons.date, color: "amber", desc: "Fecha y hora", help: "Para citas, reservas, vencimientos. Ej: 15 de marzo de 2024" },
+  { value: "email", label: "Email", icon: Icons.email, color: "cyan", desc: "Correo electrónico", help: "Se valida formato de email. Ej: cliente@ejemplo.com" },
+  { value: "phone", label: "Teléfono", icon: Icons.phone, color: "purple", desc: "Número telefónico", help: "Se valida formato telefónico. Ej: 55 1234 5678" },
+  { value: "select", label: "Selección", icon: Icons.select, color: "pink", desc: "Opciones predefinidas", help: "El usuario elige de una lista. Ej: Estado → Pendiente, Confirmado, Cancelado" },
+  { value: "relation", label: "Relación", icon: Icons.relation, color: "orange", desc: "Enlace a otra tabla", help: "Conecta con registros de otra tabla. Ej: Cliente → Tabla de Clientes" },
+  { value: "formula", label: "Calculado", icon: Icons.formula || (() => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>), color: "violet", desc: "Fórmula automática", help: "Calcula valores automáticamente. Ej: Total = Precio × Cantidad, Edad = Hoy - Fecha_nacimiento" },
+];
+
+// Fórmulas predefinidas
+const FORMULA_TEMPLATES = [
+  { id: 'sum', label: 'Suma', formula: '{campo1} + {campo2}', desc: 'Suma dos campos numéricos', example: 'Subtotal + IVA' },
+  { id: 'multiply', label: 'Multiplicación', formula: '{campo1} * {campo2}', desc: 'Multiplica dos campos', example: 'Precio × Cantidad' },
+  { id: 'percentage', label: 'Porcentaje', formula: '{campo} * 0.16', desc: 'Calcula un porcentaje', example: 'Subtotal × 0.16 (IVA)' },
+  { id: 'concat', label: 'Concatenar', formula: '{campo1} + " " + {campo2}', desc: 'Une textos', example: 'Nombre + Apellido' },
+  { id: 'age', label: 'Edad/Días', formula: 'DAYS({campo})', desc: 'Días desde una fecha', example: 'Días desde Fecha_registro' },
+  { id: 'custom', label: 'Personalizada', formula: '', desc: 'Escribe tu propia fórmula', example: '' },
 ];
 
 const DEFAULT_FIELD = {
@@ -89,6 +101,33 @@ const DEFAULT_FIELD = {
   defaultValue: "",
   options: [],
   validation: {},
+  formula: "", // Para campos calculados
+};
+
+// Validaciones avanzadas predefinidas
+const VALIDATION_TEMPLATES = {
+  text: [
+    { id: 'minLength', label: 'Longitud mínima', type: 'number', placeholder: '3', icon: '📏' },
+    { id: 'maxLength', label: 'Longitud máxima', type: 'number', placeholder: '100', icon: '📐' },
+    { id: 'pattern', label: 'Patrón (regex)', type: 'text', placeholder: '^[A-Z]{3}\\d{4}$', icon: '🔣' },
+  ],
+  number: [
+    { id: 'min', label: 'Valor mínimo', type: 'number', placeholder: '0', icon: '⬇️' },
+    { id: 'max', label: 'Valor máximo', type: 'number', placeholder: '1000', icon: '⬆️' },
+    { id: 'step', label: 'Incremento', type: 'number', placeholder: '1', icon: '➕' },
+  ],
+  email: [
+    { id: 'domain', label: 'Dominio permitido', type: 'text', placeholder: '@empresa.com', icon: '🌐' },
+  ],
+  phone: [
+    { id: 'format', label: 'Formato', type: 'select', options: ['Nacional', 'Internacional', 'Cualquiera'], icon: '📱' },
+  ],
+  date: [
+    { id: 'minDate', label: 'Fecha mínima', type: 'text', placeholder: 'today', icon: '📅' },
+    { id: 'maxDate', label: 'Fecha máxima', type: 'text', placeholder: '+30days', icon: '📆' },
+    { id: 'allowPast', label: 'Permitir pasado', type: 'boolean', icon: '⏪' },
+    { id: 'allowFuture', label: 'Permitir futuro', type: 'boolean', icon: '⏩' },
+  ],
 };
 
 // Permisos por defecto - delete desactivado por seguridad
@@ -99,14 +138,218 @@ const DEFAULT_PERMISSIONS = {
   allowDelete: false,
 };
 
+// ========== PLANTILLAS DE TABLAS ==========
+const TABLE_TEMPLATES = [
+  {
+    id: 'crm',
+    name: 'CRM - Clientes',
+    description: 'Gestiona tus clientes y contactos',
+    icon: '👥',
+    color: 'blue',
+    tableName: 'Clientes',
+    tableDescription: 'Base de datos de clientes y prospectos',
+    fields: [
+      { name: 'Nombre', type: 'text', required: true },
+      { name: 'Email', type: 'email', required: true },
+      { name: 'Teléfono', type: 'phone', required: false },
+      { name: 'Empresa', type: 'text', required: false },
+      { name: 'Estado', type: 'select', required: true, options: ['Prospecto', 'Contactado', 'Negociando', 'Cliente', 'Inactivo'] },
+      { name: 'Notas', type: 'text', required: false },
+    ],
+  },
+  {
+    id: 'restaurant',
+    name: 'Restaurante',
+    description: 'Reservaciones y gestión de mesas',
+    icon: '🍽️',
+    color: 'amber',
+    tableName: 'Reservaciones',
+    tableDescription: 'Sistema de reservas del restaurante',
+    fields: [
+      { name: 'Cliente', type: 'text', required: true },
+      { name: 'Teléfono', type: 'phone', required: true },
+      { name: 'Fecha', type: 'date', required: true },
+      { name: 'Hora', type: 'text', required: true },
+      { name: 'Personas', type: 'number', required: true },
+      { name: 'Mesa', type: 'select', required: false, options: ['Mesa 1', 'Mesa 2', 'Mesa 3', 'Mesa 4', 'Mesa 5', 'Terraza', 'VIP'] },
+      { name: 'Estado', type: 'select', required: true, options: ['Pendiente', 'Confirmada', 'Completada', 'Cancelada'] },
+    ],
+  },
+  {
+    id: 'clinic',
+    name: 'Clínica / Consultorio',
+    description: 'Citas médicas y pacientes',
+    icon: '🏥',
+    color: 'emerald',
+    tableName: 'Citas',
+    tableDescription: 'Agenda de citas médicas',
+    fields: [
+      { name: 'Paciente', type: 'text', required: true },
+      { name: 'Teléfono', type: 'phone', required: true },
+      { name: 'Email', type: 'email', required: false },
+      { name: 'Fecha', type: 'date', required: true },
+      { name: 'Hora', type: 'text', required: true },
+      { name: 'Motivo', type: 'text', required: true },
+      { name: 'Doctor', type: 'select', required: true, options: ['Dr. García', 'Dra. López', 'Dr. Martínez'] },
+      { name: 'Estado', type: 'select', required: true, options: ['Programada', 'Confirmada', 'En curso', 'Completada', 'Cancelada'] },
+    ],
+  },
+  {
+    id: 'ecommerce',
+    name: 'E-commerce',
+    description: 'Productos y catálogo',
+    icon: '🛒',
+    color: 'purple',
+    tableName: 'Productos',
+    tableDescription: 'Catálogo de productos de la tienda',
+    fields: [
+      { name: 'Nombre', type: 'text', required: true },
+      { name: 'Descripción', type: 'text', required: false },
+      { name: 'Precio', type: 'number', required: true },
+      { name: 'Stock', type: 'number', required: true },
+      { name: 'Categoría', type: 'select', required: true, options: ['Electrónica', 'Ropa', 'Hogar', 'Deportes', 'Otros'] },
+      { name: 'SKU', type: 'text', required: false },
+      { name: 'Activo', type: 'select', required: true, options: ['Sí', 'No'] },
+    ],
+  },
+  {
+    id: 'custom',
+    name: 'Personalizada',
+    description: 'Empieza desde cero',
+    icon: '✨',
+    color: 'zinc',
+    tableName: '',
+    tableDescription: '',
+    fields: [],
+  },
+];
+
 export default function TableBuilder({ onSave, onCancel, availableTables = [], loading }) {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0); // 0 = selección de plantilla
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [tableName, setTableName] = useState("");
   const [tableDescription, setTableDescription] = useState("");
   const [fields, setFields] = useState([{ ...DEFAULT_FIELD, id: Date.now() }]);
   const [permissions, setPermissions] = useState({ ...DEFAULT_PERMISSIONS });
   const [errors, setErrors] = useState({});
   const [expandedField, setExpandedField] = useState(null);
+  
+  // CSV Import state
+  const [csvData, setCsvData] = useState(null);
+  const [csvHeaders, setCsvHeaders] = useState([]);
+  const [csvPreview, setCsvPreview] = useState([]);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Parsear CSV
+  const parseCSV = (text) => {
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return { headers: [], rows: [] };
+    
+    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+    const rows = lines.slice(1, 6).map(line => { // Solo primeros 5 para preview
+      const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+      return headers.reduce((obj, h, i) => ({ ...obj, [h]: values[i] || '' }), {});
+    });
+    
+    return { headers, rows, totalRows: lines.length - 1 };
+  };
+
+  // Detectar tipo de campo automáticamente
+  const detectFieldType = (values) => {
+    const sample = values.filter(v => v && v.trim()).slice(0, 10);
+    if (sample.length === 0) return 'text';
+    
+    // Email
+    if (sample.every(v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))) return 'email';
+    // Teléfono
+    if (sample.every(v => /^[\d\s\-\+\(\)]{7,}$/.test(v))) return 'phone';
+    // Número
+    if (sample.every(v => !isNaN(parseFloat(v)))) return 'number';
+    // Fecha
+    if (sample.every(v => !isNaN(Date.parse(v)))) return 'date';
+    
+    return 'text';
+  };
+
+  // Manejar archivo CSV
+  const handleFileUpload = (file) => {
+    if (!file || !file.name.endsWith('.csv')) {
+      setErrors({ csv: 'Por favor sube un archivo CSV válido' });
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      const { headers, rows, totalRows } = parseCSV(text);
+      
+      if (headers.length === 0) {
+        setErrors({ csv: 'El archivo CSV está vacío o mal formateado' });
+        return;
+      }
+      
+      setCsvHeaders(headers);
+      setCsvPreview(rows);
+      setCsvData({ text, totalRows });
+      
+      // Auto-generar campos basados en headers
+      const detectedFields = headers.map((header, i) => {
+        const values = rows.map(r => r[header]);
+        return {
+          ...DEFAULT_FIELD,
+          id: Date.now() + i,
+          name: header,
+          type: detectFieldType(values),
+          required: i === 0, // Primer campo requerido por defecto
+        };
+      });
+      
+      setFields(detectedFields);
+      setTableName(file.name.replace('.csv', '').replace(/_/g, ' '));
+      setStep(1);
+    };
+    reader.readAsText(file);
+  };
+
+  // Drag & Drop handlers
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+  
+  const handleDragLeave = () => setIsDragging(false);
+  
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    handleFileUpload(file);
+  };
+
+  // Aplicar plantilla seleccionada
+  const applyTemplate = (template) => {
+    setSelectedTemplate(template.id);
+    setCsvData(null);
+    setCsvHeaders([]);
+    setCsvPreview([]);
+    if (template.id === 'custom') {
+      setTableName('');
+      setTableDescription('');
+      setFields([{ ...DEFAULT_FIELD, id: Date.now() }]);
+    } else {
+      setTableName(template.tableName);
+      setTableDescription(template.tableDescription);
+      setFields(template.fields.map((f, i) => ({
+        ...DEFAULT_FIELD,
+        id: Date.now() + i,
+        name: f.name,
+        type: f.type,
+        required: f.required,
+        options: f.options || [],
+      })));
+    }
+    setStep(1);
+  };
 
   const addField = () => {
     const newField = { ...DEFAULT_FIELD, id: Date.now() };
@@ -148,6 +391,9 @@ export default function TableBuilder({ onSave, onCancel, availableTables = [], l
       if (field.type === "select" && field.options.length === 0) {
         newErrors[`field_${field.id}_options`] = "Agrega al menos una opción";
       }
+      if (field.type === "formula" && !field.formula) {
+        newErrors[`field_${field.id}_formula`] = "Define una fórmula para este campo";
+      }
     });
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -172,6 +418,11 @@ export default function TableBuilder({ onSave, onCancel, availableTables = [], l
           field: f.validation.field || "nombre",
         },
       }),
+      ...(f.type === "formula" && f.formula && { formula: f.formula }),
+      // Validaciones avanzadas para campos que no son relation
+      ...(f.type !== "relation" && f.validation && Object.keys(f.validation).length > 0 && {
+        validation: f.validation,
+      }),
     }));
 
     onSave({
@@ -186,35 +437,252 @@ export default function TableBuilder({ onSave, onCancel, availableTables = [], l
 
   return (
     <div className="space-y-6">
-      {/* Progress steps */}
-      <div className="flex items-center gap-4 pb-6 border-b border-white/[0.06]">
-        {[
-          { num: 1, label: "Información" },
-          { num: 2, label: "Campos" },
-          { num: 3, label: "Revisar" },
-        ].map((s, i) => (
-          <button
-            key={s.num}
-            type="button"
-            onClick={() => s.num <= step && setStep(s.num)}
-            className={`flex items-center gap-3 ${s.num > step ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
-          >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
-              step === s.num 
-                ? 'bg-blue-500 text-white' 
-                : step > s.num 
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50' 
-                : 'bg-white/[0.03] text-zinc-500 border border-white/[0.08]'
-            }`}>
-              {step > s.num ? Icons.check : s.num}
+      {/* Step 0: Selector de Plantillas */}
+      {step === 0 && (
+        <div className="space-y-6 animate-fade-in">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-white mb-2">Elige cómo empezar</h2>
+            <p className="text-zinc-400">Selecciona una plantilla o crea tu tabla desde cero</p>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {TABLE_TEMPLATES.map((template) => (
+              <button
+                key={template.id}
+                type="button"
+                onClick={() => applyTemplate(template)}
+                className={`group relative p-6 rounded-2xl border text-left transition-all hover:scale-[1.02] hover:shadow-xl ${
+                  template.color === 'blue' ? 'border-blue-500/20 hover:border-blue-500/40 hover:bg-blue-500/5' :
+                  template.color === 'amber' ? 'border-amber-500/20 hover:border-amber-500/40 hover:bg-amber-500/5' :
+                  template.color === 'emerald' ? 'border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-500/5' :
+                  template.color === 'purple' ? 'border-purple-500/20 hover:border-purple-500/40 hover:bg-purple-500/5' :
+                  'border-white/10 hover:border-white/20 hover:bg-white/5'
+                }`}
+              >
+                <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-4 ${
+                  template.color === 'blue' ? 'bg-blue-500/10' :
+                  template.color === 'amber' ? 'bg-amber-500/10' :
+                  template.color === 'emerald' ? 'bg-emerald-500/10' :
+                  template.color === 'purple' ? 'bg-purple-500/10' :
+                  'bg-white/5'
+                }`}>
+                  {template.icon}
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-1">{template.name}</h3>
+                <p className="text-sm text-zinc-400">{template.description}</p>
+                {template.fields.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-1">
+                    {template.fields.slice(0, 4).map((f, i) => (
+                      <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-zinc-500">
+                        {f.name}
+                      </span>
+                    ))}
+                    {template.fields.length > 4 && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-zinc-500">
+                        +{template.fields.length - 4} más
+                      </span>
+                    )}
+                  </div>
+                )}
+                <div className={`absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity ${
+                  template.color === 'blue' ? 'text-blue-400' :
+                  template.color === 'amber' ? 'text-amber-400' :
+                  template.color === 'emerald' ? 'text-emerald-400' :
+                  template.color === 'purple' ? 'text-purple-400' :
+                  'text-zinc-400'
+                }`}>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                  </svg>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* CSV Import Section */}
+          <div className="mt-8 pt-8 border-t border-white/[0.06]">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-semibold text-white mb-1">O importa desde un archivo</h3>
+              <p className="text-sm text-zinc-400">Arrastra un CSV o haz clic para seleccionar</p>
             </div>
-            <span className={`text-sm font-medium ${step === s.num ? 'text-white' : 'text-zinc-500'}`}>
-              {s.label}
-            </span>
-            {i < 2 && <div className="w-8 h-px bg-white/[0.08]" />}
+            
+            <label
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`relative flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed cursor-pointer transition-all ${
+                isDragging 
+                  ? 'border-green-500 bg-green-500/10 scale-[1.02]' 
+                  : csvData 
+                    ? 'border-green-500/50 bg-green-500/5' 
+                    : 'border-white/10 hover:border-white/20 hover:bg-white/5'
+              }`}
+            >
+              <input
+                type="file"
+                accept=".csv"
+                onChange={(e) => e.target.files[0] && handleFileUpload(e.target.files[0])}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              
+              {csvData ? (
+                <div className="text-center">
+                  <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p className="text-green-400 font-medium mb-1">CSV cargado correctamente</p>
+                  <p className="text-zinc-400 text-sm">{csvHeaders.length} columnas detectadas • {csvData.length} filas</p>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors ${
+                    isDragging ? 'bg-green-500/20' : 'bg-white/5'
+                  }`}>
+                    <svg className={`w-8 h-8 transition-colors ${isDragging ? 'text-green-400' : 'text-zinc-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                    </svg>
+                  </div>
+                  <p className={`font-medium mb-1 transition-colors ${isDragging ? 'text-green-400' : 'text-zinc-300'}`}>
+                    {isDragging ? 'Suelta el archivo aquí' : 'Arrastra tu archivo CSV'}
+                  </p>
+                  <p className="text-zinc-500 text-sm">o haz clic para seleccionar</p>
+                </div>
+              )}
+            </label>
+
+            {/* CSV Preview */}
+            {csvData && csvPreview.length > 0 && (
+              <div className="mt-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-medium text-white">Vista previa de los datos</h4>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCsvData(null);
+                      setCsvHeaders([]);
+                      setCsvPreview([]);
+                      setFields([]);
+                    }}
+                    className="text-xs text-zinc-400 hover:text-red-400 transition-colors"
+                  >
+                    Eliminar archivo
+                  </button>
+                </div>
+                
+                <div className="overflow-x-auto rounded-xl border border-white/[0.06]">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-white/[0.02]">
+                        {csvHeaders.map((header, i) => (
+                          <th key={i} className="px-4 py-3 text-left font-medium text-white border-b border-white/[0.06]">
+                            <div className="flex flex-col gap-1">
+                              <span>{header}</span>
+                              <span className="text-xs font-normal text-zinc-500">
+                                {fields[i]?.type || 'text'}
+                              </span>
+                            </div>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {csvPreview.map((row, i) => (
+                        <tr key={i} className="border-b border-white/[0.03] last:border-0">
+                          {row.map((cell, j) => (
+                            <td key={j} className="px-4 py-2 text-zinc-400 truncate max-w-[200px]">
+                              {cell || '-'}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                
+                <div className="flex items-center gap-3 text-sm text-zinc-400">
+                  <span className="flex items-center gap-1.5">
+                    <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Los tipos de campo se detectaron automáticamente
+                  </span>
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTableName('Tabla importada');
+                    setStep(1);
+                  }}
+                  className="w-full py-3 px-4 rounded-xl bg-green-500 hover:bg-green-600 text-white font-medium transition-all hover:scale-[1.01]"
+                >
+                  Continuar con estos campos
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Progress steps - Solo visible después de elegir plantilla */}
+      {step > 0 && (
+        <div className="relative pb-8 border-b border-white/[0.06]">
+          {/* Línea de fondo */}
+          <div className="absolute top-4 left-8 right-8 h-0.5 bg-white/[0.06]" />
+          {/* Línea de progreso */}
+          <div 
+            className="absolute top-4 left-8 h-0.5 bg-blue-500 transition-all duration-500" 
+            style={{ width: `calc(${(step - 1) / 2 * 100}% - ${step === 1 ? 0 : step === 2 ? 0 : 32}px)` }}
+          />
+          
+          <div className="relative flex justify-between">
+            {[
+              { num: 1, label: "Información", desc: "Nombre y descripción" },
+              { num: 2, label: "Campos", desc: "Define la estructura" },
+              { num: 3, label: "Revisar", desc: "Confirma y crea" },
+            ].map((s) => (
+              <button
+                key={s.num}
+                type="button"
+                onClick={() => s.num <= step && setStep(s.num)}
+                className={`flex flex-col items-center gap-2 ${s.num > step ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer group'}`}
+              >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all shadow-lg ${
+                  step === s.num 
+                    ? 'bg-blue-500 text-white ring-4 ring-blue-500/20' 
+                    : step > s.num 
+                    ? 'bg-emerald-500 text-white' 
+                    : 'bg-zinc-800 text-zinc-500 border border-white/[0.1] group-hover:border-white/[0.2]'
+                }`}>
+                  {step > s.num ? Icons.check : s.num}
+                </div>
+                <div className="text-center">
+                  <span className={`block text-sm font-medium transition-colors ${
+                    step === s.num ? 'text-white' : step > s.num ? 'text-emerald-400' : 'text-zinc-500'
+                  }`}>
+                    {s.label}
+                  </span>
+                  <span className="text-[10px] text-zinc-600 hidden sm:block">{s.desc}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Botón para cambiar plantilla */}
+          <button
+            type="button"
+            onClick={() => setStep(0)}
+            className="absolute -top-2 right-0 text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1"
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Cambiar plantilla
           </button>
-        ))}
-      </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         {/* Step 1: Información básica */}
@@ -292,7 +760,7 @@ export default function TableBuilder({ onSave, onCancel, availableTables = [], l
               {fields.map((field, index) => {
                 const typeInfo = getFieldTypeInfo(field.type);
                 const isExpanded = expandedField === field.id;
-                const hasError = errors[`field_${field.id}`] || errors[`field_${field.id}_relation`] || errors[`field_${field.id}_options`];
+                const hasError = errors[`field_${field.id}`] || errors[`field_${field.id}_relation`] || errors[`field_${field.id}_options`] || errors[`field_${field.id}_formula`];
                 
                 return (
                   <div
@@ -347,18 +815,36 @@ export default function TableBuilder({ onSave, onCancel, availableTables = [], l
                         className="flex-1 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500/50 transition-all"
                       />
 
-                      {/* Type selector */}
-                      <select
-                        value={field.type}
-                        onChange={(e) => updateField(field.id, { type: e.target.value, options: [], validation: {} })}
-                        className="px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-zinc-300 focus:outline-none focus:border-blue-500/50 transition-all cursor-pointer"
-                      >
-                        {FIELD_TYPES.map((t) => (
-                          <option key={t.value} value={t.value}>
-                            {t.label}
-                          </option>
-                        ))}
-                      </select>
+                      {/* Type selector - Mejorado */}
+                      <div className="relative group">
+                        <select
+                          value={field.type}
+                          onChange={(e) => updateField(field.id, { type: e.target.value, options: [], validation: {} })}
+                          className={`px-3 py-2 pr-8 rounded-lg border text-sm font-medium focus:outline-none transition-all cursor-pointer appearance-none ${
+                            typeInfo.color === 'blue' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
+                            typeInfo.color === 'emerald' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' :
+                            typeInfo.color === 'amber' ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' :
+                            typeInfo.color === 'cyan' ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400' :
+                            typeInfo.color === 'purple' ? 'bg-purple-500/10 border-purple-500/30 text-purple-400' :
+                            typeInfo.color === 'pink' ? 'bg-pink-500/10 border-pink-500/30 text-pink-400' :
+                            'bg-orange-500/10 border-orange-500/30 text-orange-400'
+                          }`}
+                        >
+                          {FIELD_TYPES.map((t) => (
+                            <option key={t.value} value={t.value}>
+                              {t.label}
+                            </option>
+                          ))}
+                        </select>
+                        <svg className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                        </svg>
+                        {/* Tooltip con descripción detallada */}
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-zinc-900 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-white/10 z-50 w-64">
+                          <p className="text-xs font-medium text-white mb-1">{typeInfo.label}</p>
+                          <p className="text-[11px] text-zinc-400">{typeInfo.help}</p>
+                        </div>
+                      </div>
 
                       {/* Required toggle */}
                       <button
@@ -447,6 +933,163 @@ export default function TableBuilder({ onSave, onCancel, availableTables = [], l
                             error={errors[`field_${field.id}_relation`]}
                           />
                         )}
+
+                        {/* Formula config */}
+                        {field.type === "formula" && (
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <label className="text-sm text-zinc-400">Fórmula:</label>
+                              <span className="text-xs text-zinc-600">Usa nombres de campos entre {'{}'}</span>
+                            </div>
+                            
+                            {/* Formula templates */}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                              {FORMULA_TEMPLATES.map((template) => (
+                                <button
+                                  key={template.id}
+                                  type="button"
+                                  onClick={() => template.id !== 'custom' && updateField(field.id, { formula: template.formula })}
+                                  className={`p-3 rounded-xl border text-left transition-all hover:scale-[1.02] ${
+                                    field.formula === template.formula
+                                      ? 'border-violet-500/50 bg-violet-500/10'
+                                      : 'border-white/[0.08] hover:border-white/20 hover:bg-white/[0.03]'
+                                  }`}
+                                >
+                                  <div className="text-sm font-medium text-white mb-1">{template.label}</div>
+                                  <div className="text-xs text-zinc-500">{template.desc}</div>
+                                </button>
+                              ))}
+                            </div>
+                            
+                            {/* Custom formula input */}
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={field.formula}
+                                onChange={(e) => updateField(field.id, { formula: e.target.value })}
+                                placeholder="{Precio} * {Cantidad}"
+                                className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-600 font-mono text-sm focus:outline-none focus:border-violet-500/50 transition-all"
+                              />
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                <svg className="w-5 h-5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 15.75V18m-7.5-6.75h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25V13.5zm0 2.25h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25V18zm2.498-6.75h.007v.008h-.007v-.008zm0 2.25h.007v.008h-.007V13.5zm0 2.25h.007v.008h-.007v-.008zm0 2.25h.007v.008h-.007V18zm2.504-6.75h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V13.5zm0 2.25h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V18zm2.498-6.75h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V13.5zM8.25 6h7.5v2.25h-7.5V6zM12 2.25c-1.892 0-3.758.11-5.593.322C5.307 2.7 4.5 3.65 4.5 4.757V19.5a2.25 2.25 0 002.25 2.25h10.5a2.25 2.25 0 002.25-2.25V4.757c0-1.108-.806-2.057-1.907-2.185A48.507 48.507 0 0012 2.25z" />
+                                </svg>
+                              </div>
+                            </div>
+                            
+                            {/* Available fields reference */}
+                            {fields.filter(f => f.name && f.id !== field.id && f.type !== 'formula').length > 0 && (
+                              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                                <div className="text-xs text-zinc-500 mb-2">Campos disponibles (clic para insertar):</div>
+                                <div className="flex flex-wrap gap-2">
+                                  {fields.filter(f => f.name && f.id !== field.id && f.type !== 'formula').map((f) => (
+                                    <button
+                                      key={f.id}
+                                      type="button"
+                                      onClick={() => updateField(field.id, { formula: field.formula + `{${f.name}}` })}
+                                      className="px-2 py-1 rounded-lg bg-violet-500/10 text-violet-400 text-xs font-medium hover:bg-violet-500/20 transition-colors"
+                                    >
+                                      {'{' + f.name + '}'}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Helper text */}
+                            <div className="flex items-start gap-2 text-xs text-zinc-500">
+                              <svg className="w-4 h-4 text-violet-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span>Los campos calculados se actualizan automáticamente. Operadores: + - * / y funciones: DAYS(), SUM(), AVG()</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Validaciones avanzadas */}
+                        {field.type !== 'formula' && field.type !== 'relation' && field.type !== 'select' && (
+                          <div className="space-y-3 pt-3 border-t border-white/[0.04]">
+                            <div className="flex items-center justify-between">
+                              <label className="text-sm text-zinc-400 flex items-center gap-2">
+                                <svg className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                                </svg>
+                                Validación avanzada
+                              </label>
+                              <span className="text-xs text-zinc-600">(Opcional)</span>
+                            </div>
+                            
+                            {VALIDATION_TEMPLATES[field.type] && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {VALIDATION_TEMPLATES[field.type].map((rule) => (
+                                  <div key={rule.id} className="flex items-center gap-2">
+                                    <span className="text-sm">{rule.icon}</span>
+                                    {rule.type === 'number' && (
+                                      <input
+                                        type="number"
+                                        value={field.validation?.[rule.id] || ''}
+                                        onChange={(e) => updateField(field.id, { 
+                                          validation: { ...field.validation, [rule.id]: e.target.value ? Number(e.target.value) : undefined }
+                                        })}
+                                        placeholder={rule.placeholder}
+                                        className="flex-1 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-cyan-500/50 transition-all"
+                                      />
+                                    )}
+                                    {rule.type === 'text' && (
+                                      <input
+                                        type="text"
+                                        value={field.validation?.[rule.id] || ''}
+                                        onChange={(e) => updateField(field.id, { 
+                                          validation: { ...field.validation, [rule.id]: e.target.value || undefined }
+                                        })}
+                                        placeholder={rule.placeholder}
+                                        className="flex-1 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-white text-sm placeholder-zinc-600 font-mono focus:outline-none focus:border-cyan-500/50 transition-all"
+                                      />
+                                    )}
+                                    {rule.type === 'boolean' && (
+                                      <button
+                                        type="button"
+                                        onClick={() => updateField(field.id, { 
+                                          validation: { ...field.validation, [rule.id]: !field.validation?.[rule.id] }
+                                        })}
+                                        className={`flex-1 px-3 py-2 rounded-lg text-sm transition-all ${
+                                          field.validation?.[rule.id]
+                                            ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
+                                            : 'bg-white/[0.03] text-zinc-500 border border-white/[0.08]'
+                                        }`}
+                                      >
+                                        {field.validation?.[rule.id] ? 'Sí' : 'No'}
+                                      </button>
+                                    )}
+                                    {rule.type === 'select' && (
+                                      <select
+                                        value={field.validation?.[rule.id] || ''}
+                                        onChange={(e) => updateField(field.id, { 
+                                          validation: { ...field.validation, [rule.id]: e.target.value || undefined }
+                                        })}
+                                        className="flex-1 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-white text-sm focus:outline-none focus:border-cyan-500/50 transition-all"
+                                      >
+                                        <option value="">Seleccionar...</option>
+                                        {rule.options.map((opt) => (
+                                          <option key={opt} value={opt}>{opt}</option>
+                                        ))}
+                                      </select>
+                                    )}
+                                    <span className="text-xs text-zinc-600 hidden sm:inline">{rule.label}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {/* Quick info about validations */}
+                            <div className="flex items-start gap-2 text-xs text-zinc-600">
+                              <svg className="w-3.5 h-3.5 text-cyan-400/60 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span>Las validaciones ayudan a garantizar datos correctos. Se aplicarán automáticamente en el chat.</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -454,7 +1097,7 @@ export default function TableBuilder({ onSave, onCancel, availableTables = [], l
                     {hasError && (
                       <div className="px-4 pb-3">
                         <p className="text-xs text-red-400">
-                          {errors[`field_${field.id}`] || errors[`field_${field.id}_relation`] || errors[`field_${field.id}_options`]}
+                          {errors[`field_${field.id}`] || errors[`field_${field.id}_relation`] || errors[`field_${field.id}_options`] || errors[`field_${field.id}_formula`]}
                         </p>
                       </div>
                     )}
@@ -585,7 +1228,7 @@ export default function TableBuilder({ onSave, onCancel, availableTables = [], l
                     className="w-4 h-4 rounded border-zinc-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 bg-zinc-800"
                   />
                   <div>
-                    <span className="text-sm font-medium text-zinc-300">🔍 Consultar</span>
+                    <span className="text-sm font-medium text-zinc-300 flex items-center gap-1.5"><SearchIcon size="xs" /> Consultar</span>
                     <p className="text-xs text-zinc-500">Buscar y ver registros</p>
                   </div>
                 </label>
@@ -599,7 +1242,7 @@ export default function TableBuilder({ onSave, onCancel, availableTables = [], l
                     className="w-4 h-4 rounded border-zinc-600 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0 bg-zinc-800"
                   />
                   <div>
-                    <span className="text-sm font-medium text-zinc-300">➕ Crear</span>
+                    <span className="text-sm font-medium text-zinc-300 flex items-center gap-1.5"><PlusIcon size="xs" /> Crear</span>
                     <p className="text-xs text-zinc-500">Agregar nuevos registros</p>
                   </div>
                 </label>
@@ -613,7 +1256,7 @@ export default function TableBuilder({ onSave, onCancel, availableTables = [], l
                     className="w-4 h-4 rounded border-zinc-600 text-amber-500 focus:ring-amber-500 focus:ring-offset-0 bg-zinc-800"
                   />
                   <div>
-                    <span className="text-sm font-medium text-zinc-300">✏️ Editar</span>
+                    <span className="text-sm font-medium text-zinc-300 flex items-center gap-1.5"><EditIcon size="xs" /> Editar</span>
                     <p className="text-xs text-zinc-500">Modificar registros existentes</p>
                   </div>
                 </label>
@@ -627,7 +1270,7 @@ export default function TableBuilder({ onSave, onCancel, availableTables = [], l
                     className="w-4 h-4 rounded border-zinc-600 text-red-500 focus:ring-red-500 focus:ring-offset-0 bg-zinc-800"
                   />
                   <div>
-                    <span className="text-sm font-medium text-red-400">🗑️ Eliminar</span>
+                    <span className="text-sm font-medium text-red-400 flex items-center gap-1.5"><TrashIcon size="xs" /> Eliminar</span>
                     <p className="text-xs text-zinc-500">Borrar registros (desactivado por defecto)</p>
                   </div>
                 </label>

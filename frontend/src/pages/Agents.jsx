@@ -1,7 +1,9 @@
 import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { WorkspaceContext } from "../context/WorkspaceContext";
+import { useToast, useConfirm } from "../components/Toast";
 import { listAgents, createAgent, listTables, deleteAgent, updateAgent } from "../api/client";
+import { LockOpenIcon, LockClosedIcon } from "../components/Icons";
 
 // Iconos SVG
 const Icons = {
@@ -62,6 +64,8 @@ const AI_MODELS = [
 
 export default function Agents() {
   const { workspaceId, workspaceName } = useContext(WorkspaceContext);
+  const { toast } = useToast();
+  const { confirm, ConfirmModal } = useConfirm();
   const [agents, setAgents] = useState([]);
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -151,13 +155,16 @@ export default function Agents() {
         // Actualizar agente existente
         res = await updateAgent(workspaceId, editingAgent._id, agentData);
         setAgents(prev => prev.map(a => a._id === editingAgent._id ? res.data : a));
+        toast.success(`Agente "${name}" actualizado correctamente`);
       } else {
         // Crear nuevo agente
         res = await createAgent({ workspaceId, agent: agentData });
         setAgents(prev => [...prev, res.data]);
+        toast.success(`Agente "${name}" creado correctamente`);
       }
       resetForm();
     } catch (err) {
+      toast.error(`Error: ${err.message}`);
       setError(err.message);
     } finally {
       setCreating(false);
@@ -165,12 +172,22 @@ export default function Agents() {
   };
 
   const handleDelete = async (agent) => {
-    if (!confirm(`¿Eliminar agente "${agent.name}"?`)) return;
+    const confirmed = await confirm({
+      title: 'Eliminar Agente',
+      message: `¿Estás seguro de que deseas eliminar el agente "${agent.name}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      variant: 'danger'
+    });
+    if (!confirmed) return;
+    
     setDeleting(agent._id);
     try {
       await deleteAgent(workspaceId, agent._id);
       setAgents((prev) => prev.filter((a) => a._id !== agent._id));
+      toast.success(`Agente "${agent.name}" eliminado correctamente`);
     } catch (err) {
+      toast.error(`Error al eliminar: ${err.message}`);
       setError(err.message);
     } finally {
       setDeleting(null);
@@ -410,7 +427,7 @@ export default function Agents() {
                                 : "bg-amber-500/10 text-amber-400 border border-amber-500/30"
                             }`}
                           >
-                            {hasFullAccess(t._id) ? "🔓 Todo" : "🔒 Filtrado"}
+                            {hasFullAccess(t._id) ? <><LockOpenIcon size="xs" /> Todo</> : <><LockClosedIcon size="xs" /> Filtrado</>}
                           </button>
                         )}
                       </div>
@@ -418,8 +435,8 @@ export default function Agents() {
                     
                     {/* Leyenda */}
                     <div className="flex gap-4 pt-2 text-xs text-zinc-500">
-                      <span>🔓 Todo = ve todos los registros</span>
-                      <span>🔒 Filtrado = solo sus datos</span>
+                      <span className="flex items-center gap-1"><LockOpenIcon size="xs" /> Todo = ve todos los registros</span>
+                      <span className="flex items-center gap-1"><LockClosedIcon size="xs" /> Filtrado = solo sus datos</span>
                     </div>
                   </div>
                 )}
@@ -548,7 +565,7 @@ export default function Agents() {
                               }`}
                               title={fullAccess ? "Acceso completo" : "Filtrado por usuario"}
                             >
-                              {fullAccess ? "🔓" : "🔒"}
+                              {fullAccess ? <LockOpenIcon size="xs" /> : <LockClosedIcon size="xs" />}
                               {tableInfo?.name || 'Tabla'}
                             </span>
                           );
@@ -586,19 +603,22 @@ export default function Agents() {
             <p className="text-xs text-zinc-500">Acceso a tablas:</p>
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-400 text-xs border border-emerald-500/20">
-                🔓 Todo
+                <LockOpenIcon size="xs" /> Todo
               </span>
               <span className="text-xs text-zinc-600">Ve todos los registros</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-amber-500/10 text-amber-400 text-xs border border-amber-500/20">
-                🔒 Filtrado
+                <LockClosedIcon size="xs" /> Filtrado
               </span>
               <span className="text-xs text-zinc-600">Solo datos del usuario</span>
             </div>
           </div>
         )}
       </div>
+      
+      {/* Modal de confirmación */}
+      {ConfirmModal}
     </div>
   );
 }

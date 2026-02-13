@@ -4,6 +4,7 @@
  */
 import { Handle, Position, useReactFlow } from '@xyflow/react';
 import { useCallback } from 'react';
+import { ChatIcon } from '../Icons';
 
 export default function ResponseNode({ id, data, selected }) {
   const { setNodes } = useReactFlow();
@@ -34,7 +35,7 @@ export default function ResponseNode({ id, data, selected }) {
       {/* Header */}
       <div className="px-4 py-3 flex items-center gap-3" style={{ background: 'rgba(236, 72, 153, 0.15)', borderBottom: '1px solid rgba(236, 72, 153, 0.2)' }}>
         <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-lg" style={{ background: '#ec4899' }}>
-          💬
+          <ChatIcon size="sm" />
         </div>
         <div>
           <span className="text-sm font-semibold text-pink-400">Respuesta</span>
@@ -63,12 +64,12 @@ export default function ResponseNode({ id, data, selected }) {
             value={data?.type || 'success'}
             onChange={(e) => updateNodeData('type', e.target.value)}
           >
-            <option value="success" style={{ background: '#18181b', color: 'white' }}>✅ Mensaje de éxito</option>
-            <option value="error" style={{ background: '#18181b', color: 'white' }}>❌ Mensaje de error</option>
-            <option value="options" style={{ background: '#18181b', color: 'white' }}>📋 Mostrar opciones</option>
-            <option value="question" style={{ background: '#18181b', color: 'white' }}>❓ Hacer pregunta</option>
-            <option value="info" style={{ background: '#18181b', color: 'white' }}>ℹ️ Información</option>
-            <option value="custom" style={{ background: '#18181b', color: 'white' }}>✏️ Personalizado</option>
+            <option value="success" style={{ background: '#18181b', color: 'white' }}>Mensaje de éxito</option>
+            <option value="error" style={{ background: '#18181b', color: 'white' }}>Mensaje de error</option>
+            <option value="options" style={{ background: '#18181b', color: 'white' }}>Mostrar opciones</option>
+            <option value="question" style={{ background: '#18181b', color: 'white' }}>Hacer pregunta</option>
+            <option value="info" style={{ background: '#18181b', color: 'white' }}>Información</option>
+            <option value="custom" style={{ background: '#18181b', color: 'white' }}>Personalizado</option>
           </select>
         </div>
         

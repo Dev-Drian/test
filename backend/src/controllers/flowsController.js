@@ -3,7 +3,7 @@
  * Los flujos definen comportamientos específicos (agendar, cancelar, etc.)
  */
 import { v4 as uuidv4 } from "uuid";
-import { connectDB, getWorkspaceDbName, getFlowsDbName } from "../config/db.js";
+import { connectDB, getWorkspaceDbName, getFlowsDbName, getFlowTemplatesDbName } from "../config/db.js";
 
 /**
  * Obtener todos los flujos de un workspace
@@ -52,12 +52,26 @@ export async function getFlow(req, res) {
  */
 export async function createFlow(req, res) {
   try {
-    const { workspaceId, name, description, mainTable, agentId } = req.body;
+    const { workspaceId, name, description, mainTable, agentId, nodes, edges } = req.body;
     if (!workspaceId || !name) {
       return res.status(400).json({ error: "workspaceId and name are required" });
     }
 
     const db = await connectDB(getFlowsDbName(workspaceId));
+    
+    // Nodo inicial por defecto si no se proporcionan nodos
+    const defaultNodes = [
+      {
+        id: "trigger-1",
+        type: "trigger",
+        position: { x: 250, y: 50 },
+        data: { 
+          label: "Inicio",
+          trigger: "create",
+          description: "Cuando el usuario quiere crear un registro"
+        },
+      },
+    ];
     
     const flow = {
       _id: uuidv4(),
@@ -68,20 +82,9 @@ export async function createFlow(req, res) {
       trigger: "create", // create, update, query, availability
       isActive: true,
       
-      // Estructura de React Flow
-      nodes: [
-        {
-          id: "trigger-1",
-          type: "trigger",
-          position: { x: 250, y: 50 },
-          data: { 
-            label: "Inicio",
-            trigger: "create",
-            description: "Cuando el usuario quiere crear un registro"
-          },
-        },
-      ],
-      edges: [],
+      // Usar nodos/edges del request o los valores por defecto
+      nodes: (nodes && nodes.length > 0) ? nodes : defaultNodes,
+      edges: edges || [],
       
       // Conexiones a tablas (para ejecutar el flujo)
       connections: [],
@@ -267,4 +270,34 @@ export async function getNodeTypes(req, res) {
   ];
   
   res.json(nodeTypes);
+}
+
+/**
+ * Obtener plantillas de flujos (globales)
+ */
+export async function getFlowTemplates(req, res) {
+  try {
+    const db = await connectDB(getFlowTemplatesDbName());
+    const result = await db.find({
+      selector: { isTemplate: true },
+      limit: 100,
+    });
+    
+    // Siempre agregar la opción "Flujo vacío" al inicio
+    const emptyTemplate = {
+      _id: 'empty',
+      name: 'Flujo vacío',
+      description: 'Empieza desde cero',
+      icon: '✨',
+      color: 'zinc',
+      nodes: [],
+      edges: [],
+      isTemplate: true,
+    };
+    
+    res.json([...(result.docs || []), emptyTemplate]);
+  } catch (err) {
+    console.error("flowsController.getFlowTemplates:", err);
+    res.status(500).json({ error: err.message });
+  }
 }

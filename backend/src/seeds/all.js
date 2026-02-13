@@ -17,6 +17,7 @@ import seedSalon from './generic-salon.js';
 import seedClinic from './generic-clinic.js';
 import seedPremiumCRM from './premium-crm.js';
 import { seed as seedBraseria } from './braseria-restaurant.js';
+import { seedFlowTemplates } from './flow-templates.js';
 
 // Importar configuración dinámica de DB
 import { getDbPrefix } from '../config/db.js';
@@ -115,6 +116,7 @@ async function main() {
   }
 
   console.log('\n📋 Seeds a ejecutar:');
+  console.log('   0. 📋  Plantillas de Flujos (globales)');
   console.log('   1. 🍽️  Restaurante Genérico (generic-restaurant)');
   console.log('   2. 💇  Salón de Belleza (generic-salon)');
   console.log('   3. 🏥  Clínica/Veterinaria (generic-clinic)');
@@ -126,6 +128,7 @@ async function main() {
 
   // Ejecutar seeds directamente (ya están importados)
   const seedFunctions = [
+    { name: 'Plantillas de Flujos', fn: seedFlowTemplates },
     { name: 'Restaurante Genérico', fn: seedRestaurant },
     { name: 'Salón de Belleza', fn: seedSalon },
     { name: 'Clínica', fn: seedClinic },

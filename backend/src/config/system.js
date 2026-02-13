@@ -15,7 +15,7 @@ export const SystemConfig = {
   
   // Base de datos
   database: {
-    url: process.env.COUCHDB_URL || 'http://localhost:5984',
+    url: process.env.COUCHDB_URL || 'http://admin:password@127.0.0.1:5984',
     prefix: process.env.DB_PREFIX || 'chatbot_',
   },
   

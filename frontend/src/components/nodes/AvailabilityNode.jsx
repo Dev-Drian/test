@@ -4,6 +4,7 @@
  */
 import { Handle, Position, useReactFlow } from '@xyflow/react';
 import { useCallback } from 'react';
+import { CalendarIcon, ClockIcon, BriefcaseIcon } from '../Icons';
 
 export default function AvailabilityNode({ id, data, selected }) {
   const { setNodes } = useReactFlow();
@@ -34,8 +35,8 @@ export default function AvailabilityNode({ id, data, selected }) {
       
       {/* Header */}
       <div className="px-4 py-3 flex items-center gap-3" style={{ background: 'rgba(6, 182, 212, 0.15)', borderBottom: '1px solid rgba(6, 182, 212, 0.2)' }}>
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-lg" style={{ background: '#06b6d4' }}>
-          📅
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ background: '#06b6d4' }}>
+          <CalendarIcon size="sm" />
         </div>
         <div>
           <span className="text-sm font-semibold text-cyan-400">Disponibilidad</span>
@@ -84,7 +85,7 @@ export default function AvailabilityNode({ id, data, selected }) {
                 checked={data?.checkDate !== false}
                 onChange={(e) => updateNodeData('checkDate', e.target.checked)}
               />
-              <span className="text-sm" style={{ color: 'white' }}>📆 Fecha</span>
+              <span className="text-sm flex items-center gap-1.5" style={{ color: 'white' }}><CalendarIcon size="xs" /> Fecha</span>
             </label>
             <label className="flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all hover:bg-white/[0.02]" style={{ background: data?.checkTime !== false ? 'rgba(6, 182, 212, 0.1)' : 'transparent' }}>
               <input 
@@ -94,7 +95,7 @@ export default function AvailabilityNode({ id, data, selected }) {
                 checked={data?.checkTime !== false}
                 onChange={(e) => updateNodeData('checkTime', e.target.checked)}
               />
-              <span className="text-sm" style={{ color: 'white' }}>🕐 Hora</span>
+              <span className="text-sm flex items-center gap-1.5" style={{ color: 'white' }}><ClockIcon size="xs" /> Hora</span>
             </label>
             <label className="flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all hover:bg-white/[0.02]" style={{ background: data?.checkService ? 'rgba(6, 182, 212, 0.1)' : 'transparent' }}>
               <input 
@@ -104,7 +105,7 @@ export default function AvailabilityNode({ id, data, selected }) {
                 checked={data?.checkService || false}
                 onChange={(e) => updateNodeData('checkService', e.target.checked)}
               />
-              <span className="text-sm" style={{ color: 'white' }}>💼 Servicio</span>
+              <span className="text-sm flex items-center gap-1.5" style={{ color: 'white' }}><BriefcaseIcon size="xs" /> Servicio</span>
             </label>
           </div>
         </div>

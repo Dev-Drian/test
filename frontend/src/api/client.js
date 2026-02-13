@@ -30,6 +30,10 @@ export const getTableData = (workspaceId, tableId, params) =>
   api.get(`/table/${workspaceId}/${tableId}/data`, { params });
 export const addTableRow = (workspaceId, tableId, row) =>
   api.post(`/table/${workspaceId}/${tableId}/row`, row);
+export const updateTableRow = (workspaceId, tableId, rowId, data) =>
+  api.put(`/table/${workspaceId}/${tableId}/row/${rowId}`, data);
+export const deleteTableRow = (workspaceId, tableId, rowId) =>
+  api.delete(`/table/${workspaceId}/${tableId}/row/${rowId}`);
 
 // Chat
 export const getOrCreateChat = (workspaceId, agentId, chatId) =>

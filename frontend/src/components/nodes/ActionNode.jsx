@@ -4,6 +4,7 @@
  */
 import { Handle, Position, useReactFlow } from '@xyflow/react';
 import { useCallback } from 'react';
+import { PlusIcon, EditIcon, RefreshIcon, BellIcon, CloseIcon, CheckIcon, TargetIcon, MinusIcon, MailIcon, BoltIcon, ClipboardIcon } from '../Icons';
 
 /**
  * Convierte nombres técnicos de campos a nombres amigables
@@ -77,25 +78,25 @@ function formatFields(fields) {
 }
 
 /**
- * Obtiene el emoji y texto para el tipo de acción
+ * Obtiene el icono y texto para el tipo de acción
  */
 function getActionDisplay(actionType) {
   const actions = {
-    'create': { emoji: '➕', label: 'Crear registro', color: 'emerald' },
-    'update': { emoji: '✏️', label: 'Actualizar registro', color: 'amber' },
-    'upsert': { emoji: '🔄', label: 'Crear o actualizar', color: 'blue' },
-    'notification': { emoji: '🔔', label: 'Notificación', color: 'purple' },
-    'error': { emoji: '❌', label: 'Mostrar error', color: 'red' },
-    'allow': { emoji: '✅', label: 'Permitir', color: 'emerald' },
-    'auto_create': { emoji: '➕', label: 'Crear automático', color: 'emerald' },
-    'auto_assign': { emoji: '🎯', label: 'Asignar automático', color: 'blue' },
-    'set_value': { emoji: '✏️', label: 'Establecer valor', color: 'amber' },
-    'decrement': { emoji: '➖', label: 'Restar cantidad', color: 'red' },
-    'increment': { emoji: '➕', label: 'Sumar cantidad', color: 'emerald' },
-    'send_notification': { emoji: '🔔', label: 'Enviar notificación', color: 'purple' },
-    'send_email': { emoji: '📧', label: 'Enviar email', color: 'blue' },
+    'create': { icon: <PlusIcon size="sm" />, label: 'Crear registro', color: 'emerald' },
+    'update': { icon: <EditIcon size="sm" />, label: 'Actualizar registro', color: 'amber' },
+    'upsert': { icon: <RefreshIcon size="sm" />, label: 'Crear o actualizar', color: 'blue' },
+    'notification': { icon: <BellIcon size="sm" />, label: 'Notificación', color: 'purple' },
+    'error': { icon: <CloseIcon size="sm" />, label: 'Mostrar error', color: 'red' },
+    'allow': { icon: <CheckIcon size="sm" />, label: 'Permitir', color: 'emerald' },
+    'auto_create': { icon: <PlusIcon size="sm" />, label: 'Crear automático', color: 'emerald' },
+    'auto_assign': { icon: <TargetIcon size="sm" />, label: 'Asignar automático', color: 'blue' },
+    'set_value': { icon: <EditIcon size="sm" />, label: 'Establecer valor', color: 'amber' },
+    'decrement': { icon: <MinusIcon size="sm" />, label: 'Restar cantidad', color: 'red' },
+    'increment': { icon: <PlusIcon size="sm" />, label: 'Sumar cantidad', color: 'emerald' },
+    'send_notification': { icon: <BellIcon size="sm" />, label: 'Enviar notificación', color: 'purple' },
+    'send_email': { icon: <MailIcon size="sm" />, label: 'Enviar email', color: 'blue' },
   };
-  return actions[actionType] || { emoji: '⚡', label: actionType || 'Acción', color: 'purple' };
+  return actions[actionType] || { icon: <BoltIcon size="sm" />, label: actionType || 'Acción', color: 'purple' };
 }
 
 export default function ActionNode({ id, data, selected }) {
@@ -130,8 +131,8 @@ export default function ActionNode({ id, data, selected }) {
       
       {/* Header */}
       <div className="px-4 py-3 flex items-center gap-3" style={{ background: 'rgba(139, 92, 246, 0.15)', borderBottom: '1px solid rgba(139, 92, 246, 0.2)' }}>
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-lg" style={{ background: '#8b5cf6' }}>
-          {actionInfo.emoji}
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ background: '#8b5cf6' }}>
+          {actionInfo.icon}
         </div>
         <div className="flex-1">
           <span className="text-sm font-semibold text-purple-400">Acción</span>
@@ -159,7 +160,7 @@ export default function ActionNode({ id, data, selected }) {
                   border: '1px solid rgba(139, 92, 246, 0.2)',
                 }}
               >
-                <span className="text-purple-400">📋</span>
+                <span className="text-purple-400"><ClipboardIcon size="sm" /></span>
                 <span className="text-sm text-purple-300">
                   En <span className="font-semibold text-purple-400">{data.targetTableName || 'Tabla'}</span>
                 </span>
@@ -254,13 +255,13 @@ export default function ActionNode({ id, data, selected }) {
                 value={data?.action || 'auto_create'}
                 onChange={(e) => updateNodeData('action', e.target.value)}
               >
-                <option value="auto_create">➕ Crear registro</option>
-                <option value="auto_assign">🎯 Asignar automáticamente</option>
-                <option value="set_value">✏️ Establecer valor</option>
-                <option value="decrement">➖ Restar cantidad</option>
-                <option value="increment">➕ Sumar cantidad</option>
-                <option value="send_notification">🔔 Enviar notificación</option>
-                <option value="send_email">📧 Enviar email</option>
+                <option value="auto_create">+ Crear registro</option>
+                <option value="auto_assign">◎ Asignar automáticamente</option>
+                <option value="set_value">✎ Establecer valor</option>
+                <option value="decrement">− Restar cantidad</option>
+                <option value="increment">+ Sumar cantidad</option>
+                <option value="send_notification">⚬ Enviar notificación</option>
+                <option value="send_email">✉ Enviar email</option>
               </select>
             </div>
             
