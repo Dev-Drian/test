@@ -161,6 +161,10 @@ export const EVENTS = {
   INTENT_DETECTED: 'intent:detected',
   INTENT_UNKNOWN: 'intent:unknown',
   
+  // V2: Scoring de handlers
+  HANDLER_SCORED: 'handler:scored',
+  HANDLER_SELECTED: 'handler:selected',
+  
   // Acciones CRUD
   RECORD_CREATED: 'record:created',
   RECORD_UPDATED: 'record:updated',

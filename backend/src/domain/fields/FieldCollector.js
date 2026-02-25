@@ -340,13 +340,30 @@ REGLAS CRÍTICAS:
 13. Si el mensaje NO responde a una pregunta específica ni da datos concretos → isDataResponse: false
 14. Si el usuario dice "cambiar X", "el X es otro", "no, el X es...", "corregir X", "en lugar de X quiero Y" → wantsToChangeField: { "field": "campo_key", "newValue": "nuevo_valor" }. Aplica para CUALQUIER campo ya recolectado.
 
+REGLAS PARA CAMPOS NUMÉRICOS (cantidad, precio, etc.):
+15. Los campos de tipo number SOLO aceptan números positivos (a menos que se especifique lo contrario).
+16. NUNCA extraigas valores negativos para cantidad, precio, stock u otros campos numéricos con validación min >= 0.
+17. Si el usuario dice "-20 cantidad" o "cantidad negativa", → isDataResponse: false, clarificationNeeded: "La cantidad debe ser un número positivo"
+18. Si el usuario dice "n + 1", "el doble", expresiones matemáticas → eso NO es un valor válido, clarificationNeeded: "Por favor indica un número específico"
+
+REGLAS PARA NOMBRES DE PRODUCTOS CON NÚMEROS:
+19. "Software CRM Pro 2" es el NOMBRE COMPLETO del producto, NO "Software CRM Pro" + cantidad 2.
+20. Si el producto termina en número (ej: "CRM 2.0", "Windows 11", "PS5"), el número ES PARTE DEL NOMBRE.
+21. Solo extrae cantidad cuando el usuario EXPLÍCITAMENTE la separa: "2 unidades de CRM", "CRM Pro, 5", "quiero 3".
+
+REGLAS CONTRA TEXTO BASURA:
+22. NUNCA uses el mensaje del usuario como valor de un campo a menos que sea una respuesta directa válida.
+23. Si el usuario habla sobre el proceso ("de la cantidad de software") NO es un nombre de cliente válido.
+24. Mensajes como "cambia X por Y", "el producto por el cliente" son INSTRUCCIONES, no datos → isDataResponse: false
+
 REGLA FINAL - EXTRACCIÓN MÚLTIPLE:
 - Si el usuario proporciona VARIOS datos en un mensaje, EXTRÁELOS TODOS.
 - Ejemplo: "quiero registrar venta para Juan Pérez del producto CRM Pro, 3 unidades" → { "cliente": "Juan Pérez", "producto": "CRM Pro", "cantidad": 3 }
 - Ejemplo: "Adrian Castro, Software CRM Pro, 5" → { "cliente": "Adrian Castro", "producto": "Software CRM Pro", "cantidad": 5 }
 - NO limites la extracción a un solo campo cuando el usuario da más información.
 - Si el mensaje es una sola palabra o frase simple, es la respuesta al campo que se preguntó (${currentlyAsking || 'ninguno'}).
-- Analiza el mensaje completo y extrae TODOS los campos faltantes que puedas identificar.`;
+- Analiza el mensaje completo y extrae TODOS los campos faltantes que puedas identificar.
+- IMPORTANTE: Si no estás seguro de qué valor extraer, usa clarificationNeeded en lugar de adivinar.`;
   }
   
   /**
@@ -402,6 +419,24 @@ REGLA FINAL - EXTRACCIÓN MÚLTIPLE:
           return { valid: false, error: 'Formato de hora inválido (use HH:MM)' };
         }
         return { valid: true };
+      
+      case 'number':
+      case 'integer':
+      case 'currency':
+        // Convertir a número
+        const numValue = Number(value);
+        if (isNaN(numValue)) {
+          return { valid: false, error: `${fieldConfig?.label || fieldKey} debe ser un número válido` };
+        }
+        // Validar min
+        if (validation.min !== undefined && numValue < validation.min) {
+          return { valid: false, error: `${fieldConfig?.label || fieldKey} debe ser al menos ${validation.min}` };
+        }
+        // Validar max
+        if (validation.max !== undefined && numValue > validation.max) {
+          return { valid: false, error: `${fieldConfig?.label || fieldKey} no puede ser mayor a ${validation.max}` };
+        }
+        return { valid: true, normalizedValue: numValue };
         
       default:
         // Validaciones genéricas
@@ -426,6 +461,11 @@ REGLA FINAL - EXTRACCIÓN MÚLTIPLE:
         
       case 'text':
         return String(value).trim();
+        
+      case 'number':
+      case 'integer':
+      case 'currency':
+        return Number(value);
         
       case 'date':
         return value; // Ya debería estar en YYYY-MM-DD

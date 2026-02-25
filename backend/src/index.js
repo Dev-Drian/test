@@ -23,6 +23,14 @@ app.get("/api/cache/stats", (req, res) => {
   res.json(cache.getStats());
 });
 
-app.listen(PORT, () => {
-  logger.info(`🚀 Migracion backend running on http://localhost:${PORT}`);
+// Endpoint para limpiar cache
+app.post("/api/cache/clear", (req, res) => {
+  cache.flush();
+  res.json({ success: true, message: 'Cache cleared' });
+});
+
+const HOST = process.env.HOST || '0.0.0.0';
+
+app.listen(PORT, HOST, () => {
+  logger.info(`🚀 Migracion backend running on http://${HOST}:${PORT}`);
 });

@@ -10,28 +10,108 @@
 import { ActionHandler } from './ActionHandler.js';
 import { getEventEmitter, EVENTS } from '../../core/EventEmitter.js';
 import { EntityRepository } from '../../repositories/EntityRepository.js';
-import { processRelations } from '../../services/relationHandler.js';
+import { TableDataRepository } from '../../repositories/TableDataRepository.js';
+import { processRelations, findTableByName } from '../../services/relationHandler.js';
 import { TablePermissions } from '../../services/TablePermissions.js';
+import { getOpenAIProvider } from '../../integrations/ai/OpenAIProvider.js';
+import { executeBeforeCreateFlows } from '../../services/FlowExecutor.js';
 
 export class CreateHandler extends ActionHandler {
   constructor(dependencies = {}) {
     super(dependencies);
     this.eventEmitter = dependencies.eventEmitter || getEventEmitter();
     this.entityRepo = new EntityRepository();
+    this.tableDataRepo = new TableDataRepository();
+    this.aiProvider = dependencies.aiProvider || getOpenAIProvider();
+  }
+  
+  /**
+   * V2: Calcula score de confianza para este handler
+   * @param {Context} context 
+   * @returns {Promise<number>} Score 0-1
+   */
+  async confidence(context) {
+    let score = 0;
+    const intent = context.intent || {};
+    const message = (context.message || '').toLowerCase();
+    
+    // Factor 1: pendingCreate activo (muy alto peso)
+    if (context.pendingCreate) {
+      score += 0.5;
+      
+      // Pero si el intent es query con alta confianza, reducir
+      if (intent.actionType === 'query' && intent.confidence >= 70) {
+        score -= 0.3;
+      }
+      
+      // Si es pregunta (tiene signos de interrogación), reducir
+      if (message.includes('?') || message.startsWith('¿')) {
+        score -= 0.15;
+      }
+      
+      // Si tiene campos recolectados y faltan más, aumentar
+      const collected = Object.keys(context.collectedFields || {}).length;
+      const missing = (context.missingFields || []).length;
+      if (collected > 0 && missing > 0) {
+        score += 0.2;
+      }
+    }
+    
+    // Factor 2: Intent del LLM es create
+    if (intent.actionType === 'create') {
+      const intentScore = (intent.confidence || 0) / 100;
+      score += intentScore * 0.4;
+    }
+    
+    // Factor 3: Keywords de creación
+    const createKeywords = ['crear', 'nuevo', 'agregar', 'registrar', 'agendar', 'reservar'];
+    const keywordMatches = createKeywords.filter(kw => message.includes(kw)).length;
+    score += Math.min(keywordMatches * 0.1, 0.2);
+    
+    // Factor 4: Cancelación explícita (score 0)
+    const cancelPatterns = /^(cancelar?|no\s*(quiero)?|olvidalo|dejalo|salir|exit)$/i;
+    if (cancelPatterns.test(message.trim())) {
+      return 0;
+    }
+    
+    return Math.max(0, Math.min(1, score));
   }
   
   /**
    * Verifica si puede manejar una acción de tipo CREATE
    */
   async canHandle(context) {
-    // Si hay pendingCreate activo, este handler lo maneja
+    // Si hay pendingCreate activo
     if (context.pendingCreate) {
+      // SOLO limpiar con cancelación EXPLÍCITA del usuario
+      const message = (context.message || '').trim().toLowerCase();
+      const cancelPatterns = /^(cancelar?|no\s*(quiero)?|olvidalo|dejalo|salir|exit|abandonar|ya\s*no)$/i;
+      
+      if (cancelPatterns.test(message)) {
+        console.log('[CreateHandler] User explicitly cancelled, clearing pendingCreate');
+        context.clearPendingCreate();
+        context.savePendingState();
+        return false;
+      }
+      
+      // NUNCA limpiar basándose en intent del LLM durante pendingCreate
+      // El usuario puede hacer consultas laterales (disponibilidad, ver citas, etc.)
+      // y el sistema debe preservar el contexto de creación
+      
+      // Si el LLM eligió otra tool (query, availability, etc.), es consulta lateral
+      // Marcar como sideQuery pero NO limpiar pendingCreate
+      if (context.selectedTool && context.selectedTool !== 'create_record') {
+        console.log('[CreateHandler] Side query detected during pendingCreate:', context.selectedTool);
+        context.sideQuery = true;
+        return false; // Dejar que el handler correspondiente responda
+      }
+      
+      // Cualquier otro caso durante pendingCreate -> continuar recolectando
       return true;
     }
     
-    // Si la intención detectada es create
-    if (context.intent?.actionType === 'create') {
-      // Verificar si el agente tiene permiso para crear
+    // Sin pendingCreate: verificar si es intención de crear
+    if (context.intent?.actionType === 'create' || context.selectedTool === 'create_record') {
       const canCreate = context.agent?.planFeatures?.canCreate !== false;
       return canCreate;
     }
@@ -48,7 +128,8 @@ export class CreateHandler extends ActionHandler {
     
     // Verificar permisos de la tabla ANTES de empezar (permiso directo + dependencias)
     if (!context.pendingCreate && analysis?.tableId) {
-      const targetTable = tables?.find(t => t._id === analysis.tableId);
+      // Soportar tanto 'id' (de ChatService) como '_id' (de DB directa)
+      const targetTable = tables?.find(t => (t.id || t._id) === analysis.tableId);
       
       // Verificar permiso completo (directo + dependencias)
       const permission = TablePermissions.checkFullPermissions(targetTable, 'create', tables);
@@ -238,11 +319,17 @@ export class CreateHandler extends ActionHandler {
               };
             }
           }
+          
+          // IMPORTANTE: Guardar estado después de fusionar campos exitosamente
+          context.savePendingState();
         }
       } catch (error) {
         console.error('[CreateHandler] Error extracting fields:', error);
       }
     }
+    
+    // Siempre guardar estado antes de verificar completitud
+    context.savePendingState();
     
     // 3. Verificar si tenemos todos los campos
     if (!context.isComplete()) {
@@ -268,9 +355,11 @@ export class CreateHandler extends ActionHandler {
     const tableName = context.analysis?.tableName;
     
     if (!tableId) {
+      // V3: Pedir al LLM que genere una clarificación natural
+      const clarification = await this._askLLMForClarification(context);
       return {
         handled: true,
-        response: 'No pude determinar en qué tabla crear el registro. ¿Puedes ser más específico?',
+        response: clarification,
       };
     }
     
@@ -290,6 +379,9 @@ export class CreateHandler extends ActionHandler {
     if (context.analysis?.create?.fields) {
       context.mergeFields(context.analysis.create.fields);
     }
+    
+    // IMPORTANTE: Guardar estado después de inicializar
+    context.savePendingState();
     
     this.eventEmitter.emit(EVENTS.CREATE_STARTED, {
       workspaceId: context.workspaceId,
@@ -443,17 +535,25 @@ export class CreateHandler extends ActionHandler {
    * Construye resumen del progreso
    */
   _buildProgressSummary(fields, fieldsConfig) {
-    const entries = Object.entries(fields).filter(([k, v]) => 
-      v !== undefined && v !== null && v !== '' && k !== 'estado'
-    );
-    
-    if (entries.length === 0) return '';
-    
     // Crear mapa de configuración
     const configMap = {};
     fieldsConfig.forEach(fc => {
       configMap[fc.key] = fc;
     });
+    
+    // Filtrar campos válidos, excluyendo internos y ocultos
+    const entries = Object.entries(fields).filter(([key, value]) => {
+      // Excluir valores vacíos
+      if (value === undefined || value === null || value === '') return false;
+      // Excluir campos internos
+      if (key.startsWith('_') || key === 'id' || key === 'tableId' || key === 'estado') return false;
+      // Excluir campos con hiddenFromChat
+      const config = configMap[key] || {};
+      if (config.hiddenFromChat) return false;
+      return true;
+    });
+    
+    if (entries.length === 0) return '';
     
     // Formatear cada campo
     const lines = entries.map(([key, value]) => {
@@ -474,6 +574,91 @@ export class CreateHandler extends ActionHandler {
   }
   
   /**
+   * V3: Pide al LLM que genere una respuesta de clarificación
+   * cuando no se pudo determinar qué acción realizar
+   * @private
+   */
+  async _askLLMForClarification(context) {
+    const tableNames = context.tables?.map(t => t.name).join(', ') || '';
+    
+    const messages = [
+      {
+        role: 'system',
+        content: `Eres un asistente amigable. El usuario quiere crear o reservar algo, pero no quedó claro exactamente qué.
+Contexto del negocio: ${context.agent?.description || 'Asistente de servicios'}
+Servicios disponibles: ${tableNames}
+
+Genera una respuesta CORTA y amigable (máximo 2 oraciones) preguntando de forma natural qué desea hacer el usuario.
+NO menciones "tabla" ni términos técnicos.
+NO uses emojis excesivos.`,
+      },
+      {
+        role: 'user',
+        content: context.message,
+      },
+    ];
+
+    try {
+      const response = await this.aiProvider.complete({
+        messages,
+        maxTokens: 100,
+        temperature: 0.7,
+      });
+      return response.content?.trim() || '¿Podrías indicarme exactamente qué te gustaría hacer?';
+    } catch (error) {
+      // Fallback si falla el LLM
+      return '¿Podrías indicarme exactamente qué te gustaría hacer?';
+    }
+  }
+  
+  /**
+   * Calcula campos derivados automáticamente (ej: total = precio × cantidad)
+   * Busca el precio del producto en la tabla relacionada
+   */
+  async _calculateDerivedFields(workspaceId, tableId, fields) {
+    try {
+      const fieldsConfig = await this.tableRepository.getFieldsConfig(workspaceId, tableId);
+      const configMap = {};
+      fieldsConfig.forEach(fc => { configMap[fc.key] = fc; });
+      
+      // Si tiene campo cantidad y un campo de relación a productos
+      if (fields.cantidad && (fields.producto || fields.product)) {
+        const productoValue = fields.producto || fields.product;
+        
+        // Buscar configuración del campo producto
+        const productoConfig = configMap.producto || configMap.product;
+        if (productoConfig?.relation) {
+          // Buscar la tabla de productos
+          const relatedTable = await findTableByName(workspaceId, productoConfig.relation.tableName);
+          
+          if (relatedTable) {
+            // Buscar el producto para obtener su precio
+            const searchField = productoConfig.relation.searchField || 'nombre';
+            const products = await this.tableDataRepo.query(workspaceId, relatedTable._id, {
+              [searchField]: productoValue
+            }, { limit: 1 });
+            
+            if (products.length > 0) {
+              const producto = products[0];
+              const precio = producto.precio || producto.price || 0;
+              const cantidad = Number(fields.cantidad) || 1;
+              
+              // Calcular total
+              fields.total = precio * cantidad;
+              console.log(`[CreateHandler] Auto-calculated total: ${precio} × ${cantidad} = ${fields.total}`);
+            }
+          }
+        }
+      }
+      
+      return fields;
+    } catch (error) {
+      console.error('[CreateHandler] Error calculating derived fields:', error);
+      return fields;
+    }
+  }
+  
+  /**
    * Crea el registro en la base de datos usando EntityRepository
    */
   async _createRecord(context) {
@@ -481,8 +666,55 @@ export class CreateHandler extends ActionHandler {
     const { tableId, tableName } = pendingCreate;
     
     try {
+      // Ejecutar flows beforeCreate para calcular campos derivados
+      const beforeCreateResult = await executeBeforeCreateFlows(workspaceId, tableId, { ...collectedFields });
+      
+      // Si el flow bloqueó la creación (error de validación en flow)
+      if (beforeCreateResult.blocked) {
+        const validationInfo = beforeCreateResult.validationInfo || {};
+        
+        // Si hay un campo específico que causó el error y podemos sugerir un fix
+        if (validationInfo.fieldToFix && validationInfo.maxAvailable) {
+          // Solo limpiar el campo problemático, no todos
+          const fieldToFix = validationInfo.fieldToFix;
+          const maxAvailable = validationInfo.maxAvailable;
+          
+          // Marcar que necesitamos corregir este campo
+          context.pendingCreate.needsCorrection = {
+            field: fieldToFix,
+            maxValue: maxAvailable,
+            originalValue: collectedFields[fieldToFix],
+          };
+          
+          // Eliminar solo el campo problemático
+          delete context.collectedFields[fieldToFix];
+          if (context.pendingCreate.fields) {
+            delete context.pendingCreate.fields[fieldToFix];
+          }
+          context.missingFields = [fieldToFix];
+          context.savePendingState();
+          
+          return {
+            handled: true,
+            response: `❌ ${beforeCreateResult.error}\n\n📦 Stock disponible: **${maxAvailable}** unidades\n\n¿Cuántas unidades deseas? (máximo ${maxAvailable})`,
+          };
+        }
+        
+        // Si no podemos identificar el campo, limpiar todo y preguntar de nuevo
+        context.clearCollectedFields();
+        context.savePendingState();
+        
+        return {
+          handled: true,
+          response: `❌ ${beforeCreateResult.error || 'No se puede crear el registro'}\n\n¿Deseas intentar con otros datos?`,
+        };
+      }
+      
+      // Usar los campos modificados por el flow (incluye cálculos como total)
+      const fieldsWithCalculations = beforeCreateResult.fields;
+      
       // Usar EntityRepository para crear con validación automática
-      const result = await this.entityRepo.create(workspaceId, tableId, collectedFields, {
+      const result = await this.entityRepo.create(workspaceId, tableId, fieldsWithCalculations, {
         validate: true,
         normalize: true,
         applyDefaults: true,
@@ -700,9 +932,14 @@ _Estado: Pendiente de confirmación_`;
     
     // Agregar cada campo con su emoji y label
     for (const [key, value] of Object.entries(fields)) {
-      if (key === 'estado' || !value) continue;
+      // Excluir campos internos, IDs y metadatos
+      if (key.startsWith('_') || key === 'id' || key === 'tableId' || key === 'estado' || !value) continue;
       
       const config = configMap[key] || {};
+      
+      // Respetar hiddenFromChat - campos sensibles que no se muestran
+      if (config.hiddenFromChat) continue;
+      
       const emoji = config.emoji || '';
       const label = config.confirmLabel || config.label || key;
       

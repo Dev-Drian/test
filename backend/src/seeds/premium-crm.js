@@ -2,9 +2,11 @@
  * Seed PREMIUM: CRM Completo
  * 
  * Sistema completo de gestión con:
- * - 5 Tablas interconectadas (Clientes, Productos, Ventas, Seguimientos, Tareas)
- * - 2 Agentes especializados (Ventas y Estadísticas)
- * - Flujos automatizados
+ * - 9 Tablas interconectadas (Clientes, Productos, Ventas, Seguimientos, Tareas, Proveedores, Facturas, Campañas, Log de Flujos)
+ * - 2 Agentes especializados (Ventas y Analista)
+ * - 2 Flujos compactos de negocio:
+ *   1. Proceso Completo de Venta (beforeCreate): busca/crea cliente → valida stock → calcula total → descuenta stock → crea seguimiento
+ *   2. Bienvenida Cliente Nuevo: crea tarea de llamada + notificación
  * - Relaciones entre tablas
  */
 
@@ -360,6 +362,50 @@ export async function seed() {
         { tableId: proveedoresTableId, fullAccess: true },
         { tableId: facturasTableId, fullAccess: true },
       ],
+      
+      // ═══════════════════════════════════════════════════════════
+      // V3 LLM-First Configuration
+      // ═══════════════════════════════════════════════════════════
+      engineMode: 'llm-first',           // V3: usa Function Calling
+      vertical: 'retail',                 // V3: vertical de negocio
+      toneStyle: 'friendly',              // V3: tono amigable
+      
+      // V3: Ejemplos de conversación (few-shot learning)
+      fewShotExamples: [
+        {
+          user: 'quiero registrar una venta',
+          assistant: '¡Perfecto! Para registrar la venta necesito algunos datos. ¿Me puedes decir el nombre del cliente?'
+        },
+        {
+          user: 'qué productos tienen',
+          assistant: 'Te muestro nuestro catálogo de productos con precios y disponibilidad. ¿Buscas algo en particular?'
+        },
+        {
+          user: 'necesito agregar un cliente nuevo',
+          assistant: '¡Claro! Para registrar al nuevo cliente necesito: nombre completo, email y teléfono. ¿Empezamos con el nombre?'
+        }
+      ],
+      
+      // V3: Tools habilitadas (vacío = todas)
+      enabledTools: ['create_record', 'query_records', 'update_record', 'general_conversation'],
+      disabledTools: ['analyze_data'], // Análisis lo hace el otro agente
+      
+      // V3: Horario de atención
+      businessHours: {
+        timezone: 'America/Bogota',
+        schedule: {
+          'lunes_viernes': '08:00-18:00',
+          'sabado': '09:00-13:00'
+        },
+        outsideHoursMessage: 'Estamos fuera de horario. Te atendemos el próximo día hábil.'
+      },
+      
+      // V3: Instrucciones adicionales
+      customInstructions: 'Siempre confirma los datos antes de registrar una venta. Si el cliente no existe, ofrece registrarlo primero.',
+      
+      // ═══════════════════════════════════════════════════════════
+      // Prompt legado (usado si engineMode = 'legacy' o 'scoring')
+      // ═══════════════════════════════════════════════════════════
       prompt: `Eres el asistente de ventas del CRM ${WORKSPACE_NAME}.
 
 TU FUNCIÓN:
@@ -432,6 +478,32 @@ Mantén un tono profesional y amigable. Usa emojis apropiados.`,
         { tableId: facturasTableId, fullAccess: true },
         { tableId: campanasTableId, fullAccess: true },
       ],
+      
+      // ═══════════════════════════════════════════════════════════
+      // V3 LLM-First Configuration
+      // ═══════════════════════════════════════════════════════════
+      engineMode: 'llm-first',
+      vertical: 'general',
+      toneStyle: 'professional',
+      
+      fewShotExamples: [
+        {
+          user: 'cuántas ventas hubo hoy',
+          assistant: 'Te muestro el resumen de ventas del día:\n📊 Total ventas: X\n💰 Monto total: $X\n📦 Productos vendidos: X unidades'
+        },
+        {
+          user: 'cuál es el producto más vendido',
+          assistant: 'Analizando las ventas, el producto más vendido es [Producto] con X unidades. Representa el Y% del total de ventas.'
+        }
+      ],
+      
+      // Solo consulta y análisis, no crea ni modifica
+      enabledTools: ['query_records', 'analyze_data', 'general_conversation'],
+      disabledTools: ['create_record', 'update_record', 'check_availability'],
+      
+      customInstructions: 'Presenta los datos de forma clara con formato de tabla cuando sea apropiado. Siempre incluye insights y recomendaciones.',
+      
+      // Prompt legado
       prompt: `Eres el analista de datos del CRM ${WORKSPACE_NAME}.
 
 TU FUNCIÓN:
@@ -514,36 +586,71 @@ Sé analítico, objetivo y orientado a resultados. Usa gráficos de texto cuando
     await workspacesDb.insert(centralWorkspaceDoc);
     console.log('✅ Workspace configurado');
     
-    // ========== FLUJOS AUTOMATIZADOS (FORMATO SIMPLIFICADO) ==========
+    // ========== FLUJOS AUTOMATIZADOS (COMPACTOS) ==========
     const flowsDb = await connectDB(getFlowsDbName(WORKSPACE_ID));
     
-    // FLUJO 1: Calcular Total de Venta
-    // Cuando se crea una venta, busca el producto y calcula total = precio × cantidad
+    // FLUJO 1: Proceso Completo de Venta (beforeCreate)
+    // Busca/crea cliente → Valida stock → Permite crear → Calcula total → Descuenta stock → Crea seguimiento
     const flow1Id = uuidv4();
     const flow1 = {
       _id: flow1Id,
-      name: 'Calcular Total de Venta',
-      description: 'Calcula automáticamente el total (precio × cantidad)',
-      triggerType: 'create',
+      name: 'Proceso Completo de Venta',
+      description: 'Crea cliente si no existe, valida stock, calcula total, descuenta inventario y programa seguimiento',
+      triggerType: 'beforeCreate',
       triggerTable: ventasTableId,
       triggerTableName: 'Ventas',
       active: true,
       nodes: [
+        // 1. Trigger: Antes de crear venta
         {
           id: 'trigger-1',
           type: 'trigger',
-          position: { x: 200, y: 50 },
+          position: { x: 300, y: 50 },
           data: {
-            label: 'Nueva Venta',
-            triggerType: 'create',
+            label: 'Antes de crear Venta',
+            triggerType: 'beforeCreate',
             table: ventasTableId,
             tableName: 'Ventas'
           }
         },
+        // 2. Query: ¿Cliente existe?
         {
-          id: 'query-1',
+          id: 'query-cliente',
           type: 'query',
-          position: { x: 200, y: 180 },
+          position: { x: 300, y: 150 },
+          data: {
+            label: '¿Cliente existe?',
+            targetTable: clientesTableId,
+            targetTableName: 'Clientes',
+            filterField: 'nombre',
+            filterValueType: 'trigger',
+            filterValueField: 'cliente',
+            outputVar: 'clienteData'
+          }
+        },
+        // 3. Crear cliente si no existe
+        {
+          id: 'create-cliente',
+          type: 'action',
+          position: { x: 500, y: 250 },
+          data: {
+            label: 'Crear Cliente Nuevo',
+            actionType: 'create',
+            targetTable: clientesTableId,
+            targetTableName: 'Clientes',
+            fields: {
+              nombre: '{{cliente}}',
+              tipo: 'Lead',
+              fechaRegistro: '{{today}}',
+              estado: 'Activo'
+            }
+          }
+        },
+        // 4. Query: Buscar producto y verificar stock
+        {
+          id: 'query-producto',
+          type: 'query',
+          position: { x: 300, y: 350 },
           data: {
             label: 'Buscar Producto',
             targetTable: productosTableId,
@@ -554,12 +661,58 @@ Sé analítico, objetivo y orientado a resultados. Usa gráficos de texto cuando
             outputVar: 'productoData'
           }
         },
+        // 5. Error: Producto no existe
         {
-          id: 'action-1',
+          id: 'error-producto',
           type: 'action',
-          position: { x: 100, y: 340 },
+          position: { x: 500, y: 450 },
           data: {
-            label: 'Actualizar Total',
+            label: 'Error: Producto no existe',
+            actionType: 'error',
+            message: 'No se puede crear la venta: el producto "{{producto}}" no existe'
+          }
+        },
+        // 6. Condition: ¿Stock suficiente?
+        {
+          id: 'condition-stock',
+          type: 'condition',
+          position: { x: 300, y: 550 },
+          data: {
+            label: '¿Stock suficiente?',
+            field: 'productoData.stock',
+            operator: '>=',
+            value: '{{cantidad}}'
+          }
+        },
+        // 7. Error: Stock insuficiente
+        {
+          id: 'error-stock',
+          type: 'action',
+          position: { x: 500, y: 650 },
+          data: {
+            label: 'Error: Stock insuficiente',
+            actionType: 'error',
+            message: 'Stock insuficiente. Disponible: {{productoData.stock}}, solicitado: {{cantidad}}'
+          }
+        },
+        // 8. Allow: Permitir crear la venta
+        {
+          id: 'allow-venta',
+          type: 'action',
+          position: { x: 100, y: 650 },
+          data: {
+            label: 'Permitir Venta',
+            actionType: 'allow',
+            message: 'Venta validada correctamente'
+          }
+        },
+        // 9. Update: Calcular total en la venta
+        {
+          id: 'update-total',
+          type: 'action',
+          position: { x: 100, y: 750 },
+          data: {
+            label: 'Calcular Total',
             actionType: 'update',
             targetTable: ventasTableId,
             targetTableName: 'Ventas',
@@ -567,59 +720,12 @@ Sé analítico, objetivo y orientado a resultados. Usa gráficos de texto cuando
               total: '{{productoData.precio * cantidad}}'
             }
           }
-        }
-      ],
-      edges: [
-        { id: 'e1-2', source: 'trigger-1', target: 'query-1' },
-        { id: 'e2-3', source: 'query-1', sourceHandle: 'yes', target: 'action-1' }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    await flowsDb.insert(flow1);
-    console.log('✅ Flujo 1: Calcular Total de Venta');
-    
-    // FLUJO 2: Descontar Stock
-    // Cuando se crea una venta, descuenta stock del producto
-    const flow2Id = uuidv4();
-    const flow2 = {
-      _id: flow2Id,
-      name: 'Descontar Stock',
-      description: 'Descuenta el stock del producto cuando se vende',
-      triggerType: 'create',
-      triggerTable: ventasTableId,
-      triggerTableName: 'Ventas',
-      active: true,
-      nodes: [
-        {
-          id: 'trigger-1',
-          type: 'trigger',
-          position: { x: 200, y: 50 },
-          data: {
-            label: 'Nueva Venta',
-            triggerType: 'create',
-            table: ventasTableId,
-            tableName: 'Ventas'
-          }
         },
+        // 10. Update: Descontar stock del producto
         {
-          id: 'query-1',
-          type: 'query',
-          position: { x: 200, y: 180 },
-          data: {
-            label: 'Buscar Producto',
-            targetTable: productosTableId,
-            targetTableName: 'Productos',
-            filterField: 'nombre',
-            filterValueType: 'trigger',
-            filterValueField: 'producto',
-            outputVar: 'productoData'
-          }
-        },
-        {
-          id: 'action-1',
+          id: 'update-stock',
           type: 'action',
-          position: { x: 100, y: 340 },
+          position: { x: 100, y: 850 },
           data: {
             label: 'Descontar Stock',
             actionType: 'update',
@@ -632,23 +738,62 @@ Sé analítico, objetivo y orientado a resultados. Usa gráficos de texto cuando
               stock: '{{productoData.stock - cantidad}}'
             }
           }
+        },
+        // 11. Create: Seguimiento post-venta
+        {
+          id: 'create-seguimiento',
+          type: 'action',
+          position: { x: 100, y: 950 },
+          data: {
+            label: 'Crear Seguimiento',
+            actionType: 'create',
+            targetTable: seguimientosTableId,
+            targetTableName: 'Seguimientos',
+            fields: {
+              cliente: '{{cliente}}',
+              fecha: '{{nextWeek}}',
+              hora: '10:00',
+              tipo: 'Llamada',
+              notas: 'Seguimiento post-venta - Total: ${{productoData.precio * cantidad}}'
+            }
+          }
         }
       ],
       edges: [
-        { id: 'e1-2', source: 'trigger-1', target: 'query-1' },
-        { id: 'e2-3', source: 'query-1', sourceHandle: 'yes', target: 'action-1' }
+        // Trigger → Query Cliente
+        { id: 'e1', source: 'trigger-1', target: 'query-cliente' },
+        // Query Cliente: NO → Crear cliente nuevo
+        { id: 'e2-no', source: 'query-cliente', sourceHandle: 'no', target: 'create-cliente', label: 'No' },
+        // Crear cliente → Query Producto
+        { id: 'e2-create', source: 'create-cliente', target: 'query-producto' },
+        // Query Cliente: YES → Query Producto
+        { id: 'e2-yes', source: 'query-cliente', sourceHandle: 'yes', target: 'query-producto', label: 'Sí' },
+        // Query Producto: NO → Error
+        { id: 'e3-no', source: 'query-producto', sourceHandle: 'no', target: 'error-producto', label: 'No' },
+        // Query Producto: YES → Condition Stock
+        { id: 'e3-yes', source: 'query-producto', sourceHandle: 'yes', target: 'condition-stock', label: 'Sí' },
+        // Condition Stock: NO → Error
+        { id: 'e4-no', source: 'condition-stock', sourceHandle: 'no', target: 'error-stock', label: 'No' },
+        // Condition Stock: YES → Allow
+        { id: 'e4-yes', source: 'condition-stock', sourceHandle: 'yes', target: 'allow-venta', label: 'Sí' },
+        // Allow → Update Total
+        { id: 'e5', source: 'allow-venta', target: 'update-total' },
+        // Update Total → Update Stock
+        { id: 'e6', source: 'update-total', target: 'update-stock' },
+        // Update Stock → Create Seguimiento
+        { id: 'e7', source: 'update-stock', target: 'create-seguimiento' }
       ],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    await flowsDb.insert(flow2);
-    console.log('✅ Flujo 2: Descontar Stock');
+    await flowsDb.insert(flow1);
+    console.log('✅ Flujo 1: Proceso Completo de Venta');
     
-    // FLUJO 3: Bienvenida Cliente Nuevo
+    // FLUJO 2: Bienvenida Cliente Nuevo
     // Cuando se crea un cliente, crea una tarea de bienvenida
-    const flow3Id = uuidv4();
-    const flow3 = {
-      _id: flow3Id,
+    const flow2Id = uuidv4();
+    const flow2 = {
+      _id: flow2Id,
       name: 'Bienvenida Cliente Nuevo',
       description: 'Crea tarea de bienvenida al registrar un cliente',
       triggerType: 'create',
@@ -678,151 +823,35 @@ Sé analítico, objetivo y orientado a resultados. Usa gráficos de texto cuando
             targetTableName: 'Tareas',
             fields: {
               titulo: 'Llamar a {{nombre}}',
-              descripcion: 'Primera llamada de bienvenida',
+              descripcion: 'Primera llamada de bienvenida al cliente',
               prioridad: 'Alta',
               fechaVencimiento: '{{tomorrow}}',
               estadoTarea: 'Pendiente'
             }
           }
-        }
-      ],
-      edges: [
-        { id: 'e1-2', source: 'trigger-1', target: 'action-1' }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    await flowsDb.insert(flow3);
-    console.log('✅ Flujo 3: Bienvenida Cliente Nuevo');
-    
-    // FLUJO 4: Seguimiento Post-Venta
-    // Cuando se crea una venta, crea un seguimiento para la próxima semana
-    const flow4Id = uuidv4();
-    const flow4 = {
-      _id: flow4Id,
-      name: 'Seguimiento Post-Venta',
-      description: 'Crea seguimiento automático después de una venta',
-      triggerType: 'create',
-      triggerTable: ventasTableId,
-      triggerTableName: 'Ventas',
-      active: true,
-      nodes: [
-        {
-          id: 'trigger-1',
-          type: 'trigger',
-          position: { x: 200, y: 50 },
-          data: {
-            label: 'Nueva Venta',
-            triggerType: 'create',
-            table: ventasTableId,
-            tableName: 'Ventas'
-          }
         },
         {
-          id: 'action-1',
+          id: 'notification-1',
           type: 'action',
-          position: { x: 200, y: 200 },
+          position: { x: 200, y: 350 },
           data: {
-            label: 'Crear Seguimiento',
-            actionType: 'create',
-            targetTable: seguimientosTableId,
-            targetTableName: 'Seguimientos',
-            fields: {
-              cliente: '{{cliente}}',
-              fecha: '{{nextWeek}}',
-              hora: '10:00',
-              tipo: 'Llamada',
-              notas: 'Seguimiento post-venta automático'
-            }
-          }
-        }
-      ],
-      edges: [
-        { id: 'e1-2', source: 'trigger-1', target: 'action-1' }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    await flowsDb.insert(flow4);
-    console.log('✅ Flujo 4: Seguimiento Post-Venta');
-
-    // FLUJO 5: Validar/Crear Cliente en Venta
-    // Cuando se crea una venta, verifica si el cliente existe. Si no, lo crea.
-    const flow5Id = uuidv4();
-    const flow5 = {
-      _id: flow5Id,
-      name: 'Validar Cliente en Venta',
-      description: 'Verifica si el cliente existe, si no lo crea automáticamente',
-      triggerType: 'create',
-      triggerTable: ventasTableId,
-      triggerTableName: 'Ventas',
-      active: true,
-      nodes: [
-        {
-          id: 'trigger-1',
-          type: 'trigger',
-          position: { x: 250, y: 50 },
-          data: {
-            label: 'Nueva Venta',
-            triggerType: 'create',
-            table: ventasTableId,
-            tableName: 'Ventas'
-          }
-        },
-        {
-          id: 'query-1',
-          type: 'query',
-          position: { x: 250, y: 180 },
-          data: {
-            label: '¿Cliente existe?',
-            targetTable: clientesTableId,
-            targetTableName: 'Clientes',
-            filterField: 'nombre',
-            filterValueType: 'trigger',
-            filterValueField: 'cliente',
-            outputVar: 'clienteData'
-          }
-        },
-        {
-          id: 'action-yes',
-          type: 'action',
-          position: { x: 80, y: 350 },
-          data: {
-            label: 'Cliente encontrado ✓',
+            label: 'Notificar',
             actionType: 'notification',
-            message: 'Cliente {{cliente}} ya existe en el sistema'
-          }
-        },
-        {
-          id: 'action-no',
-          type: 'action',
-          position: { x: 420, y: 350 },
-          data: {
-            label: 'Crear Cliente',
-            actionType: 'create',
-            targetTable: clientesTableId,
-            targetTableName: 'Clientes',
-            fields: {
-              nombre: '{{cliente}}',
-              tipo: 'Lead',
-              fechaRegistro: '{{today}}',
-              estado: 'Activo'
-            }
+            message: 'Nuevo cliente registrado: {{nombre}} ({{tipo}})'
           }
         }
       ],
       edges: [
-        { id: 'e1-2', source: 'trigger-1', target: 'query-1' },
-        { id: 'e2-yes', source: 'query-1', sourceHandle: 'yes', target: 'action-yes' },
-        { id: 'e2-no', source: 'query-1', sourceHandle: 'no', target: 'action-no' }
+        { id: 'e1-2', source: 'trigger-1', target: 'action-1' },
+        { id: 'e2-3', source: 'action-1', target: 'notification-1' }
       ],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    await flowsDb.insert(flow5);
-    console.log('✅ Flujo 5: Validar Cliente en Venta');
+    await flowsDb.insert(flow2);
+    console.log('✅ Flujo 2: Bienvenida Cliente Nuevo');
 
-    console.log('✅ Flujos simplificados creados (5 flujos funcionales)');
+    console.log('✅ Flujos compactos creados (2 flujos de negocio)');
     
     // ========== DATOS DE EJEMPLO ==========
     
@@ -910,7 +939,7 @@ Sé analítico, objetivo y orientado a resultados. Usa gráficos de texto cuando
     console.log(`   Workspace ID: ${WORKSPACE_ID}`);
     console.log(`   Tablas: 9 (Clientes, Productos, Ventas, Seguimientos, Tareas, Proveedores, Facturas, Campañas, Log de Flujos)`);
     console.log(`   Agentes: 2 (Ventas, Analista)`);
-    console.log(`   Flujos: 4 (Calcular Total, Descontar Stock, Bienvenida, Seguimiento Post-Venta)`);
+    console.log(`   Flujos: 2 (Proceso Completo de Venta, Bienvenida Cliente Nuevo)`);
     console.log(`   Datos: ${clientesEjemplo.length} clientes, ${productosEjemplo.length} productos, ${ventasEjemplo.length} ventas, ${proveedoresEjemplo.length} proveedores, ${facturasEjemplo.length} facturas, ${campanasEjemplo.length} campañas`);
     console.log(`   Plan: PREMIUM con automatizaciones simplificadas`);
     

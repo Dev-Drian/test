@@ -31,7 +31,9 @@ export class TableDataRepository extends BaseRepository {
    * @returns {Promise<object[]>}
    */
   async query(workspaceId, tableId, filters = {}, options = {}) {
-    return this.find(filters, options, workspaceId, tableId);
+    // IMPORTANTE: Siempre filtrar por tableId para obtener solo registros de esta tabla
+    const tableFilters = { tableId, ...filters };
+    return this.find(tableFilters, options, workspaceId, tableId);
   }
   
   /**

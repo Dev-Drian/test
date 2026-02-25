@@ -81,6 +81,138 @@ export class OpenAIProvider extends AIProvider {
   }
   
   /**
+   * V3 LLM-First: Ejecuta Function Calling para determinar la acción
+   * El LLM decide qué tool usar basándose en semántica, no keywords
+   * @param {object} options - Opciones de la llamada
+   * @param {string} options.systemPrompt - System prompt configurado por tenant
+   * @param {object[]} options.messages - Historial de mensajes
+   * @param {object[]} options.tools - Tools disponibles en formato OpenAI
+   * @param {string} options.model - Modelo a usar
+   * @returns {Promise<{tool: string|null, arguments: object, response: string|null}>}
+   */
+  async functionCall(options) {
+    const { 
+      systemPrompt, 
+      messages, 
+      tools, 
+      model = 'gpt-4o-mini',
+      maxTokens = 1024,
+      temperature = 0.3,
+    } = options;
+    
+    if (!this.apiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
+    
+    // Construir mensajes con system prompt
+    const fullMessages = [
+      { role: 'system', content: systemPrompt },
+      ...messages,
+    ];
+    
+    try {
+      const response = await axios.post(
+        `${this.baseUrl}/chat/completions`,
+        {
+          model: this.resolveModel(model),
+          messages: fullMessages,
+          tools,
+          tool_choice: 'required', // FORZAR que siempre use una herramienta
+          max_tokens: maxTokens,
+          temperature,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.apiKey}`,
+          },
+        }
+      );
+      
+      const choice = response.data.choices?.[0];
+      const message = choice?.message;
+      
+      // Si el modelo decidió usar una tool
+      if (message?.tool_calls && message.tool_calls.length > 0) {
+        const toolCall = message.tool_calls[0]; // Tomamos la primera tool
+        return {
+          tool: toolCall.function.name,
+          arguments: JSON.parse(toolCall.function.arguments || '{}'),
+          response: null,
+          toolCallId: toolCall.id,
+          usage: response.data.usage,
+        };
+      }
+      
+      // Si el modelo respondió directamente (sin tool)
+      return {
+        tool: null,
+        arguments: {},
+        response: message?.content || '',
+        usage: response.data.usage,
+      };
+      
+    } catch (error) {
+      console.error('[OpenAIProvider] Function call error:', error.response?.data || error.message);
+      throw new Error(`OpenAI Function Call error: ${error.message}`);
+    }
+  }
+  
+  /**
+   * V3: Clasifica un mensaje como VALID/GARBAGE/SPAM/ABUSE
+   * Reemplaza los regex hardcodeados de _isGarbageText
+   * @param {string} message - Mensaje a clasificar
+   * @param {string} model - Modelo a usar (default: gpt-4o-mini para costo)
+   * @returns {Promise<{category: string, isValid: boolean}>}
+   */
+  async classifyMessage(message, model = 'gpt-4o-mini') {
+    const prompt = `Clasifica el mensaje en UNA categoría:
+
+- VALID: Mensaje coherente, solicitud, datos, nombres, productos, cantidades, fechas
+- GARBAGE: Texto sin sentido, caracteres aleatorios (ej: "asdfasdf", "aaaa", "xyzxyz")
+- SPAM: Publicidad externa no solicitada (ej: "COMPRA VIAGRA", "Gana dinero fácil")
+- ABUSE: Insultos, amenazas, contenido ofensivo
+
+IMPORTANTE - Son VALID (NO son SPAM):
+- Datos de transacciones: "Juan compro 100 productos"
+- Nombres con cantidades: "Maria, 50 licencias"
+- Respuestas a formularios con datos
+- Cualquier mensaje con información de negocio
+
+Reglas:
+1. Si tiene nombres de personas + datos → VALID
+2. Si tiene productos + cantidades → VALID
+3. Mensajes cortos ("hola", "si", "ok") → VALID
+4. Si dudas → VALID
+
+Mensaje: "${String(message).slice(0, 200)}"
+
+Responde SOLO la categoría.`;
+
+    try {
+      const response = await this.complete({
+        messages: [{ role: 'user', content: prompt }],
+        model: this.resolveModel(model),
+        maxTokens: 10,
+        temperature: 0.1,
+      });
+      
+      const category = response.content?.trim().toUpperCase() || 'VALID';
+      const validCategories = ['VALID', 'GARBAGE', 'SPAM', 'ABUSE', 'OFF_TOPIC'];
+      
+      return {
+        category: validCategories.includes(category) ? category : 'VALID',
+        isValid: category === 'VALID' || category === 'OFF_TOPIC',
+      };
+      
+    } catch (error) {
+      console.error('[OpenAIProvider] classifyMessage error:', error);
+      // Fail-safe: si hay error, asumimos válido
+      return { category: 'VALID', isValid: true };
+    }
+  }
+  
+  /**
    * Detecta la intención de un mensaje
    */
   async detectIntent(message, agent) {

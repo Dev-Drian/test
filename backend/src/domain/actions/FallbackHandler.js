@@ -29,6 +29,36 @@ export class FallbackHandler extends ActionHandler {
   }
   
   /**
+   * V2: Calcula score de confianza para este handler
+   * Fallback siempre tiene score bajo para ser último recurso
+   * @param {Context} context 
+   * @returns {Promise<number>} Score 0-1
+   */
+  async confidence(context) {
+    const intent = context.intent || {};
+    const message = (context.message || '').toLowerCase();
+    
+    // Si es pregunta de ayuda, score alto
+    if (this._isHelpRequest(message)) {
+      return 0.85;
+    }
+    
+    // Si no hay acción sobre tablas, score medio-alto
+    if (intent.hasTableAction === false) {
+      return 0.6;
+    }
+    
+    // Si es saludo, score medio
+    const greetingPatterns = /^(hola|buenos?\s*(dias?|tardes?|noches?)|que\s*tal|hi|hello)/i;
+    if (greetingPatterns.test(message.trim())) {
+      return 0.55;
+    }
+    
+    // Score base bajo (último recurso)
+    return 0.25;
+  }
+  
+  /**
    * Siempre puede manejar (es el fallback)
    */
   async canHandle(context) {

@@ -4,11 +4,11 @@
  * Orquesta todos los componentes para procesar mensajes:
  * - Repositories para acceso a datos
  * - OpenAIProvider para IA
- * - Engine para cadena de responsabilidad
+ * - Engine para cadena de responsabilidad (V3: LLM-First)
  * - EventEmitter para eventos
  */
 
-import { Engine } from '../core/Engine.js';
+import { Engine, ENGINE_MODES } from '../core/Engine.js';
 import { Context } from '../core/Context.js';
 import { getEventEmitter, EVENTS } from '../core/EventEmitter.js';
 import { ChatRepository } from '../repositories/ChatRepository.js';
@@ -75,6 +75,8 @@ export class ChatService {
   /**
    * Procesa un mensaje de chat
    * 
+   * V2: Con logging estructurado para auditoría completa
+   * 
    * @param {object} options
    * @param {string} options.workspaceId - ID del workspace
    * @param {string} options.chatId - ID del chat (null para nuevo)
@@ -84,7 +86,20 @@ export class ChatService {
    * @returns {Promise<{chatId, response, action}>}
    */
   async processMessage({ workspaceId, chatId, agentId, message, apiKey }) {
-    log.info('processMessage', { workspaceId, chatId, agentId, message: message?.slice(0, 50) });
+    // V2: Request ID único para trazabilidad
+    const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const startTime = Date.now();
+    
+    // V2: Log inicial estructurado completo
+    log.info('processMessage:start', { 
+      requestId,
+      workspaceId, 
+      chatId, 
+      agentId, 
+      messageLength: message?.length,
+      messagePreview: message?.slice(0, 100),
+      timestamp: new Date().toISOString(),
+    });
     
     // Configurar API key
     if (apiKey) {
@@ -97,7 +112,7 @@ export class ChatService {
       : null;
     
     if (!chat) {
-      log.debug('Creating new chat');
+      log.debug('Creating new chat', { requestId });
       chat = await this.chatRepo.create({
         agentId,
         messages: [],
@@ -128,6 +143,13 @@ export class ChatService {
     // Asignar chat y cargar estado pendiente
     context.chat = chat;
     context.loadPendingState();
+    
+    // DEBUG: Log del estado cargado
+    log.debug('Pending state loaded', { 
+      hasPendingCreate: !!context.pendingCreate,
+      pendingTableId: context.pendingCreate?.tableId,
+      collectedFields: Object.keys(context.collectedFields || {}),
+    });
     
     // Actualizar mensaje actual
     context.setCurrentMessage(message);
@@ -165,45 +187,59 @@ export class ChatService {
     context.agent = agent;
     context.history = chat.messages || [];
     
-    // ─── DETECTAR INTENCIÓN ───────────────────────────────────
-    log.debug('Detecting intent...');
+    // Preparar info de tablas
     const tablesInfo = tables.map(t => ({
       id: t._id,
       name: t.name,
       type: t.type,
       fields: (t.headers || []).map(h => h.key || h.label),
-      // Incluir permisos para que el LLM los conozca
       permissions: {
         canQuery: t.permissions?.allowQuery !== false,
         canCreate: t.permissions?.allowCreate !== false,
         canUpdate: t.permissions?.allowUpdate !== false,
-        canDelete: t.permissions?.allowDelete === true, // Solo true si explícitamente habilitado
+        canDelete: t.permissions?.allowDelete === true,
       },
     }));
+    context.tables = tablesInfo; // Para V3 LLM-First
     
-    const intent = await this.aiProvider.detectIntent(message, agent);
-    log.debug('Intent detected', intent);
-    context.intent = intent;
+    // ─── DETERMINAR MODO DEL ENGINE ───────────────────────────
+    // V3: configurable por agente, default es LLM-First
+    const engineMode = agent?.engineMode || ENGINE_MODES.LLM_FIRST;
+    log.debug('Engine mode', { mode: engineMode });
     
-    // Limpiar analysis anterior para evitar datos stale
-    context.analysis = null;
+    // Variable para almacenar el intent (solo se usa en modos legacy/scoring)
+    let intent = null;
     
-    // Si hay acción sobre tablas, analizar el mensaje para extraer datos
-    if (intent.hasTableAction && intent.actionType) {
-      log.debug('Analyzing message', { actionType: intent.actionType });
-      const analysis = await this.aiProvider.analyzeMessage(
-        message, 
-        tablesInfo, 
-        intent.actionType,
-        context.dateContext,
-        agent
-      );
-      log.debug('Analysis result', { analysis });
-      context.analysis = analysis;
+    // ─── DETECTAR INTENCIÓN (solo para modos legacy/scoring) ──
+    if (engineMode !== ENGINE_MODES.LLM_FIRST) {
+      log.debug('Detecting intent (legacy mode)...');
+      intent = await this.aiProvider.detectIntent(message, agent);
+      log.debug('Intent detected', intent);
+      context.intent = intent;
+      
+      // Limpiar analysis anterior para evitar datos stale
+      context.analysis = null;
+      
+      // Si hay acción sobre tablas, analizar el mensaje para extraer datos
+      if (intent.hasTableAction && intent.actionType) {
+        log.debug('Analyzing message', { actionType: intent.actionType });
+        const analysis = await this.aiProvider.analyzeMessage(
+          message, 
+          tablesInfo, 
+          intent.actionType,
+          context.dateContext,
+          agent
+        );
+        log.debug('Analysis result', { analysis });
+        context.analysis = analysis;
+      }
+    } else {
+      // V3 LLM-First: El Engine hace todo con Function Calling
+      log.debug('Using LLM-First mode - Engine will handle intent detection');
     }
     
-    // Crear engine con handlers
-    const engine = new Engine();
+    // Crear engine con handlers y modo configurado
+    const engine = new Engine({ mode: engineMode });
     const handlers = ActionFactory.createAll();
     log.debug('Handlers loaded', { handlers: handlers.map(h => h.constructor.name) });
     handlers.forEach(h => engine.addHandler(h));
@@ -211,19 +247,43 @@ export class ChatService {
     // Procesar
     log.debug('Processing message with engine...');
     const result = await engine.process(context);
-    log.info('Engine result', { handled: result.handled, handler: result.handler });
+    log.info('Engine result', { 
+      handled: result.handled, 
+      handler: result.handler,
+      mode: result.mode || engineMode,
+      tool: result.tool || null,
+    });
     
-    // Guardar estado pendiente (pendingCreate, etc.) en el chat
+    // Preparar mensajes para guardar
+    const responseContent = result.response || 'No se pudo procesar tu mensaje.';
+    
+    // Agregar mensajes al chat (en memoria, no en BD todavía)
+    context.chat.messages = context.chat.messages || [];
+    context.chat.messages.push({
+      id: 'msg_' + Date.now() + '_user',
+      role: 'user',
+      content: message,
+      timestamp: new Date().toISOString(),
+    });
+    context.chat.messages.push({
+      id: 'msg_' + Date.now() + '_assistant',
+      role: 'assistant',
+      content: responseContent,
+      timestamp: new Date().toISOString(),
+    });
+    context.chat.updatedAt = new Date().toISOString();
+    
+    // ÚNICO SAVE: guarda todo junto (mensajes + pendingCreate + estado)
     if (context.chat) {
+      // DEBUG: Log del estado antes de guardar
+      log.debug('Saving chat state', {
+        hasPendingCreate: !!context.chat.data?.pendingCreate,
+        pendingTableId: context.chat.data?.pendingCreate?.tableId,
+        chatDataKeys: Object.keys(context.chat.data || {}),
+        messageCount: context.chat.messages?.length,
+      });
       await this.chatRepo.save(workspaceId, context.chat);
     }
-    
-    // Guardar mensaje del usuario
-    await this.chatRepo.addMessage(workspaceId, chatId, 'user', message);
-    
-    // Guardar respuesta
-    const responseContent = result.response || 'No se pudo procesar tu mensaje.';
-    await this.chatRepo.addMessage(workspaceId, chatId, 'assistant', responseContent);
     log.debug('Messages saved', { chatId });
     
     // Generar título si es nuevo chat
@@ -237,11 +297,36 @@ export class ChatService {
     // Emitir eventos según la acción
     this._emitActionEvents(result, context);
     
+    // V2: Log final de auditoría estructurada
+    log.info('processMessage:end', {
+      requestId,
+      workspaceId,
+      chatId,
+      duration: Date.now() - startTime,
+      handled: result.handled,
+      handler: result.handler,
+      score: result.score,
+      intentDetected: intent?.actionType,
+      intentConfidence: intent?.confidence,
+      hasTableAction: intent?.hasTableAction,
+      hasPendingCreate: !!context.pendingCreate,
+      fieldsCollected: Object.keys(context.collectedFields || {}),
+      llmUsed: !!intent?.actionType,
+      responseLength: responseContent?.length,
+    });
+    
     return {
       chatId,
       response: responseContent,
       action: result.actionType,
       data: result.data,
+      // V2: Metadata para debugging
+      _meta: {
+        requestId,
+        handler: result.handler,
+        score: result.score,
+        duration: Date.now() - startTime,
+      },
     };
   }
   
@@ -266,8 +351,8 @@ export class ChatService {
     const tables = await this._getAgentTables(agent, workspaceId);
     context.setMetadata('tables', tables);
     
-    // Procesar con el CreateHandler
-    const engine = new Engine();
+    // Procesar con el CreateHandler (modo scoring para flujos existentes)
+    const engine = new Engine({ mode: ENGINE_MODES.SCORING });
     const handlers = ActionFactory.createAll();
     handlers.forEach(h => engine.addHandler(h));
     

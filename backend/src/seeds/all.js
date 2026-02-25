@@ -1,44 +1,32 @@
 /**
- * Seed All - Ejecuta todos los seeds genéricos
+ * Seed All - Ejecuta el seed del CRM y/o Testing V3
  * 
  * Uso:
- *   node src/seeds/all.js          # Ejecuta todos los seeds
- *   node src/seeds/all.js --clean  # Limpia BD y ejecuta todos los seeds
+ *   node src/seeds/all.js          # Ejecuta seed del CRM
+ *   node src/seeds/all.js --clean  # Limpia BD y ejecuta seed
+ *   node src/seeds/all.js --v3     # Ejecuta solo seed de testing V3
+ *   node src/seeds/all.js --all    # Ejecuta CRM + Testing V3
  */
 
 import 'dotenv/config';
-import { execSync } from 'child_process';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-// Importar los nuevos seeds genéricos
-import seedRestaurant from './generic-restaurant.js';
-import seedSalon from './generic-salon.js';
-import seedClinic from './generic-clinic.js';
 import seedPremiumCRM from './premium-crm.js';
-import { seed as seedBraseria } from './braseria-restaurant.js';
-import { seedFlowTemplates } from './flow-templates.js';
-
-// Importar configuración dinámica de DB
+import seedTestingV3 from './testing-v3.js';
 import { getDbPrefix } from '../config/db.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const COUCHDB_URL = process.env.COUCHDB_URL || 'http://admin:password@127.0.0.1:5984';
 const CLEAN_MODE = process.argv.includes('--clean');
+const V3_ONLY = process.argv.includes('--v3');
+const RUN_ALL = process.argv.includes('--all');
 
-// Obtener prefijo dinámico desde configuración
 const DB_PREFIX = getDbPrefix();
 
-// Patrones de bases de datos a limpiar (incluye legacy 'chatbot_')
+// Patrones de bases de datos a limpiar
 const DB_PATTERNS = [
   `${DB_PREFIX}workspaces`,
   DB_PREFIX,
-  'chatbot_', // Limpiar también legacy si existe
+  'chatbot_',
 ];
 
-// Extraer credenciales y URL base
 function parseCouchUrl(url) {
   const match = url.match(/^(https?:\/\/)([^:]+):([^@]+)@(.+)$/);
   if (match) {
@@ -79,9 +67,7 @@ async function deleteDatabase(dbName) {
 }
 
 async function cleanDatabases() {
-  console.log('\n🧹 ════════════════════════════════════════════════════════');
-  console.log(`   LIMPIANDO BASES DE DATOS (Prefijo: ${DB_PREFIX})`);
-  console.log('════════════════════════════════════════════════════════════\n');
+  console.log('\n🧹 Limpiando bases de datos...\n');
 
   const allDbs = await listDatabases();
   const toDelete = allDbs.filter(db => 
@@ -105,65 +91,43 @@ async function cleanDatabases() {
 async function main() {
   console.log('\n');
   console.log('╔══════════════════════════════════════════════════════════╗');
-  console.log('║      🌱 SEED ALL - SISTEMA DINÁMICO MULTI-EMPRESA       ║');
+  console.log('║           🌱 SEED - DATABASE SEEDER                      ║');
   console.log('╚══════════════════════════════════════════════════════════╝');
-  console.log(`\nModo: ${CLEAN_MODE ? '🧹 LIMPIEZA + SEED' : '📦 SOLO SEED'}`);
-  console.log(`Database: ${COUCHDB_URL.replace(/\/\/.*@/, '//<hidden>@')}`);
+  
+  const mode = V3_ONLY ? '🧪 TESTING V3' : RUN_ALL ? '📦 CRM + TESTING V3' : '📦 CRM PREMIUM';
+  console.log(`\nModo: ${CLEAN_MODE ? '🧹 LIMPIEZA + ' : ''}${mode}`);
 
-  // Limpiar si es necesario
   if (CLEAN_MODE) {
     await cleanDatabases();
   }
 
-  console.log('\n📋 Seeds a ejecutar:');
-  console.log('   0. 📋  Plantillas de Flujos (globales)');
-  console.log('   1. 🍽️  Restaurante Genérico (generic-restaurant)');
-  console.log('   2. 💇  Salón de Belleza (generic-salon)');
-  console.log('   3. 🏥  Clínica/Veterinaria (generic-clinic)');
-  console.log('   4. 💼  CRM Premium (premium-crm)');
-  console.log('   5. 🔥  La Brasería del Chef (braseria-restaurant)');
-
-  let success = 0;
-  let failed = 0;
-
-  // Ejecutar seeds directamente (ya están importados)
-  const seedFunctions = [
-    { name: 'Plantillas de Flujos', fn: seedFlowTemplates },
-    { name: 'Restaurante Genérico', fn: seedRestaurant },
-    { name: 'Salón de Belleza', fn: seedSalon },
-    { name: 'Clínica', fn: seedClinic },
-    { name: 'CRM Premium', fn: seedPremiumCRM },
-    { name: 'La Brasería del Chef', fn: seedBraseria },
-  ];
-
-  for (const { name, fn } of seedFunctions) {
-    try {
-      console.log(`\n📦 Ejecutando seed: ${name}`);
+  try {
+    // Seed CRM Premium (a menos que sea --v3 only)
+    if (!V3_ONLY) {
+      console.log('\n📦 Ejecutando seed: CRM Premium');
       console.log('─'.repeat(60));
-      await fn();
-      success++;
-    } catch (error) {
-      console.error(`❌ Error ejecutando seed ${name}:`, error.message);
-      failed++;
+      await seedPremiumCRM();
     }
+    
+    // Seed Testing V3 (si es --v3 o --all)
+    if (V3_ONLY || RUN_ALL) {
+      console.log('\n🧪 Ejecutando seed: Testing V3');
+      console.log('─'.repeat(60));
+      await seedTestingV3();
+    }
+    
+    console.log('\n✅ Seed completado exitosamente');
+    
+    // Mostrar instrucciones para testing
+    if (V3_ONLY || RUN_ALL) {
+      console.log('\n📋 Para probar V3:');
+      console.log('   node src/tests/test-v3-engine.js    # Tests automáticos');
+      console.log('   node src/tests/test-chat-v3.js      # Tests de chat');
+    }
+  } catch (error) {
+    console.error('❌ Error:', error.message);
   }
 
-  console.log('\n');
-  console.log('╔══════════════════════════════════════════════════════════╗');
-  console.log('║                    📊 RESUMEN                            ║');
-  console.log('╚══════════════════════════════════════════════════════════╝');
-  console.log(`\n   ✅ Exitosos: ${success}`);
-  console.log(`   ❌ Fallidos: ${failed}`);
-  console.log('\n   Workspaces creados (100% dinámicos):');
-  console.log('   ─────────────────────────────────────────────────────');
-  console.log('   🍽️  Restaurante Demo        - Sistema de reservas básico');
-  console.log('   💇  Salón de Belleza Demo   - Sistema de citas');
-  console.log('   🏥  Clínica Demo            - Sistema de citas médicas');
-  console.log('   💼  CRM Premium             - 5 tablas + 2 agentes');
-  console.log('   🔥  La Brasería del Chef    - Restaurante premium con filtros');
-  console.log('\n   ✨ Todos configurados dinámicamente desde fieldsConfig');
-  console.log('   ✨ Sin código hardcodeado - todo desde BD');
-  console.log('   ✨ Filtros automáticos por identidad en tablas privadas');
   console.log('\n');
 }
 

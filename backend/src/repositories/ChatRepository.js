@@ -63,8 +63,16 @@ export class ChatRepository extends BaseRepository {
    * @returns {Promise<object>}
    */
   async addMessage(workspaceId, chatId, role, content) {
-    const chat = await this.findById(chatId, workspaceId);
-    if (!chat) throw new Error('Chat not found');
+    const db = await this.getDb(workspaceId);
+    
+    // Siempre obtener el documento fresco de la BD para tener el _rev actual
+    let chat;
+    try {
+      chat = await db.get(chatId);
+    } catch (e) {
+      if (e.status === 404) throw new Error('Chat not found');
+      throw e;
+    }
     
     chat.messages = chat.messages || [];
     chat.messages.push({
@@ -75,8 +83,14 @@ export class ChatRepository extends BaseRepository {
     });
     chat.updatedAt = new Date().toISOString();
     
-    const db = await this.getDb(workspaceId);
-    await db.insert(chat);
+    const result = await db.insert(chat);
+    chat._rev = result.rev;
+    
+    // Invalidar cache
+    const cacheKey = this._cacheKey('id', workspaceId, chatId);
+    const { default: cache } = await import('../config/cache.js');
+    cache.del(cacheKey);
+    
     return chat;
   }
   
@@ -100,7 +114,24 @@ export class ChatRepository extends BaseRepository {
   async save(workspaceId, chat) {
     chat.updatedAt = new Date().toISOString();
     const db = await this.getDb(workspaceId);
-    await db.insert(chat);
+    
+    // Obtener el _rev más reciente para evitar conflictos
+    try {
+      const current = await db.get(chat._id);
+      chat._rev = current._rev;
+    } catch (e) {
+      // Si no existe, se creará nuevo
+    }
+    
+    const result = await db.insert(chat);
+    // Actualizar _rev en el objeto para operaciones posteriores
+    chat._rev = result.rev;
+    
+    // Invalidar cache para que próximas lecturas obtengan datos frescos
+    const cacheKey = this._cacheKey('id', workspaceId, chat._id);
+    const { default: cache } = await import('../config/cache.js');
+    cache.del(cacheKey);
+    
     return chat;
   }
   

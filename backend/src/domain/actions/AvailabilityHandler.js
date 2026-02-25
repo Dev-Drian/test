@@ -3,8 +3,9 @@
  * 
  * Maneja preguntas como:
  * - ¿Hay disponibilidad mañana?
+ * - ¿Qué productos hay disponibles?
+ * - ¿Qué servicios tienen?
  * - ¿Qué horarios hay libres?
- * - ¿Pueden atenderme el viernes?
  */
 
 import { ActionHandler } from './ActionHandler.js';
@@ -17,6 +18,40 @@ export class AvailabilityHandler extends ActionHandler {
   }
   
   /**
+   * V2: Calcula score de confianza para este handler
+   * @param {Context} context 
+   * @returns {Promise<number>} Score 0-1
+   */
+  async confidence(context) {
+    let score = 0;
+    const intent = context.intent || {};
+    const message = (context.message || '').toLowerCase();
+    
+    // Factor 1: Intent del LLM es availability
+    if (intent.actionType === 'availability') {
+      const intentScore = (intent.confidence || 0) / 100;
+      score += intentScore * 0.5;
+    }
+    
+    // Factor 2: Keywords de disponibilidad
+    const availKeywords = ['disponibilidad', 'disponible', 'libre', 'horarios', 'espacio', 'hay cita', 'pueden atenderme'];
+    const keywordMatches = availKeywords.filter(kw => message.includes(kw)).length;
+    score += Math.min(keywordMatches * 0.2, 0.35);
+    
+    // Factor 3: Pregunta sobre capacidad
+    if (message.includes('hay') && (message.includes('?') || message.startsWith('¿'))) {
+      score += 0.15;
+    }
+    
+    // Factor 4: Referencias a tiempo futuro
+    if (message.includes('mañana') || message.includes('hoy') || message.includes('semana')) {
+      score += 0.1;
+    }
+    
+    return Math.max(0, Math.min(1, score));
+  }
+  
+  /**
    * Verifica si puede manejar una consulta de disponibilidad
    */
   async canHandle(context) {
@@ -25,86 +60,226 @@ export class AvailabilityHandler extends ActionHandler {
   
   /**
    * Ejecuta la consulta de disponibilidad
+   * 
+   * V3 LLM-First: El Engine ya resolvió tableId en _mapToolArgsToContext()
+   * No necesitamos fallbacks con keywords - el LLM entiende semánticamente
    */
   async execute(context) {
-    const { workspaceId, analysis } = context;
+    const { workspaceId, analysis, tablesInfo } = context;
     
-    // Buscar tabla de citas en tablesInfo
-    const citasTable = context.tablesInfo.find(t => 
-      t.name?.toLowerCase().includes('cita') || t.type === 'appointments'
-    );
+    // V3: El tableId ya viene resuelto desde Engine._mapToolArgsToContext()
+    const tableId = analysis?.tableId;
+    const targetTable = tableId ? tablesInfo?.find(t => t._id === tableId) : null;
     
-    if (!citasTable) {
+    // Si no hay tableId, el LLM no pudo determinar la tabla → preguntar
+    if (!targetTable) {
+      const tableNames = tablesInfo?.map(t => t.name).join(', ') || 'ninguna';
       return {
         handled: true,
-        response: 'No encontré una tabla de citas para verificar disponibilidad.',
+        response: `¿Sobre qué quieres consultar disponibilidad? Las tablas disponibles son: ${tableNames}`,
       };
     }
     
-    // Obtener fecha a consultar (default: mañana)
-    const fecha = analysis?.fecha || context.getTomorrow();
+    // Determinar si es tabla de citas/horarios o tabla general
+    const isAppointmentTable = this._isAppointmentTable(targetTable);
+    
+    if (isAppointmentTable) {
+      return this._handleAppointmentAvailability(context, targetTable);
+    } else {
+      return this._handleGeneralAvailability(context, targetTable);
+    }
+  }
+  
+  /**
+   * Determina si una tabla es de citas/horarios basándose en su estructura
+   * Detección dinámica por tipo de tabla y campos
+   */
+  _isAppointmentTable(table) {
+    // 1. Por tipo explícito de tabla
+    if (table.type === 'calendar' || table.type === 'appointments') {
+      return true;
+    }
+    
+    // 2. Por estructura de campos - buscar combinación fecha + hora
+    const headers = table.headers || [];
+    const fieldTypes = headers.map(h => ({
+      type: (h.type || '').toLowerCase(),
+      key: (h.key || h.label || '').toLowerCase()
+    }));
+    
+    const hasDateField = fieldTypes.some(f => 
+      f.type === 'date' || f.type === 'datetime' || 
+      f.key.includes('fecha') || f.key.includes('date')
+    );
+    
+    const hasTimeField = fieldTypes.some(f => 
+      f.type === 'time' || 
+      f.key.includes('hora') || f.key.includes('time')
+    );
+    
+    // Si tiene fecha Y hora, es probable que sea de citas
+    return hasDateField && hasTimeField;
+  }
+  
+  /**
+   * Maneja disponibilidad para tablas de citas
+   */
+  async _handleAppointmentAvailability(context, table) {
+    const { workspaceId, analysis } = context;
+    const fecha = analysis?.fecha || context.getTomorrow?.() || new Date().toISOString().split('T')[0];
     
     try {
       const availability = await this.tableDataRepository.checkAvailability(
         workspaceId,
-        citasTable._id,
+        table._id,
         { fecha }
       );
       
       this.eventEmitter.emit(EVENTS.AVAILABILITY_CHECKED, {
         workspaceId,
         fecha,
-        slotsAvailable: availability.libres.length,
+        slotsAvailable: availability.libres?.length || 0,
       });
-      
-      const response = this._formatAvailabilityResponse(availability, analysis);
-      
-      // Si hay pendingCreate activo, recordar al usuario
-      if (context.pendingCreate) {
-        const reminder = this._buildPendingReminder(context);
-        if (reminder) {
-          return {
-            handled: true,
-            response: response + reminder,
-            formatted: true,
-          };
-        }
-      }
       
       return {
         handled: true,
-        response,
+        response: this._formatAppointmentResponse(availability, table.name),
         formatted: true,
         data: { availability },
       };
-      
     } catch (error) {
-      console.error('[AvailabilityHandler] Error:', error);
+      console.error('[AvailabilityHandler] Error checking appointments:', error);
       return {
         handled: true,
-        response: 'Error al consultar disponibilidad. Intenta de nuevo.',
+        response: 'Error al consultar disponibilidad de citas. Intenta de nuevo.',
       };
     }
   }
   
   /**
-   * Formatea la respuesta de disponibilidad
+   * Maneja disponibilidad para tablas generales (productos, servicios, etc.)
    */
-  _formatAvailabilityResponse(availability, params) {
-    const { fecha, totalCitas, libres, ocupados } = availability;
+  async _handleGeneralAvailability(context, table) {
+    const { workspaceId, analysis } = context;
     
-    // Formatear fecha legible
+    try {
+      // Obtener registros de la tabla
+      const filters = analysis?.query?.filters || {};
+      const limit = analysis?.query?.limit || 20;
+      
+      const rows = await this.tableDataRepository.query(
+        workspaceId,
+        table._id,
+        filters,
+        { limit }
+      );
+      
+      if (!rows || rows.length === 0) {
+        return {
+          handled: true,
+          response: `No hay registros en **${table.name}** actualmente.`,
+        };
+      }
+      
+      // Formatear respuesta con los datos
+      const response = this._formatGeneralResponse(rows, table);
+      
+      return {
+        handled: true,
+        response,
+        formatted: true,
+        data: { rows, count: rows.length },
+      };
+    } catch (error) {
+      console.error('[AvailabilityHandler] Error querying table:', error);
+      return {
+        handled: true,
+        response: `Error al consultar ${table.name}. Intenta de nuevo.`,
+      };
+    }
+  }
+  
+  /**
+   * Formatea respuesta para tablas generales
+   */
+  _formatGeneralResponse(rows, table) {
+    const tableName = table.name || 'registros';
+    const headers = table.headers || [];
+    
+    let response = `**📋 ${tableName} disponibles (${rows.length})**\n\n`;
+    
+    // Determinar campos principales a mostrar
+    const displayFields = this._getDisplayFields(headers, rows[0]);
+    
+    rows.slice(0, 10).forEach((row, idx) => {
+      const values = displayFields
+        .map(f => {
+          const val = row[f.key] || row[f.label] || '';
+          if (f.key === 'precio' || f.label?.toLowerCase().includes('precio')) {
+            return `$${Number(val).toLocaleString()}`;
+          }
+          return val;
+        })
+        .filter(v => v)
+        .join(' | ');
+      
+      response += `${idx + 1}. ${values}\n`;
+    });
+    
+    if (rows.length > 10) {
+      response += `\n... y ${rows.length - 10} más.`;
+    }
+    
+    response += `\n\n💡 Puedo darte más detalles de cualquiera. Solo pregunta.`;
+    
+    return response;
+  }
+  
+  /**
+   * Obtiene los campos más relevantes para mostrar
+   */
+  _getDisplayFields(headers, sampleRow) {
+    if (!headers || headers.length === 0) {
+      // Si no hay headers, usar las keys del primer row
+      if (sampleRow) {
+        const keys = Object.keys(sampleRow)
+          .filter(k => !k.startsWith('_') && k !== 'tableId' && k !== 'createdAt' && k !== 'updatedAt');
+        return keys.slice(0, 4).map(k => ({ key: k, label: k }));
+      }
+      return [];
+    }
+    
+    // Priorizar campos: nombre, titulo, descripcion, precio, categoria
+    const priorityKeys = ['nombre', 'name', 'titulo', 'title', 'descripcion', 'precio', 'price', 'categoria', 'category'];
+    const sorted = [...headers].sort((a, b) => {
+      const aKey = (a.key || a.label || '').toLowerCase();
+      const bKey = (b.key || b.label || '').toLowerCase();
+      const aIdx = priorityKeys.findIndex(p => aKey.includes(p));
+      const bIdx = priorityKeys.findIndex(p => bKey.includes(p));
+      if (aIdx === -1 && bIdx === -1) return 0;
+      if (aIdx === -1) return 1;
+      if (bIdx === -1) return -1;
+      return aIdx - bIdx;
+    });
+    
+    return sorted.slice(0, 4);
+  }
+  
+  /**
+   * Formatea respuesta de disponibilidad de citas
+   */
+  _formatAppointmentResponse(availability, tableName) {
+    const { fecha, totalCitas, libres, ocupados } = availability;
     const fechaLegible = this._formatDate(fecha);
     
     let response = `**📅 Disponibilidad para ${fechaLegible}**\n\n`;
     
-    if (libres.length === 0) {
+    if (!libres || libres.length === 0) {
       response += 'No hay horarios disponibles para esa fecha.\n\n';
       response += '¿Quieres que busque disponibilidad para otro día?';
       return response;
     }
     
-    // Mostrar horarios disponibles (máx 8)
     const horariosDisplay = libres.slice(0, 8).map(h => this._formatTo12Hour(h)).join(', ');
     response += `**Horarios disponibles:** ${horariosDisplay}`;
     
@@ -121,18 +296,6 @@ export class AvailabilityHandler extends ActionHandler {
     response += `\n\n💡 Para agendar, dime la hora y el servicio que necesitas.`;
     
     return response;
-  }
-  
-  /**
-   * Construye recordatorio si hay pendingCreate
-   */
-  _buildPendingReminder(context) {
-    if (!context.pendingCreate) return null;
-    
-    const missingFields = context.missingFields;
-    if (missingFields.length === 0) return null;
-    
-    return `\n\n---\n📋 **Continuando con tu cita...**\n¿${missingFields[0]}?`;
   }
   
   _formatDate(dateStr) {

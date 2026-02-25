@@ -106,6 +106,63 @@
       "type": "array",
       "items": { "type": "string" },
       "description": "Cosas que el bot NO puede hacer (opcional). Ej: 'No puedo dar diagnósticos médicos'"
+    },
+    "engineMode": {
+      "type": "string",
+      "enum": ["llm-first", "scoring", "legacy"],
+      "default": "llm-first",
+      "description": "V3: Modo de procesamiento del Engine. llm-first usa Function Calling, scoring usa keywords, legacy usa Chain of Responsibility"
+    },
+    "vertical": {
+      "type": "string",
+      "enum": ["healthcare", "retail", "appointments", "general"],
+      "default": "general",
+      "description": "V3: Vertical de negocio para personalizar prompts automáticamente"
+    },
+    "toneStyle": {
+      "type": "string",
+      "enum": ["professional", "friendly", "formal", "empathetic", "concise"],
+      "default": "professional",
+      "description": "V3: Estilo de tono para las respuestas"
+    },
+    "fewShotExamples": {
+      "type": "array",
+      "description": "V3: Ejemplos de conversación para few-shot learning",
+      "items": {
+        "type": "object",
+        "properties": {
+          "user": { "type": "string", "description": "Mensaje del usuario de ejemplo" },
+          "assistant": { "type": "string", "description": "Respuesta esperada del asistente" }
+        },
+        "required": ["user", "assistant"]
+      }
+    },
+    "enabledTools": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "V3: Lista de tools habilitadas. Si vacío, todas las tools están disponibles"
+    },
+    "disabledTools": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "V3: Lista de tools deshabilitadas para este agente"
+    },
+    "businessHours": {
+      "type": "object",
+      "description": "V3: Horario de atención del negocio",
+      "properties": {
+        "timezone": { "type": "string", "default": "America/Bogota" },
+        "schedule": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Horarios por día, ej: { 'lunes_viernes': '09:00-18:00', 'sabado': '09:00-14:00' }"
+        },
+        "outsideHoursMessage": { "type": "string", "description": "Mensaje cuando se contacta fuera de horario" }
+      }
+    },
+    "customInstructions": {
+      "type": "string",
+      "description": "V3: Instrucciones adicionales personalizadas para el system prompt"
     }
   }
 }

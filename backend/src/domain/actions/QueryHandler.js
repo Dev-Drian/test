@@ -23,6 +23,50 @@ export class QueryHandler extends ActionHandler {
   }
   
   /**
+   * V2: Calcula score de confianza para este handler
+   * @param {Context} context 
+   * @returns {Promise<number>} Score 0-1
+   */
+  async confidence(context) {
+    let score = 0;
+    const intent = context.intent || {};
+    const message = (context.message || '').toLowerCase();
+    
+    // Factor 1: Intent del LLM es query/search
+    if (intent.actionType === 'query' || intent.actionType === 'search') {
+      const intentScore = (intent.confidence || 0) / 100;
+      score += intentScore * 0.5;
+    }
+    
+    // Factor 2: Es pregunta (signos de interrogación)
+    if (message.includes('?') || message.startsWith('¿')) {
+      score += 0.2;
+    }
+    
+    // Factor 3: Keywords de consulta
+    const queryKeywords = ['ver', 'mostrar', 'listar', 'buscar', 'consultar', 'cuáles', 'cuántos', 'dame', 'dime', 'qué'];
+    const keywordMatches = queryKeywords.filter(kw => message.includes(kw)).length;
+    score += Math.min(keywordMatches * 0.1, 0.25);
+    
+    // Factor 4: Penalización si hay pendingCreate activo
+    if (context.pendingCreate) {
+      // Solo penalizar si el intent no es query con alta confianza
+      if (intent.actionType !== 'query' || (intent.confidence || 0) < 70) {
+        score -= 0.2;
+      }
+    }
+    
+    // Factor 5: Palabras de tiempo/periodo aumentan score
+    const timeKeywords = ['hoy', 'mañana', 'ayer', 'semana', 'mes', 'año', 'últimos', 'últimas'];
+    const timeMatches = timeKeywords.filter(kw => message.includes(kw)).length;
+    if (timeMatches > 0) {
+      score += 0.1;
+    }
+    
+    return Math.max(0, Math.min(1, score));
+  }
+  
+  /**
    * Verifica si puede manejar una acción de tipo QUERY
    */
   async canHandle(context) {
@@ -32,20 +76,28 @@ export class QueryHandler extends ActionHandler {
   
   /**
    * Ejecuta la consulta
+   * 
+   * V3 LLM-First: El Engine ya resolvió tableId en _mapToolArgsToContext()
+   * No necesitamos fallbacks con keywords - el LLM entiende semánticamente
    */
   async execute(context) {
     const { workspaceId, analysis, message, tables } = context;
     
-    if (!analysis?.tableId) {
+    // V3: El tableId ya viene resuelto desde Engine._mapToolArgsToContext()
+    const tableId = analysis?.tableId;
+    // Soportar tanto 'id' (de ChatService) como '_id' (de DB directa)
+    const tableSchema = tableId ? tables?.find(t => (t.id || t._id) === tableId) : null;
+    
+    // Si no hay tableId, el LLM no pudo determinar la tabla → preguntar
+    if (!tableId || !tableSchema) {
+      const tableNames = tables?.map(t => t.name).join(', ') || 'ninguna';
       return {
         handled: true,
-        response: 'No pude determinar qué información buscas. ¿Puedes ser más específico?',
+        response: `¿Sobre qué tabla quieres consultar? Las disponibles son: ${tableNames}`,
       };
     }
     
     try {
-      // Obtener schema de la tabla para el parser
-      const tableSchema = tables?.find(t => t._id === analysis.tableId);
       
       // Verificar permisos
       const permission = TablePermissions.check(tableSchema, 'query');
@@ -257,19 +309,24 @@ export class QueryHandler extends ActionHandler {
       // Agregar detalles
       const details = [];
       for (const [key, value] of Object.entries(row)) {
-        // Excluir campos internos y el campo principal
-        if (key.startsWith('_') || key === 'main' || key === 'createdAt' || key === 'updatedAt') continue;
+        // Excluir campos internos, IDs, y metadatos
+        if (key.startsWith('_') || key === 'id' || key === 'main' || key === 'tableId' || key === 'createdAt' || key === 'updatedAt') continue;
         if (value === mainField) continue;
         if (!value) continue;
         
-        const config = configMap[key] || {};
-        const emoji = config.emoji || '•';
-        const label = config.label || key.charAt(0).toUpperCase() + key.slice(1);
+        // Verificar configuración del campo
+        const fieldConfig = configMap[key] || {};
         
-        // Formatear valor
+        // Respetar hiddenFromChat - campos sensibles que no se muestran
+        if (fieldConfig.hiddenFromChat) continue;
+        
+        const emoji = fieldConfig.emoji || '•';
+        const label = fieldConfig.label || key.charAt(0).toUpperCase() + key.slice(1);
+        
+        // Formatear valor según tipo
         let displayValue = value;
-        if (key === 'precio' || config.type === 'currency') {
-          displayValue = `$${value}`;
+        if (key === 'precio' || fieldConfig.type === 'currency' || fieldConfig.type === 'number') {
+          displayValue = `$${Number(value).toLocaleString('es-CO')}`;
         } else if (key === 'duracion') {
           displayValue = `${value} min`;
         }

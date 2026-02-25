@@ -304,12 +304,123 @@ export class Context {
   }
   
   /**
+   * Detecta si un valor de texto parece ser basura o instrucciones en lugar de datos válidos
+   * V2: Sistema de scoring independiente del schema - NO depende de fieldsConfig
+   * @private
+   * @returns {{ isGarbage: boolean, confidence: number, reasons: string[] }}
+   */
+  _analyzeGarbageText(value, fieldConfig) {
+    const text = String(value).toLowerCase().trim();
+    const result = { isGarbage: false, confidence: 0, reasons: [] };
+    
+    // Early exit para valores cortos (probablemente válidos)
+    if (text.length < 8) {
+      return result;
+    }
+    
+    let score = 0;
+    const reasons = [];
+    
+    // ═══ TIER 1: Alta confianza (0.4 cada uno) ═══
+    // Patrones que DEFINITIVAMENTE son instrucciones
+    const highConfidencePatterns = [
+      { pattern: /^(cambia|cambiar|modifica|modificar)\s+.+\s+por\s+/i, reason: 'Comando de modificación explícito' },
+      { pattern: /\ben (lugar|vez) de\b/i, reason: 'Expresión de reemplazo' },
+      { pattern: /^(quiero|necesito)\s+que\s+(cambies|modifiques|actualices|pongas)/i, reason: 'Solicitud de acción al sistema' },
+    ];
+    
+    for (const { pattern, reason } of highConfidencePatterns) {
+      if (pattern.test(text)) {
+        score += 0.4;
+        reasons.push(reason);
+      }
+    }
+    
+    // ═══ TIER 2: Media confianza (0.25 cada uno) ═══
+    // Patrones que PROBABLEMENTE son instrucciones
+    const mediumConfidencePatterns = [
+      { pattern: /\b(coloca|pon|poner|mete|meter)\s+(en|de|como|al)\s+/i, reason: 'Instrucción de colocación' },
+      { pattern: /\b(por el|por la|por los|por las)\b.*\b(el|la|los|las)\b/i, reason: 'Patrón de intercambio' },
+      { pattern: /^(el|la|los|las)\s+(de|del|que|cual)\s+\w+\s+(de|del|que)/i, reason: 'Meta-referencia compleja' },
+    ];
+    
+    for (const { pattern, reason } of mediumConfidencePatterns) {
+      if (pattern.test(text)) {
+        score += 0.25;
+        reasons.push(reason);
+      }
+    }
+    
+    // ═══ TIER 3: Análisis contextual por tipo de campo ═══
+    // Solo para campos que esperan nombres/relaciones
+    const fieldType = fieldConfig?.type;
+    const isNameRelation = fieldType === 'relation' && 
+                           (fieldConfig?.relationDisplay === 'name' || 
+                            fieldConfig?.key?.includes('cliente') ||
+                            fieldConfig?.key?.includes('nombre'));
+    
+    if (isNameRelation) {
+      const wordCount = text.split(/\s+/).length;
+      // Nombres empresariales pueden tener hasta 10 palabras (razón social)
+      if (wordCount > 10) {
+        score += 0.3;
+        reasons.push(`Excede longitud típica de nombre (${wordCount} palabras)`);
+      }
+    }
+    
+    // ═══ TIER 4: Detección de verbos imperativos al inicio ═══
+    const imperativeStart = /^(cambia|pon|coloca|agrega|quita|elimina|borra|actualiza|modifica)\b/i;
+    if (imperativeStart.test(text)) {
+      score += 0.2;
+      reasons.push('Comienza con verbo imperativo');
+    }
+    
+    // Calcular resultado final
+    result.confidence = Math.min(score, 1.0);
+    result.isGarbage = result.confidence >= 0.5; // Threshold de decisión
+    result.reasons = reasons;
+    
+    return result;
+  }
+  
+  /**
+   * Wrapper de compatibilidad que usa el nuevo sistema de scoring
+   * @private
+   * @deprecated Usar _analyzeGarbageText directamente para obtener más información
+   */
+  _isGarbageText(value, fieldConfig) {
+    const analysis = this._analyzeGarbageText(value, fieldConfig);
+    return analysis.isGarbage;
+  }
+  
+  /**
    * Valida un campo según su configuración
+   * V2: Usa sistema de scoring para garbage detection
    * @private
    */
   _validateField(fieldKey, value, fieldConfig) {
-    if (!value) {
-      return { valid: false, error: `${fieldKey} es requerido` };
+    if (value === undefined || value === null || value === '') {
+      return { valid: false, error: `${fieldConfig?.label || fieldKey} es requerido`, code: 'REQUIRED' };
+    }
+    
+    const fieldType = fieldConfig?.type;
+    
+    // Solo aplicar garbage check a tipos textuales (NO por nombre de campo)
+    const textualTypes = ['text', 'relation', 'string'];
+    if (textualTypes.includes(fieldType)) {
+      const garbageResult = this._analyzeGarbageText(value, fieldConfig);
+      
+      // Solo rechazar si confianza es >= 0.5 (threshold configurable)
+      if (garbageResult.isGarbage && garbageResult.confidence >= 0.5) {
+        const label = fieldConfig?.label || fieldKey;
+        const reasonHint = garbageResult.reasons[0] || '';
+        return { 
+          valid: false, 
+          error: `"${value}" no parece ser un ${label} válido. ${reasonHint}`.trim(),
+          code: 'GARBAGE_DETECTED',
+          debug: garbageResult, // Para logging/debugging
+        };
+      }
     }
     
     const validation = fieldConfig?.validation;
@@ -346,6 +457,27 @@ export class Context {
           return { valid: false, error: 'Formato de hora inválido (use HH:MM)' };
         }
         return { valid: true };
+      
+      case 'number':
+      case 'integer':
+      case 'currency':
+        // Convertir a número
+        const numValue = Number(value);
+        if (isNaN(numValue)) {
+          const label = fieldConfig?.label || fieldKey;
+          return { valid: false, error: `${label} debe ser un número válido` };
+        }
+        // Validar min
+        if (validation.min !== undefined && numValue < validation.min) {
+          const label = fieldConfig?.label || fieldKey;
+          return { valid: false, error: `${label} debe ser al menos ${validation.min}` };
+        }
+        // Validar max
+        if (validation.max !== undefined && numValue > validation.max) {
+          const label = fieldConfig?.label || fieldKey;
+          return { valid: false, error: `${label} no puede ser mayor a ${validation.max}` };
+        }
+        return { valid: true };
         
       default:
         // Validaciones genéricas
@@ -371,6 +503,11 @@ export class Context {
         
       case 'text':
         return String(value).trim();
+      
+      case 'number':
+      case 'integer':
+      case 'currency':
+        return Number(value);
         
       case 'date':
         return value; // Ya debería estar en YYYY-MM-DD
@@ -436,6 +573,19 @@ export class Context {
     this.pendingCreate = null;
     this.collectedFields = {};
     this.missingFields = [];
+  }
+  
+  /**
+   * Limpia solo los campos recolectados (mantiene pendingCreate activo)
+   * Útil cuando un flow bloquea la creación y el usuario quiere intentar de nuevo
+   */
+  clearCollectedFields() {
+    this.collectedFields = {};
+    if (this.pendingCreate) {
+      this.pendingCreate.fields = {};
+      // Restaurar campos faltantes a los requeridos originales
+      this.missingFields = [...(this.pendingCreate.requiredFields || [])];
+    }
   }
   
   /**

@@ -711,6 +711,181 @@ export async function executeFlowsForTrigger(workspaceId, triggerType, tableId, 
   return { executed: flows.length, results };
 }
 
+/**
+ * Ejecuta flujos beforeCreate y retorna campos calculados/derivados
+ * Esta función ejecuta las queries necesarias y evalúa expresiones para calcular campos
+ * como total = precio × cantidad ANTES de crear el registro
+ * 
+ * @param {string} workspaceId - ID del workspace
+ * @param {string} tableId - ID de la tabla donde se va a crear
+ * @param {object} fields - Campos del registro a crear
+ * @returns {object} - { fields: camposModificados, context: contextoCompleto, flowExecuted: boolean }
+ */
+export async function executeBeforeCreateFlows(workspaceId, tableId, fields) {
+  console.log(`\n[FlowExecutor] ========== BeforeCreate for table ${tableId} ==========`);
+  
+  // Obtener flujos beforeCreate para esta tabla
+  const flows = await getFlowsForTrigger(workspaceId, 'beforeCreate', tableId);
+  
+  if (flows.length === 0) {
+    console.log(`[FlowExecutor] No beforeCreate flows found`);
+    return { fields, context: fields, flowExecuted: false };
+  }
+  
+  console.log(`[FlowExecutor] Found ${flows.length} beforeCreate flow(s)`);
+  
+  // Preparar contexto con los campos del registro a crear
+  const context = { ...fields, _workspaceId: workspaceId, _tableId: tableId };
+  const modifiedFields = { ...fields };
+  
+  for (const flow of flows) {
+    console.log(`[FlowExecutor] Processing beforeCreate flow: ${flow.name}`);
+    
+    const nodes = flow.nodes || [];
+    const edges = flow.edges || [];
+    
+    // Encontrar el nodo trigger
+    const triggerNode = nodes.find(n => n.type === 'trigger');
+    if (!triggerNode) continue;
+    
+    let currentNodeId = triggerNode.id;
+    let iterations = 0;
+    const maxIterations = 20;
+    
+    while (currentNodeId && iterations < maxIterations) {
+      iterations++;
+      
+      const node = nodes.find(n => n.id === currentNodeId);
+      if (!node) break;
+      
+      console.log(`[FlowExecutor][BeforeCreate] Processing: ${node.type} - ${node.data?.label || node.id}`);
+      
+      let nextNodeId = null;
+      let conditionResult = null;
+      let queryFound = null;
+      
+      switch (node.type) {
+        case 'trigger':
+          break;
+          
+        case 'query':
+          // Ejecutar query para llenar contexto (ej: buscar productoData)
+          const queryResult = await executeQuery(node.data, context, workspaceId);
+          queryFound = queryResult.found;
+          break;
+          
+        case 'condition':
+          conditionResult = evaluateCondition(node.data, context);
+          // Guardar info de la condición para mejor feedback de errores
+          context._lastCondition = {
+            field: node.data.field,
+            operator: node.data.operator,
+            expectedValue: node.data.value,
+            actualValue: node.data.field.includes('.') 
+              ? node.data.field.split('.').reduce((obj, k) => obj?.[k], context)
+              : context[node.data.field],
+            passed: conditionResult
+          };
+          console.log(`[FlowExecutor][BeforeCreate] Condition: ${conditionResult ? 'YES' : 'NO'}`);
+          break;
+          
+        case 'action':
+          const actionData = node.data;
+          
+          // Para beforeCreate, los actions de tipo 'update' en la misma tabla
+          // modifican los campos del registro que se va a crear
+          if (actionData.actionType === 'update' && actionData.targetTable === tableId) {
+            console.log(`[FlowExecutor][BeforeCreate] Calculating derived fields`);
+            
+            if (actionData.fields) {
+              for (const [key, valueTemplate] of Object.entries(actionData.fields)) {
+                let processedValue = processTemplate(String(valueTemplate), context);
+                
+                // Evaluar expresiones matemáticas
+                const mathMatch = processedValue.match(/^{{(.+)}}$/);
+                if (mathMatch) {
+                  processedValue = evaluateExpressionWithContext(mathMatch[1], context);
+                } else if (/^[\d+\-*/.\s]+$/.test(processedValue)) {
+                  processedValue = evaluateSimpleExpression(processedValue);
+                }
+                
+                modifiedFields[key] = processedValue;
+                context[key] = processedValue;
+                console.log(`[FlowExecutor][BeforeCreate] Set ${key} = ${processedValue}`);
+              }
+            }
+          }
+          // Error action - cancelar la creación
+          else if (actionData.actionType === 'error') {
+            const errorMsg = processTemplate(actionData.message || 'Error en beforeCreate', context);
+            console.log(`[FlowExecutor][BeforeCreate] Error: ${errorMsg}`);
+            
+            // Extraer información útil para el usuario
+            const validationInfo = {
+              error: errorMsg,
+              lastCondition: context._lastCondition || null,
+              suggestedFix: null,
+              fieldToFix: null,
+            };
+            
+            // Si el error es de stock, sugerir el máximo disponible
+            if (context._lastCondition && errorMsg.toLowerCase().includes('stock')) {
+              const stockField = context._lastCondition.field;
+              if (stockField.includes('stock')) {
+                validationInfo.fieldToFix = 'cantidad';
+                validationInfo.suggestedFix = context._lastCondition.actualValue;
+                validationInfo.maxAvailable = context._lastCondition.actualValue;
+              }
+            }
+            
+            return { 
+              fields: modifiedFields, 
+              context, 
+              flowExecuted: true, 
+              error: errorMsg,
+              blocked: true,
+              validationInfo,
+            };
+          }
+          // Allow action - continuar
+          else if (actionData.actionType === 'allow') {
+            console.log(`[FlowExecutor][BeforeCreate] Allow: creation permitted`);
+          }
+          break;
+      }
+      
+      // Encontrar siguiente nodo
+      const outgoingEdges = edges.filter(e => e.source === currentNodeId);
+      
+      if (outgoingEdges.length === 0) {
+        break;
+      } else if (outgoingEdges.length === 1) {
+        nextNodeId = outgoingEdges[0].target;
+      } else {
+        if (conditionResult !== null) {
+          const yesEdge = outgoingEdges.find(e => e.label === 'Sí' || e.label === 'Yes' || e.label === 'true');
+          const noEdge = outgoingEdges.find(e => e.label === 'No' || e.label === 'false');
+          nextNodeId = conditionResult ? (yesEdge?.target || outgoingEdges[0].target) : (noEdge?.target || null);
+        } else if (queryFound !== null) {
+          const yesEdge = outgoingEdges.find(e => e.sourceHandle === 'yes' || e.label === 'Sí');
+          const noEdge = outgoingEdges.find(e => e.sourceHandle === 'no' || e.label === 'No');
+          nextNodeId = queryFound ? (yesEdge?.target || outgoingEdges[0].target) : (noEdge?.target || null);
+        } else {
+          nextNodeId = outgoingEdges[0].target;
+        }
+      }
+      
+      currentNodeId = nextNodeId;
+    }
+  }
+  
+  console.log(`[FlowExecutor] ========== BeforeCreate completed ==========\n`);
+  console.log(`[FlowExecutor] Modified fields:`, modifiedFields);
+  
+  return { fields: modifiedFields, context, flowExecuted: true };
+}
+
 export default {
   executeFlowsForTrigger,
+  executeBeforeCreateFlows,
 };

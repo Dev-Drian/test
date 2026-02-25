@@ -70,8 +70,9 @@ function generateFieldQuestion(entityName, field) {
 /**
  * Busca una tabla por nombre dentro del workspace
  * CouchDB no soporta $regex con flags, así que hacemos búsqueda manual
+ * @export
  */
-async function findTableByName(workspaceId, tableName) {
+export async function findTableByName(workspaceId, tableName) {
   const tablesDb = await connectDB(getWorkspaceDbName(workspaceId));
   const result = await tablesDb.find({
     selector: {},
