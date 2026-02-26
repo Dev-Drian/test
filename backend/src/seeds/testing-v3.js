@@ -148,13 +148,13 @@ export async function seed() {
     console.log(`✅ ${clientesData.length} clientes de prueba creados`);
     
     // ═══════════════════════════════════════════════════════════════
-    // AGENTE 1: LLM-First (V3 completo)
+    // AGENTE: LLM-First
     // ═══════════════════════════════════════════════════════════════
     const agenteLLMId = uuidv4();
     const agenteLLM = {
       _id: agenteLLMId,
       type: 'agent',
-      name: 'Asistente V3',
+      name: 'Asistente de Citas',
       description: 'Agente con arquitectura LLM-First para testing',
       tables: [
         { tableId: citasTableId, fullAccess: true },
@@ -200,70 +200,17 @@ export async function seed() {
       createdAt: new Date().toISOString()
     };
     await agentsDb.insert(agenteLLM);
-    console.log('✅ Agente V3 LLM-First creado');
-    
-    // ═══════════════════════════════════════════════════════════════
-    // AGENTE 2: Scoring (V2 para comparación)
-    // ═══════════════════════════════════════════════════════════════
-    const agenteScoringId = uuidv4();
-    const agenteScoring = {
-      _id: agenteScoringId,
-      type: 'agent',
-      name: 'Asistente V2',
-      description: 'Agente con ScoringEngine para comparar con V3',
-      tables: [
-        { tableId: citasTableId, fullAccess: true },
-        { tableId: clientesTableId, fullAccess: true },
-      ],
-      
-      // V2 Configuration - usa ScoringEngine
-      engineMode: 'scoring',
-      
-      prompt: `Eres un asistente de citas.
-Puedes: agendar citas, consultar disponibilidad, ver citas existentes, cancelar citas.
-Sé amable y conciso.`,
-      
-      aiModel: ['gpt-4o-mini'],
-      active: true,
-      createdAt: new Date().toISOString()
-    };
-    await agentsDb.insert(agenteScoring);
-    console.log('✅ Agente V2 Scoring creado');
-    
-    // ═══════════════════════════════════════════════════════════════
-    // AGENTE 3: Legacy (V1 para testing de rollback)
-    // ═══════════════════════════════════════════════════════════════
-    const agenteLegacyId = uuidv4();
-    const agenteLegacy = {
-      _id: agenteLegacyId,
-      type: 'agent',
-      name: 'Asistente V1',
-      description: 'Agente Legacy (Chain of Responsibility)',
-      tables: [
-        { tableId: citasTableId, fullAccess: true },
-        { tableId: clientesTableId, fullAccess: true },
-      ],
-      
-      // V1 Configuration
-      engineMode: 'legacy',
-      
-      prompt: 'Asistente de citas básico.',
-      aiModel: ['gpt-4o-mini'],
-      active: true,
-      createdAt: new Date().toISOString()
-    };
-    await agentsDb.insert(agenteLegacy);
-    console.log('✅ Agente V1 Legacy creado');
+    console.log('✅ Agente LLM-First creado');
     
     // ========== WORKSPACE DOC ==========
     const workspaceDoc = {
       _id: WORKSPACE_ID,
       name: WORKSPACE_NAME,
-      description: 'Workspace de testing para arquitectura V3 LLM-First',
+      description: 'Workspace de testing para arquitectura LLM-First',
       plan: 'premium',
       defaultAgentId: agenteLLMId,
       createdAt: new Date().toISOString(),
-      agents: [agenteLLMId, agenteScoringId, agenteLegacyId],
+      agents: [agenteLLMId],
     };
     
     try {
@@ -276,17 +223,16 @@ Sé amable y conciso.`,
     
     // ========== RESUMEN ==========
     console.log('\n' + '═'.repeat(60));
-    console.log('📦 SEED TESTING V3 COMPLETADO');
+    console.log('📦 SEED TESTING COMPLETADO');
     console.log('═'.repeat(60));
     console.log(`   Workspace: ${WORKSPACE_ID}`);
     console.log(`   Tablas: Citas, Clientes`);
-    console.log(`   Agentes: 3 (V3 LLM-First, V2 Scoring, V1 Legacy)`);
+    console.log(`   Agentes: 1 (LLM-First)`);
     console.log(`   Datos: ${citasData.length} citas, ${clientesData.length} clientes`);
     console.log('═'.repeat(60));
     console.log('\n🧪 INSTRUCCIONES DE TESTING:');
-    console.log('   1. node src/tests/test-v3-engine.js');
-    console.log('   2. Usa el chat con cada agente y compara resultados');
-    console.log('   3. Revisa logs para ver qué modo se usa\n');
+    console.log('   1. Usa el chat con el agente');
+    console.log('   2. Revisa logs para debugging\n');
     
   } catch (error) {
     console.error('❌ Error en seed:', error);

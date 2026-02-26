@@ -319,11 +319,11 @@ class ToolRegistry {
   }
   
   /**
-   * Mapea tool name a handler legacy (para transición gradual)
+   * Obtiene el handler correspondiente para una tool
    * @param {string} toolName - Nombre de la tool
    * @returns {string} - Nombre del handler correspondiente
    */
-  mapToLegacyHandler(toolName) {
+  getHandlerForTool(toolName) {
     const mapping = {
       'check_availability': 'AvailabilityHandler',
       'create_record': 'CreateHandler',

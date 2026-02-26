@@ -168,7 +168,7 @@ export class ChatEngine {
     const { tool, arguments: args } = llmResult;
     
     // Mapear tool a handler
-    const handlerName = this.toolRegistry.mapToLegacyHandler(tool);
+    const handlerName = this.toolRegistry.getHandlerForTool(tool);
     const handler = this.handlers.find(h => h.constructor.name === handlerName);
     
     if (!handler) {
@@ -574,7 +574,7 @@ export class ChatEngine {
     const tool = intentToTool[newIntent] || 'general_conversation';
     
     // Buscar el handler correspondiente
-    const handlerName = this.toolRegistry.mapToLegacyHandler(tool);
+    const handlerName = this.toolRegistry.getHandlerForTool(tool);
     const handler = this.handlers.find(h => h.constructor.name === handlerName);
     
     if (!handler) {

@@ -1,12 +1,10 @@
 /**
- * Test Chat V3 - Prueba interactiva del chat con diferentes modos
+ * Test Chat - Prueba interactiva del chat
  * 
- * Envía mensajes de prueba y muestra cómo responde cada modo del engine.
+ * Envía mensajes de prueba y muestra cómo responde el engine.
  * 
  * Uso:
  *   node src/tests/test-chat-v3.js
- *   node src/tests/test-chat-v3.js --mode=scoring
- *   node src/tests/test-chat-v3.js --mode=legacy
  */
 
 import 'dotenv/config';
@@ -16,10 +14,8 @@ import { connectDB, getWorkspacesDbName, getAgentsDbName } from '../config/db.js
 const WORKSPACE_ID = process.env.TEST_WORKSPACE || 'testing-v3';
 const API_KEY = process.env.OPENAI_API_KEY;
 
-// Parsear argumentos
-const args = process.argv.slice(2);
-const modeArg = args.find(a => a.startsWith('--mode='));
-const ENGINE_MODE = modeArg ? modeArg.split('=')[1] : 'llm-first';
+// Modo siempre LLM-First
+const ENGINE_MODE = 'llm-first';
 
 // Variable global para el agentId
 let DEFAULT_AGENT_ID = null;
@@ -98,33 +94,18 @@ async function runTest(chatService, message) {
 }
 
 /**
- * Obtiene el agente según el modo de testing
+ * Obtiene el primer agente disponible
  */
-async function getAgentForMode(mode) {
+async function getAgent() {
   try {
     const agentsDb = await connectDB(getAgentsDbName(WORKSPACE_ID));
     const result = await agentsDb.list({ include_docs: true });
     
     const agents = result.rows
       .map(r => r.doc)
-      .filter(d => d.type === 'agent');
+      .filter(d => d.type === 'agent' && d.active !== false);
     
-    // Buscar agente según modo
-    const modeMap = {
-      'llm-first': 'V3',
-      'scoring': 'V2',
-      'legacy': 'V1',
-    };
-    
-    const targetName = modeMap[mode] || 'V3';
-    let agent = agents.find(a => a.name?.includes(targetName));
-    
-    // Si no encuentra, usar el primero
-    if (!agent && agents.length > 0) {
-      agent = agents[0];
-    }
-    
-    return agent;
+    return agents[0] || null;
   } catch (error) {
     console.error('Error getting agent:', error.message);
     return null;
@@ -134,10 +115,9 @@ async function getAgentForMode(mode) {
 async function main() {
   console.log('\n');
   console.log('╔══════════════════════════════════════════════════════════╗');
-  console.log('║           🧪 TEST CHAT V3 - PRUEBAS INTERACTIVAS         ║');
+  console.log('║           🧪 TEST CHAT - PRUEBAS INTERACTIVAS             ║');
   console.log('╚══════════════════════════════════════════════════════════╝');
   console.log(`\nWorkspace: ${WORKSPACE_ID}`);
-  console.log(`Mode: ${ENGINE_MODE}`);
   console.log(`API Key: ${API_KEY ? '✓' : '✗ NOT SET'}`);
   
   if (!API_KEY) {
@@ -145,11 +125,11 @@ async function main() {
     process.exit(1);
   }
   
-  // Obtener agente según el modo
-  const agent = await getAgentForMode(ENGINE_MODE);
+  // Obtener primer agente disponible
+  const agent = await getAgent();
   if (!agent) {
-    console.error(`\n❌ Error: No se encontró agente para modo ${ENGINE_MODE}`);
-    console.error('   Ejecuta primero: node src/seeds/all.js --v3');
+    console.error('\n❌ Error: No se encontró ningún agente');
+    console.error('   Ejecuta primero: node src/seeds/all.js');
     process.exit(1);
   }
   
