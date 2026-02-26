@@ -5,81 +5,76 @@
  * Se derivan de las tablas vinculadas al agente.
  */
 
-// Mapeo de tipos de tabla a servicios que ofrece
+// Mapeo de tipos de tabla a servicios que ofrece (con acciones por permiso)
 const TABLE_TYPE_TO_SERVICES = {
   // Tablas de citas/agenda
   calendar: {
     icon: '📅',
-    services: [
-      'Agendar citas',
-      'Consultar disponibilidad',
-      'Cancelar o reprogramar citas',
-      'Ver historial de citas'
-    ],
+    // Servicios por tipo de permiso
+    query: ['Consultar citas', 'Ver disponibilidad', 'Ver historial de citas'],
+    create: ['Agendar citas'],
+    update: ['Reprogramar citas'],
+    delete: ['Cancelar citas'],
     keywords: ['cita', 'citas', 'agenda', 'calendario', 'reserva', 'reservas', 'appointment']
   },
   
   // Tablas de contactos/clientes
   contacts: {
     icon: '👥',
-    services: [
-      'Buscar clientes',
-      'Consultar información de contacto',
-      'Ver historial de cliente'
-    ],
+    query: ['Buscar clientes', 'Consultar información de contacto', 'Ver historial'],
+    create: ['Registrar clientes'],
+    update: ['Actualizar información de clientes'],
+    delete: ['Eliminar clientes'],
     keywords: ['cliente', 'clientes', 'contacto', 'contactos', 'paciente', 'pacientes', 'customer']
   },
   
   // Tablas de productos/inventario
   products: {
     icon: '📦',
-    services: [
-      'Consultar productos disponibles',
-      'Ver precios',
-      'Buscar por categoría'
-    ],
+    query: ['Consultar productos', 'Ver precios', 'Buscar por categoría', 'Verificar stock'],
+    create: ['Agregar productos'],
+    update: ['Actualizar productos'],
+    delete: ['Eliminar productos'],
     keywords: ['producto', 'productos', 'inventario', 'stock', 'artículo', 'item']
   },
   
   // Tablas de servicios ofrecidos
   services: {
     icon: '💼',
-    services: [
-      'Consultar servicios disponibles',
-      'Ver precios de servicios',
-      'Información de cada servicio'
-    ],
+    query: ['Consultar servicios', 'Ver precios de servicios', 'Información de servicios'],
+    create: ['Agregar servicios'],
+    update: ['Modificar servicios'],
+    delete: ['Eliminar servicios'],
     keywords: ['servicio', 'servicios', 'tratamiento', 'tratamientos', 'service']
   },
   
   // Tablas de ventas/pedidos
   orders: {
     icon: '🛒',
-    services: [
-      'Consultar pedidos',
-      'Ver estado de pedido',
-      'Historial de compras'
-    ],
+    query: ['Consultar pedidos', 'Ver estado de pedido', 'Historial de compras'],
+    create: ['Crear pedidos'],
+    update: ['Modificar pedidos'],
+    delete: ['Cancelar pedidos'],
     keywords: ['venta', 'ventas', 'pedido', 'pedidos', 'orden', 'ordenes', 'order', 'sale']
   },
   
   // Tablas de empleados/staff
   staff: {
     icon: '👨‍⚕️',
-    services: [
-      'Ver disponibilidad de personal',
-      'Información de especialistas'
-    ],
+    query: ['Ver disponibilidad de personal', 'Información de especialistas'],
+    create: ['Agregar personal'],
+    update: ['Actualizar información de personal'],
+    delete: ['Dar de baja personal'],
     keywords: ['empleado', 'empleados', 'doctor', 'doctores', 'staff', 'personal', 'especialista']
   },
   
   // Tabla genérica/custom
   custom: {
     icon: '📋',
-    services: [
-      'Consultar registros',
-      'Buscar información'
-    ],
+    query: ['Consultar registros', 'Buscar información'],
+    create: ['Crear registros'],
+    update: ['Modificar registros'],
+    delete: ['Eliminar registros'],
     keywords: []
   }
 };
@@ -194,7 +189,7 @@ export class AgentCapabilities {
     const industry = agent.businessInfo?.industry || detectIndustry(tables);
     const companyName = agent.businessInfo?.companyName || agent.name || 'Asistente';
     
-    // Servicios derivados de las tablas
+    // Servicios derivados de las tablas (considera permisos)
     const derivedServices = this.deriveServicesFromTables(tables);
     
     // Limitaciones (las del usuario + las default de la industria)
@@ -211,12 +206,22 @@ export class AgentCapabilities {
       },
       services: derivedServices,
       limitations: allLimitations,
-      tables: tables.map(t => ({
-        id: t._id,
-        name: t.name,
-        type: detectTableType(t),
-        fields: (t.headers || []).map(h => h.key || h.label || h)
-      }))
+      tables: tables.map(t => {
+        // Obtener permisos reales (con defaults del esquema)
+        const permissions = {
+          query: t.permissions?.allowQuery !== false,    // default: true
+          create: t.permissions?.allowCreate !== false,  // default: true
+          update: t.permissions?.allowUpdate !== false,  // default: true
+          delete: t.permissions?.allowDelete === true,   // default: false
+        };
+        return {
+          id: t._id,
+          name: t.name,
+          type: detectTableType(t),
+          fields: (t.headers || []).map(h => h.key || h.label || h),
+          permissions
+        };
+      })
     };
   }
   
@@ -230,21 +235,50 @@ export class AgentCapabilities {
     for (const table of tables) {
       const type = detectTableType(table);
       const config = TABLE_TYPE_TO_SERVICES[type] || TABLE_TYPE_TO_SERVICES.custom;
-      
-      // Personalizar servicios con nombre de tabla
       const tableName = table.name || 'registros';
       
-      config.services.forEach(service => {
-        // Evitar duplicados
-        if (!servicesSet.has(service)) {
-          servicesSet.add(service);
-          servicesList.push({
-            icon: config.icon,
-            text: service,
-            relatedTable: tableName
-          });
-        }
-      });
+      // Obtener permisos efectivos de la tabla
+      const permissions = {
+        allowQuery: true,
+        allowCreate: true,
+        allowUpdate: true,
+        allowDelete: false,
+        ...(table.permissions || {})
+      };
+      
+      // Agregar servicios según permisos
+      const addServices = (servicesArray, icon) => {
+        servicesArray.forEach(service => {
+          if (!servicesSet.has(service)) {
+            servicesSet.add(service);
+            servicesList.push({
+              icon,
+              text: service,
+              relatedTable: tableName
+            });
+          }
+        });
+      };
+      
+      // Siempre agregar servicios de consulta si allowQuery
+      if (permissions.allowQuery && config.query) {
+        addServices(config.query, config.icon);
+      }
+      
+      // Agregar creación si allowCreate
+      if (permissions.allowCreate && config.create) {
+        addServices(config.create, config.icon);
+      }
+      
+      // Agregar actualización si allowUpdate
+      if (permissions.allowUpdate && config.update) {
+        addServices(config.update, config.icon);
+      }
+      
+      // Agregar eliminación si allowDelete
+      if (permissions.allowDelete && config.delete) {
+        addServices(config.delete, config.icon);
+      }
     }
     
     // Si no hay tablas, servicios genéricos
@@ -298,7 +332,7 @@ export class AgentCapabilities {
     context += 'SERVICIOS QUE OFRECES:\n';
     caps.services.forEach(s => {
       context += `- ${s.text}`;
-      if (s.relatedTable) context += ` (usando tabla: ${s.relatedTable})`;
+      if (s.relatedTable) context += ` (tabla: ${s.relatedTable})`;
       context += '\n';
     });
     
@@ -309,9 +343,17 @@ export class AgentCapabilities {
       });
     }
     
-    context += '\nTABLAS DISPONIBLES:\n';
+    context += '\nTABLAS DISPONIBLES CON PERMISOS:\n';
     caps.tables.forEach(t => {
-      context += `- ${t.name} (${t.type}): campos [${t.fields.join(', ')}]\n`;
+      const perms = [];
+      if (t.permissions.query) perms.push('consultar');
+      if (t.permissions.create) perms.push('crear');
+      if (t.permissions.update) perms.push('modificar');
+      if (t.permissions.delete) perms.push('eliminar');
+      
+      context += `- ${t.name} (${t.type})\n`;
+      context += `  Campos: [${t.fields.join(', ')}]\n`;
+      context += `  Puedo: ${perms.join(', ') || 'solo informar'}\n`;
     });
     
     return context;

@@ -809,7 +809,23 @@ NO uses emojis excesivos.`,
       
       // Fusionar campos originales con campos modificados por el flow (incluye cálculos como total)
       // Los campos del flow tienen prioridad (pueden normalizar nombres, calcular totales, etc.)
-      const fieldsWithCalculations = { ...collectedFields, ...beforeCreateResult.fields };
+      // IMPORTANTE: Filtrar campos que empiezan con _ (pueden venir de datos corruptos guardados antes de un fix)
+      const cleanCollectedFields = Object.fromEntries(
+        Object.entries(collectedFields).filter(([key]) => !key.startsWith('_'))
+      );
+      const cleanFlowFields = Object.fromEntries(
+        Object.entries(beforeCreateResult.fields || {}).filter(([key]) => !key.startsWith('_'))
+      );
+      const fieldsWithCalculations = { ...cleanCollectedFields, ...cleanFlowFields };
+      
+      // Inyectar campos automáticos de origen del chat (metadata invisible al bot)
+      // Esto permite saber quién creó cada registro y desde dónde
+      // NOTA: Usamos prefijo sin _ porque CouchDB reserva campos con _
+      if (context.chatId) {
+        fieldsWithCalculations.chatOriginId = context.chatId;
+        fieldsWithCalculations.createdVia = 'chat';
+        fieldsWithCalculations.createdByBot = true;
+      }
       
       // Guardar acciones pendientes para ejecutar después de crear (updates a otras tablas, etc.)
       const pendingActions = beforeCreateResult.pendingActions || [];
@@ -820,6 +836,33 @@ NO uses emojis excesivos.`,
         final: fieldsWithCalculations,
         pendingActionsCount: pendingActions.length,
       });
+      
+      // Obtener la tabla para verificar su configuración de validación
+      const targetTable = context.tables?.find(t => (t.id || t._id) === tableId);
+      
+      // Validar disponibilidad si la tabla tiene configuración de availability
+      const conflictCheck = await this._checkAppointmentConflict(
+        workspaceId, 
+        tableId, 
+        fieldsWithCalculations,
+        targetTable
+      );
+      
+      if (conflictCheck.hasConflict) {
+        // Limpiar solo el campo de hora para que puedan elegir otro
+        const timeFieldKey = conflictCheck.timeFieldKey || 'hora';
+        delete context.collectedFields[timeFieldKey];
+        if (context.pendingCreate.fields) {
+          delete context.pendingCreate.fields[timeFieldKey];
+        }
+        context.missingFields = [timeFieldKey];
+        context.savePendingState();
+        
+        return {
+          handled: true,
+          response: conflictCheck.message,
+        };
+      }
       
       // Usar EntityRepository para crear con validación automática
       const result = await this.entityRepo.create(workspaceId, tableId, fieldsWithCalculations, {
@@ -921,12 +964,24 @@ NO uses emojis excesivos.`,
       }
       
       // Preparar datos con campos de plan básico
+      // IMPORTANTE: Filtrar campos que empiezan con _ (pueden venir de datos corruptos)
+      const cleanFields = Object.fromEntries(
+        Object.entries(collectedFields).filter(([key]) => !key.startsWith('_'))
+      );
       const dataWithMeta = {
-        ...collectedFields,
+        ...cleanFields,
         estado: 'Pendiente',
         procesadoPor: 'bot',
         requiereRevision: true,
       };
+      
+      // Inyectar campos automáticos de origen del chat (metadata invisible al bot)
+      // NOTA: Usamos prefijo sin _ porque CouchDB reserva campos con _
+      if (context.chatId) {
+        dataWithMeta.chatOriginId = context.chatId;
+        dataWithMeta.createdVia = 'chat';
+        dataWithMeta.createdByBot = true;
+      }
       
       // Usar EntityRepository
       const result = await this.entityRepo.create(workspaceId, tableId, dataWithMeta, {
@@ -1060,10 +1115,14 @@ _Estado: Pendiente de confirmación_`;
     
     let response = `✅ **¡${tableName} creado con éxito!**\n\n`;
     
+    // Campos de metadata que nunca se muestran al usuario
+    const HIDDEN_METADATA_FIELDS = ['chatOriginId', 'createdVia', 'createdByBot', 'procesadoPor', 'requiereRevision'];
+    
     // Agregar cada campo con su emoji y label
     for (const [key, value] of Object.entries(fields)) {
-      // Excluir campos internos, IDs y metadatos
+      // Excluir campos internos, IDs, metadatos y campos de seguimiento
       if (key.startsWith('_') || key === 'id' || key === 'tableId' || key === 'estado' || !value) continue;
+      if (HIDDEN_METADATA_FIELDS.includes(key)) continue;
       
       const config = configMap[key] || {};
       
@@ -1130,6 +1189,99 @@ _Estado: Pendiente de confirmación_`;
       return `${dias[date.getDay()]} ${date.getDate()} de ${meses[date.getMonth()]}`;
     } catch {
       return dateStr;
+    }
+  }
+  
+  /**
+   * Verifica si hay conflicto de citas según la configuración de validación de la tabla
+   * @param {string} workspaceId - ID del workspace
+   * @param {string} tableId - ID de la tabla
+   * @param {object} fields - Campos del registro a crear
+   * @param {object} table - Definición de la tabla con su configuración
+   */
+  async _checkAppointmentConflict(workspaceId, tableId, fields, table) {
+    // Verificar si la tabla tiene validación de disponibilidad configurada
+    const validation = table?.validation?.availability;
+    
+    // Si no hay validación configurada, no hacer nada
+    if (!validation?.enabled) {
+      return { hasConflict: false };
+    }
+    
+    // Obtener campos de fecha y hora según la configuración
+    const dateFieldKey = validation.dateField;
+    const timeFieldKey = validation.timeField;
+    
+    if (!dateFieldKey || !timeFieldKey) {
+      console.log('[CreateHandler] Availability validation enabled but missing dateField or timeField config');
+      return { hasConflict: false };
+    }
+    
+    const fecha = fields[dateFieldKey];
+    const hora = fields[timeFieldKey];
+    
+    // Si no tiene ambos campos recolectados aún, no verificar
+    if (!fecha || !hora) {
+      return { hasConflict: false };
+    }
+    
+    try {
+      // Obtener estados a excluir de la configuración (o usar defaults)
+      const excludeStatus = validation.excludeStatuses || ['Cancelada', 'cancelada', 'Cancelado', 'cancelado'];
+      
+      // Verificar disponibilidad
+      const availability = await this.tableDataRepo.checkAvailability(workspaceId, tableId, {
+        fecha,
+        hora,
+        dateField: dateFieldKey,
+        timeField: timeFieldKey,
+        excludeStatus,
+        workingHours: validation.workingHours,
+      });
+      
+      // Si el horario NO está disponible
+      if (availability.horaDisponible === false) {
+        // Mostrar horarios alternativos cercanos
+        const horaNum = parseInt(hora.split(':')[0], 10);
+        const cercanos = availability.libres.filter(h => {
+          const hNum = parseInt(h.split(':')[0], 10);
+          return Math.abs(hNum - horaNum) <= 2; // Dentro de 2 horas
+        }).slice(0, 5);
+        
+        let message = `⚠️ **El horario ${this._formatTo12Hour(hora)} ya está ocupado** para el ${this._formatDate(fecha)}.\n\n`;
+        
+        if (cercanos.length > 0) {
+          message += `🕐 **Horarios disponibles cercanos:**\n`;
+          cercanos.forEach(h => {
+            message += `• ${this._formatTo12Hour(h)}\n`;
+          });
+          message += '\n¿A qué hora prefieres?';
+        } else if (availability.libres.length > 0) {
+          message += `🕐 **Horarios disponibles ese día:**\n`;
+          availability.libres.slice(0, 6).forEach(h => {
+            message += `• ${this._formatTo12Hour(h)}\n`;
+          });
+          if (availability.libres.length > 6) {
+            message += `... y ${availability.libres.length - 6} más`;
+          }
+          message += '\n¿A qué hora prefieres?';
+        } else {
+          message += '😔 No hay horarios disponibles para ese día. ¿Te gustaría elegir otra fecha?';
+        }
+        
+        return {
+          hasConflict: true,
+          message,
+          availableSlots: availability.libres,
+          timeFieldKey, // Devolver key para limpiar el campo correcto
+        };
+      }
+      
+      return { hasConflict: false };
+    } catch (error) {
+      console.error('[CreateHandler] Error checking availability:', error.message);
+      // Si hay error, permitir la creación (fail-open)
+      return { hasConflict: false };
     }
   }
 }

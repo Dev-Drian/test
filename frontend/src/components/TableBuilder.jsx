@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { SearchIcon, PlusIcon, EditIcon, TrashIcon } from "./Icons";
+import { SearchIcon, PlusIcon, EditIcon, TrashIcon, SparklesIcon, ListBulletIcon, NoSymbolIcon, ClockIcon, LinkIcon } from "./Icons";
 
 // Iconos SVG
 const Icons = {
@@ -224,13 +224,43 @@ const TABLE_TEMPLATES = [
   },
 ];
 
-export default function TableBuilder({ onSave, onCancel, availableTables = [], loading }) {
-  const [step, setStep] = useState(0); // 0 = selección de plantilla
+export default function TableBuilder({ onSave, onCancel, availableTables = [], loading, editTable = null }) {
+  const isEditMode = !!editTable;
+  const [step, setStep] = useState(isEditMode ? 1 : 0); // Si es edición, saltar a paso 1
   const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [tableName, setTableName] = useState("");
-  const [tableDescription, setTableDescription] = useState("");
-  const [fields, setFields] = useState([{ ...DEFAULT_FIELD, id: Date.now() }]);
-  const [permissions, setPermissions] = useState({ ...DEFAULT_PERMISSIONS });
+  const [tableName, setTableName] = useState(editTable?.name || "");
+  const [tableDescription, setTableDescription] = useState(editTable?.description || "");
+  const [fields, setFields] = useState(() => {
+    if (editTable?.headers?.length > 0) {
+      // Convertir headers de la tabla a formato de campos del builder
+      return editTable.headers.map((h, i) => ({
+        id: Date.now() + i,
+        name: h.label || h.key || '',
+        key: h.key || '',
+        type: h.type || 'text',
+        required: h.required || false,
+        emoji: h.emoji || '',
+        options: h.options || [],
+        relatedTable: h.relatedTable || null,
+        displayField: h.displayField || '',
+        hiddenFromChat: h.hiddenFromChat || false,
+        defaultValue: h.defaultValue || '',
+        autoCalculate: h.autoCalculate || false,
+        validation: h.validation || {},
+      }));
+    }
+    return [{ ...DEFAULT_FIELD, id: Date.now() }];
+  });
+  const [permissions, setPermissions] = useState(editTable?.permissions || { ...DEFAULT_PERMISSIONS });
+  const [validation, setValidation] = useState(editTable?.validation || {
+    availability: {
+      enabled: false,
+      dateField: '',
+      timeField: '',
+      excludeStatuses: ['Cancelada', 'Cancelado'],
+      workingHours: { start: '09:00', end: '18:00', interval: 30 }
+    }
+  });
   const [errors, setErrors] = useState({});
   const [expandedField, setExpandedField] = useState(null);
   
@@ -412,6 +442,15 @@ export default function TableBuilder({ onSave, onCancel, availableTables = [], l
       ...(f.defaultValue && { defaultValue: f.defaultValue }),
       ...(f.type === "select" && f.options.length > 0 && { options: f.options }),
       ...(f.type === "relation" && {
+        relation: {
+          tableName: f.validation.table,
+          displayField: f.validation.field || "nombre",
+          searchField: f.validation.field || "nombre",
+          autoCreate: f.validation.onNotFound === 'create',
+          showOptionsOnNotFound: f.validation.onNotFound === 'options',
+          requireExists: f.validation.onNotFound === 'reject',
+          validateOnInput: f.validation.onNotFound === 'reject',
+        },
         validation: {
           type: "relation",
           table: f.validation.table,
@@ -430,6 +469,7 @@ export default function TableBuilder({ onSave, onCancel, availableTables = [], l
       description: tableDescription,
       headers,
       permissions,
+      validation,
     });
   };
 
@@ -1277,6 +1317,138 @@ export default function TableBuilder({ onSave, onCancel, availableTables = [], l
               </div>
             </div>
 
+            {/* Availability Validation section */}
+            <div className="rounded-xl border border-white/[0.06] overflow-hidden">
+              <div className="bg-white/[0.02] px-4 py-3 border-b border-white/[0.06]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ClockIcon size="sm" className="text-amber-400" />
+                    <div>
+                      <h4 className="text-sm font-medium text-zinc-300">Validación de Disponibilidad</h4>
+                      <p className="text-xs text-zinc-500">Prevenir conflictos de horarios</p>
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={validation.availability?.enabled || false}
+                      onChange={(e) => setValidation({
+                        ...validation,
+                        availability: { ...validation.availability, enabled: e.target.checked }
+                      })}
+                      className="w-4 h-4 rounded border-zinc-600 text-amber-500 focus:ring-amber-500 focus:ring-offset-0 bg-zinc-800"
+                    />
+                    <span className="text-sm text-zinc-400">Activar</span>
+                  </label>
+                </div>
+              </div>
+              
+              {validation.availability?.enabled && (
+                <div className="p-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Date field selector */}
+                    <div>
+                      <label className="block text-xs text-zinc-500 mb-1.5">Campo de Fecha</label>
+                      <select
+                        value={validation.availability?.dateField || ''}
+                        onChange={(e) => setValidation({
+                          ...validation,
+                          availability: { ...validation.availability, dateField: e.target.value }
+                        })}
+                        className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-sm text-zinc-300 focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50"
+                      >
+                        <option value="">Seleccionar campo...</option>
+                        {fields.filter(f => f.type === 'date' || f.name.toLowerCase().includes('fecha')).map(f => (
+                          <option key={f.id} value={f.name.toLowerCase().replace(/\s+/g, '_')}>{f.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    {/* Time field selector */}
+                    <div>
+                      <label className="block text-xs text-zinc-500 mb-1.5">Campo de Hora</label>
+                      <select
+                        value={validation.availability?.timeField || ''}
+                        onChange={(e) => setValidation({
+                          ...validation,
+                          availability: { ...validation.availability, timeField: e.target.value }
+                        })}
+                        className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-sm text-zinc-300 focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50"
+                      >
+                        <option value="">Seleccionar campo...</option>
+                        {fields.filter(f => f.name.toLowerCase().includes('hora') || f.name.toLowerCase().includes('time')).map(f => (
+                          <option key={f.id} value={f.name.toLowerCase().replace(/\s+/g, '_')}>{f.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-4">
+                    {/* Working hours start */}
+                    <div>
+                      <label className="block text-xs text-zinc-500 mb-1.5">Hora inicio</label>
+                      <input
+                        type="time"
+                        value={validation.availability?.workingHours?.start || '09:00'}
+                        onChange={(e) => setValidation({
+                          ...validation,
+                          availability: {
+                            ...validation.availability,
+                            workingHours: { ...validation.availability?.workingHours, start: e.target.value }
+                          }
+                        })}
+                        className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-sm text-zinc-300 focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50"
+                      />
+                    </div>
+                    
+                    {/* Working hours end */}
+                    <div>
+                      <label className="block text-xs text-zinc-500 mb-1.5">Hora fin</label>
+                      <input
+                        type="time"
+                        value={validation.availability?.workingHours?.end || '18:00'}
+                        onChange={(e) => setValidation({
+                          ...validation,
+                          availability: {
+                            ...validation.availability,
+                            workingHours: { ...validation.availability?.workingHours, end: e.target.value }
+                          }
+                        })}
+                        className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-sm text-zinc-300 focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50"
+                      />
+                    </div>
+                    
+                    {/* Interval */}
+                    <div>
+                      <label className="block text-xs text-zinc-500 mb-1.5">Intervalo (min)</label>
+                      <select
+                        value={validation.availability?.workingHours?.interval || 30}
+                        onChange={(e) => setValidation({
+                          ...validation,
+                          availability: {
+                            ...validation.availability,
+                            workingHours: { ...validation.availability?.workingHours, interval: parseInt(e.target.value) }
+                          }
+                        })}
+                        className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-sm text-zinc-300 focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50"
+                      >
+                        <option value={15}>15 min</option>
+                        <option value={30}>30 min</option>
+                        <option value={60}>1 hora</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <p className="text-xs text-zinc-400 bg-amber-500/5 border border-amber-500/20 rounded-lg px-3 py-2 flex items-start gap-2">
+                    <svg className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+                    </svg>
+                    <span>El bot verificará automáticamente que no haya conflictos antes de crear un registro con misma fecha y hora.</span>
+                  </p>
+                </div>
+              )}
+            </div>
+
             <div className="flex justify-between pt-4">
               <button
                 type="button"
@@ -1301,12 +1473,12 @@ export default function TableBuilder({ onSave, onCancel, availableTables = [], l
                   {loading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Creando...</span>
+                      <span>{isEditMode ? 'Guardando...' : 'Creando...'}</span>
                     </>
                   ) : (
                     <>
                       {Icons.check}
-                      <span>Crear tabla</span>
+                      <span>{isEditMode ? 'Guardar cambios' : 'Crear tabla'}</span>
                     </>
                   )}
                 </button>
@@ -1382,35 +1554,115 @@ function OptionsEditor({ options, onChange, error }) {
 // Componente para editar relación
 function RelationEditor({ validation, availableTables, onChange, error }) {
   return (
-    <div className="grid grid-cols-2 gap-4">
-      <div>
-        <label className="text-sm text-zinc-400 block mb-2">Tabla relacionada:</label>
-        <select
-          value={validation?.table || ""}
-          onChange={(e) => onChange({ ...validation, table: e.target.value })}
-          className={`w-full px-3 py-2 rounded-lg bg-white/[0.03] border text-zinc-300 focus:outline-none transition-all cursor-pointer ${
-            error ? 'border-red-500/50' : 'border-white/[0.08] focus:border-orange-500/50'
-          }`}
-        >
-          <option value="">Seleccionar tabla...</option>
-          {availableTables.map((t) => (
-            <option key={t._id} value={t.name}>
-              {t.name}
-            </option>
-          ))}
-        </select>
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="text-sm text-zinc-400 flex items-center gap-1.5 mb-2">
+            <LinkIcon size="xs" className="text-orange-400" />
+            Tabla relacionada
+          </label>
+          <select
+            value={validation?.table || ""}
+            onChange={(e) => onChange({ ...validation, table: e.target.value })}
+            className={`w-full px-3 py-2 rounded-lg bg-white/[0.03] border text-zinc-300 focus:outline-none transition-all cursor-pointer ${
+              error ? 'border-red-500/50' : 'border-white/[0.08] focus:border-orange-500/50'
+            }`}
+          >
+            <option value="">Seleccionar tabla...</option>
+            {availableTables.map((t) => (
+              <option key={t._id} value={t.name}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-sm text-zinc-400 block mb-2">Campo a mostrar:</label>
+          <input
+            type="text"
+            value={validation?.field || "nombre"}
+            onChange={(e) => onChange({ ...validation, field: e.target.value })}
+            placeholder="nombre"
+            className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500/50 transition-all"
+          />
+        </div>
       </div>
-      <div>
-        <label className="text-sm text-zinc-400 block mb-2">Campo a mostrar:</label>
-        <input
-          type="text"
-          value={validation?.field || "nombre"}
-          onChange={(e) => onChange({ ...validation, field: e.target.value })}
-          placeholder="nombre"
-          className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500/50 transition-all"
-        />
-      </div>
-      {error && <p className="text-xs text-red-400 col-span-2">{error}</p>}
+      
+      {/* Comportamiento de validación - Simple y claro */}
+      {validation?.table && (
+        <div className="pt-3 border-t border-white/[0.06]">
+          <label className="text-sm text-zinc-400 block mb-2">Si no encuentra coincidencia:</label>
+          <div className="grid grid-cols-3 gap-2">
+            {/* Crear nuevo */}
+            <button
+              type="button"
+              onClick={() => onChange({ 
+                ...validation, 
+                onNotFound: 'create',
+                autoCreate: true,
+                requireExists: false,
+                showOptionsOnNotFound: false
+              })}
+              className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border transition-all ${
+                (!validation?.onNotFound || validation?.onNotFound === 'create')
+                  ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400'
+                  : 'bg-white/[0.02] border-white/[0.08] text-zinc-400 hover:border-white/[0.15]'
+              }`}
+            >
+              <SparklesIcon size="sm" />
+              <span className="text-xs font-medium">Crear nuevo</span>
+            </button>
+            
+            {/* Mostrar opciones */}
+            <button
+              type="button"
+              onClick={() => onChange({ 
+                ...validation, 
+                onNotFound: 'options',
+                autoCreate: false,
+                requireExists: false,
+                showOptionsOnNotFound: true
+              })}
+              className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border transition-all ${
+                validation?.onNotFound === 'options'
+                  ? 'bg-blue-500/10 border-blue-500/40 text-blue-400'
+                  : 'bg-white/[0.02] border-white/[0.08] text-zinc-400 hover:border-white/[0.15]'
+              }`}
+            >
+              <ListBulletIcon size="sm" />
+              <span className="text-xs font-medium">Mostrar lista</span>
+            </button>
+            
+            {/* No permitir */}
+            <button
+              type="button"
+              onClick={() => onChange({ 
+                ...validation, 
+                onNotFound: 'reject',
+                autoCreate: false,
+                requireExists: true,
+                showOptionsOnNotFound: false
+              })}
+              className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border transition-all ${
+                validation?.onNotFound === 'reject'
+                  ? 'bg-red-500/10 border-red-500/40 text-red-400'
+                  : 'bg-white/[0.02] border-white/[0.08] text-zinc-400 hover:border-white/[0.15]'
+              }`}
+            >
+              <NoSymbolIcon size="sm" />
+              <span className="text-xs font-medium">Debe existir</span>
+            </button>
+          </div>
+          <p className="text-xs text-zinc-500 mt-2">
+            {validation?.onNotFound === 'reject' 
+              ? 'El usuario debe estar registrado previamente'
+              : validation?.onNotFound === 'options'
+              ? 'Mostrará opciones disponibles para elegir'
+              : 'Crea el registro automáticamente si no existe'}
+          </p>
+        </div>
+      )}
+      {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
   );
 }

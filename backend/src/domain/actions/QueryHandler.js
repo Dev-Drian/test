@@ -469,9 +469,13 @@ export class QueryHandler extends ActionHandler {
       
       // Agregar detalles
       const details = [];
+      // Campos de metadata que nunca se muestran al usuario
+      const HIDDEN_METADATA_FIELDS = ['chatOriginId', 'createdVia', 'createdByBot', 'procesadoPor', 'requiereRevision'];
+      
       for (const [key, value] of Object.entries(row)) {
-        // Excluir campos internos, IDs, y metadatos
+        // Excluir campos internos, IDs, metadatos y campos de seguimiento del chat
         if (key.startsWith('_') || key === 'id' || key === 'main' || key === 'tableId' || key === 'createdAt' || key === 'updatedAt') continue;
+        if (HIDDEN_METADATA_FIELDS.includes(key)) continue;
         if (value === mainField) continue;
         if (!value) continue;
         

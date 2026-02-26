@@ -493,6 +493,35 @@ export default function Chat() {
                 <p className="text-white/40 mb-8">
                   Estoy listo para responder tus preguntas sobre <span className="text-violet-400">{workspaceName}</span>
                 </p>
+                
+                {/* Sugerencias de preguntas */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-xl mx-auto text-left">
+                  {[
+                    { icon: "📊", text: "¿Cuántos registros tengo?", desc: "Ver resumen de datos" },
+                    { icon: "📅", text: "¿Qué citas hay para hoy?", desc: "Consultar agenda" },
+                    { icon: "➕", text: "Quiero agregar un cliente", desc: "Crear nuevo registro" },
+                    { icon: "🔍", text: "Buscar información", desc: "Filtrar datos" },
+                  ].map((suggestion, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setInput(suggestion.text);
+                        textareaRef.current?.focus();
+                      }}
+                      className="flex items-center gap-3 p-3 rounded-xl text-left transition-all hover:scale-[1.02]"
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                      }}
+                    >
+                      <span className="text-xl">{suggestion.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-white/80 truncate">{suggestion.text}</p>
+                        <p className="text-xs text-white/40">{suggestion.desc}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
             

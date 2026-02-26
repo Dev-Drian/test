@@ -8,7 +8,59 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "../context/WorkspaceContext";
-import { createWorkspace, createTable, createAgent, listPlans, updateProfile } from "../api/client";
+import { createWorkspace, createTable, createAgent, listPlans, updateProfile, listWorkspaces, updateWorkspace } from "../api/client";
+import { CheckIcon } from "./Icons";
+
+// React Icons - Lucide (profesionales y modernos)
+import { 
+  LuScissors, 
+  LuUtensilsCrossed, 
+  LuStethoscope, 
+  LuDumbbell, 
+  LuShoppingBag, 
+  LuGraduationCap, 
+  LuBriefcase,
+  LuSparkles,
+  LuUsers,
+  LuCalendarDays,
+  LuCalendarClock,
+  LuWrench,
+  LuBox,
+  LuShoppingCart,
+  LuClipboardList,
+  LuStore,
+  LuMapPin,
+  LuPhone,
+  LuClock,
+  LuBuilding2
+} from "react-icons/lu";
+
+// ============================================================================
+// ICONOS PARA TIPOS DE NEGOCIO (componentes react-icons)
+// ============================================================================
+const BUSINESS_ICONS = {
+  salon: LuScissors,
+  restaurant: LuUtensilsCrossed,
+  clinic: LuStethoscope,
+  gym: LuDumbbell,
+  store: LuShoppingBag,
+  education: LuGraduationCap,
+  services: LuBriefcase,
+  custom: LuSparkles,
+};
+
+// ============================================================================
+// ICONOS PARA TABLAS (componentes react-icons)
+// ============================================================================
+const TABLE_ICONS = {
+  clientes: LuUsers,
+  reservas: LuCalendarDays,
+  citas: LuCalendarClock,
+  servicios: LuWrench,
+  productos: LuBox,
+  pedidos: LuShoppingCart,
+  inventario: LuClipboardList,
+};
 
 // ============================================================================
 // PLANTILLAS DE TABLAS POR TIPO
@@ -297,23 +349,43 @@ export default function OnboardingWizard({ onComplete, onSkip, showPlanStep = tr
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState(null);
   const [loadingPlans, setLoadingPlans] = useState(true);
+  const [existingWorkspace, setExistingWorkspace] = useState(null); // Workspace existente (si lo hay)
 
-  // Cargar planes al iniciar
+  // Cargar planes y verificar workspace existente al iniciar
   useEffect(() => {
-    if (showPlanStep) {
-      listPlans()
-        .then(res => {
-          const activePlans = (res.data?.data || []).filter(p => p.isActive);
+    const init = async () => {
+      try {
+        // Verificar si ya existe un workspace
+        const wsRes = await listWorkspaces();
+        const workspaces = wsRes.data?.data || wsRes.data || [];
+        if (workspaces.length > 0) {
+          setExistingWorkspace(workspaces[0]);
+          setWorkspaceName(workspaces[0].name || "");
+          // Cargar businessInfo si existe
+          if (workspaces[0].businessInfo) {
+            setBusinessInfo(prev => ({
+              ...prev,
+              ...workspaces[0].businessInfo,
+            }));
+          }
+        }
+
+        // Cargar planes
+        if (showPlanStep) {
+          const plansRes = await listPlans();
+          const activePlans = (plansRes.data?.data || []).filter(p => p.isActive);
           setPlans(activePlans);
           // Seleccionar plan free por defecto
           const freePlan = activePlans.find(p => p._id === 'free');
           if (freePlan) setSelectedPlan(freePlan);
-        })
-        .catch(err => console.error('Error cargando planes:', err))
-        .finally(() => setLoadingPlans(false));
-    } else {
-      setLoadingPlans(false);
-    }
+        }
+      } catch (err) {
+        console.error('Error inicializando:', err);
+      } finally {
+        setLoadingPlans(false);
+      }
+    };
+    init();
   }, [showPlanStep]);
 
   const handleSelectPlan = (plan) => {
@@ -325,21 +397,37 @@ export default function OnboardingWizard({ onComplete, onSkip, showPlanStep = tr
     setStep(1);
   };
 
+  // Obtener límite de tablas desde el plan (configurado en backend)
+  const getTableLimit = () => {
+    if (!selectedPlan?.limits?.tablesPerWorkspace) return 3; // Fallback al valor free
+    const limit = selectedPlan.limits.tablesPerWorkspace;
+    // -1 significa ilimitado, ponemos un máximo razonable para UI
+    return limit === -1 ? 100 : limit;
+  };
+
+  const tableLimit = getTableLimit();
+
   const handleSelectBusiness = (business) => {
     setSelectedBusiness(business);
     setWorkspaceName(business.workspace.name);
-    // Preseleccionar tablas sugeridas
-    setSelectedTables(business.suggestedTables || []);
+    // Preseleccionar tablas sugeridas (respetando límite del plan)
+    const suggested = business.suggestedTables || [];
+    setSelectedTables(suggested.slice(0, tableLimit));
     // Si es personalizado, ir a selección de tablas; si no, también para que pueda ajustar
     setStep(2);
   };
 
   const handleTableToggle = (tableKey) => {
-    setSelectedTables(prev => 
-      prev.includes(tableKey) 
-        ? prev.filter(k => k !== tableKey)
-        : [...prev, tableKey]
-    );
+    setSelectedTables(prev => {
+      if (prev.includes(tableKey)) {
+        return prev.filter(k => k !== tableKey);
+      }
+      // Verificar límite del plan
+      if (prev.length >= tableLimit) {
+        return prev; // No agregar más
+      }
+      return [...prev, tableKey];
+    });
   };
 
   const handleTablesSubmit = () => {
@@ -373,18 +461,36 @@ export default function OnboardingWizard({ onComplete, onSkip, showPlanStep = tr
     setError(null);
 
     try {
-      // 1. Crear workspace con datos del negocio
+      let workspaceId;
+
+      // 1. Usar workspace existente o crear uno nuevo
       setProgress(20);
-      const wsRes = await createWorkspace({
-        name: workspaceName.trim(),
-        color: selectedBusiness.workspace.color,
-        businessInfo: {
-          direccion: businessInfo.direccion,
-          telefono: businessInfo.telefono,
-          horarios: businessInfo.horarios,
-        },
-      });
-      const workspaceId = wsRes.data._id;
+      if (existingWorkspace) {
+        // Actualizar el workspace existente
+        await updateWorkspace(existingWorkspace._id, {
+          name: workspaceName.trim(),
+          color: selectedBusiness.workspace.color,
+          businessInfo: {
+            direccion: businessInfo.direccion,
+            telefono: businessInfo.telefono,
+            horarios: businessInfo.horarios,
+          },
+        });
+        workspaceId = existingWorkspace._id;
+      } else {
+        // Crear nuevo workspace
+        const wsRes = await createWorkspace({
+          name: workspaceName.trim(),
+          color: selectedBusiness.workspace.color,
+          businessInfo: {
+            direccion: businessInfo.direccion,
+            telefono: businessInfo.telefono,
+            horarios: businessInfo.horarios,
+          },
+        });
+        workspaceId = wsRes.data._id;
+      }
+      
       setWorkspace(workspaceId, workspaceName.trim());
 
       // Si no hay tablas seleccionadas (personalizado sin tablas), terminar
@@ -416,8 +522,10 @@ export default function OnboardingWizard({ onComplete, onSkip, showPlanStep = tr
         setProgress(80);
         await createAgent({
           workspaceId,
-          ...selectedBusiness.agent,
-          tables: tableIds,
+          agent: {
+            ...selectedBusiness.agent,
+            tables: tableIds,
+          },
         });
       }
 
@@ -559,12 +667,17 @@ export default function OnboardingWizard({ onComplete, onSkip, showPlanStep = tr
                   }}
                 >
                   <div className="flex items-center gap-3">
-                    <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
-                      style={{ background: `${business.color}20` }}
-                    >
-                      {business.icon}
-                    </div>
+                    {(() => {
+                      const IconComponent = BUSINESS_ICONS[business.id];
+                      return (
+                        <div
+                          className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                          style={{ background: `${business.color}20`, color: business.color }}
+                        >
+                          {IconComponent && <IconComponent className="w-6 h-6" />}
+                        </div>
+                      );
+                    })()}
                     <div className="flex-1 min-w-0">
                       <h3 className="text-base font-semibold text-white group-hover:text-white/90">
                         {business.name}
@@ -591,32 +704,53 @@ export default function OnboardingWizard({ onComplete, onSkip, showPlanStep = tr
 
       case 2:
         // Selección de tablas
+        const atLimit = selectedTables.length >= tableLimit;
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <div
-                className="w-16 h-16 rounded-xl flex items-center justify-center text-3xl mx-auto mb-4"
-                style={{ background: `${selectedBusiness?.color || '#8b5cf6'}20` }}
-              >
-                {selectedBusiness?.icon || '📋'}
-              </div>
+              {(() => {
+                const IconComponent = selectedBusiness?.id ? BUSINESS_ICONS[selectedBusiness.id] : LuClipboardList;
+                return (
+                  <div
+                    className="w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4"
+                    style={{ background: `${selectedBusiness?.color || '#8b5cf6'}20`, color: selectedBusiness?.color || '#8b5cf6' }}
+                  >
+                    {IconComponent && <IconComponent className="w-8 h-8" />}
+                  </div>
+                );
+              })()}
               <h2 className="text-2xl font-bold text-white mb-2">
                 ¿Qué datos necesitas gestionar?
               </h2>
               <p className="text-zinc-400">
-                Selecciona las tablas que necesitas. Puedes agregar más después.
+                Tu plan <span className="text-violet-400 font-medium">{selectedPlan?.name || 'Free'}</span> permite hasta <span className="text-white font-semibold">{tableLimit} tablas</span>
               </p>
+            </div>
+
+            {/* Indicador de límite */}
+            <div className="flex items-center justify-center gap-2">
+              <div className="flex gap-1">
+                {Array.from({ length: tableLimit }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-3 h-3 rounded-full transition-all ${i < selectedTables.length ? 'bg-violet-500' : 'bg-zinc-700'}`}
+                  />
+                ))}
+              </div>
+              <span className="text-sm text-zinc-400">{selectedTables.length}/{tableLimit}</span>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {Object.entries(TABLE_TEMPLATES).map(([key, template]) => {
                 const isSelected = selectedTables.includes(key);
                 const customLabel = selectedBusiness?.customLabels?.[key];
+                const isDisabled = !isSelected && atLimit;
                 return (
                   <button
                     key={key}
                     onClick={() => handleTableToggle(key)}
-                    className={`p-4 rounded-xl text-center transition-all duration-200 hover:scale-[1.02] ${
+                    disabled={isDisabled}
+                    className={`p-4 rounded-xl text-center transition-all duration-200 ${isDisabled ? 'opacity-40 cursor-not-allowed' : 'hover:scale-[1.02]'} ${
                       isSelected ? 'ring-2 ring-violet-500' : ''
                     }`}
                     style={{
@@ -624,7 +758,14 @@ export default function OnboardingWizard({ onComplete, onSkip, showPlanStep = tr
                       border: `2px solid ${isSelected ? '#8b5cf6' : "rgba(255, 255, 255, 0.08)"}`,
                     }}
                   >
-                    <div className="text-3xl mb-2">{template.icon}</div>
+                    {(() => {
+                      const TableIcon = TABLE_ICONS[key];
+                      return (
+                        <div className="flex justify-center mb-2" style={{ color: isSelected ? '#8b5cf6' : '#a1a1aa' }}>
+                          {TableIcon && <TableIcon className="w-8 h-8" />}
+                        </div>
+                      );
+                    })()}
                     <p className={`font-medium ${isSelected ? 'text-white' : 'text-zinc-300'}`}>
                       {customLabel || template.name}
                     </p>
@@ -641,11 +782,14 @@ export default function OnboardingWizard({ onComplete, onSkip, showPlanStep = tr
               })}
             </div>
 
-            <div className="text-center text-sm text-zinc-500">
-              {selectedTables.length === 0 
-                ? 'Selecciona al menos una tabla o continúa para crear sin tablas'
-                : `${selectedTables.length} tabla${selectedTables.length !== 1 ? 's' : ''} seleccionada${selectedTables.length !== 1 ? 's' : ''}`
-              }
+            <div className="text-center text-sm">
+              {atLimit ? (
+                <span className="text-amber-400">Has alcanzado el límite de tu plan. ¿Necesitas más? <button onClick={() => setStep(0)} className="underline hover:text-amber-300">Cambiar plan</button></span>
+              ) : selectedTables.length === 0 ? (
+                <span className="text-zinc-500">Selecciona al menos una tabla o continúa sin tablas</span>
+              ) : (
+                <span className="text-zinc-400">{selectedTables.length} tabla{selectedTables.length !== 1 ? 's' : ''} seleccionada{selectedTables.length !== 1 ? 's' : ''}</span>
+              )}
             </div>
 
             <div className="flex gap-3">
@@ -670,155 +814,206 @@ export default function OnboardingWizard({ onComplete, onSkip, showPlanStep = tr
         // Datos generales del negocio
         return (
           <div className="max-w-lg mx-auto">
-            <div
-              className="w-16 h-16 rounded-xl flex items-center justify-center text-3xl mx-auto mb-4"
-              style={{ background: `${selectedBusiness?.color || '#6b7280'}20` }}
-            >
-              {selectedBusiness?.icon || '✨'}
+            {/* Header con icono premium */}
+            <div className="text-center mb-8">
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg"
+                style={{ 
+                  background: `linear-gradient(135deg, ${selectedBusiness?.color || '#6b7280'}40, ${selectedBusiness?.color || '#6b7280'}20)`,
+                  border: `1px solid ${selectedBusiness?.color || '#6b7280'}30`
+                }}
+              >
+                <LuStore className="w-7 h-7 text-white" />
+              </div>
+              <h2 className="text-2xl font-semibold text-white mb-2">
+                Datos de tu negocio
+              </h2>
+              <p className="text-zinc-400 text-sm">
+                Tu asistente usará esta información para responder a tus clientes
+              </p>
             </div>
 
-            <h2 className="text-2xl font-bold text-white text-center mb-2">
-              Datos de tu negocio
-            </h2>
-            <p className="text-zinc-400 text-center mb-6">
-              Esta información aparecerá cuando el asistente responda a tus clientes
-            </p>
-
             <form onSubmit={handleBusinessInfoSubmit} className="space-y-5">
-              {/* Nombre */}
+              {/* Nombre del negocio */}
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-2">Nombre del negocio *</label>
-                <input
-                  type="text"
-                  value={workspaceName}
-                  onChange={(e) => setWorkspaceName(e.target.value)}
-                  placeholder="Ej: Salón Belleza María, Clínica Dental Sonrisa..."
-                  autoFocus
-                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                />
+                <label className="flex items-center gap-2 text-sm font-medium text-zinc-200 mb-2">
+                  <LuSparkles className="w-4 h-4 text-violet-400" />
+                  Nombre del negocio
+                  <span className="text-violet-400">*</span>
+                </label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-violet-400 transition-colors">
+                    <LuBuilding2 className="w-5 h-5" />
+                  </div>
+                  <input
+                    type="text"
+                    value={workspaceName}
+                    onChange={(e) => setWorkspaceName(e.target.value)}
+                    placeholder="Ej: Salón Belleza María"
+                    autoFocus
+                    className="w-full pl-12 pr-4 py-3.5 bg-zinc-900/50 border border-zinc-700/50 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 focus:bg-zinc-900 transition-all"
+                  />
+                </div>
               </div>
 
               {/* Dirección */}
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-2">Dirección</label>
-                <input
-                  type="text"
-                  value={businessInfo.direccion}
-                  onChange={(e) => setBusinessInfo(prev => ({ ...prev, direccion: e.target.value }))}
-                  placeholder="Ej: Calle Principal #123, Centro"
-                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                />
+                <label className="flex items-center gap-2 text-sm font-medium text-zinc-200 mb-2">
+                  <LuMapPin className="w-4 h-4 text-zinc-400" />
+                  Dirección
+                </label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-violet-400 transition-colors">
+                    <LuMapPin className="w-5 h-5" />
+                  </div>
+                  <input
+                    type="text"
+                    value={businessInfo.direccion}
+                    onChange={(e) => setBusinessInfo(prev => ({ ...prev, direccion: e.target.value }))}
+                    placeholder="Ej: Calle Principal #123, Centro"
+                    className="w-full pl-12 pr-4 py-3.5 bg-zinc-900/50 border border-zinc-700/50 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 focus:bg-zinc-900 transition-all"
+                  />
+                </div>
               </div>
 
               {/* Teléfono */}
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-2">Teléfono de contacto</label>
-                <input
-                  type="tel"
-                  value={businessInfo.telefono}
-                  onChange={(e) => setBusinessInfo(prev => ({ ...prev, telefono: e.target.value }))}
-                  placeholder="Ej: +52 555 123 4567"
-                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                />
+                <label className="flex items-center gap-2 text-sm font-medium text-zinc-200 mb-2">
+                  <LuPhone className="w-4 h-4 text-zinc-400" />
+                  Teléfono de contacto
+                </label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-violet-400 transition-colors">
+                    <LuPhone className="w-5 h-5" />
+                  </div>
+                  <input
+                    type="tel"
+                    value={businessInfo.telefono}
+                    onChange={(e) => setBusinessInfo(prev => ({ ...prev, telefono: e.target.value }))}
+                    placeholder="Ej: +52 555 123 4567"
+                    className="w-full pl-12 pr-4 py-3.5 bg-zinc-900/50 border border-zinc-700/50 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 focus:bg-zinc-900 transition-all"
+                  />
+                </div>
               </div>
 
               {/* Horarios de atención */}
-              <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-3">Horarios de atención</label>
-                <div className="space-y-3">
+              <div className="pt-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-zinc-200 mb-3">
+                  <LuClock className="w-4 h-4 text-zinc-400" />
+                  Horarios de atención
+                </label>
+                <div className="space-y-1 p-4 bg-zinc-900/30 rounded-xl border border-zinc-700/30">
                   {/* Lunes a Viernes */}
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-zinc-800/50 border border-zinc-600">
-                    <input
-                      type="checkbox"
-                      checked={businessInfo.horarios.lunesViernes.activo}
-                      onChange={(e) => updateHorario('lunesViernes', 'activo', e.target.checked)}
-                      className="w-5 h-5 rounded border-2 border-zinc-500 bg-zinc-700 text-violet-500 focus:ring-violet-500 focus:ring-offset-0 cursor-pointer"
-                    />
-                    <span className="text-zinc-200 w-28 text-sm font-medium">Lun - Vie</span>
-                    <input
-                      type="time"
-                      value={businessInfo.horarios.lunesViernes.abre}
-                      onChange={(e) => updateHorario('lunesViernes', 'abre', e.target.value)}
-                      disabled={!businessInfo.horarios.lunesViernes.activo}
-                      className="px-3 py-1.5 bg-zinc-700 border border-zinc-500 rounded-lg text-white text-sm disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    />
-                    <span className="text-zinc-400 text-sm">a</span>
-                    <input
-                      type="time"
-                      value={businessInfo.horarios.lunesViernes.cierra}
-                      onChange={(e) => updateHorario('lunesViernes', 'cierra', e.target.value)}
-                      disabled={!businessInfo.horarios.lunesViernes.activo}
-                      className="px-3 py-1.5 bg-zinc-700 border border-zinc-500 rounded-lg text-white text-sm disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    />
+                  <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-800/30 transition-colors">
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={businessInfo.horarios.lunesViernes.activo}
+                        onChange={(e) => updateHorario('lunesViernes', 'activo', e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-10 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-300 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-500 peer-checked:after:bg-white"></div>
+                    </label>
+                    <span className="text-zinc-200 w-20 text-sm font-medium shrink-0">Lun - Vie</span>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <input
+                        type="time"
+                        value={businessInfo.horarios.lunesViernes.abre}
+                        onChange={(e) => updateHorario('lunesViernes', 'abre', e.target.value)}
+                        disabled={!businessInfo.horarios.lunesViernes.activo}
+                        className="flex-1 min-w-0 px-3 py-2 bg-zinc-800/50 border border-zinc-700/50 rounded-lg text-white text-sm disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-violet-500/50 transition-all"
+                      />
+                      <span className="text-zinc-500 text-sm shrink-0">a</span>
+                      <input
+                        type="time"
+                        value={businessInfo.horarios.lunesViernes.cierra}
+                        onChange={(e) => updateHorario('lunesViernes', 'cierra', e.target.value)}
+                        disabled={!businessInfo.horarios.lunesViernes.activo}
+                        className="flex-1 min-w-0 px-3 py-2 bg-zinc-800/50 border border-zinc-700/50 rounded-lg text-white text-sm disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-violet-500/50 transition-all"
+                      />
+                    </div>
                   </div>
 
                   {/* Sábado */}
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-zinc-800/50 border border-zinc-600">
-                    <input
-                      type="checkbox"
-                      checked={businessInfo.horarios.sabado.activo}
-                      onChange={(e) => updateHorario('sabado', 'activo', e.target.checked)}
-                      className="w-5 h-5 rounded border-2 border-zinc-500 bg-zinc-700 text-violet-500 focus:ring-violet-500 focus:ring-offset-0 cursor-pointer"
-                    />
-                    <span className="text-zinc-200 w-28 text-sm font-medium">Sábado</span>
-                    <input
-                      type="time"
-                      value={businessInfo.horarios.sabado.abre}
-                      onChange={(e) => updateHorario('sabado', 'abre', e.target.value)}
-                      disabled={!businessInfo.horarios.sabado.activo}
-                      className="px-3 py-1.5 bg-zinc-700 border border-zinc-500 rounded-lg text-white text-sm disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    />
-                    <span className="text-zinc-400 text-sm">a</span>
-                    <input
-                      type="time"
-                      value={businessInfo.horarios.sabado.cierra}
-                      onChange={(e) => updateHorario('sabado', 'cierra', e.target.value)}
-                      disabled={!businessInfo.horarios.sabado.activo}
-                      className="px-3 py-1.5 bg-zinc-700 border border-zinc-500 rounded-lg text-white text-sm disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    />
+                  <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-800/30 transition-colors">
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={businessInfo.horarios.sabado.activo}
+                        onChange={(e) => updateHorario('sabado', 'activo', e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-10 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-300 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-500 peer-checked:after:bg-white"></div>
+                    </label>
+                    <span className="text-zinc-200 w-20 text-sm font-medium shrink-0">Sábado</span>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <input
+                        type="time"
+                        value={businessInfo.horarios.sabado.abre}
+                        onChange={(e) => updateHorario('sabado', 'abre', e.target.value)}
+                        disabled={!businessInfo.horarios.sabado.activo}
+                        className="flex-1 min-w-0 px-3 py-2 bg-zinc-800/50 border border-zinc-700/50 rounded-lg text-white text-sm disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-violet-500/50 transition-all"
+                      />
+                      <span className="text-zinc-500 text-sm shrink-0">a</span>
+                      <input
+                        type="time"
+                        value={businessInfo.horarios.sabado.cierra}
+                        onChange={(e) => updateHorario('sabado', 'cierra', e.target.value)}
+                        disabled={!businessInfo.horarios.sabado.activo}
+                        className="flex-1 min-w-0 px-3 py-2 bg-zinc-800/50 border border-zinc-700/50 rounded-lg text-white text-sm disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-violet-500/50 transition-all"
+                      />
+                    </div>
                   </div>
 
                   {/* Domingo */}
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-zinc-800/50 border border-zinc-600">
-                    <input
-                      type="checkbox"
-                      checked={businessInfo.horarios.domingo.activo}
-                      onChange={(e) => updateHorario('domingo', 'activo', e.target.checked)}
-                      className="w-5 h-5 rounded border-2 border-zinc-500 bg-zinc-700 text-violet-500 focus:ring-violet-500 focus:ring-offset-0 cursor-pointer"
-                    />
-                    <span className="text-zinc-200 w-28 text-sm font-medium">Domingo</span>
-                    <input
-                      type="time"
-                      value={businessInfo.horarios.domingo.abre}
-                      onChange={(e) => updateHorario('domingo', 'abre', e.target.value)}
-                      disabled={!businessInfo.horarios.domingo.activo}
-                      className="px-3 py-1.5 bg-zinc-700 border border-zinc-500 rounded-lg text-white text-sm disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    />
-                    <span className="text-zinc-400 text-sm">a</span>
-                    <input
-                      type="time"
-                      value={businessInfo.horarios.domingo.cierra}
-                      onChange={(e) => updateHorario('domingo', 'cierra', e.target.value)}
-                      disabled={!businessInfo.horarios.domingo.activo}
-                      className="px-3 py-1.5 bg-zinc-700 border border-zinc-500 rounded-lg text-white text-sm disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    />
+                  <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-800/30 transition-colors">
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={businessInfo.horarios.domingo.activo}
+                        onChange={(e) => updateHorario('domingo', 'activo', e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-10 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-300 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-500 peer-checked:after:bg-white"></div>
+                    </label>
+                    <span className="text-zinc-200 w-20 text-sm font-medium shrink-0">Domingo</span>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <input
+                        type="time"
+                        value={businessInfo.horarios.domingo.abre}
+                        onChange={(e) => updateHorario('domingo', 'abre', e.target.value)}
+                        disabled={!businessInfo.horarios.domingo.activo}
+                        className="flex-1 min-w-0 px-3 py-2 bg-zinc-800/50 border border-zinc-700/50 rounded-lg text-white text-sm disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-violet-500/50 transition-all"
+                      />
+                      <span className="text-zinc-500 text-sm shrink-0">a</span>
+                      <input
+                        type="time"
+                        value={businessInfo.horarios.domingo.cierra}
+                        onChange={(e) => updateHorario('domingo', 'cierra', e.target.value)}
+                        disabled={!businessInfo.horarios.domingo.activo}
+                        className="flex-1 min-w-0 px-3 py-2 bg-zinc-800/50 border border-zinc-700/50 rounded-lg text-white text-sm disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-violet-500/50 transition-all"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-2">
+              {/* Buttons */}
+              <div className="flex gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="flex-1 px-6 py-3 rounded-xl text-zinc-400 border border-zinc-700 hover:bg-zinc-800 transition-all"
+                  className="flex-1 px-6 py-3.5 rounded-xl text-zinc-300 font-medium border border-zinc-700/50 hover:bg-zinc-800/50 hover:border-zinc-600 transition-all"
                 >
                   ← Atrás
                 </button>
                 <button
                   type="submit"
                   disabled={!workspaceName.trim()}
-                  className="flex-1 px-6 py-3 rounded-xl text-white font-medium transition-all disabled:opacity-50"
-                  style={{ background: selectedBusiness?.color || '#6b7280' }}
+                  className="flex-1 px-6 py-3.5 rounded-xl text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-violet-500/20"
+                  style={{ 
+                    background: `linear-gradient(135deg, ${selectedBusiness?.color || '#6b7280'}, ${selectedBusiness?.color || '#6b7280'}dd)` 
+                  }}
                 >
                   Continuar →
                 </button>
@@ -1045,45 +1240,59 @@ export default function OnboardingWizard({ onComplete, onSkip, showPlanStep = tr
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0, 0, 0, 0.95)" }}>
       <div className="w-full max-w-3xl">
-        {/* Header con pasos */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-1">
-            {STEPS.filter(s => s.id < 5).map((s, idx, arr) => (
-              <div key={s.id} className="flex items-center">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
-                    step > s.id
-                      ? "bg-green-500 text-white"
-                      : step === s.id
-                      ? "bg-violet-500 text-white"
-                      : "bg-zinc-800 text-zinc-500"
-                  }`}
-                  title={s.title}
-                >
-                  {step > s.id ? (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
-                  ) : (
-                    s.id + 1
-                  )}
-                </div>
-                {idx < arr.length - 1 && (
-                  <div className={`w-8 h-0.5 mx-0.5 ${step > s.id ? "bg-green-500" : "bg-zinc-800"}`} />
-                )}
+        {/* Stepper profesional */}
+        {step < 5 && (
+          <div className="mb-10">
+            {/* Progress bar de fondo */}
+            <div className="relative mb-4">
+              <div className="absolute top-4 left-0 right-0 h-0.5 bg-zinc-800" />
+              <div 
+                className="absolute top-4 left-0 h-0.5 bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-500"
+                style={{ width: `${(step / 4) * 100}%` }}
+              />
+              
+              {/* Steps */}
+              <div className="relative flex justify-between">
+                {STEPS.filter(s => s.id < 5).map((s) => (
+                  <div key={s.id} className="flex flex-col items-center">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 relative z-10 ${
+                        step > s.id
+                          ? "bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/30"
+                          : step === s.id
+                          ? "bg-violet-500 text-white ring-4 ring-violet-500/30 shadow-lg shadow-violet-500/50"
+                          : "bg-zinc-800 text-zinc-500"
+                      }`}
+                    >
+                      {step > s.id ? (
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                      ) : (
+                        s.id + 1
+                      )}
+                    </div>
+                    <span className={`mt-2 text-xs font-medium whitespace-nowrap transition-colors ${
+                      step >= s.id ? "text-white" : "text-zinc-600"
+                    }`}>
+                      {s.title}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
 
-          {step < 5 && (
-            <button
-              onClick={onSkip}
-              className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
-            >
-              Omitir →
-            </button>
-          )}
-        </div>
+            {/* Skip button */}
+            <div className="flex justify-end">
+              <button
+                onClick={onSkip}
+                className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                Omitir configuración →
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Contenido del paso */}
         <div className="min-h-[400px] flex items-center justify-center">

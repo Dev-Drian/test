@@ -163,29 +163,41 @@ export class TableDataRepository extends BaseRepository {
    * Verifica disponibilidad (para tablas de citas)
    * @param {string} workspaceId 
    * @param {string} tableId 
-   * @param {object} params - { fecha, hora, excludeStatus }
+   * @param {object} params - { fecha, hora, dateField, timeField, excludeStatus, workingHours }
    * @returns {Promise<object>}
    */
   async checkAvailability(workspaceId, tableId, params = {}) {
-    const { fecha, hora, excludeStatus = ['Cancelada'] } = params;
+    const { 
+      fecha, 
+      hora, 
+      dateField = 'fecha',      // Campo de fecha configurable
+      timeField = 'hora',       // Campo de hora configurable
+      excludeStatus = ['Cancelada'],
+      workingHours = { start: '09:00', end: '18:00', interval: 30 }
+    } = params;
     
     const allRecords = await this.findAll(workspaceId, tableId, { limit: 200 });
     
-    // Filtrar por fecha y excluir estados
+    // Filtrar por fecha (usando campo dinámico) y excluir estados
     const recordsForDate = allRecords.filter(r => {
-      if (r.fecha !== fecha) return false;
+      if (r[dateField] !== fecha) return false;
       if (excludeStatus.includes(r.estado)) return false;
       return true;
     });
     
-    // Horarios ocupados
-    const ocupados = recordsForDate.map(r => r.hora).filter(Boolean);
+    // Horarios ocupados (usando campo dinámico)
+    const ocupados = recordsForDate.map(r => r[timeField]).filter(Boolean);
     
-    // Generar horarios base (configurable en el futuro)
+    // Generar horarios base desde configuración
     const horariosBase = [];
-    for (let h = 9; h < 18; h++) {
-      horariosBase.push(`${String(h).padStart(2, '0')}:00`);
-      horariosBase.push(`${String(h).padStart(2, '0')}:30`);
+    const [startHour, startMin] = workingHours.start.split(':').map(Number);
+    const [endHour] = workingHours.end.split(':').map(Number);
+    const intervalMinutes = workingHours.interval || 30;
+    
+    for (let h = startHour; h < endHour; h++) {
+      for (let m = (h === startHour ? startMin : 0); m < 60; m += intervalMinutes) {
+        horariosBase.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+      }
     }
     
     const libres = horariosBase.filter(h => !ocupados.includes(h));

@@ -89,6 +89,92 @@ export async function listTables(req, res) {
   }
 }
 
+/**
+ * Actualiza la estructura de una tabla (nombre, headers, permisos)
+ * Solo permitido si la tabla no tiene datos (o muy pocos para migrar fácil)
+ */
+export async function updateTable(req, res) {
+  try {
+    const { workspaceId, tableId } = req.params;
+    const { name, description, headers, permissions, color, icon } = req.body;
+    
+    if (!workspaceId || !tableId) {
+      return res.status(400).json({ error: "workspaceId and tableId are required" });
+    }
+    
+    const tableDb = await connectDB(getWorkspaceDbName(workspaceId));
+    const table = await tableDb.get(tableId).catch(() => null);
+    
+    if (!table) {
+      return res.status(404).json({ error: "Tabla no encontrada" });
+    }
+    
+    // Verificar si la tabla tiene datos
+    const dataDb = await connectDB(getTableDataDbName(workspaceId, tableId));
+    const dataResult = await dataDb.find({
+      selector: {
+        $and: [
+          { tableId: tableId },
+          { $or: [
+            { main: { $exists: false } },
+            { main: { $ne: true } },
+          ]},
+        ],
+      },
+      limit: 1,
+    });
+    
+    const hasData = (dataResult.docs || []).length > 0;
+    
+    // Si tiene datos, solo permitir cambios seguros (nombre, descripción, color, icon)
+    // No permitir cambiar headers si hay datos
+    if (hasData && headers && JSON.stringify(headers) !== JSON.stringify(table.headers)) {
+      return res.status(400).json({ 
+        error: "No se puede modificar la estructura de campos cuando la tabla tiene datos. Elimina los datos primero o crea una tabla nueva.",
+        hasData: true 
+      });
+    }
+    
+    // Actualizar tabla
+    const updatedTable = {
+      ...table,
+      name: name || table.name,
+      description: description !== undefined ? description : table.description,
+      headers: headers || table.headers,
+      permissions: permissions ? { ...table.permissions, ...permissions } : table.permissions,
+      color: color || table.color,
+      icon: icon || table.icon,
+      updatedAt: new Date().toISOString(),
+    };
+    
+    await tableDb.insert(updatedTable);
+    
+    // También actualizar el documento de metadatos en la DB de datos
+    try {
+      const metaResult = await dataDb.find({
+        selector: { main: true },
+        limit: 1,
+      });
+      const metaDoc = metaResult.docs?.[0];
+      if (metaDoc) {
+        await dataDb.insert({
+          ...metaDoc,
+          name: updatedTable.name,
+          headers: updatedTable.headers,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    } catch (e) {
+      console.warn('Could not update meta doc:', e.message);
+    }
+    
+    res.json(updatedTable);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
 export async function getTableData(req, res) {
   try {
     const { workspaceId, tableId } = req.params;

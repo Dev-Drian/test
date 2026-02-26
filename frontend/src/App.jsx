@@ -144,12 +144,33 @@ function LoginRoute() {
 }
 
 function App() {
+  return (
+    <AuthProvider>
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
+    </AuthProvider>
+  );
+}
+
+function AppContent() {
+  const { user, isAuthenticated } = useAuth();
+  
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(() =>
     localStorage.getItem("migracion_workspace_id") || ""
   );
   const [selectedWorkspaceName, setSelectedWorkspaceName] = useState(() =>
     localStorage.getItem("migracion_workspace_name") || ""
   );
+
+  // Limpiar workspace cuando el usuario cambia o cierra sesión
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      // Si no hay usuario autenticado, limpiar workspace
+      setSelectedWorkspaceId("");
+      setSelectedWorkspaceName("");
+    }
+  }, [isAuthenticated, user]);
 
   const workspaceContext = useMemo(
     () => ({
@@ -171,25 +192,21 @@ function App() {
   );
 
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <WorkspaceContext.Provider value={workspaceContext}>
-          <Routes>
-            <Route path="/login" element={<LoginRoute />} />
-            <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-              <Route index element={<Dashboard />} />
-              <Route path="workspaces" element={<Workspaces />} />
-              <Route path="agents" element={<Agents />} />
-              <Route path="tables" element={<Tables />} />
-              <Route path="flows" element={<FlowEditor />} />
-              <Route path="chat" element={<Chat />} />
-              <Route path="guia" element={<Guia />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Route>
-          </Routes>
-        </WorkspaceContext.Provider>
-      </ToastProvider>
-    </AuthProvider>
+    <WorkspaceContext.Provider value={workspaceContext}>
+      <Routes>
+        <Route path="/login" element={<LoginRoute />} />
+        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+          <Route index element={<Dashboard />} />
+          <Route path="workspaces" element={<Workspaces />} />
+          <Route path="agents" element={<Agents />} />
+          <Route path="tables" element={<Tables />} />
+          <Route path="flows" element={<FlowEditor />} />
+          <Route path="chat" element={<Chat />} />
+          <Route path="guia" element={<Guia />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </WorkspaceContext.Provider>
   );
 }
 

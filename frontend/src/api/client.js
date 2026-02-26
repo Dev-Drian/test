@@ -68,6 +68,8 @@ export const deleteAgent = (workspaceId, agentId) =>
 // Tables
 export const createTable = (data) => api.post("/table/create", data);
 export const listTables = (workspaceId) => api.get("/table/list", { params: { workspaceId } });
+export const updateTable = (workspaceId, tableId, data) =>
+  api.put(`/table/${workspaceId}/${tableId}`, data);
 export const getTableData = (workspaceId, tableId, params) =>
   api.get(`/table/${workspaceId}/${tableId}/data`, { params });
 export const addTableRow = (workspaceId, tableId, row) =>

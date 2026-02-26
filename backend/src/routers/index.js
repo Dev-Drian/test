@@ -52,6 +52,7 @@ router.delete("/agent/:workspaceId/:agentId", requireAuth, validateWorkspace, ag
 // ============ TABLES ============
 router.post("/table/create", requireAuth, checkCanCreateTable, tables.createTable);
 router.get("/table/list", requireAuth, tables.listTables);
+router.put("/table/:workspaceId/:tableId", requireAuth, validateWorkspace, tables.updateTable);
 router.get("/table/:workspaceId/:tableId/data", requireAuth, validateWorkspace, tables.getTableData);
 router.post("/table/:workspaceId/:tableId/row", requireAuth, validateWorkspace, tables.addTableRow);
 router.put("/table/:workspaceId/:tableId/row/:rowId", requireAuth, validateWorkspace, tables.updateTableRow);

@@ -27,6 +27,43 @@
         "allowDelete": { "type": "boolean", "default": false, "description": "Permitir eliminar registros (false por defecto)" }
       }
     },
+    "validation": {
+      "type": "object",
+      "description": "Configuración de validaciones automáticas",
+      "properties": {
+        "preventDuplicates": {
+          "type": "object",
+          "description": "Prevenir registros duplicados",
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "fields": { "type": "array", "items": { "type": "string" }, "description": "Campos que deben ser únicos combinados" }
+          }
+        },
+        "availability": {
+          "type": "object",
+          "description": "Validación de disponibilidad/conflictos de horario",
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "dateField": { "type": "string", "description": "Campo de fecha a validar" },
+            "timeField": { "type": "string", "description": "Campo de hora a validar" },
+            "excludeStatuses": { 
+              "type": "array", 
+              "items": { "type": "string" },
+              "default": ["Cancelada", "cancelada"],
+              "description": "Estados a excluir de la validación"
+            },
+            "workingHours": {
+              "type": "object",
+              "properties": {
+                "start": { "type": "string", "default": "09:00" },
+                "end": { "type": "string", "default": "18:00" },
+                "interval": { "type": "integer", "default": 30, "description": "Minutos entre slots" }
+              }
+            }
+          }
+        }
+      }
+    },
     "headers": {
       "type": "array",
       "items": {

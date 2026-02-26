@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { WorkspaceContext } from "../context/WorkspaceContext";
-import { listTables, createTable, getTableData, addTableRow, updateTableRow, deleteTableRow } from "../api/client";
+import { listTables, createTable, updateTable, getTableData, addTableRow, updateTableRow, deleteTableRow } from "../api/client";
 import TableBuilder from "../components/TableBuilder";
 import { useToast, useConfirm } from "../components/Toast";
 
@@ -52,6 +52,10 @@ export default function Tables() {
   const [editForm, setEditForm] = useState({});
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingRow, setDeletingRow] = useState(null);
+  
+  // Edit table structure state
+  const [editingTableConfig, setEditingTableConfig] = useState(null);
+  const [updatingTable, setUpdatingTable] = useState(false);
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -139,6 +143,31 @@ export default function Tables() {
   const handleCancelEdit = () => {
     setEditingRow(null);
     setEditForm({});
+  };
+
+  // Actualizar configuración de la tabla (solo si está vacía)
+  const handleUpdateTable = async (tableConfig) => {
+    if (!workspaceId || !editingTableConfig) return;
+    setUpdatingTable(true);
+    try {
+      const res = await updateTable(workspaceId, editingTableConfig._id, tableConfig);
+      // Actualizar la tabla en la lista local
+      setTables((prev) => prev.map(t => t._id === editingTableConfig._id ? res.data : t));
+      // Si es la tabla seleccionada, actualizar también
+      if (selectedTable?._id === editingTableConfig._id) {
+        setSelectedTable(res.data);
+      }
+      setEditingTableConfig(null);
+      toast.success(`Tabla "${tableConfig.name}" actualizada correctamente`);
+    } catch (err) {
+      if (err.response?.data?.hasData) {
+        toast.error("No se puede modificar la estructura porque la tabla tiene datos.");
+      } else {
+        toast.error(`Error al actualizar: ${err.response?.data?.error || err.message}`);
+      }
+    } finally {
+      setUpdatingTable(false);
+    }
   };
 
   // Eliminar fila
@@ -320,6 +349,32 @@ export default function Tables() {
                 onCancel={() => setShowBuilder(false)}
                 availableTables={tables}
                 loading={creating}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal para EDITAR tabla existente */}
+      {editingTableConfig && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-surface-100 rounded-2xl border border-surface-300/50 shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-surface-300/50">
+              <h2 className="text-lg font-semibold text-content-primary">Editar configuración de "{editingTableConfig.name}"</h2>
+              <button
+                onClick={() => setEditingTableConfig(null)}
+                className="p-2 rounded-lg text-content-muted hover:text-content-primary hover:bg-surface-200 transition-all"
+              >
+                {Icons.close}
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto">
+              <TableBuilder
+                editTable={editingTableConfig}
+                onSave={handleUpdateTable}
+                onCancel={() => setEditingTableConfig(null)}
+                availableTables={tables.filter(t => t._id !== editingTableConfig._id)}
+                loading={updatingTable}
               />
             </div>
           </div>
@@ -512,6 +567,17 @@ export default function Tables() {
                                 JSON
                               </button>
                             </div>
+                          )}
+                          {/* Botón editar configuración (solo si tabla vacía) */}
+                          {tableData.length === 0 && (
+                            <button
+                              onClick={() => setEditingTableConfig(selectedTable)}
+                              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-surface-200/50 text-content-secondary hover:bg-surface-300 hover:text-content-primary border border-surface-300/50 transition-all mr-2"
+                              title="Editar estructura de la tabla"
+                            >
+                              {Icons.edit}
+                              <span>Editar config</span>
+                            </button>
                           )}
                           <button
                             onClick={() => {
