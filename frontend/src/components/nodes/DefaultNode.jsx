@@ -1,3 +1,4 @@
+
 /**
  * DefaultNode - Nodo por defecto para tipos no reconocidos
  * Evita que aparezcan bloques blancos vacíos

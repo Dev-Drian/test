@@ -1215,8 +1215,8 @@ export default function TableBuilder({ onSave, onCancel, availableTables = [], l
             {/* Permissions section */}
             <div className="rounded-xl border border-white/[0.06] overflow-hidden">
               <div className="bg-white/[0.02] px-4 py-3 border-b border-white/[0.06]">
-                <h4 className="text-sm font-medium text-zinc-400">Permisos del Bot</h4>
-                <p className="text-xs text-zinc-500 mt-1">Controla qué acciones puede realizar el asistente sobre esta tabla</p>
+                <h4 className="text-sm font-medium text-zinc-400">Operaciones Permitidas</h4>
+                <p className="text-xs text-zinc-500 mt-1">Define qué acciones se pueden realizar sobre esta tabla (aplica a todos los agentes)</p>
               </div>
               <div className="p-4 grid grid-cols-2 gap-4">
                 {/* Query permission */}

@@ -23,6 +23,9 @@ export class Context {
     this.tablesInfo = options.tablesInfo || [];
     this.tablesData = options.tablesData || [];
     
+    // Información del negocio (desde workspace)
+    this.businessInfo = options.businessInfo || null;
+    
     // Estado de la conversación
     this.history = options.history || [];
     this.pendingCreate = options.pendingCreate || null;

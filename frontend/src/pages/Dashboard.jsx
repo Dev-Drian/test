@@ -98,6 +98,133 @@ const QuickAction = ({ to, icon, label, desc, color }) => (
   </Link>
 );
 
+// Guía paso a paso para nuevos usuarios
+const GettingStartedGuide = ({ tables, agents }) => {
+  const steps = [
+    { 
+      id: 1, 
+      title: "Crear tu primera tabla", 
+      desc: "Define qué información quieres almacenar (clientes, productos, citas...)",
+      done: tables.length > 0,
+      link: "/tables",
+      icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3z" /><path strokeLinecap="round" strokeLinejoin="round" d="M4 11h16M9 4v16" /></svg>
+    },
+    { 
+      id: 2, 
+      title: "Configurar tu asistente", 
+      desc: "Tu asistente de IA aprenderá a usar tus datos",
+      done: agents.length > 0,
+      link: "/agents",
+      icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+    },
+    { 
+      id: 3, 
+      title: "¡Empieza a chatear!", 
+      desc: "Habla con tu asistente para gestionar tus datos",
+      done: tables.length > 0 && agents.length > 0,
+      link: "/chat",
+      icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+    },
+  ];
+  
+  const completedSteps = steps.filter(s => s.done).length;
+  const progress = (completedSteps / steps.length) * 100;
+  
+  return (
+    <div className="p-6 rounded-2xl mb-8" style={{
+      background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.05))',
+      border: '1px solid rgba(139, 92, 246, 0.2)'
+    }}>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+            <span className="text-2xl">🚀</span>
+            Primeros pasos
+          </h2>
+          <p className="text-sm text-white/50 mt-1">
+            Completa estos pasos para empezar a usar tu asistente
+          </p>
+        </div>
+        <div className="text-right">
+          <span className="text-2xl font-bold text-violet-400">{completedSteps}/{steps.length}</span>
+          <p className="text-xs text-white/40">completados</p>
+        </div>
+      </div>
+      
+      {/* Barra de progreso */}
+      <div className="h-2 bg-white/5 rounded-full mb-6 overflow-hidden">
+        <div 
+          className="h-full bg-gradient-to-r from-violet-500 to-pink-500 rounded-full transition-all duration-500"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      
+      {/* Steps */}
+      <div className="space-y-3">
+        {steps.map((step, idx) => {
+          const isCurrent = !step.done && (idx === 0 || steps[idx - 1].done);
+          
+          return (
+            <Link
+              key={step.id}
+              to={step.link}
+              className={`flex items-center gap-4 p-4 rounded-xl transition-all ${
+                step.done 
+                  ? 'bg-emerald-500/10 border border-emerald-500/20' 
+                  : isCurrent
+                    ? 'bg-violet-500/10 border border-violet-500/30 hover:bg-violet-500/15'
+                    : 'bg-white/5 border border-white/10 opacity-50'
+              }`}
+            >
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                step.done 
+                  ? 'bg-emerald-500 text-white' 
+                  : isCurrent
+                    ? 'bg-violet-500 text-white'
+                    : 'bg-white/10 text-white/40'
+              }`}>
+                {step.done ? (
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : step.icon}
+              </div>
+              <div className="flex-1">
+                <h3 className={`text-sm font-medium ${step.done ? 'text-emerald-400' : 'text-white'}`}>
+                  {step.title}
+                </h3>
+                <p className="text-xs text-white/40">{step.desc}</p>
+              </div>
+              {isCurrent && (
+                <span className="px-3 py-1 text-xs font-medium rounded-full bg-violet-500 text-white">
+                  Siguiente →
+                </span>
+              )}
+              {step.done && (
+                <span className="text-emerald-400">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </div>
+      
+      {completedSteps === steps.length && (
+        <div className="mt-4 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center">
+          <p className="text-emerald-400 font-medium">🎉 ¡Todo listo! Ya puedes empezar a chatear con tu asistente</p>
+          <Link to="/chat" className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-400 transition-colors">
+            Ir al chat
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Icons
 const Icons = {
   tables: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3z" /><path strokeLinecap="round" strokeLinejoin="round" d="M4 11h16M9 4v16" /></svg>,
@@ -211,7 +338,7 @@ export default function Dashboard() {
                   {workspaceId ? workspaceName : "Bienvenido"}
                 </h1>
                 <p className="text-sm text-white/40 mt-0.5">
-                  {workspaceId ? "Gestiona tus datos y automatizaciones" : "Selecciona un workspace para comenzar"}
+                  {workspaceId ? "Gestiona tus datos con tu asistente de IA" : "Selecciona un proyecto para comenzar"}
                 </p>
               </div>
             </div>
@@ -225,7 +352,7 @@ export default function Dashboard() {
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
                 </svg>
-                <span>Cambiar</span>
+                <span>Cambiar proyecto</span>
               </Link>
             )}
           </div>
@@ -252,7 +379,7 @@ export default function Dashboard() {
         {!workspaceId && (
           <section className="animate-fade-up">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-content-primary">Tus workspaces</h2>
+              <h2 className="text-lg font-semibold text-content-primary">Tus proyectos</h2>
               <Link to="/workspaces" className="text-sm text-primary-400 hover:text-primary-300 transition-colors font-medium flex items-center gap-1">
                 Ver todos {Icons.arrow}
               </Link>
@@ -263,13 +390,13 @@ export default function Dashboard() {
                 <div className="w-16 h-16 rounded-2xl bg-surface-200 flex items-center justify-center mx-auto mb-4">
                   {Icons.empty}
                 </div>
-                <h3 className="text-lg font-medium text-content-primary mb-2">No hay workspaces</h3>
+                <h3 className="text-lg font-medium text-content-primary mb-2">Crea tu primer proyecto</h3>
                 <p className="text-sm text-content-tertiary mb-6 max-w-sm mx-auto">
-                  Crea tu primer workspace para organizar tus datos
+                  Un proyecto agrupa tus datos y tu asistente de IA personalizado
                 </p>
                 <Link to="/workspaces" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-400 transition-colors">
                   {Icons.plus}
-                  Crear workspace
+                  Crear proyecto
                 </Link>
               </div>
             ) : (
@@ -311,12 +438,17 @@ export default function Dashboard() {
         {workspaceId && (
           <div className="space-y-8 animate-fade-up">
             
+            {/* Guía para nuevos usuarios - mostrar si no está todo configurado */}
+            {(tables.length === 0 || agents.length === 0) && (
+              <GettingStartedGuide tables={tables} agents={agents} />
+            )}
+            
             {/* Stats principales */}
             <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <StatCard icon={Icons.tables} label="Tablas" value={tables.length} color="blue" link="/tables" trend={tables.length > 0 ? "+12%" : ""} />
               <StatCard icon={Icons.records} label="Registros" value={stats.totalRecords} color="green" link="/tables" trend={stats.totalRecords > 0 ? "+8%" : ""} />
               <StatCard icon={Icons.fields} label="Campos" value={stats.totalFields} color="purple" link="/tables" />
-              <StatCard icon={Icons.agents} label="Agentes" value={agents.length} color="amber" link="/agents" />
+              <StatCard icon={Icons.agents} label="Asistentes" value={agents.length} color="amber" link="/agents" />
             </section>
 
             {/* Gráficos y visualizaciones */}
@@ -413,12 +545,12 @@ export default function Dashboard() {
 
             {/* Acciones rápidas */}
             <section>
-              <h2 className="text-lg font-semibold text-content-primary mb-4">Acciones rápidas</h2>
+              <h2 className="text-lg font-semibold text-content-primary mb-4">¿Qué quieres hacer?</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <QuickAction to="/tables" icon={Icons.tables} label="Ver tablas" desc="Gestionar datos" color="blue" />
-                <QuickAction to="/agents" icon={Icons.agents} label="Configurar agentes" desc="IA conversacional" color="purple" />
-                <QuickAction to="/chat" icon={Icons.chat} label="Iniciar chat" desc="Interactuar con IA" color="green" />
-                <QuickAction to="/flows" icon={Icons.flows} label="Crear flujo" desc="Automatizaciones" color="amber" />
+                <QuickAction to="/tables" icon={Icons.tables} label="Ver mis datos" desc="Tablas y registros" color="blue" />
+                <QuickAction to="/agents" icon={Icons.agents} label="Mi asistente" desc="Configuración de IA" color="purple" />
+                <QuickAction to="/chat" icon={Icons.chat} label="Chatear" desc="Hablar con tu asistente" color="green" />
+                <QuickAction to="/flows" icon={Icons.flows} label="Automatizar" desc="Tareas automáticas" color="amber" />
               </div>
             </section>
 
@@ -527,13 +659,13 @@ export default function Dashboard() {
                     <div className="w-14 h-14 rounded-xl bg-primary-500/10 flex items-center justify-center mx-auto mb-4 text-primary-400">
                       {Icons.tables}
                     </div>
-                    <h3 className="text-lg font-medium text-content-primary mb-2">No hay tablas creadas</h3>
+                    <h3 className="text-lg font-medium text-content-primary mb-2">Aún no tienes datos</h3>
                     <p className="text-sm text-content-tertiary mb-6 max-w-sm mx-auto">
-                      Crea tu primera tabla para almacenar datos
+                      Crea una tabla para empezar a organizar tu información (clientes, productos, citas...)
                     </p>
                     <Link to="/tables" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-400 transition-colors">
                       {Icons.plus}
-                      Crear tabla
+                      Crear mi primera tabla
                     </Link>
                   </section>
                 )}

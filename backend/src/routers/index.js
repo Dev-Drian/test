@@ -5,55 +5,83 @@ import * as tables from "../controllers/tablesController.js";
 import * as chat from "../controllers/chatController.js";
 import * as flows from "../controllers/flowsController.js";
 import * as notifications from "../controllers/notificationsController.js";
+import * as auth from "../controllers/authController.js";
+import * as plans from "../controllers/plansController.js";
+import { requireAuth, optionalAuth, requireWorkspaceMember } from "../middleware/index.js";
+import { validateWorkspace } from "../middleware/index.js";
+import { checkCanCreateWorkspace, checkCanCreateTable, checkCanCreateAgent, checkCanCreateFlow } from "../middleware/limits.js";
 
 const router = Router();
 
-// Workspaces (sin auth por ahora; en producción usar middleware)
-router.post("/workspace/create", workspaces.createWorkspace);
-router.get("/workspace/list", workspaces.listWorkspaces);
-router.get("/workspace/:workspaceId", workspaces.getWorkspaceById);
-router.put("/workspace/:workspaceId", workspaces.updateWorkspace);
+// ============ AUTH (público) ============
+router.post("/auth/register", auth.register);
+router.post("/auth/login", auth.login);
+router.get("/auth/me", requireAuth, auth.getProfile);
+router.put("/auth/me", requireAuth, auth.updateProfile);
+router.post("/auth/change-password", requireAuth, auth.changePassword);
+router.get("/auth/workspaces", requireAuth, auth.getUserWorkspaces);
 
-// Agents
-router.post("/agent/create", agents.createAgent);
-router.get("/agent/list", agents.listAgents);
-router.get("/agent/:workspaceId/:agentId", agents.getAgentById);
-router.put("/agent/:workspaceId/:agentId", agents.updateAgent);
-router.delete("/agent/:workspaceId/:agentId", agents.deleteAgent);
+// ============ PLANES Y LÍMITES ============
+// Público - Lista planes para mostrar en pricing
+router.get("/plans", plans.listPlans);
+router.get("/plans/:planId", plans.getPlan);
 
-// Tables
-router.post("/table/create", tables.createTable);
-router.get("/table/list", tables.listTables);
-router.get("/table/:workspaceId/:tableId/data", tables.getTableData);
-router.post("/table/:workspaceId/:tableId/row", tables.addTableRow);
-router.put("/table/:workspaceId/:tableId/row/:rowId", tables.updateTableRow);
-router.delete("/table/:workspaceId/:tableId/row/:rowId", tables.deleteTableRow);
+// Usuario - Su plan y uso
+router.get("/user/plan", requireAuth, plans.getMyPlan);
+router.get("/user/usage", requireAuth, plans.getMyUsage);
 
-// Flows (flujos de agentes - editor visual)
-router.get("/flow/list", flows.getFlows);
-router.get("/flow/get", flows.getFlow);
-router.post("/flow/create", flows.createFlow);
-router.put("/flow/update", flows.updateFlow);
-router.delete("/flow/delete", flows.deleteFlow);
-router.get("/flow/agent", flows.getAgentFlows);
-router.post("/flow/assign", flows.assignFlowToAgent);
-router.get("/flow/node-types", flows.getNodeTypes);
-router.get("/flow/templates", flows.getFlowTemplates);
+// SuperAdmin - Gestión de planes
+router.post("/admin/plans", requireAuth, plans.createPlan);
+router.put("/admin/plans/:planId", requireAuth, plans.updatePlan);
+router.delete("/admin/plans/:planId", requireAuth, plans.deletePlan);
+router.get("/admin/plans/stats", requireAuth, plans.getPlanStats);
 
-// Chat (mensaje + detección intenciones + acciones tablas)
-router.post("/chat/send", chat.sendMessage);
-router.get("/chat/get-or-create", chat.getOrCreateChat);
-router.get("/chat/list", chat.listChats);
-router.delete("/chat/:workspaceId/:chatId", chat.deleteChat);
-router.put("/chat/:workspaceId/:chatId/rename", chat.renameChat);
+// ============ WORKSPACES ============
+router.post("/workspace/create", requireAuth, checkCanCreateWorkspace, workspaces.createWorkspace);
+router.get("/workspace/list", requireAuth, workspaces.listWorkspaces);
+router.get("/workspace/:workspaceId", requireAuth, validateWorkspace, workspaces.getWorkspaceById);
+router.put("/workspace/:workspaceId", requireAuth, validateWorkspace, workspaces.updateWorkspace);
 
-// Notifications (notificaciones in-app)
-router.get("/notifications/list", notifications.listNotifications);
-router.get("/notifications/unread-count", notifications.getUnreadCount);
-router.put("/notifications/:notificationId/read", notifications.markAsRead);
-router.put("/notifications/read-all", notifications.markAllAsRead);
-router.post("/notifications/send", notifications.sendNotification);
-router.get("/notifications/config", notifications.getConfig);
-router.put("/notifications/config", notifications.updateConfig);
+// ============ AGENTS ============
+router.post("/agent/create", requireAuth, checkCanCreateAgent, agents.createAgent);
+router.get("/agent/list", requireAuth, agents.listAgents);
+router.get("/agent/:workspaceId/:agentId", requireAuth, validateWorkspace, agents.getAgentById);
+router.put("/agent/:workspaceId/:agentId", requireAuth, validateWorkspace, agents.updateAgent);
+router.delete("/agent/:workspaceId/:agentId", requireAuth, validateWorkspace, agents.deleteAgent);
+
+// ============ TABLES ============
+router.post("/table/create", requireAuth, checkCanCreateTable, tables.createTable);
+router.get("/table/list", requireAuth, tables.listTables);
+router.get("/table/:workspaceId/:tableId/data", requireAuth, validateWorkspace, tables.getTableData);
+router.post("/table/:workspaceId/:tableId/row", requireAuth, validateWorkspace, tables.addTableRow);
+router.put("/table/:workspaceId/:tableId/row/:rowId", requireAuth, validateWorkspace, tables.updateTableRow);
+router.delete("/table/:workspaceId/:tableId/row/:rowId", requireAuth, validateWorkspace, tables.deleteTableRow);
+
+// ============ FLOWS ============
+router.get("/flow/list", requireAuth, flows.getFlows);
+router.get("/flow/get", requireAuth, flows.getFlow);
+router.post("/flow/create", requireAuth, checkCanCreateFlow, flows.createFlow);
+router.put("/flow/update", requireAuth, flows.updateFlow);
+router.delete("/flow/delete", requireAuth, flows.deleteFlow);
+router.get("/flow/agent", requireAuth, flows.getAgentFlows);
+router.post("/flow/assign", requireAuth, flows.assignFlowToAgent);
+router.get("/flow/node-types", requireAuth, flows.getNodeTypes);
+router.get("/flow/templates", requireAuth, flows.getFlowTemplates);
+
+// ============ CHAT ============
+router.post("/chat/send", requireAuth, chat.sendMessage);
+router.get("/chat/get-or-create", requireAuth, chat.getOrCreateChat);
+router.get("/chat/list", requireAuth, chat.listChats);
+router.delete("/chat/:workspaceId/:chatId", requireAuth, validateWorkspace, chat.deleteChat);
+router.put("/chat/:workspaceId/:chatId/rename", requireAuth, validateWorkspace, chat.renameChat);
+
+// ============ NOTIFICATIONS ============
+router.get("/notifications/list", requireAuth, notifications.listNotifications);
+router.get("/notifications/unread-count", requireAuth, notifications.getUnreadCount);
+router.put("/notifications/:notificationId/read", requireAuth, notifications.markAsRead);
+router.put("/notifications/read-all", requireAuth, notifications.markAllAsRead);
+router.post("/notifications/send", requireAuth, notifications.sendNotification);
+router.get("/notifications/config", requireAuth, notifications.getConfig);
+router.put("/notifications/config", requireAuth, notifications.updateConfig);
 
 export default router;

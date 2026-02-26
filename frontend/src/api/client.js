@@ -7,6 +7,48 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+// Interceptor para agregar token a todas las requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("migracion_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Interceptor para manejar errores de auth y normalizar respuestas
+api.interceptors.response.use(
+  (response) => {
+    // Si la respuesta tiene formato nuevo { success, data, ... }, extraer data
+    if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+      // Mantener la estructura pero facilitar acceso
+      response.data._raw = { ...response.data };
+      // Si success=true, poner data en el nivel superior para compatibilidad
+      if (response.data.success && response.data.data !== undefined) {
+        response.data = response.data.data;
+      }
+    }
+    return response;
+  },
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("migracion_token");
+      localStorage.removeItem("migracion_user");
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Auth
+export const login = (email, password) => api.post("/auth/login", { email, password });
+export const register = (data) => api.post("/auth/register", data);
+export const getProfile = () => api.get("/auth/me");
+export const updateProfile = (data) => api.put("/auth/me", data);
+export const changePassword = (currentPassword, newPassword) => 
+  api.post("/auth/change-password", { currentPassword, newPassword });
+export const getUserWorkspaces = () => api.get("/auth/workspaces");
+
 // Workspaces
 export const createWorkspace = (data) => api.post("/workspace/create", data);
 export const listWorkspaces = () => api.get("/workspace/list");
@@ -45,3 +87,16 @@ export const deleteChat = (workspaceId, chatId) =>
   api.delete(`/chat/${workspaceId}/${chatId}`);
 export const renameChat = (workspaceId, chatId, title) =>
   api.put(`/chat/${workspaceId}/${chatId}/rename`, { title });
+
+// Plans & Usage
+export const listPlans = () => api.get("/plans");
+export const getPlan = (planId) => api.get(`/plans/${planId}`);
+export const getMyPlan = () => api.get("/user/plan");
+export const getMyUsage = (workspaceId) => 
+  api.get("/user/usage", { params: workspaceId ? { workspaceId } : {} });
+
+// Admin - Plans (superAdmin only)
+export const createPlan = (data) => api.post("/admin/plans", data);
+export const updatePlan = (planId, data) => api.put(`/admin/plans/${planId}`, data);
+export const deletePlan = (planId) => api.delete(`/admin/plans/${planId}`);
+export const getPlanStats = () => api.get("/admin/plans/stats");

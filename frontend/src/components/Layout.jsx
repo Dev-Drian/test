@@ -1,6 +1,7 @@
-import { Outlet, useLocation, Link } from "react-router-dom";
+import { Outlet, useLocation, Link, useNavigate } from "react-router-dom";
 import { useContext, useState } from "react";
 import { WorkspaceContext } from "../context/WorkspaceContext";
+import { useAuth } from "../context/AuthContext";
 import WorkspaceSelector from "./WorkspaceSelector";
 
 // Iconos SVG minimalistas
@@ -62,18 +63,25 @@ const Icons = {
 
 const navItems = [
   { to: "/", label: "Inicio", icon: Icons.home },
-  { to: "/workspaces", label: "Workspaces", icon: Icons.workspaces },
-  { to: "/agents", label: "Agentes", icon: Icons.agents },
-  { to: "/tables", label: "Tablas", icon: Icons.tables },
-  { to: "/flows", label: "Flujos", icon: Icons.flows },
+  { to: "/workspaces", label: "Proyectos", icon: Icons.workspaces },
+  { to: "/agents", label: "Asistente IA", icon: Icons.agents },
+  { to: "/tables", label: "Mis datos", icon: Icons.tables },
+  { to: "/flows", label: "Automatizar", icon: Icons.flows },
   { to: "/chat", label: "Chat", icon: Icons.chat },
-  { to: "/guia", label: "Documentación", icon: Icons.guide },
+  { to: "/guia", label: "Ayuda", icon: Icons.guide },
 ];
 
 export default function Layout() {
   const { workspaceId, workspaceName } = useContext(WorkspaceContext);
+  const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   const isActive = (path) => {
     if (path === "/") return location.pathname === "/";
@@ -148,7 +156,7 @@ export default function Layout() {
           </div>
         </nav>
 
-        {/* Footer con workspace activo */}
+        {/* Footer con workspace activo y usuario */}
         <div className="p-3" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
           {collapsed ? (
             <button 
@@ -159,42 +167,74 @@ export default function Layout() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </button>
-          ) : workspaceId ? (
-            <div className="flex items-center gap-3 px-3 py-3 rounded-xl"
-              style={{ 
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.08)'
-              }}>
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-emerald-500/20">
-                <svg className="w-4.5 h-4.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="block text-[10px] font-semibold uppercase tracking-wider text-emerald-400">
-                  Workspace activo
-                </span>
-                <span className="block text-sm font-medium text-white truncate mt-0.5">
-                  {workspaceName}
-                </span>
-              </div>
-            </div>
           ) : (
-            <div className="flex items-center gap-3 px-3 py-3 rounded-xl"
-              style={{ 
-                background: 'rgba(255, 255, 255, 0.02)',
-                border: '1px solid rgba(255, 255, 255, 0.06)'
-              }}>
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-white/5">
-                <div className="w-2 h-2 rounded-full animate-pulse bg-violet-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="block text-[10px] font-semibold uppercase tracking-wider text-white/30">
-                  Sin selección
-                </span>
-                <span className="block text-xs text-white/40 mt-0.5">
-                  Selecciona un workspace
-                </span>
+            <div className="space-y-2">
+              {workspaceId ? (
+                <div className="flex items-center gap-3 px-3 py-3 rounded-xl"
+                  style={{ 
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)'
+                  }}>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-emerald-500/20">
+                    <svg className="w-4.5 h-4.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="block text-[10px] font-semibold uppercase tracking-wider text-emerald-400">
+                      Workspace activo
+                    </span>
+                    <span className="block text-sm font-medium text-white truncate mt-0.5">
+                      {workspaceName}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 px-3 py-3 rounded-xl"
+                  style={{ 
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid rgba(255, 255, 255, 0.06)'
+                  }}>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-white/5">
+                    <div className="w-2 h-2 rounded-full animate-pulse bg-violet-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="block text-[10px] font-semibold uppercase tracking-wider text-white/30">
+                      Sin selección
+                    </span>
+                    <span className="block text-xs text-white/40 mt-0.5">
+                      Selecciona un workspace
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {/* User info & logout */}
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl"
+                style={{ 
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)'
+                }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-violet-500/20 text-violet-400 text-sm font-semibold">
+                  {user?.name?.charAt(0).toUpperCase() || 'U'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="block text-xs font-medium text-white truncate">
+                    {user?.name || 'Usuario'}
+                  </span>
+                  <span className="block text-[10px] text-white/40 truncate">
+                    {user?.email}
+                  </span>
+                </div>
+                <button 
+                  onClick={handleLogout}
+                  className="p-1.5 rounded-lg hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-all"
+                  title="Cerrar sesión"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </button>
               </div>
             </div>
           )}

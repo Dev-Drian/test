@@ -11,10 +11,25 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import { connectDB, getWorkspaceDbName, getWorkspacesDbName, getTableDataDbName, getAgentsDbName, getFlowsDbName } from '../config/db.js';
+import crypto from 'crypto';
+import { connectDB, getWorkspaceDbName, getWorkspacesDbName, getTableDataDbName, getAgentsDbName, getFlowsDbName, getDbPrefix } from '../config/db.js';
 
 const WORKSPACE_ID = 'premium-crm';
 const WORKSPACE_NAME = 'CRM Premium';
+
+// Usuario demo
+const DEMO_USER = {
+  email: 'demo@migracion.ai',
+  password: 'demo123',
+  name: 'Usuario Demo'
+};
+
+// Hash de contraseña
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+  return { hash, salt };
+}
 
 export async function seed() {
   console.log(`\n[Seed] Iniciando seed PREMIUM para ${WORKSPACE_NAME}...`);
@@ -938,6 +953,50 @@ Sé analítico, objetivo y orientado a resultados. Usa gráficos de texto cuando
     ];
     for (const campana of campanasEjemplo) await campanasDb.insert(campana);
     console.log('✅ Campañas de ejemplo creadas');
+    
+    // ========== USUARIO DEMO ==========
+    console.log('\n📦 Creando usuario demo...');
+    const accountsDb = await connectDB(`${getDbPrefix()}accounts`);
+    
+    // Verificar si ya existe
+    try {
+      const existing = await accountsDb.find({
+        selector: { email: DEMO_USER.email },
+        limit: 1
+      });
+      
+      if (existing.docs.length > 0) {
+        // Actualizar workspaces del usuario existente
+        const user = existing.docs[0];
+        if (!user.workspaces.includes(WORKSPACE_ID)) {
+          user.workspaces.push(WORKSPACE_ID);
+          user.updatedAt = new Date().toISOString();
+          await accountsDb.insert(user);
+        }
+        console.log('✅ Usuario demo ya existía, vinculado al workspace');
+      } else {
+        throw new Error('No existe');
+      }
+    } catch (err) {
+      // Crear usuario demo
+      const { hash, salt } = hashPassword(DEMO_USER.password);
+      const demoUser = {
+        _id: 'demo-user-001',
+        email: DEMO_USER.email,
+        name: DEMO_USER.name,
+        password: hash,
+        salt,
+        profileImage: null,
+        status: 'active',
+        workspaces: [WORKSPACE_ID],
+        workspacesOwner: [WORKSPACE_ID],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        lastLoginAt: null,
+      };
+      await accountsDb.insert(demoUser);
+      console.log('✅ Usuario demo creado');
+    }
     
     console.log(`\n✅ Seed PREMIUM completado para ${WORKSPACE_NAME}`);
     console.log(`   Workspace ID: ${WORKSPACE_ID}`);

@@ -97,7 +97,7 @@ export default function Workspaces() {
       const res = await createWorkspace({ name: name.trim(), color });
       setWorkspaces((prev) => [...prev, res.data]);
       setWorkspace(res.data._id, res.data.name);
-      toast.success(`Workspace "${name}" creado correctamente`);
+      toast.success(`Proyecto "${name}" creado correctamente`);
       resetForm();
     } catch (err) {
       toast.error(`Error al crear: ${err.message}`);
@@ -109,8 +109,8 @@ export default function Workspaces() {
 
   const handleDelete = async (ws) => {
     const confirmed = await confirm({
-      title: 'Eliminar Workspace',
-      message: `¿Estás seguro de que deseas eliminar el workspace "${ws.name}"? Se eliminarán todas las tablas, agentes y configuraciones asociadas.`,
+      title: 'Eliminar Proyecto',
+      message: `¿Estás seguro de que deseas eliminar "${ws.name}"? Se eliminarán todos los datos, asistentes y configuraciones.`,
       confirmText: 'Eliminar',
       cancelText: 'Cancelar',
       variant: 'danger'
@@ -124,9 +124,9 @@ export default function Workspaces() {
       if (workspaceId === ws._id) {
         setWorkspace(null, null);
       }
-      toast.success(`Workspace "${ws.name}" eliminado correctamente`);
+      toast.success(`Proyecto "${ws.name}" eliminado correctamente`);
     } catch (err) {
-      toast.error(`Error al eliminar: ${err.message}`);
+      toast.error(`Error al eliminar: ${err.message}`)
       setError(err.message);
     } finally {
       setDeleting(null);
@@ -141,7 +141,7 @@ export default function Workspaces() {
             <div className="absolute inset-0 border-2 border-emerald-500/20 rounded-full" />
             <div className="absolute inset-0 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
           </div>
-          <span className="text-sm text-zinc-500">Cargando workspaces...</span>
+          <span className="text-sm text-zinc-500">Cargando proyectos...</span>
         </div>
       </div>
     );
@@ -159,9 +159,9 @@ export default function Workspaces() {
                 {Icons.workspace}
               </div>
               <div>
-                <h1 className="text-2xl font-semibold text-white tracking-tight">Workspaces</h1>
+                <h1 className="text-2xl font-semibold text-white tracking-tight">Mis Proyectos</h1>
                 <p className="text-sm text-zinc-500 mt-0.5">
-                  Gestiona tus entornos de trabajo
+                  Cada proyecto agrupa tus datos y tu asistente de IA
                 </p>
               </div>
             </div>
@@ -172,7 +172,7 @@ export default function Workspaces() {
                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20"
               >
                 {Icons.plus}
-                <span>Nuevo workspace</span>
+                <span>Nuevo proyecto</span>
               </button>
             )}
           </div>
@@ -199,7 +199,7 @@ export default function Workspaces() {
         {showForm && (
           <div className="mb-8 p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-white">Crear nuevo workspace</h2>
+              <h2 className="text-lg font-semibold text-white">Crear nuevo proyecto</h2>
               <button onClick={resetForm} className="text-zinc-500 hover:text-white transition-colors">
                 {Icons.close}
               </button>
@@ -209,7 +209,7 @@ export default function Workspaces() {
               {/* Nombre */}
               <div>
                 <label className="block text-sm font-medium text-zinc-400 mb-2">
-                  Nombre del workspace
+                  Nombre del proyecto
                 </label>
                 <input
                   type="text"
@@ -225,7 +225,7 @@ export default function Workspaces() {
               {/* Color */}
               <div>
                 <label className="block text-sm font-medium text-zinc-400 mb-3">
-                  Color del workspace
+                  Color del proyecto
                 </label>
                 <div className="flex items-center gap-3">
                   {PRESET_COLORS.map((c) => (
@@ -271,9 +271,9 @@ export default function Workspaces() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-white text-lg">
-                      {name || "Nombre del workspace"}
+                      {name || "Nombre del proyecto"}
                     </h3>
-                    <p className="text-sm text-zinc-500">Tu nuevo entorno de trabajo</p>
+                    <p className="text-sm text-zinc-500">Tu nuevo proyecto</p>
                   </div>
                 </div>
               </div>
@@ -293,7 +293,7 @@ export default function Workspaces() {
                   ) : (
                     <>
                       {Icons.check}
-                      <span>Crear workspace</span>
+                      <span>Crear proyecto</span>
                     </>
                   )}
                 </button>
@@ -314,7 +314,7 @@ export default function Workspaces() {
           <div className="mb-10">
             <h2 className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              Workspace activo
+              Proyecto activo
             </h2>
             {workspaces.filter(ws => ws._id === workspaceId).map((ws) => (
               <div 
@@ -344,11 +344,11 @@ export default function Workspaces() {
                   <div className="flex items-center gap-3">
                     <a href="/tables" className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 text-sm font-medium transition-all hover:scale-105">
                       {Icons.tables}
-                      <span>Tablas</span>
+                      <span>Mis datos</span>
                     </a>
                     <a href="/agents" className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 text-sm font-medium transition-all hover:scale-105">
                       {Icons.agents}
-                      <span>Agentes</span>
+                      <span>Asistente</span>
                     </a>
                   </div>
                 </div>
@@ -357,11 +357,11 @@ export default function Workspaces() {
           </div>
         )}
 
-        {/* Lista de workspaces */}
+        {/* Lista de proyectos */}
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wider">
-              {workspaceId ? 'Otros workspaces' : 'Todos los workspaces'}
+              {workspaceId ? 'Otros proyectos' : 'Todos los proyectos'}
             </h2>
             <span className="text-xs text-zinc-600">
               {workspaces.filter(ws => ws._id !== workspaceId).length} disponibles
@@ -373,16 +373,16 @@ export default function Workspaces() {
               <div className="w-16 h-16 rounded-2xl bg-zinc-800/50 flex items-center justify-center mx-auto mb-4 text-zinc-600">
                 {Icons.workspace}
               </div>
-              <h3 className="text-lg font-medium text-white mb-2">No hay workspaces</h3>
+              <h3 className="text-lg font-medium text-white mb-2">No hay proyectos</h3>
               <p className="text-sm text-zinc-500 mb-6 max-w-sm mx-auto">
-                Crea tu primer workspace para comenzar a organizar tus datos
+                Crea tu primer proyecto para comenzar a organizar tus datos
               </p>
               <button 
                 onClick={() => setShowForm(true)}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-400 transition-colors"
               >
                 {Icons.plus}
-                Crear workspace
+                Crear proyecto
               </button>
             </div>
           ) : (
@@ -422,7 +422,7 @@ export default function Workspaces() {
                         onClick={() => handleDelete(ws)}
                         disabled={deleting === ws._id}
                         className="p-2.5 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all disabled:opacity-50"
-                        title="Eliminar workspace"
+                        title="Eliminar proyecto"
                       >
                         {deleting === ws._id ? (
                           <div className="w-4 h-4 border-2 border-zinc-600 border-t-transparent rounded-full animate-spin" />
@@ -449,7 +449,7 @@ export default function Workspaces() {
             <div>
               <p className="text-sm text-blue-400 font-medium">Tip</p>
               <p className="text-xs text-blue-400/60 mt-0.5">
-                Cada workspace tiene sus propias tablas, agentes y configuraciones. Puedes cambiar entre workspaces desde el menú lateral.
+                Cada proyecto tiene sus propios datos y asistente. Puedes cambiar entre proyectos desde el menú lateral.
               </p>
             </div>
           </div>

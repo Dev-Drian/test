@@ -20,6 +20,7 @@ import { ActionFactory } from '../domain/actions/ActionFactory.js';
 import { ResponseBuilder } from '../domain/responses/ResponseBuilder.js';
 import { FieldCollector } from '../domain/fields/FieldCollector.js';
 import { OpenAIProvider } from '../integrations/ai/OpenAIProvider.js';
+import { connectDB, getWorkspacesDbName } from '../config/db.js';
 import logger from '../config/logger.js';
 
 const log = logger.child('ChatService');
@@ -128,6 +129,16 @@ export class ChatService {
     }
     log.debug('Agent loaded', { name: agent.name });
     
+    // Cargar workspace para obtener businessInfo
+    let workspace = null;
+    try {
+      const workspacesDb = await connectDB(getWorkspacesDbName());
+      workspace = await workspacesDb.get(workspaceId);
+      log.debug('Workspace loaded', { hasBusinessInfo: !!workspace.businessInfo });
+    } catch (err) {
+      log.warn('Could not load workspace', { workspaceId, error: err.message });
+    }
+    
     // Obtener o crear contexto
     let context = this.activeContexts.get(chatId);
     if (!context) {
@@ -136,8 +147,12 @@ export class ChatService {
         workspaceId,
         agentId,
         agent,
+        businessInfo: workspace?.businessInfo || null,
       });
       this.activeContexts.set(chatId, context);
+    } else {
+      // Actualizar businessInfo en contexto existente
+      context.businessInfo = workspace?.businessInfo || null;
     }
     
     // Asignar chat y cargar estado pendiente

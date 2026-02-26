@@ -12,6 +12,8 @@ import 'dotenv/config';
 import seedPremiumCRM from './premium-crm.js';
 import seedTestingV3 from './testing-v3.js';
 import seedFlowTemplates from './flow-templates.js';
+import seedPlans from './plans.js';
+import seedUsers from './users.js';
 import { getDbPrefix } from '../config/db.js';
 
 const COUCHDB_URL = process.env.COUCHDB_URL || 'http://admin:password@127.0.0.1:5984';
@@ -103,24 +105,34 @@ async function main() {
   }
 
   try {
-    // Siempre ejecutar seed de plantillas de flujos (son globales)
+    // 1. Seed de Planes (siempre primero - son globales)
+    console.log('\n💎 Ejecutando seed: Planes de suscripción');
+    console.log('─'.repeat(60));
+    await seedPlans();
+    
+    // 2. Seed de plantillas de flujos (son globales)
     console.log('\n📋 Ejecutando seed: Plantillas de Flujos');
     console.log('─'.repeat(60));
     await seedFlowTemplates();
     
-    // Seed CRM Premium (a menos que sea --v3 only)
+    // 3. Seed CRM Premium (a menos que sea --v3 only)
     if (!V3_ONLY) {
       console.log('\n📦 Ejecutando seed: CRM Premium');
       console.log('─'.repeat(60));
       await seedPremiumCRM();
     }
     
-    // Seed Testing V3 (si es --v3 o --all)
+    // 4. Seed Testing V3 (si es --v3 o --all)
     if (V3_ONLY || RUN_ALL) {
       console.log('\n🧪 Ejecutando seed: Testing V3');
       console.log('─'.repeat(60));
       await seedTestingV3();
     }
+    
+    // 5. Seed de Usuarios (siempre al final - depende de workspaces)
+    console.log('\n👥 Ejecutando seed: Usuarios de prueba');
+    console.log('─'.repeat(60));
+    await seedUsers();
     
     console.log('\n✅ Seed completado exitosamente');
     

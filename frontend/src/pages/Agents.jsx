@@ -155,12 +155,12 @@ export default function Agents() {
         // Actualizar agente existente
         res = await updateAgent(workspaceId, editingAgent._id, agentData);
         setAgents(prev => prev.map(a => a._id === editingAgent._id ? res.data : a));
-        toast.success(`Agente "${name}" actualizado correctamente`);
+        toast.success(`Asistente "${name}" actualizado correctamente`);
       } else {
         // Crear nuevo agente
         res = await createAgent({ workspaceId, agent: agentData });
         setAgents(prev => [...prev, res.data]);
-        toast.success(`Agente "${name}" creado correctamente`);
+        toast.success(`Asistente "${name}" creado correctamente`);
       }
       resetForm();
     } catch (err) {
@@ -173,8 +173,8 @@ export default function Agents() {
 
   const handleDelete = async (agent) => {
     const confirmed = await confirm({
-      title: 'Eliminar Agente',
-      message: `¿Estás seguro de que deseas eliminar el agente "${agent.name}"? Esta acción no se puede deshacer.`,
+      title: 'Eliminar Asistente',
+      message: `¿Estás seguro de que deseas eliminar "${agent.name}"? Esta acción no se puede deshacer.`,
       confirmText: 'Eliminar',
       cancelText: 'Cancelar',
       variant: 'danger'
@@ -185,7 +185,7 @@ export default function Agents() {
     try {
       await deleteAgent(workspaceId, agent._id);
       setAgents((prev) => prev.filter((a) => a._id !== agent._id));
-      toast.success(`Agente "${agent.name}" eliminado correctamente`);
+      toast.success(`Asistente "${agent.name}" eliminado correctamente`);
     } catch (err) {
       toast.error(`Error al eliminar: ${err.message}`);
       setError(err.message);
@@ -202,15 +202,15 @@ export default function Agents() {
           <div className="w-20 h-20 rounded-2xl bg-violet-500/10 flex items-center justify-center mx-auto mb-6 text-violet-400">
             {Icons.agent}
           </div>
-          <h1 className="text-2xl font-semibold text-content-primary mb-2">Agentes IA</h1>
+          <h1 className="text-2xl font-semibold text-content-primary mb-2">Tu Asistente IA</h1>
           <p className="text-content-tertiary mb-6 max-w-sm">
-            Selecciona un workspace para gestionar sus agentes
+            Selecciona un proyecto para configurar tu asistente
           </p>
           <Link 
             to="/workspaces"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-400 transition-colors"
           >
-            Ir a Workspaces
+            Ir a Proyectos
           </Link>
         </div>
       </div>
@@ -225,7 +225,7 @@ export default function Agents() {
             <div className="absolute inset-0 border-2 border-violet-500/20 rounded-full" />
             <div className="absolute inset-0 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
           </div>
-          <span className="text-sm text-content-tertiary">Cargando agentes...</span>
+          <span className="text-sm text-content-tertiary">Cargando asistente...</span>
         </div>
       </div>
     );
@@ -243,9 +243,9 @@ export default function Agents() {
                 {Icons.agent}
               </div>
               <div>
-                <h1 className="text-2xl font-semibold text-content-primary tracking-tight">Agentes IA</h1>
+                <h1 className="text-2xl font-semibold text-content-primary tracking-tight">Asistente IA</h1>
                 <p className="text-sm text-content-tertiary mt-0.5">
-                  Configura agentes inteligentes para {workspaceName}
+                  Configura cómo tu asistente gestionará {workspaceName}
                 </p>
               </div>
             </div>
@@ -256,7 +256,7 @@ export default function Agents() {
                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-violet-500 text-white text-sm font-medium hover:bg-violet-400 transition-colors shadow-lg shadow-violet-500/20"
               >
                 {Icons.plus}
-                <span>Nuevo agente</span>
+                <span>Nuevo asistente</span>
               </button>
             )}
           </div>
@@ -284,7 +284,7 @@ export default function Agents() {
           <div className="mb-8 p-6 rounded-2xl bg-surface-100 border border-surface-300/50 animate-fade-up">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold text-content-primary">
-                {editingAgent ? `Editar: ${editingAgent.name}` : "Crear nuevo agente"}
+                {editingAgent ? `Editar: ${editingAgent.name}` : "Crear nuevo asistente"}
               </h2>
               <button onClick={resetForm} className="text-content-tertiary hover:text-content-primary transition-colors">
                 {Icons.close}
@@ -296,7 +296,7 @@ export default function Agents() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-content-secondary mb-2">
-                    Nombre del agente *
+                    Nombre del asistente *
                   </label>
                   <input
                     type="text"
@@ -314,7 +314,7 @@ export default function Agents() {
                   </label>
                   <input
                     type="text"
-                    placeholder="¿Qué hace este agente?"
+                    placeholder="¿Qué hace este asistente?"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl bg-surface-50 border border-surface-300/50 text-content-primary placeholder-content-muted focus:outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all"
@@ -459,7 +459,7 @@ export default function Agents() {
                   ) : (
                     <>
                       {Icons.check}
-                      <span>{editingAgent ? "Guardar cambios" : "Crear agente"}</span>
+                      <span>{editingAgent ? "Guardar cambios" : "Crear asistente"}</span>
                     </>
                   )}
                 </button>
@@ -475,22 +475,22 @@ export default function Agents() {
           </div>
         )}
 
-        {/* Lista de agentes */}
+        {/* Lista de asistentes */}
         {agents.length === 0 ? (
           <div className="text-center py-16 bg-surface-100 border border-surface-300/50 rounded-2xl animate-fade-up">
             <div className="w-16 h-16 rounded-2xl bg-violet-500/10 flex items-center justify-center mx-auto mb-4 text-violet-400">
               {Icons.agent}
             </div>
-            <h3 className="text-lg font-medium text-content-primary mb-2">No hay agentes</h3>
+            <h3 className="text-lg font-medium text-content-primary mb-2">Aún no tienes asistente</h3>
             <p className="text-sm text-content-tertiary mb-6 max-w-sm mx-auto">
-              Crea tu primer agente IA para interactuar con tus datos
+              Tu asistente de IA te ayudará a gestionar tus datos con solo chatear
             </p>
             <button 
               onClick={() => setShowForm(true)}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-violet-500 text-white text-sm font-medium hover:bg-violet-400 transition-colors"
             >
               {Icons.plus}
-              Crear agente
+              Crear mi asistente
             </button>
           </div>
         ) : (
@@ -511,14 +511,14 @@ export default function Agents() {
                       <Link
                         to={`/chat?agentId=${agent._id}`}
                         className="p-2 rounded-lg text-content-muted hover:text-accent-400 hover:bg-accent-500/10 transition-all"
-                        title="Chatear con agente"
+                        title="Chatear con asistente"
                       >
                         {Icons.chat}
                       </Link>
                       <button
                         onClick={() => startEdit(agent)}
                         className="p-2 rounded-lg text-content-muted hover:text-primary-400 hover:bg-primary-500/10 transition-all"
-                        title="Editar agente"
+                        title="Editar asistente"
                       >
                         {Icons.edit}
                       </button>
@@ -526,7 +526,7 @@ export default function Agents() {
                         onClick={() => handleDelete(agent)}
                         disabled={deleting === agent._id}
                         className="p-2 rounded-lg text-content-muted hover:text-red-400 hover:bg-red-500/10 transition-all disabled:opacity-50"
-                        title="Eliminar agente"
+                        title="Eliminar asistente"
                       >
                         {deleting === agent._id ? (
                           <div className="w-4 h-4 border-2 border-surface-300 border-t-transparent rounded-full animate-spin" />

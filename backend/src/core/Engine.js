@@ -106,6 +106,11 @@ export class ChatEngine {
       dayOfWeek: this._getDayOfWeek(),
     };
     
+    // Agregar horarios del negocio desde workspace.businessInfo
+    if (context.businessInfo?.horarios) {
+      agentConfig.businessHours = this._formatBusinessHours(context.businessInfo.horarios);
+    }
+    
     const systemPrompt = this.promptBuilder.build(agentConfig);
     
     // 3. Obtener tools habilitadas para este tenant (con nombres de tablas inyectados)
@@ -810,6 +815,42 @@ USA LA TOOL create_record PARA CONTINUAR LA RECOLECCIÓN DE DATOS.`;
    */
   addHandler(handler) {
     return this.use(handler);
+  }
+  
+  /**
+   * Formatea horarios del workspace al formato esperado por AgentPromptBuilder
+   * @private
+   */
+  _formatBusinessHours(horarios) {
+    const formatted = [];
+    
+    if (horarios.lunesViernes?.activo) {
+      formatted.push({
+        days: 'lunes a viernes',
+        hours: `${horarios.lunesViernes.abre} - ${horarios.lunesViernes.cierra}`,
+      });
+    }
+    
+    if (horarios.sabado?.activo) {
+      formatted.push({
+        days: 'sábados',
+        hours: `${horarios.sabado.abre} - ${horarios.sabado.cierra}`,
+      });
+    }
+    
+    if (horarios.domingo?.activo) {
+      formatted.push({
+        days: 'domingos',
+        hours: `${horarios.domingo.abre} - ${horarios.domingo.cierra}`,
+      });
+    } else if (horarios.domingo && !horarios.domingo.activo) {
+      formatted.push({
+        days: 'domingos',
+        hours: 'cerrado',
+      });
+    }
+    
+    return formatted;
   }
 }
 
