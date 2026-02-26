@@ -200,7 +200,7 @@ function normalizeForComparison(value) {
 }
 
 /**
- * Busca un registro en una tabla por valor de campo
+ * Busca un registro en una tabla por valor de campo (coincidencia exacta)
  */
 async function findRecordInTable(workspaceId, tableId, searchField, searchValue) {
   const dataDb = await connectDB(getTableDataDbName(workspaceId, tableId));
@@ -225,6 +225,62 @@ async function findRecordInTable(workspaceId, tableId, searchField, searchValue)
     const fieldValue = doc[searchField];
     return fieldValue && String(fieldValue).toLowerCase().trim() === searchLower;
   });
+}
+
+/**
+ * Busca coincidencias parciales en una tabla (para confirmOnMatch)
+ * Devuelve registros donde el campo contiene el valor buscado
+ */
+async function findPartialMatchInTable(workspaceId, tableId, searchField, searchValue) {
+  const dataDb = await connectDB(getTableDataDbName(workspaceId, tableId));
+  const result = await dataDb.find({
+    selector: {
+      tableId: tableId,
+      $or: [
+        { main: { $exists: false } },
+        { main: { $ne: true } },
+      ],
+    },
+    limit: 100,
+  });
+  
+  const docs = result.docs || [];
+  const searchLower = String(searchValue).toLowerCase().trim();
+  
+  console.log(`[relationHandler] findPartialMatchInTable: searching "${searchValue}" in ${searchField}, docs=${docs.length}`);
+  
+  // Buscar coincidencia exacta primero
+  const exactMatch = docs.find(doc => {
+    const fieldValue = doc[searchField];
+    return fieldValue && String(fieldValue).toLowerCase().trim() === searchLower;
+  });
+  
+  if (exactMatch) {
+    console.log(`[relationHandler] Found exact match:`, exactMatch[searchField]);
+    return { type: 'exact', record: exactMatch };
+  }
+  
+  // Buscar coincidencias parciales (el campo contiene el valor buscado)
+  const partialMatches = docs.filter(doc => {
+    const fieldValue = doc[searchField];
+    if (!fieldValue) return false;
+    const fieldLower = String(fieldValue).toLowerCase().trim();
+    // El campo contiene el valor buscado O el valor buscado contiene el campo
+    return fieldLower.includes(searchLower) || searchLower.includes(fieldLower);
+  });
+  
+  if (partialMatches.length === 1) {
+    console.log(`[relationHandler] Found single partial match:`, partialMatches[0][searchField]);
+    return { type: 'partial', record: partialMatches[0] };
+  }
+  
+  if (partialMatches.length > 1) {
+    console.log(`[relationHandler] Found ${partialMatches.length} partial matches`);
+    return { type: 'multiple', records: partialMatches };
+  }
+  
+  console.log(`[relationHandler] No matches found for "${searchValue}"`);
+  return { type: 'none', records: [] };
 }
 
 /**
@@ -254,7 +310,7 @@ async function getFieldOptions(workspaceId, tableId, fieldName) {
 /**
  * Crea un registro en una tabla relacionada con defaults aplicados
  */
-async function createRelatedRecord(workspaceId, tableId, fields) {
+export async function createRelatedRecord(workspaceId, tableId, fields) {
   const dataDb = await connectDB(getTableDataDbName(workspaceId, tableId));
   const tableMeta = await getTableMeta(workspaceId, tableId);
   
@@ -497,18 +553,100 @@ export function formatOptionsMessage(optionErrors) {
  * - autoCreate: Si es true, permite crear el registro automáticamente (no valida)
  * - validateOnInput: Si es false, no valida durante la recolección (default: true)
  * - showOptionsOnNotFound: Si es true, muestra opciones cuando no encuentra
+ * - confirmOnMatch: Si es true, pregunta al usuario si es la coincidencia encontrada
  * 
  * @param {string} workspaceId - ID del workspace
  * @param {*} value - Valor a validar
  * @param {object} fieldConfig - Configuración del campo (debe incluir relation)
- * @returns {Promise<{valid: boolean, error?: string, availableOptions?: array}>}
+ * @returns {Promise<{valid: boolean, error?: string, availableOptions?: array, matchFound?: object}>}
  */
 export async function validateRelationField(workspaceId, value, fieldConfig) {
   if (!fieldConfig.relation) {
     return { valid: true }; // No tiene configuración de relación
   }
   
-  const { tableName, searchField, displayField, showOptionsOnNotFound, autoCreate, validateOnInput } = fieldConfig.relation;
+  const { tableName, searchField, displayField, showOptionsOnNotFound, autoCreate, validateOnInput, confirmOnMatch } = fieldConfig.relation;
+  
+  // Si confirmOnMatch está activo, buscar coincidencias (exactas Y parciales)
+  if (confirmOnMatch) {
+    console.log(`[relationHandler] confirmOnMatch mode: searching for "${value}" in ${tableName}`);
+    
+    // Buscar la tabla relacionada
+    const relatedTable = await findTableByName(workspaceId, tableName);
+    if (!relatedTable) {
+      console.warn(`[relationHandler] Table not found: ${tableName}`);
+      return { valid: true, noTableFound: true };
+    }
+    
+    // Buscar coincidencias (exactas y parciales)
+    const mainSearchField = searchField || displayField || 'nombre';
+    const matchResult = await findPartialMatchInTable(workspaceId, relatedTable._id, mainSearchField, value);
+    
+    if (matchResult.type === 'exact') {
+      // Coincidencia exacta - preguntar al usuario si es él
+      console.log(`[relationHandler] confirmOnMatch: exact match found`, matchResult.record);
+      return {
+        valid: false,
+        needsConfirmation: true,
+        matchFound: matchResult.record,
+        matchField: mainSearchField,
+        tableName: tableName,
+        tableId: relatedTable._id,
+        message: `Encontré a "${matchResult.record.nombre || matchResult.record[mainSearchField]}" registrado. ¿Eres tú?`,
+      };
+    }
+    
+    if (matchResult.type === 'partial') {
+      // Coincidencia parcial única - preguntar al usuario si es él
+      console.log(`[relationHandler] confirmOnMatch: partial match found`, matchResult.record);
+      return {
+        valid: false,
+        needsConfirmation: true,
+        matchFound: matchResult.record,
+        matchField: mainSearchField,
+        tableName: tableName,
+        tableId: relatedTable._id,
+        inputValue: value, // Guardar lo que el usuario escribió
+        message: `Encontré a "${matchResult.record.nombre || matchResult.record[mainSearchField]}" registrado. ¿Eres tú?`,
+      };
+    }
+    
+    if (matchResult.type === 'multiple') {
+      // Múltiples coincidencias - mostrar opciones para que elija
+      const options = matchResult.records.map(r => r.nombre || r[mainSearchField]);
+      console.log(`[relationHandler] confirmOnMatch: multiple matches found`, options);
+      return {
+        valid: false,
+        needsSelection: true,
+        matches: matchResult.records,
+        matchField: mainSearchField,
+        tableName: tableName,
+        tableId: relatedTable._id,
+        message: `Encontré varios registros similares: ${options.join(', ')}. ¿A cuál te refieres?`,
+        availableOptions: options,
+      };
+    }
+    
+    // No encontró coincidencia, pero autoCreate permite crear nuevo
+    if (autoCreate) {
+      console.log(`[relationHandler] confirmOnMatch: no match found, autoCreate enabled`);
+      return { 
+        valid: true,
+        noMatchFound: true,
+        needsNewRecord: true,
+        tableName: tableName,
+        tableId: relatedTable._id,
+      };
+    }
+    
+    // Sin autoCreate, mostrar opciones disponibles
+    const availableOptions = await getFieldOptions(workspaceId, relatedTable._id, displayField || mainSearchField);
+    return {
+      valid: false,
+      error: `No encontré "${value}" registrado.`,
+      availableOptions: availableOptions,
+    };
+  }
   
   // Si autoCreate es true o validateOnInput es false, no validar
   if (autoCreate === true || validateOnInput === false) {

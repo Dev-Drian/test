@@ -32,6 +32,18 @@ export class QueryHandler extends ActionHandler {
     const intent = context.intent || {};
     const message = (context.message || '').toLowerCase();
     
+    // Factor 0: Si hay pendingCreate activo, FUERTE penalización
+    // El usuario está en medio de un flujo de creación - queries solo si es pregunta explícita
+    if (context.pendingCreate) {
+      // Solo procesar como query si hay signo de interrogación explícito
+      if (message.includes('?') || message.startsWith('¿')) {
+        score -= 0.2; // Penalización leve si es pregunta
+      } else {
+        // No es pregunta → probablemente es respuesta a campos del flujo de creación
+        return 0.1; // Score muy bajo para dar prioridad a CreateHandler
+      }
+    }
+    
     // Factor 1: Intent del LLM es query/search
     if (intent.actionType === 'query' || intent.actionType === 'search') {
       const intentScore = (intent.confidence || 0) / 100;
@@ -44,19 +56,14 @@ export class QueryHandler extends ActionHandler {
     }
     
     // Factor 3: Keywords de consulta
-    const queryKeywords = ['ver', 'mostrar', 'listar', 'buscar', 'consultar', 'cuáles', 'cuántos', 'dame', 'dime', 'qué'];
+    const queryKeywords = ['ver', 'mostrar', 'listar', 'buscar', 'consultar', 'cuáles', 'cuántos', 'dime', 'qué hay'];
     const keywordMatches = queryKeywords.filter(kw => message.includes(kw)).length;
     score += Math.min(keywordMatches * 0.1, 0.25);
     
-    // Factor 4: Penalización si hay pendingCreate activo
-    if (context.pendingCreate) {
-      // Solo penalizar si el intent no es query con alta confianza
-      if (intent.actionType !== 'query' || (intent.confidence || 0) < 70) {
-        score -= 0.2;
-      }
-    }
+    // NOTE: "dame" y "quiero" se quitaron de queryKeywords porque son ambiguos
+    // "dame 2 productos" puede ser query o crear orden con cantidad
     
-    // Factor 5: Palabras de tiempo/periodo aumentan score
+    // Factor 4: Palabras de tiempo/periodo aumentan score
     const timeKeywords = ['hoy', 'mañana', 'ayer', 'semana', 'mes', 'año', 'últimos', 'últimas'];
     const timeMatches = timeKeywords.filter(kw => message.includes(kw)).length;
     if (timeMatches > 0) {
@@ -325,8 +332,11 @@ export class QueryHandler extends ActionHandler {
         
         // Formatear valor según tipo
         let displayValue = value;
-        if (key === 'precio' || fieldConfig.type === 'currency' || fieldConfig.type === 'number') {
+        if (key === 'precio' || fieldConfig.type === 'currency') {
           displayValue = `$${Number(value).toLocaleString('es-CO')}`;
+        } else if (fieldConfig.type === 'number') {
+          // Números sin símbolo de moneda (stock, cantidad, etc.)
+          displayValue = Number(value).toLocaleString('es-CO');
         } else if (key === 'duracion') {
           displayValue = `${value} min`;
         }

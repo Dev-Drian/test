@@ -505,6 +505,27 @@ export class ChatEngine {
       });
     }
     
+    // Si hay pendingCreate activo, agregar contexto explícito para el LLM
+    if (context.pendingCreate) {
+      const tableName = context.pendingCreate.tableName || 'registro';
+      const collectedFields = context.collectedFields || context.pendingCreate.fields || {};
+      const missingFields = context.pendingCreate.requiredFields?.filter(f => !collectedFields[f]) || [];
+      
+      const pendingContext = `[SISTEMA] HAY UN FLUJO DE CREACIÓN ACTIVO:
+- Tabla: ${tableName}
+- Campos ya recolectados: ${JSON.stringify(collectedFields)}
+- Campos que FALTAN: ${missingFields.join(', ')}
+
+El siguiente mensaje del usuario probablemente contiene datos para los campos faltantes (${missingFields.join(', ')}).
+Si el usuario menciona un producto/servicio con cantidad, esos son DATOS para el registro en proceso, NO una consulta.
+USA LA TOOL create_record PARA CONTINUAR LA RECOLECCIÓN DE DATOS.`;
+
+      messages.push({
+        role: 'system',
+        content: pendingContext,
+      });
+    }
+    
     // Mensaje actual
     messages.push({
       role: 'user',

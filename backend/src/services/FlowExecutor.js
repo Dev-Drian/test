@@ -320,6 +320,8 @@ async function executeUpdateAction(workspaceId, targetTableId, filter, fields, c
 /**
  * Ejecuta una consulta de un nodo query
  * Soporta formato viejo (filter: {}) y nuevo (filterField, filterValueType, filterValueField)
+ * IMPORTANTE: La búsqueda es case-insensitive para mejor UX
+ * Si encuentra el registro, normaliza el campo original con el nombre correcto
  */
 async function executeQuery(query, context, workspaceId) {
   const { targetTable, filter, outputVar, filterField, filterValueType, filterValueField, filterValueFixed } = query;
@@ -327,37 +329,67 @@ async function executeQuery(query, context, workspaceId) {
   try {
     const dataDb = await connectDB(getTableDataDbName(workspaceId, targetTable));
     
-    // Construir el filtro
-    const processedFilter = { tableId: targetTable };
+    // Obtener el valor de filtro
+    let filterValue;
+    let filterFieldName = filterField;
+    let originalFieldKey = null; // El campo que se usó como fuente del valor (para normalizar)
     
     // Nuevo formato simplificado
     if (filterField) {
-      let filterValue;
       if (filterValueType === 'trigger' && filterValueField) {
         // Valor del registro que disparó el flujo
         filterValue = context[filterValueField];
+        originalFieldKey = filterValueField; // Guardar para normalización
       } else if (filterValueType === 'fixed') {
         filterValue = filterValueFixed;
-      }
-      
-      if (filterValue !== undefined) {
-        processedFilter[filterField] = filterValue;
       }
       console.log(`[FlowExecutor] Query filter: ${filterField} = ${filterValue}`);
     }
     // Formato viejo con objeto filter
     else if (filter) {
-      for (const [key, value] of Object.entries(filter)) {
-        processedFilter[key] = processTemplate(String(value), context);
+      const entries = Object.entries(filter);
+      if (entries.length > 0) {
+        filterFieldName = entries[0][0];
+        filterValue = processTemplate(String(entries[0][1]), context);
       }
     }
     
+    // Búsqueda case-insensitive: traer todos y filtrar manualmente
     const result = await dataDb.find({
-      selector: processedFilter,
-      limit: 1,
+      selector: {
+        tableId: targetTable,
+        $or: [
+          { main: { $exists: false } },
+          { main: { $ne: true } },
+        ],
+      },
+      limit: 100,
     });
     
-    const doc = result.docs?.[0] || null;
+    const docs = result.docs || [];
+    let doc = null;
+    
+    if (filterValue !== undefined && filterFieldName) {
+      // Búsqueda case-insensitive
+      const searchLower = String(filterValue).toLowerCase().trim();
+      doc = docs.find(d => {
+        const fieldVal = d[filterFieldName];
+        return fieldVal && String(fieldVal).toLowerCase().trim() === searchLower;
+      });
+      console.log(`[FlowExecutor] Case-insensitive search: "${filterValue}" -> ${doc ? 'FOUND' : 'NOT FOUND'} (checked ${docs.length} docs)`);
+      
+      // Si encontramos el registro Y el nombre es diferente (case), normalizar
+      if (doc && originalFieldKey && filterFieldName) {
+        const normalizedValue = doc[filterFieldName];
+        if (normalizedValue && normalizedValue !== filterValue) {
+          console.log(`[FlowExecutor] Normalizing ${originalFieldKey}: "${filterValue}" -> "${normalizedValue}"`);
+          context[originalFieldKey] = normalizedValue;
+        }
+      }
+    } else {
+      // Sin filtro, tomar el primero
+      doc = docs[0] || null;
+    }
     
     if (outputVar && doc) {
       context[outputVar] = doc;
@@ -815,6 +847,33 @@ export async function executeBeforeCreateFlows(workspaceId, tableId, fields) {
               }
             }
           }
+          // Update a OTRA tabla (como descontar stock de Productos) - guardar para ejecutar después
+          else if (actionData.actionType === 'update' && actionData.targetTable !== tableId) {
+            console.log(`[FlowExecutor][BeforeCreate] Pending action to ${actionData.targetTableName || actionData.targetTable}`);
+            context._pendingActions = context._pendingActions || [];
+            context._pendingActions.push({
+              type: 'update',
+              targetTable: actionData.targetTable,
+              targetTableName: actionData.targetTableName,
+              filterField: actionData.filterField,
+              filterValueType: actionData.filterValueType,
+              filterValueField: actionData.filterValueField,
+              fields: actionData.fields,
+              context: { ...context }, // Snapshot del contexto actual
+            });
+          }
+          // Create action a otra tabla (como crear seguimiento)
+          else if (actionData.actionType === 'create' && actionData.targetTable !== tableId) {
+            console.log(`[FlowExecutor][BeforeCreate] Pending create in ${actionData.targetTableName || actionData.targetTable}`);
+            context._pendingActions = context._pendingActions || [];
+            context._pendingActions.push({
+              type: 'create',
+              targetTable: actionData.targetTable,
+              targetTableName: actionData.targetTableName,
+              fields: actionData.fields,
+              context: { ...context },
+            });
+          }
           // Error action - cancelar la creación
           else if (actionData.actionType === 'error') {
             const errorMsg = processTemplate(actionData.message || 'Error en beforeCreate', context);
@@ -879,13 +938,137 @@ export async function executeBeforeCreateFlows(workspaceId, tableId, fields) {
     }
   }
   
+  // Detectar campos que fueron normalizados por las queries
+  // (por ejemplo, producto: "servidor cloud" → "Servidor Cloud")
+  for (const key of Object.keys(fields)) {
+    if (context[key] !== undefined && context[key] !== fields[key]) {
+      console.log(`[FlowExecutor][BeforeCreate] Field normalized: ${key} = "${fields[key]}" -> "${context[key]}"`);
+      modifiedFields[key] = context[key];
+    }
+  }
+  
+  // Recolectar acciones pendientes (updates/creates a otras tablas)
+  const pendingActions = context._pendingActions || [];
+  
   console.log(`[FlowExecutor] ========== BeforeCreate completed ==========\n`);
   console.log(`[FlowExecutor] Modified fields:`, modifiedFields);
+  console.log(`[FlowExecutor] Pending actions:`, pendingActions.length);
   
-  return { fields: modifiedFields, context, flowExecuted: true };
+  return { fields: modifiedFields, context, flowExecuted: true, pendingActions };
+}
+
+/**
+ * Ejecuta las acciones pendientes del beforeCreate (updates/creates a otras tablas)
+ * Se ejecuta DESPUÉS de crear el registro principal
+ * 
+ * @param {string} workspaceId - ID del workspace
+ * @param {array} pendingActions - Acciones pendientes del beforeCreate
+ * @param {object} createdRecord - Registro recién creado (para contexto adicional)
+ */
+async function executePendingActions(workspaceId, pendingActions, createdRecord = {}) {
+  if (!pendingActions || pendingActions.length === 0) {
+    return { executed: 0, results: [] };
+  }
+  
+  console.log(`[FlowExecutor] Executing ${pendingActions.length} pending actions...`);
+  const results = [];
+  
+  for (const action of pendingActions) {
+    try {
+      const actionContext = { ...action.context, _createdRecord: createdRecord };
+      
+      if (action.type === 'update') {
+        // Ejecutar update a otra tabla
+        const dataDb = await connectDB(getTableDataDbName(workspaceId, action.targetTable));
+        
+        // Buscar el registro a actualizar
+        let filterValue;
+        if (action.filterValueType === 'trigger' && action.filterValueField) {
+          filterValue = actionContext[action.filterValueField];
+        }
+        
+        if (!filterValue || !action.filterField) {
+          console.warn(`[FlowExecutor] Cannot execute pending update: missing filter`);
+          continue;
+        }
+        
+        // Búsqueda case-insensitive
+        const allDocs = await dataDb.find({
+          selector: {
+            tableId: action.targetTable,
+            $or: [
+              { main: { $exists: false } },
+              { main: { $ne: true } },
+            ],
+          },
+          limit: 100,
+        });
+        
+        const searchLower = String(filterValue).toLowerCase().trim();
+        const docToUpdate = (allDocs.docs || []).find(d => {
+          const fieldVal = d[action.filterField];
+          return fieldVal && String(fieldVal).toLowerCase().trim() === searchLower;
+        });
+        
+        if (!docToUpdate) {
+          console.warn(`[FlowExecutor] No document found to update for ${action.filterField}=${filterValue}`);
+          continue;
+        }
+        
+        // Procesar los campos a actualizar
+        const updates = {};
+        for (const [key, valueTemplate] of Object.entries(action.fields || {})) {
+          let processedValue = processTemplate(String(valueTemplate), actionContext);
+          
+          // Evaluar expresiones matemáticas
+          if (/[\+\-\*\/]/.test(processedValue)) {
+            try {
+              // Limpiar para evaluación segura
+              if (/^[\d\s\+\-\*\/\.]+$/.test(processedValue)) {
+                processedValue = String(new Function(`return (${processedValue})`)());
+              }
+            } catch (e) {
+              console.warn(`[FlowExecutor] Could not evaluate expression: ${processedValue}`);
+            }
+          }
+          
+          updates[key] = isNaN(Number(processedValue)) ? processedValue : Number(processedValue);
+        }
+        
+        // Aplicar updates
+        const updatedDoc = { ...docToUpdate, ...updates };
+        await dataDb.insert(updatedDoc);
+        
+        console.log(`[FlowExecutor] Updated ${action.targetTableName}: ${JSON.stringify(updates)}`);
+        results.push({ type: 'update', table: action.targetTableName, success: true, updates });
+        
+      } else if (action.type === 'create') {
+        // Ejecutar create en otra tabla
+        const dataDb = await connectDB(getTableDataDbName(workspaceId, action.targetTable));
+        
+        const newRecord = { tableId: action.targetTable };
+        for (const [key, valueTemplate] of Object.entries(action.fields || {})) {
+          newRecord[key] = processTemplate(String(valueTemplate), actionContext);
+        }
+        
+        await dataDb.insert(newRecord);
+        
+        console.log(`[FlowExecutor] Created in ${action.targetTableName}: ${JSON.stringify(newRecord)}`);
+        results.push({ type: 'create', table: action.targetTableName, success: true });
+      }
+      
+    } catch (error) {
+      console.error(`[FlowExecutor] Error executing pending action:`, error.message);
+      results.push({ type: action.type, table: action.targetTableName, success: false, error: error.message });
+    }
+  }
+  
+  return { executed: results.length, results };
 }
 
 export default {
   executeFlowsForTrigger,
   executeBeforeCreateFlows,
 };
+
+export { executePendingActions };

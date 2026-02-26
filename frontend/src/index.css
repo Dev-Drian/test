@@ -1,76 +1,410 @@
 @import "tailwindcss";
 
 /* ============================================
-   🎨 PREMIUM DARK THEME - SaaS Grade
+   🎨 VIBRANT DESIGN SYSTEM - Bold & Colorful
    ============================================ */
+
+:root {
+  /* Superficies con sutil tinte púrpura */
+  --surface-0: #0a0a12;
+  --surface-50: #0e0e1a;
+  --surface-100: #131320;
+  --surface-200: #1a1a2e;
+  --surface-300: #252542;
+  --surface-400: #353560;
+  
+  /* Colores primarios vibrantes */
+  --primary: #8b5cf6;
+  --primary-light: rgba(139, 92, 246, 0.2);
+  --primary-dark: #7c3aed;
+  
+  /* Acentos llamativos */
+  --accent: #22d3ee;
+  --accent-light: rgba(34, 211, 238, 0.2);
+  --accent-secondary: #f472b6;
+  --accent-tertiary: #34d399;
+  
+  /* Glows más intensos */
+  --glow-primary: rgba(139, 92, 246, 0.5);
+  --glow-accent: rgba(34, 211, 238, 0.5);
+  --glow-pink: rgba(244, 114, 182, 0.4);
+  --glow-green: rgba(52, 211, 153, 0.4);
+}
 
 html, body, #root {
   height: 100%;
-  background: #09090b;
-  color: #fafafa;
+  background: var(--surface-0);
+  background-image: 
+    radial-gradient(ellipse at top left, rgba(139, 92, 246, 0.08) 0%, transparent 40%),
+    radial-gradient(ellipse at top right, rgba(244, 114, 182, 0.06) 0%, transparent 40%),
+    radial-gradient(ellipse at bottom left, rgba(34, 211, 238, 0.05) 0%, transparent 40%),
+    radial-gradient(ellipse at bottom right, rgba(52, 211, 153, 0.04) 0%, transparent 40%);
+  color: #f8fafc;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar */
+/* Scrollbar colorido */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(139, 92, 246, 0.05);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.3), rgba(244, 114, 182, 0.3));
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.5), rgba(244, 114, 182, 0.5));
 }
 
-/* Selection */
+/* Selection vibrante */
 ::selection {
-  background: rgba(16, 185, 129, 0.3);
+  background: rgba(139, 92, 246, 0.5);
+  color: #ffffff;
 }
 
-/* Focus */
+/* Focus ring vibrante */
 :focus-visible {
-  outline: 2px solid rgba(16, 185, 129, 0.5);
+  outline: 2px solid rgba(139, 92, 246, 0.7);
   outline-offset: 2px;
+  border-radius: 4px;
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
 }
 
-/* Toast slide-in animation */
-@keyframes slide-in {
-  from {
-    opacity: 0;
-    transform: translateX(100%);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+/* ============================================
+   📐 Componentes Base
+   ============================================ */
+
+/* Cards con gradiente */
+.card {
+  background: linear-gradient(135deg, var(--surface-100) 0%, var(--surface-50) 100%);
+  border: 1px solid var(--surface-300);
+  border-radius: 12px;
+  transition: all 0.25s ease;
+  position: relative;
 }
 
-.animate-slide-in {
-  animation: slide-in 0.3s ease-out;
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(244, 114, 182, 0.1) 50%, transparent);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
-/* Modal scale-in animation */
+.card:hover {
+  background: linear-gradient(135deg, var(--surface-200) 0%, var(--surface-100) 100%);
+  border-color: rgba(139, 92, 246, 0.3);
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2), 0 0 60px rgba(139, 92, 246, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Botones */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #a78bfa, var(--primary), #c084fc);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4), 0 0 40px rgba(139, 92, 246, 0.2);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #c4b5fd, #a78bfa, #e879f9);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(139, 92, 246, 0.5), 0 0 60px rgba(139, 92, 246, 0.3);
+}
+
+.btn-secondary {
+  background: var(--surface-200);
+  color: #fafafa;
+  border: 1px solid var(--surface-300);
+}
+
+.btn-secondary:hover {
+  background: var(--surface-300);
+  border-color: var(--surface-400);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #c4c4d4;
+  border: none;
+}
+
+.btn-ghost:hover {
+  background: var(--surface-200);
+  color: #ffffff;
+}
+
+/* Inputs */
+.input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--surface-50);
+  border: 1px solid var(--surface-300);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 14px;
+  transition: all 0.15s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light), 0 0 20px rgba(99, 102, 241, 0.15);
+}
+
+.input::placeholder {
+  color: #5a5a70;
+}
+
+/* ============================================
+   🎬 Animaciones
+   ============================================ */
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
 }
 
-.animate-scale-in {
-  animation: scale-in 0.2s ease-out;
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+.animate-fade-in { animation: fade-in 0.2s ease-out; }
+.animate-fade-up { animation: fade-up 0.3s ease-out; }
+.animate-scale-in { animation: scale-in 0.2s ease-out; }
+.animate-slide-in-right { animation: slide-in-right 0.3s ease-out; }
+.animate-slide-in-left { animation: slide-in-left 0.3s ease-out; }
+
+/* Toast */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(100%) scale(0.95); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; transform: translateX(0) scale(1); }
+  to { opacity: 0; transform: translateX(100%) scale(0.95); }
+}
+
+.animate-toast-in { animation: toast-in 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+.animate-toast-out { animation: toast-out 0.2s ease-in forwards; }
+
+/* Modal */
+@keyframes modal-overlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modal-content {
+  from { opacity: 0; transform: scale(0.96) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.animate-modal-overlay { animation: modal-overlay 0.2s ease-out; }
+.animate-modal-content { animation: modal-content 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* ============================================
+   🔲 Utilidades
+   ============================================ */
+
+/* Glassmorphism sutil */
+.glass {
+  background: rgba(15, 15, 23, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+/* Gradientes */
+.gradient-primary {
+  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #7c3aed 100%);
+}
+
+.gradient-accent {
+  background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+}
+
+.gradient-pink {
+  background: linear-gradient(135deg, #f9a8d4 0%, #f472b6 50%, #ec4899 100%);
+}
+
+.gradient-green {
+  background: linear-gradient(135deg, #6ee7b7 0%, #34d399 50%, #10b981 100%);
+}
+
+.gradient-rainbow {
+  background: linear-gradient(135deg, #a78bfa 0%, #f472b6 25%, #22d3ee 50%, #34d399 75%, #fbbf24 100%);
+}
+
+/* Glow effects más intensos */
+.glow-primary {
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.4), 0 0 60px rgba(139, 92, 246, 0.2), 0 0 100px rgba(139, 92, 246, 0.1);
+}
+
+.glow-accent {
+  box-shadow: 0 0 30px rgba(34, 211, 238, 0.4), 0 0 60px rgba(34, 211, 238, 0.2);
+}
+
+.glow-pink {
+  box-shadow: 0 0 30px rgba(244, 114, 182, 0.4), 0 0 60px rgba(244, 114, 182, 0.2);
+}
+
+.glow-green {
+  box-shadow: 0 0 30px rgba(52, 211, 153, 0.4), 0 0 60px rgba(52, 211, 153, 0.2);
+}
+
+/* Typing indicator animation */
+@keyframes typing-dot {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+.typing-dot {
+  animation: typing-dot 1.4s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* Shine effect */
+.shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.shine:hover::after {
+  left: 100%;
+}
+
+/* ============================================
+   📱 React Flow Custom Styles
+   ============================================ */
+
+.react-flow__node {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.react-flow__node:hover {
+  z-index: 10;
+}
+
+.react-flow__edge-path {
+  stroke-width: 2;
+}
+
+.react-flow__controls {
+  background: var(--surface-100) !important;
+  border: 1px solid var(--surface-300) !important;
+  border-radius: 10px !important;
+  overflow: hidden;
+}
+
+.react-flow__controls-button {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--surface-300) !important;
+  fill: #8888a0 !important;
+}
+
+.react-flow__controls-button:hover {
+  background: var(--surface-200) !important;
+  fill: #ffffff !important;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none !important;
+}
+
+.react-flow__minimap {
+  background: var(--surface-100) !important;
+  border: 1px solid var(--surface-300) !important;
+  border-radius: 10px !important;
+}
+
+.react-flow__background {
+  background: var(--surface-0) !important;
+}
+
+/* Nodos default de ReactFlow - evitar fondo blanco */
+.react-flow__node-default {
+  background: var(--surface-100) !important;
+  border: 1px solid var(--surface-300) !important;
+  border-radius: 12px !important;
+  color: #fafafa !important;
+  padding: 12px 16px !important;
+  font-size: 13px !important;
+  min-width: 150px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+.react-flow__node-default.selected {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 2px var(--primary-light) !important;
+}
+
+.react-flow__node-input,
+.react-flow__node-output {
+  background: var(--surface-100) !important;
+  border: 1px solid var(--surface-300) !important;
+  border-radius: 12px !important;
+  color: #fafafa !important;
+  padding: 12px 16px !important;
 }

@@ -11,6 +11,7 @@
 import 'dotenv/config';
 import seedPremiumCRM from './premium-crm.js';
 import seedTestingV3 from './testing-v3.js';
+import seedFlowTemplates from './flow-templates.js';
 import { getDbPrefix } from '../config/db.js';
 
 const COUCHDB_URL = process.env.COUCHDB_URL || 'http://admin:password@127.0.0.1:5984';
@@ -102,6 +103,11 @@ async function main() {
   }
 
   try {
+    // Siempre ejecutar seed de plantillas de flujos (son globales)
+    console.log('\n📋 Ejecutando seed: Plantillas de Flujos');
+    console.log('─'.repeat(60));
+    await seedFlowTemplates();
+    
     // Seed CRM Premium (a menos que sea --v3 only)
     if (!V3_ONLY) {
       console.log('\n📦 Ejecutando seed: CRM Premium');

@@ -107,9 +107,13 @@ export async function seed() {
             tableName: 'Clientes',
             displayField: 'nombre',
             searchField: 'nombre',
-            autoCreate: false,
+            // Nuevo modo: pide nombre, busca coincidencia, pregunta para confirmar
+            confirmOnMatch: true,
+            autoCreate: true,
+            // Campos a pedir si hay que crear nuevo cliente
+            autoCreateFields: ['nombre', 'email', 'telefono'],
             validateOnInput: false,
-            showOptionsOnNotFound: true
+            showOptionsOnNotFound: false
           }
         },
         { 

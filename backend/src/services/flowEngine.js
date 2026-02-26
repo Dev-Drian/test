@@ -53,6 +53,11 @@ export function processTemplate(template, context = {}) {
       return specialVars[trimmedKey];
     }
     
+    // Detectar si es una expresión matemática (contiene operadores)
+    if (/[\+\-\*\/]/.test(trimmedKey)) {
+      return evaluateMathExpression(trimmedKey, context, specialVars);
+    }
+    
     // Soportar acceso anidado como {{mascota.nombre}}
     const keys = trimmedKey.split('.');
     let value = context;
@@ -69,6 +74,62 @@ export function processTemplate(template, context = {}) {
     
     return String(value);
   });
+}
+
+/**
+ * Evalúa expresiones matemáticas simples con variables del contexto
+ * Soporta: +, -, *, / y acceso a propiedades anidadas
+ * @example evaluateMathExpression("productoData.precio * cantidad", { productoData: { precio: 100 }, cantidad: 5 })
+ * // => "500"
+ */
+function evaluateMathExpression(expression, context, specialVars = {}) {
+  try {
+    // Reemplazar variables por sus valores numéricos
+    const processedExpr = expression.replace(/([a-zA-Z_][a-zA-Z0-9_.]*)/g, (match) => {
+      // Verificar primero variables especiales
+      if (specialVars[match]) {
+        return `"${specialVars[match]}"`;
+      }
+      
+      // Resolver acceso anidado
+      const keys = match.split('.');
+      let value = context;
+      
+      for (const k of keys) {
+        if (value === null || value === undefined) return '0';
+        value = value[k];
+      }
+      
+      if (value === null || value === undefined) return '0';
+      
+      // Si es número, devolverlo; si es string numérico, convertirlo
+      if (typeof value === 'number') return String(value);
+      if (typeof value === 'string' && !isNaN(Number(value))) return value;
+      
+      return '0';
+    });
+    
+    console.log(`[processTemplate] Math expression: "${expression}" -> "${processedExpr}"`);
+    
+    // Evaluar de forma segura (solo números y operadores básicos)
+    // Validar que solo contiene números, espacios y operadores
+    if (!/^[\d\s\+\-\*\/\.\(\)]+$/.test(processedExpr)) {
+      console.warn(`[processTemplate] Invalid math expression: ${processedExpr}`);
+      return '0';
+    }
+    
+    // Usar Function en lugar de eval para mayor seguridad
+    const result = new Function(`return (${processedExpr})`)();
+    
+    // Redondear a 2 decimales si tiene decimales
+    const rounded = Number.isInteger(result) ? result : Math.round(result * 100) / 100;
+    
+    console.log(`[processTemplate] Math result: ${rounded}`);
+    return String(rounded);
+  } catch (error) {
+    console.error(`[processTemplate] Error evaluating expression "${expression}":`, error.message);
+    return '0';
+  }
 }
 
 /**

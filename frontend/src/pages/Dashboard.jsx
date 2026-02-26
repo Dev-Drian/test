@@ -3,62 +3,6 @@ import { Link } from "react-router-dom";
 import { WorkspaceContext } from "../context/WorkspaceContext";
 import { listWorkspaces, listTables, listAgents, getTableData } from "../api/client";
 
-// Iconos SVG
-const Icons = {
-  tables: (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M13.125 12h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125M20.625 12c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5M12 14.625v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 14.625c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m0 1.5v-1.5m0 0c0-.621.504-1.125 1.125-1.125m0 0h7.5" />
-    </svg>
-  ),
-  agents: (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
-    </svg>
-  ),
-  flows: (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-    </svg>
-  ),
-  chat: (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-    </svg>
-  ),
-  arrow: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-    </svg>
-  ),
-  settings: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  ),
-  records: (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
-    </svg>
-  ),
-  fields: (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
-    </svg>
-  ),
-  export: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-    </svg>
-  ),
-  download: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-    </svg>
-  ),
-};
-
 // Mini gráfico de barras
 const MiniBarChart = ({ data, color }) => {
   const max = Math.max(...data, 1);
@@ -82,7 +26,7 @@ const MiniDonut = ({ percentage, color, size = 40 }) => {
   
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" className="transform -rotate-90">
-      <circle cx="20" cy="20" r="15" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="4" />
+      <circle cx="20" cy="20" r="15" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="4" />
       <circle
         cx="20"
         cy="20"
@@ -97,6 +41,75 @@ const MiniDonut = ({ percentage, color, size = 40 }) => {
       />
     </svg>
   );
+};
+
+// Stat Card Component
+const StatCard = ({ icon, label, value, color, link, trend }) => (
+  <Link
+    to={link}
+    className="group p-5 rounded-xl transition-all duration-200 hover:bg-white/5"
+    style={{
+      background: 'rgba(255, 255, 255, 0.02)',
+      border: '1px solid rgba(255, 255, 255, 0.06)'
+    }}
+  >
+    <div className="flex items-center justify-between mb-3">
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${
+        color === 'blue' ? 'bg-violet-500' :
+        color === 'green' ? 'bg-emerald-500' :
+        color === 'purple' ? 'bg-pink-500' :
+        'bg-amber-500'
+      }`}>
+        {icon}
+      </div>
+      {trend && (
+        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-emerald-500/15 text-emerald-400">
+          {trend}
+        </span>
+      )}
+    </div>
+    <p className="text-2xl font-semibold text-white mb-0.5">{value.toLocaleString()}</p>
+    <p className="text-sm text-white/50">{label}</p>
+  </Link>
+);
+
+// Quick Action Card
+const QuickAction = ({ to, icon, label, desc, color }) => (
+  <Link 
+    to={to} 
+    className="group p-5 rounded-xl transition-all duration-200 text-center hover:bg-white/5"
+    style={{
+      background: 'rgba(255, 255, 255, 0.02)',
+      border: '1px solid rgba(255, 255, 255, 0.06)'
+    }}
+  >
+    <div className={`w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center transition-transform duration-200 group-hover:scale-110 text-white ${
+      color === 'blue' ? 'bg-violet-500' :
+      color === 'purple' ? 'bg-pink-500' :
+      color === 'green' ? 'bg-emerald-500' :
+      'bg-amber-500'
+    }`}>
+      {icon}
+    </div>
+    <h3 className="text-sm font-medium text-white group-hover:text-violet-400 transition-colors mb-0.5">
+      {label}
+    </h3>
+    <p className="text-xs text-white/40">{desc}</p>
+  </Link>
+);
+
+// Icons
+const Icons = {
+  tables: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3z" /><path strokeLinecap="round" strokeLinejoin="round" d="M4 11h16M9 4v16" /></svg>,
+  agents: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
+  flows: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
+  chat: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>,
+  arrow: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>,
+  records: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" /></svg>,
+  fields: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" /><path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" /></svg>,
+  clock: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+  empty: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>,
+  plus: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>,
 };
 
 export default function Dashboard() {
@@ -163,39 +176,42 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full bg-[#09090b]">
+      <div className="flex items-center justify-center h-full" style={{ background: '#0a0a12' }}>
         <div className="flex flex-col items-center gap-4">
-          <div className="relative w-10 h-10">
-            <div className="absolute inset-0 border-2 border-emerald-500/20 rounded-full" />
-            <div className="absolute inset-0 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+          <div className="relative w-12 h-12">
+            <div className="absolute inset-0 border-2 rounded-full border-violet-500/20" />
+            <div className="absolute inset-0 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
           </div>
-          <span className="text-sm text-zinc-500">Cargando...</span>
+          <span className="text-sm text-white/50">Cargando...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#09090b] p-8">
-      <div className="max-w-6xl mx-auto">
-        
-        {/* Header */}
-        <header className="mb-10">
+    <div className="min-h-screen" style={{ background: '#0a0a12' }}>
+      {/* Header simple */}
+      <header className="sticky top-0 z-10" style={{ 
+        background: 'rgba(10, 10, 18, 0.95)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+        backdropFilter: 'blur(20px)'
+      }}>
+        <div className="max-w-6xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {workspaceId && (
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6z" />
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white bg-violet-500">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5z" />
                   </svg>
                 </div>
               )}
               <div>
-                <h1 className="text-2xl font-semibold text-white tracking-tight">
+                <h1 className="text-xl font-semibold text-white">
                   {workspaceId ? workspaceName : "Bienvenido"}
                 </h1>
-                <p className="text-sm text-zinc-500 mt-0.5">
-                  {workspaceId ? "Gestiona tus recursos y automatizaciones" : "Selecciona un workspace para comenzar"}
+                <p className="text-sm text-white/40 mt-0.5">
+                  {workspaceId ? "Gestiona tus datos y automatizaciones" : "Selecciona un workspace para comenzar"}
                 </p>
               </div>
             </div>
@@ -203,79 +219,84 @@ export default function Dashboard() {
             {workspaceId && (
               <Link 
                 to="/workspaces" 
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-zinc-400 text-sm font-medium hover:bg-white/[0.06] hover:text-white transition-all"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:bg-white/5 text-white/60"
+                style={{ border: '1px solid rgba(255, 255, 255, 0.1)' }}
               >
-                {Icons.settings}
-                <span>Cambiar workspace</span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+                </svg>
+                <span>Cambiar</span>
               </Link>
             )}
           </div>
-        </header>
+        </div>
+      </header>
 
+      <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Error */}
         {error && (
-          <div className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center shrink-0">
-              <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="mb-8 p-4 bg-error-light border border-error-DEFAULT/20 rounded-xl flex items-center gap-3 animate-fade-up">
+            <div className="w-10 h-10 rounded-lg bg-error-DEFAULT/20 flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5 text-error-DEFAULT" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
             <div>
-              <h3 className="text-sm font-medium text-red-400">Error al cargar datos</h3>
-              <p className="text-xs text-red-400/60">{error}</p>
+              <h3 className="text-sm font-medium text-error-DEFAULT">Error al cargar datos</h3>
+              <p className="text-xs text-error-DEFAULT/70">{error}</p>
             </div>
           </div>
         )}
 
         {/* Sin workspace - Mostrar lista */}
         {!workspaceId && (
-          <section>
+          <section className="animate-fade-up">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-white">Tus workspaces</h2>
-              <Link to="/workspaces" className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors font-medium">
-                Ver todos →
+              <h2 className="text-lg font-semibold text-content-primary">Tus workspaces</h2>
+              <Link to="/workspaces" className="text-sm text-primary-400 hover:text-primary-300 transition-colors font-medium flex items-center gap-1">
+                Ver todos {Icons.arrow}
               </Link>
             </div>
             
             {workspaces.length === 0 ? (
-              <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-2xl">
-                <div className="w-16 h-16 rounded-2xl bg-zinc-800/50 flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                  </svg>
+              <div className="text-center py-16 bg-surface-100 border border-surface-300 rounded-2xl">
+                <div className="w-16 h-16 rounded-2xl bg-surface-200 flex items-center justify-center mx-auto mb-4">
+                  {Icons.empty}
                 </div>
-                <h3 className="text-lg font-medium text-white mb-2">No hay workspaces</h3>
-                <p className="text-sm text-zinc-500 mb-6 max-w-sm mx-auto">
+                <h3 className="text-lg font-medium text-content-primary mb-2">No hay workspaces</h3>
+                <p className="text-sm text-content-tertiary mb-6 max-w-sm mx-auto">
                   Crea tu primer workspace para organizar tus datos
                 </p>
-                <Link to="/workspaces" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-400 transition-colors">
+                <Link to="/workspaces" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-400 transition-colors">
+                  {Icons.plus}
                   Crear workspace
                 </Link>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {workspaces.map((ws) => (
+                {workspaces.map((ws, index) => (
                   <button
                     key={ws._id}
                     onClick={() => setWorkspace(ws._id, ws.name)}
-                    className="group text-left p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1] transition-all"
+                    className="group text-left p-5 rounded-xl bg-surface-100 border border-surface-300/50 hover:bg-surface-200 hover:border-surface-400 transition-all duration-200 animate-fade-up"
+                    style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div className="flex items-center gap-4">
                       <div
                         className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-semibold shadow-lg"
-                        style={{ background: `linear-gradient(135deg, ${ws.color || '#10b981'}, ${ws.color || '#059669'})` }}
+                        style={{ background: `linear-gradient(135deg, ${ws.color || '#3b82f6'}, ${ws.color || '#2563eb'})` }}
                       >
                         {ws.name?.charAt(0)?.toUpperCase() || "W"}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-white group-hover:text-emerald-400 transition-colors truncate">
+                        <h3 className="font-medium text-content-primary group-hover:text-primary-400 transition-colors truncate">
                           {ws.name}
                         </h3>
-                        <p className="text-xs text-zinc-600 truncate mt-0.5">
-                          ID: {ws._id?.slice(0, 12)}...
+                        <p className="text-xs text-content-muted truncate mt-0.5">
+                          {ws._id?.slice(0, 16)}...
                         </p>
                       </div>
-                      <span className="text-zinc-600 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all">
+                      <span className="text-content-muted group-hover:text-primary-400 group-hover:translate-x-1 transition-all">
                         {Icons.arrow}
                       </span>
                     </div>
@@ -288,53 +309,28 @@ export default function Dashboard() {
 
         {/* Con workspace seleccionado */}
         {workspaceId && (
-          <div className="space-y-8">
+          <div className="space-y-8 animate-fade-up">
             
             {/* Stats principales */}
             <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { icon: Icons.tables, label: "Tablas", value: tables.length, color: "blue", link: "/tables", trend: "+12%" },
-                { icon: Icons.records, label: "Registros", value: stats.totalRecords, color: "emerald", link: "/tables", trend: "+8%" },
-                { icon: Icons.fields, label: "Campos", value: stats.totalFields, color: "cyan", link: "/tables", trend: "" },
-                { icon: Icons.agents, label: "Agentes", value: agents.length, color: "purple", link: "/agents", trend: "" },
-              ].map((stat) => (
-                <Link
-                  key={stat.label}
-                  to={stat.link}
-                  className="group p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1] transition-all"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                      stat.color === 'blue' ? 'bg-blue-500/10 text-blue-400' :
-                      stat.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-400' :
-                      stat.color === 'cyan' ? 'bg-cyan-500/10 text-cyan-400' :
-                      stat.color === 'purple' ? 'bg-purple-500/10 text-purple-400' :
-                      'bg-amber-500/10 text-amber-400'
-                    }`}>
-                      {stat.icon}
-                    </div>
-                    {stat.trend && (
-                      <span className="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">{stat.trend}</span>
-                    )}
-                  </div>
-                  <p className="text-2xl font-bold text-white mb-0.5">{stat.value.toLocaleString()}</p>
-                  <p className="text-sm text-zinc-500">{stat.label}</p>
-                </Link>
-              ))}
+              <StatCard icon={Icons.tables} label="Tablas" value={tables.length} color="blue" link="/tables" trend={tables.length > 0 ? "+12%" : ""} />
+              <StatCard icon={Icons.records} label="Registros" value={stats.totalRecords} color="green" link="/tables" trend={stats.totalRecords > 0 ? "+8%" : ""} />
+              <StatCard icon={Icons.fields} label="Campos" value={stats.totalFields} color="purple" link="/tables" />
+              <StatCard icon={Icons.agents} label="Agentes" value={agents.length} color="amber" link="/agents" />
             </section>
 
             {/* Gráficos y visualizaciones */}
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Registros por tabla */}
-              <div className="p-6 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+              <div className="p-6 rounded-xl bg-surface-100 border border-surface-300">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h3 className="text-sm font-semibold text-white">Registros por tabla</h3>
-                    <p className="text-xs text-zinc-500 mt-0.5">Distribución de datos</p>
+                    <h3 className="text-sm font-semibold text-content-primary">Registros por tabla</h3>
+                    <p className="text-xs text-content-tertiary mt-0.5">Distribución de datos</p>
                   </div>
                   <div className="relative">
-                    <MiniDonut percentage={tables.length > 0 ? Math.min((stats.totalRecords / (tables.length * 100)) * 100, 100) : 0} color="#10b981" />
-                    <span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-emerald-400">
+                    <MiniDonut percentage={tables.length > 0 ? Math.min((stats.totalRecords / (tables.length * 100)) * 100, 100) : 0} color="#3b82f6" />
+                    <span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-primary-400">
                       {stats.totalRecords}
                     </span>
                   </div>
@@ -343,70 +339,70 @@ export default function Dashboard() {
                 <div className="space-y-3">
                   {stats.recordsByTable.length > 0 ? stats.recordsByTable.map((item, i) => (
                     <div key={i} className="flex items-center gap-3">
-                      <div className="w-24 text-sm text-zinc-400 truncate">{item.name}</div>
-                      <div className="flex-1 h-2 bg-white/[0.05] rounded-full overflow-hidden">
+                      <div className="w-24 text-sm text-content-tertiary truncate">{item.name}</div>
+                      <div className="flex-1 h-2 bg-surface-200 rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full transition-all duration-700"
+                          className="h-full bg-gradient-to-r from-primary-500 to-primary-400 rounded-full transition-all duration-700"
                           style={{ width: `${stats.totalRecords > 0 ? (item.count / stats.totalRecords) * 100 : 0}%` }}
                         />
                       </div>
-                      <span className="text-sm font-medium text-white w-12 text-right">{item.count}</span>
+                      <span className="text-sm font-medium text-content-primary w-12 text-right">{item.count}</span>
                     </div>
                   )) : (
-                    <p className="text-sm text-zinc-600 text-center py-4">No hay datos disponibles</p>
+                    <p className="text-sm text-content-muted text-center py-4">No hay datos disponibles</p>
                   )}
                 </div>
               </div>
 
-              {/* Actividad del workspace */}
-              <div className="p-6 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+              {/* Resumen del workspace */}
+              <div className="p-6 rounded-xl bg-surface-100 border border-surface-300">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h3 className="text-sm font-semibold text-white">Resumen del workspace</h3>
-                    <p className="text-xs text-zinc-500 mt-0.5">Estado general</p>
+                    <h3 className="text-sm font-semibold text-content-primary">Resumen del workspace</h3>
+                    <p className="text-xs text-content-tertiary mt-0.5">Estado general</p>
                   </div>
                   <MiniBarChart 
                     data={[tables.length, agents.length, stats.totalRecords > 100 ? 100 : stats.totalRecords, stats.totalFields, tables.length * 2]} 
-                    color="bg-gradient-to-t from-blue-500 to-cyan-400" 
+                    color="bg-gradient-to-t from-primary-500 to-primary-400" 
                   />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/5 to-blue-500/10 border border-blue-500/10">
+                  <div className="p-4 rounded-xl bg-primary-500/5 border border-primary-500/10">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400">
+                      <div className="w-8 h-8 rounded-lg bg-primary-500/15 flex items-center justify-center text-primary-400">
                         {Icons.tables}
                       </div>
-                      <span className="text-xs text-blue-400">Estructura</span>
+                      <span className="text-xs text-primary-400 font-medium">Estructura</span>
                     </div>
-                    <p className="text-lg font-bold text-white">{tables.length} tablas</p>
-                    <p className="text-xs text-zinc-500">{stats.totalFields} campos totales</p>
+                    <p className="text-lg font-semibold text-content-primary">{tables.length} tablas</p>
+                    <p className="text-xs text-content-tertiary">{stats.totalFields} campos totales</p>
                   </div>
                   
-                  <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/5 to-purple-500/10 border border-purple-500/10">
+                  <div className="p-4 rounded-xl bg-violet-500/5 border border-violet-500/10">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400">
+                      <div className="w-8 h-8 rounded-lg bg-violet-500/15 flex items-center justify-center text-violet-400">
                         {Icons.agents}
                       </div>
-                      <span className="text-xs text-purple-400">IA</span>
+                      <span className="text-xs text-violet-400 font-medium">IA</span>
                     </div>
-                    <p className="text-lg font-bold text-white">{agents.length} agentes</p>
-                    <p className="text-xs text-zinc-500">Configurados</p>
+                    <p className="text-lg font-semibold text-content-primary">{agents.length} agentes</p>
+                    <p className="text-xs text-content-tertiary">Configurados</p>
                   </div>
                   
-                  <div className="col-span-2 p-4 rounded-xl bg-gradient-to-br from-emerald-500/5 to-emerald-500/10 border border-emerald-500/10">
+                  <div className="col-span-2 p-4 rounded-xl bg-accent-500/5 border border-accent-500/10">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs text-emerald-400 mb-1">Capacidad de datos</p>
-                        <p className="text-lg font-bold text-white">{stats.totalRecords.toLocaleString()} registros</p>
+                        <p className="text-xs text-accent-400 mb-1 font-medium">Capacidad de datos</p>
+                        <p className="text-lg font-semibold text-content-primary">{stats.totalRecords.toLocaleString()} registros</p>
                       </div>
-                      <div className="w-16 h-16">
-                        <MiniDonut percentage={Math.min(stats.totalRecords / 10, 100)} color="#10b981" size={64} />
+                      <div className="w-14 h-14">
+                        <MiniDonut percentage={Math.min(stats.totalRecords / 10, 100)} color="#22c55e" size={56} />
                       </div>
                     </div>
-                    <div className="mt-3 h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
+                    <div className="mt-3 h-1.5 bg-surface-200 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full transition-all duration-700"
+                        className="h-full bg-gradient-to-r from-accent-500 to-accent-400 rounded-full transition-all duration-700"
                         style={{ width: `${Math.min(stats.totalRecords / 10, 100)}%` }}
                       />
                     </div>
@@ -417,95 +413,75 @@ export default function Dashboard() {
 
             {/* Acciones rápidas */}
             <section>
-              <h2 className="text-lg font-semibold text-white mb-4">Acciones rápidas</h2>
+              <h2 className="text-lg font-semibold text-content-primary mb-4">Acciones rápidas</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  { to: "/tables", icon: Icons.tables, label: "Ver tablas", desc: "Gestionar datos", color: "blue" },
-                  { to: "/agents", icon: Icons.agents, label: "Configurar agentes", desc: "IA conversacional", color: "purple" },
-                  { to: "/chat", icon: Icons.chat, label: "Iniciar chat", desc: "Interactuar con IA", color: "emerald" },
-                  { to: "/flows", icon: Icons.flows, label: "Crear flujo", desc: "Automatizaciones", color: "amber" },
-                ].map((action) => (
-                  <Link 
-                    key={action.to}
-                    to={action.to} 
-                    className="group p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1] transition-all text-center"
-                  >
-                    <div className={`w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center transition-transform group-hover:scale-110 ${
-                      action.color === 'blue' ? 'bg-blue-500/10 text-blue-400' :
-                      action.color === 'purple' ? 'bg-purple-500/10 text-purple-400' :
-                      action.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-400' :
-                      'bg-amber-500/10 text-amber-400'
-                    }`}>
-                      {action.icon}
-                    </div>
-                    <h3 className="text-sm font-medium text-white group-hover:text-emerald-400 transition-colors mb-0.5">
-                      {action.label}
-                    </h3>
-                    <p className="text-xs text-zinc-600">{action.desc}</p>
-                  </Link>
-                ))}
+                <QuickAction to="/tables" icon={Icons.tables} label="Ver tablas" desc="Gestionar datos" color="blue" />
+                <QuickAction to="/agents" icon={Icons.agents} label="Configurar agentes" desc="IA conversacional" color="purple" />
+                <QuickAction to="/chat" icon={Icons.chat} label="Iniciar chat" desc="Interactuar con IA" color="green" />
+                <QuickAction to="/flows" icon={Icons.flows} label="Crear flujo" desc="Automatizaciones" color="amber" />
               </div>
             </section>
 
             {/* Actividad reciente y Tablas */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Actividad reciente */}
-              <div className="lg:col-span-1 p-6 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+              <div className="lg:col-span-1 p-6 rounded-xl bg-surface-100 border border-surface-300">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-white">Actividad reciente</h3>
-                  <svg className="w-4 h-4 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <h3 className="text-sm font-semibold text-content-primary">Actividad reciente</h3>
+                  {Icons.clock}
                 </div>
                 
                 <div className="space-y-3">
                   {tables.length > 0 ? (
                     <>
-                      {tables.slice(0, 5).map((table, i) => (
-                        <div key={table._id} className="flex items-start gap-3 group">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                            i === 0 ? 'bg-emerald-500/10 text-emerald-400' :
-                            i === 1 ? 'bg-blue-500/10 text-blue-400' :
-                            'bg-white/5 text-zinc-500'
-                          }`}>
-                            {Icons.tables}
+                      {tables.slice(0, 5).map((table, i) => {
+                        // Calcular tiempo relativo real
+                        const getRelativeTime = (dateStr) => {
+                          if (!dateStr) return 'Sin fecha';
+                          const date = new Date(dateStr);
+                          const now = new Date();
+                          const diff = now - date;
+                          const mins = Math.floor(diff / 60000);
+                          const hours = Math.floor(diff / 3600000);
+                          const days = Math.floor(diff / 86400000);
+                          if (mins < 1) return 'Ahora';
+                          if (mins < 60) return `${mins}m`;
+                          if (hours < 24) return `${hours}h`;
+                          return `${days}d`;
+                        };
+                        const timeAgo = getRelativeTime(table.updatedAt || table.createdAt);
+                        const isRecent = timeAgo === 'Ahora' || timeAgo.endsWith('m');
+                        
+                        return (
+                          <div key={table._id} className="flex items-start gap-3 group">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                              isRecent ? 'bg-accent-500/15 text-accent-400' :
+                              i < 2 ? 'bg-primary-500/15 text-primary-400' :
+                              'bg-surface-200 text-content-tertiary'
+                            }`}>
+                              {Icons.tables}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-content-primary group-hover:text-primary-400 transition-colors truncate">
+                                {table.name}
+                              </p>
+                              <p className="text-xs text-content-muted">
+                                {isRecent ? 'Creada recientemente' : table.updatedAt ? 'Actualizada' : 'Tabla activa'}
+                              </p>
+                            </div>
+                            <span className="text-xs text-content-muted flex-shrink-0">
+                              {timeAgo}
+                            </span>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-white group-hover:text-emerald-400 transition-colors truncate">
-                              {table.name}
-                            </p>
-                            <p className="text-xs text-zinc-600">
-                              {i === 0 ? 'Creada recientemente' : i === 1 ? 'Actualizada hoy' : 'Tabla activa'}
-                            </p>
-                          </div>
-                          <span className="text-xs text-zinc-700 flex-shrink-0">
-                            {i === 0 ? 'Ahora' : i === 1 ? '2h' : `${i + 1}d`}
-                          </span>
-                        </div>
-                      ))}
-                      {agents.length > 0 && (
-                        <div className="flex items-start gap-3 group pt-2 border-t border-white/5">
-                          <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center flex-shrink-0">
-                            {Icons.agents}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-white group-hover:text-purple-400 transition-colors truncate">
-                              {agents[0]?.name || 'Agente'}
-                            </p>
-                            <p className="text-xs text-zinc-600">Agente configurado</p>
-                          </div>
-                          <span className="text-xs text-zinc-700 flex-shrink-0">3d</span>
-                        </div>
-                      )}
+                        );
+                      })}
                     </>
                   ) : (
                     <div className="text-center py-6">
-                      <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mx-auto mb-2 text-zinc-600">
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                      <div className="w-10 h-10 rounded-lg bg-surface-200 flex items-center justify-center mx-auto mb-2 text-content-muted">
+                        {Icons.clock}
                       </div>
-                      <p className="text-xs text-zinc-600">Sin actividad reciente</p>
+                      <p className="text-xs text-content-muted">Sin actividad reciente</p>
                     </div>
                   )}
                 </div>
@@ -513,51 +489,50 @@ export default function Dashboard() {
 
               {/* Tablas recientes */}
               <div className="lg:col-span-2">
-                {tables.length > 0 && (
+                {tables.length > 0 ? (
                   <section>
                     <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-sm font-semibold text-white">Tablas recientes</h2>
-                      <Link to="/tables" className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors font-medium flex items-center gap-1">
+                      <h2 className="text-sm font-semibold text-content-primary">Tablas recientes</h2>
+                      <Link to="/tables" className="text-xs text-primary-400 hover:text-primary-300 transition-colors font-medium flex items-center gap-1">
                         Ver todas {Icons.arrow}
                       </Link>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {tables.slice(0, 4).map((table) => (
-                        <div 
+                        <Link 
                           key={table._id} 
-                          className="group p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1] transition-all"
+                          to="/tables"
+                          className="group p-5 rounded-xl bg-surface-100 border border-surface-300/50 hover:bg-surface-200 hover:border-surface-400 transition-all"
                         >
                           <div className="flex items-start justify-between mb-3">
-                            <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
+                            <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center text-primary-400">
                               {Icons.tables}
                             </div>
-                            <span className="px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-400 text-xs font-medium border border-emerald-500/20">
+                            <span className="px-2 py-1 rounded-md bg-accent-500/10 text-accent-400 text-xs font-medium border border-accent-500/20">
                               {table.headers?.length || 0} campos
                             </span>
                           </div>
-                          <h3 className="font-medium text-white group-hover:text-emerald-400 transition-colors mb-1">
+                          <h3 className="font-medium text-content-primary group-hover:text-primary-400 transition-colors mb-1">
                             {table.name}
                           </h3>
-                          <p className="text-xs text-zinc-600 line-clamp-2">
+                          <p className="text-xs text-content-muted line-clamp-2">
                             {table.description || "Sin descripción"}
                           </p>
-                        </div>
+                        </Link>
                       ))}
                     </div>
                   </section>
-                )}
-
-                {/* Sin tablas */}
-                {tables.length === 0 && (
-                  <section className="text-center py-12 bg-white/[0.02] border border-white/[0.06] rounded-2xl h-full flex flex-col items-center justify-center">
-                    <div className="w-14 h-14 rounded-xl bg-blue-500/10 flex items-center justify-center mx-auto mb-4 text-blue-400">
+                ) : (
+                  <section className="text-center py-12 bg-surface-100 border border-surface-300/50 rounded-2xl h-full flex flex-col items-center justify-center">
+                    <div className="w-14 h-14 rounded-xl bg-primary-500/10 flex items-center justify-center mx-auto mb-4 text-primary-400">
                       {Icons.tables}
                     </div>
-                    <h3 className="text-lg font-medium text-white mb-2">No hay tablas creadas</h3>
-                    <p className="text-sm text-zinc-500 mb-6 max-w-sm mx-auto">
+                    <h3 className="text-lg font-medium text-content-primary mb-2">No hay tablas creadas</h3>
+                    <p className="text-sm text-content-tertiary mb-6 max-w-sm mx-auto">
                       Crea tu primera tabla para almacenar datos
                     </p>
-                    <Link to="/tables" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-400 transition-colors">
+                    <Link to="/tables" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-400 transition-colors">
+                      {Icons.plus}
                       Crear tabla
                     </Link>
                   </section>

@@ -67,14 +67,28 @@ function getFieldDisplayName(fieldName) {
 
 /**
  * Formatea los campos de forma amigable
+ * Soporta formato objeto {campo: valor} y array [{key, value}]
  */
 function formatFields(fields) {
-  if (!fields || typeof fields !== 'object') return null;
+  if (!fields) return null;
   
-  return Object.entries(fields).map(([key, value]) => ({
-    field: key,
-    value: typeof value === 'object' ? JSON.stringify(value) : String(value)
-  }));
+  // Si es un array (formato plantilla), convertirlo
+  if (Array.isArray(fields)) {
+    return fields.map(f => ({
+      field: f.key || f.field,
+      value: f.value || ''
+    }));
+  }
+  
+  // Si es un objeto (formato sistema)
+  if (typeof fields === 'object') {
+    return Object.entries(fields).map(([key, value]) => ({
+      field: key,
+      value: typeof value === 'object' ? JSON.stringify(value) : String(value)
+    }));
+  }
+  
+  return null;
 }
 
 /**
@@ -83,9 +97,11 @@ function formatFields(fields) {
 function getActionDisplay(actionType) {
   const actions = {
     'create': { icon: <PlusIcon size="sm" />, label: 'Crear registro', color: 'emerald' },
+    'insert': { icon: <PlusIcon size="sm" />, label: 'Insertar registro', color: 'emerald' },  // Alias para plantillas
     'update': { icon: <EditIcon size="sm" />, label: 'Actualizar registro', color: 'amber' },
     'upsert': { icon: <RefreshIcon size="sm" />, label: 'Crear o actualizar', color: 'blue' },
     'notification': { icon: <BellIcon size="sm" />, label: 'Notificación', color: 'purple' },
+    'notify': { icon: <BellIcon size="sm" />, label: 'Notificación', color: 'amber' },  // Alias para plantillas
     'error': { icon: <CloseIcon size="sm" />, label: 'Mostrar error', color: 'red' },
     'allow': { icon: <CheckIcon size="sm" />, label: 'Permitir', color: 'emerald' },
     'auto_create': { icon: <PlusIcon size="sm" />, label: 'Crear automático', color: 'emerald' },
@@ -99,7 +115,7 @@ function getActionDisplay(actionType) {
   return actions[actionType] || { icon: <BoltIcon size="sm" />, label: actionType || 'Acción', color: 'purple' };
 }
 
-export default function ActionNode({ id, data, selected }) {
+export default function ActionNode({ id, data, selected, type }) {
   const { setNodes } = useReactFlow();
 
   const updateNodeData = useCallback((key, value) => {
@@ -111,9 +127,24 @@ export default function ActionNode({ id, data, selected }) {
     }));
   }, [id, setNodes]);
 
-  const actionInfo = getActionDisplay(data?.actionType || data?.action);
+  // Detectar tipo de acción: de data.actionType, data.action, o del tipo de nodo (plantillas)
+  const effectiveActionType = data?.actionType || data?.action || type;
+  const actionInfo = getActionDisplay(effectiveActionType);
   const formattedFields = formatFields(data?.fields);
-  const isViewMode = data?.actionType; // Si tiene actionType, viene de un flujo guardado
+  
+  // Detectar modo vista: viene de flujo guardado o de plantilla con campos
+  const isTemplateType = ['insert', 'update', 'notify', 'action'].includes(type);
+  const isViewMode = data?.actionType || (data?.fields && data.fields.length > 0) || data?.tablePlaceholder || isTemplateType;
+  
+  // Obtener nombre de tabla
+  const tableName = data?.targetTableName || data?.tablePlaceholder || 'Tabla';
+  
+  // Label del nodo
+  const nodeLabel = data?.label || 'Acción';
+  
+  // Para notificaciones, obtener canal y mensaje
+  const notifyChannel = data?.channel;
+  const notifyMessage = data?.message;
 
   return (
     <div className={`min-w-[240px] rounded-xl overflow-hidden transition-all shadow-xl ${
@@ -135,25 +166,18 @@ export default function ActionNode({ id, data, selected }) {
           {actionInfo.icon}
         </div>
         <div className="flex-1">
-          <span className="text-sm font-semibold text-purple-400">Acción</span>
+          <span className="text-sm font-semibold text-purple-400">{nodeLabel}</span>
           <p className="text-[10px] text-purple-400/60">{actionInfo.label}</p>
         </div>
       </div>
       
       {/* Content */}
       <div className="p-4 space-y-3">
-        {/* Label si existe */}
-        {data?.label && (
-          <div className="text-sm font-medium text-white">
-            {data.label}
-          </div>
-        )}
-        
-        {/* Modo Vista (flujo guardado) */}
+        {/* Modo Vista (flujo guardado o plantilla) */}
         {isViewMode ? (
           <>
             {/* Tabla destino */}
-            {data?.targetTable && (
+            {(data?.targetTable || data?.tablePlaceholder) && (
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg"
                 style={{ 
                   background: 'rgba(139, 92, 246, 0.1)', 
@@ -162,7 +186,7 @@ export default function ActionNode({ id, data, selected }) {
               >
                 <span className="text-purple-400"><ClipboardIcon size="sm" /></span>
                 <span className="text-sm text-purple-300">
-                  En <span className="font-semibold text-purple-400">{data.targetTableName || 'Tabla'}</span>
+                  En <span className="font-semibold text-purple-400">{tableName}</span>
                 </span>
               </div>
             )}
@@ -187,6 +211,19 @@ export default function ActionNode({ id, data, selected }) {
                     <span className="text-amber-400">{String(val)}</span>
                   </div>
                 ))}
+              </div>
+            )}
+            
+            {/* RecordId para updates de plantillas */}
+            {data?.recordId && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs"
+                style={{ 
+                  background: 'rgba(251, 191, 36, 0.1)', 
+                  border: '1px solid rgba(251, 191, 36, 0.2)',
+                }}
+              >
+                <span className="text-amber-300">🎯 Registro:</span>
+                <span className="text-amber-400 truncate">{data.recordId}</span>
               </div>
             )}
             
@@ -220,16 +257,32 @@ export default function ActionNode({ id, data, selected }) {
               </div>
             )}
             
-            {/* Mensaje de error/notificación */}
-            {data?.message && (
-              <div className="px-3 py-2 rounded-lg text-xs"
+            {/* Canal de notificación (solo para notify) */}
+            {(type === 'notify' || effectiveActionType === 'notify') && notifyChannel && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs"
                 style={{ 
-                  background: data.actionType === 'error' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(139, 92, 246, 0.1)', 
-                  border: data.actionType === 'error' ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(139, 92, 246, 0.2)',
-                  color: data.actionType === 'error' ? '#fca5a5' : '#c4b5fd'
+                  background: 'rgba(251, 191, 36, 0.1)', 
+                  border: '1px solid rgba(251, 191, 36, 0.2)',
                 }}
               >
-                {data.message}
+                <span className="text-amber-400">🔔</span>
+                <span className="text-amber-300">Canal: <span className="font-medium text-amber-400">{notifyChannel}</span></span>
+              </div>
+            )}
+            
+            {/* Mensaje de error/notificación */}
+            {(data?.message || notifyMessage) && (
+              <div className="px-3 py-2 rounded-lg text-xs"
+                style={{ 
+                  background: effectiveActionType === 'error' ? 'rgba(239, 68, 68, 0.1)' : 
+                              effectiveActionType === 'notify' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(139, 92, 246, 0.1)', 
+                  border: effectiveActionType === 'error' ? '1px solid rgba(239, 68, 68, 0.2)' : 
+                          effectiveActionType === 'notify' ? '1px solid rgba(251, 191, 36, 0.2)' : '1px solid rgba(139, 92, 246, 0.2)',
+                  color: effectiveActionType === 'error' ? '#fca5a5' : 
+                         effectiveActionType === 'notify' ? '#fcd34d' : '#c4b5fd'
+                }}
+              >
+                <p className="whitespace-pre-line">{data?.message || notifyMessage}</p>
               </div>
             )}
           </>

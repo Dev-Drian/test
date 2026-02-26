@@ -283,7 +283,7 @@ export async function getFlowTemplates(req, res) {
       limit: 100,
     });
     
-    // Siempre agregar la opción "Flujo vacío" al inicio
+    // Agregar la opción "Flujo vacío" al final
     const emptyTemplate = {
       _id: 'empty',
       name: 'Flujo vacío',

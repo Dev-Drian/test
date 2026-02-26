@@ -1,72 +1,186 @@
-# 🚀 Sistema de Chatbot Dinámico Multi-Empresa
+# 🚀 FlowAI - Plataforma de Automatización con IA
 
-Sistema completo de chatbot con IA que funciona dinámicamente con **cualquier tipo de empresa** sin necesidad de código específico. 100% configurable desde la base de datos.
+Sistema completo de chatbot y automatización con IA que funciona dinámicamente con **cualquier tipo de empresa**. Incluye editor visual de flujos, chat multi-agente y gestión de datos dinámica.
+
+![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?logo=node.js)
+![React](https://img.shields.io/badge/React-18.x-61DAFB?logo=react)
+![CouchDB](https://img.shields.io/badge/CouchDB-3.x-E42528?logo=apache-couchdb)
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.x-06B6D4?logo=tailwindcss)
 
 ---
 
 ## ✨ Características Principales
 
-- ✅ **100% Dinámico:** Funciona con cualquier tabla, campo y flujo sin hardcodear
-- ✅ **Multi-Workspace:** Soporte para múltiples empresas independientes
-- ✅ **Multi-Agente:** Múltiples bots por workspace con configuración flexible
-- ✅ **Validación Inteligente:** 3 niveles de validación automática
-- ✅ **Bot con Flujos:** Recolección estructurada de datos con validación
-- ✅ **Bot Normal:** Conversaciones libres con GPT
-- ✅ **Frontend Adaptativo:** Se adapta a cualquier configuración
-- ✅ **EntityRepository Universal:** CRUD genérico para cualquier entidad
+### 🤖 Chat con IA Multi-Agente
+- Múltiples agentes por workspace con personalidades configurables
+- Bot con flujos para recolección estructurada de datos
+- Bot conversacional con GPT para charlas libres
+- Validación inteligente de campos en 3 niveles
+- Indicador de agente activo en tiempo real
+
+### 🎨 Editor Visual de Flujos
+- **9 tipos de nodos** configurables:
+  - `Trigger` - Inicio del flujo con keywords
+  - `Action` - Acciones sobre tablas (crear, actualizar, consultar)
+  - `Condition` - Bifurcaciones condicionales
+  - `Response` - Mensajes al usuario
+  - `Collect` - Recolección de datos
+  - `Query` - Consultas a tablas
+  - `Availability` - Verificación de disponibilidad
+  - `Update` - Actualización de registros
+  - `Notify` - Notificaciones
+- Plantillas predefinidas (Reservación, Soporte, Notificación, Ventas)
+- Drag & drop con conexiones visuales
+- Ejecución automática por triggers
+
+### 📊 Gestión Dinámica de Datos
+- Tablas configurables con `fieldsConfig`
+- Validación automática (teléfono, email, fecha, hora, etc.)
+- EntityRepository universal para cualquier entidad
+- CRUD completo sin código específico
+
+### 🏢 Multi-Workspace
+- Soporte para múltiples empresas independientes
+- Cada workspace con sus propios agentes, tablas y flujos
+- Aislamiento completo de datos
 
 ---
 
-## 🏗️ Arquitectura
+## 🛠️ Stack Tecnológico
+
+### Backend
+| Tecnología | Versión | Uso |
+|------------|---------|-----|
+| Node.js | 20.x | Runtime con ES Modules |
+| Express | 4.18.x | API REST |
+| CouchDB | 3.x | Base de datos NoSQL |
+| OpenAI API | GPT-4o-mini | Inteligencia artificial |
+| Winston | 3.x | Logging |
+| nspell | 2.x | Corrección ortográfica |
+
+### Frontend
+| Tecnología | Versión | Uso |
+|------------|---------|-----|
+| React | 18.x | UI Framework |
+| Vite | 7.x | Build tool |
+| TailwindCSS | 4.x | Estilos |
+| @xyflow/react | 12.x | Editor de flujos |
+| React Router | 6.x | Routing |
+| Axios | 1.6.x | HTTP Client |
+
+---
+
+## 📁 Estructura del Proyecto
 
 ```
-migracion/
-├── backend/                         # Node.js + Express + CouchDB
+flowai/
+├── backend/                          # API Node.js + Express
 │   ├── src/
-│   │   ├── config/                 # Configuración dinámica
-│   │   ├── controllers/            # API REST
-│   │   ├── core/                   # Engine (Chain of Responsibility)
+│   │   ├── config/                  # Configuración DB
+│   │   ├── controllers/             # REST Controllers
+│   │   │   ├── chatController.js    # Chat con IA
+│   │   │   ├── flowsController.js   # Gestión de flujos
+│   │   │   ├── tablesController.js  # Tablas dinámicas
+│   │   │   ├── agentsController.js  # Agentes
+│   │   │   └── workspacesController.js
+│   │   ├── core/                    # Motor del sistema
+│   │   │   ├── Engine.js            # Pipeline principal
+│   │   │   ├── Context.js           # Contexto de conversación
+│   │   │   └── EventEmitter.js      # Sistema de eventos
 │   │   ├── domain/
-│   │   │   ├── actions/            # Handlers (Create, Update, Query)
-│   │   │   ├── fields/             # FieldCollector con validación
-│   │   │   └── responses/          # ResponseBuilder
-│   │   ├── repositories/
-│   │   │   └── EntityRepository.js # ⭐ Repositorio universal
-│   │   ├── services/               # ChatService
-│   │   └── seeds/                  # Seeds genéricos
-│   └── .env                        # Configuración
-├── frontend/                        # React + Vite
+│   │   │   ├── actions/             # Handlers (Create, Query, Update...)
+│   │   │   ├── fields/              # FieldCollector con validación
+│   │   │   └── responses/           # ResponseBuilder
+│   │   ├── errors/                  # Manejo de errores
+│   │   │   ├── ErrorHandler.js
+│   │   │   ├── types/               # Tipos de error
+│   │   │   └── recovery/            # Estrategias de recuperación
+│   │   ├── integrations/
+│   │   │   ├── ai/                  # OpenAI integration
+│   │   │   └── notifications/       # Sistema de notificaciones
+│   │   ├── preprocessing/           # Preprocesamiento de texto
+│   │   │   ├── TextPreprocessor.js
+│   │   │   ├── processors/          # Correctores y normalizadores
+│   │   │   └── dictionaries/        # Diccionarios español
+│   │   ├── repositories/            # Acceso a datos
+│   │   │   ├── EntityRepository.js  # ⭐ Repositorio universal
+│   │   │   ├── TableRepository.js
+│   │   │   └── ChatRepository.js
+│   │   ├── services/
+│   │   │   ├── ChatService.js       # Servicio de chat
+│   │   │   ├── FlowExecutor.js      # ⭐ Ejecución de flujos
+│   │   │   └── flowEngine.js        # Motor de flujos
+│   │   └── seeds/                   # Datos de prueba
+│   └── package.json
+│
+├── frontend/                         # React + Vite + TailwindCSS
 │   ├── src/
-│   │   ├── api/                    # Cliente API
-│   │   ├── components/             # Componentes React
-│   │   ├── context/                # WorkspaceContext global
-│   │   └── pages/                  # Páginas
-│   └── .env                        # Configuración
-├── schemas/                         # Esquemas JSON
-├── 📚 INICIO_RAPIDO.md             # ⭐ Guía de instalación
-├── 📚 COMO_FUNCIONA_TODO.md        # Guía completa del sistema
-├── 📚 CONFIGURACION_DINAMICA.md    # Configuración avanzada
-├── 📚 ESTADO_ACTUAL.md             # Estado y mejoras
-└── 📚 INSTALACION_COUCHDB.md       # Instalación de CouchDB
+│   │   ├── api/
+│   │   │   └── client.js            # Cliente API
+│   │   ├── components/
+│   │   │   ├── Layout.jsx           # Layout principal
+│   │   │   ├── WorkspaceSelector.jsx
+│   │   │   ├── TableBuilder.jsx     # Constructor de tablas
+│   │   │   ├── Toast.jsx            # Notificaciones
+│   │   │   └── nodes/               # ⭐ Nodos del FlowEditor
+│   │   │       ├── TriggerNode.jsx
+│   │   │       ├── ActionNode.jsx
+│   │   │       ├── ConditionNode.jsx
+│   │   │       ├── ResponseNode.jsx
+│   │   │       ├── CollectNode.jsx
+│   │   │       ├── QueryNode.jsx
+│   │   │       └── AvailabilityNode.jsx
+│   │   ├── context/
+│   │   │   └── WorkspaceContext.jsx # Estado global
+│   │   └── pages/
+│   │       ├── Dashboard.jsx        # Vista general
+│   │       ├── Chat.jsx             # Chat con agentes
+│   │       ├── Tables.jsx           # Gestión de tablas
+│   │       ├── Agents.jsx           # Configuración de agentes
+│   │       ├── Workspaces.jsx       # Gestión de workspaces
+│   │       ├── FlowEditor.jsx       # ⭐ Editor visual
+│   │       └── Guia.jsx             # Documentación
+│   └── package.json
+│
+├── schemas/                          # Esquemas JSON de referencia
+├── docker-compose.yml               # Docker para CouchDB
+├── DESIGN_SYSTEM.md                 # Sistema de diseño UI
+└── README.md
 ```
 
 ---
 
-## 🚀 Inicio Rápido
+## 🚀 Instalación
 
-### 1. Requisitos
-- Node.js v20.19.6+
-- CouchDB 3.x
+### Requisitos Previos
+- Node.js v20.x o superior
+- CouchDB 3.x (o Docker)
 - API Key de OpenAI
 
-### 2. Instalación Backend
+### 1. Clonar Repositorio
+```bash
+git clone https://github.com/tu-usuario/flowai.git
+cd flowai
+```
+
+### 2. Iniciar CouchDB (Docker)
+```bash
+docker-compose up -d
+```
+O instalar CouchDB localmente y acceder a `http://localhost:5984/_utils`
+
+### 3. Backend
 ```bash
 cd backend
 npm install
 
-# Configurar .env
-# COUCHDB_URL=http://admin:password@127.0.0.1:5984
-# OPENAI_API_KEY=sk-...
+# Crear archivo .env
+cat > .env << EOF
+COUCHDB_URL=http://admin:password@127.0.0.1:5984
+OPENAI_API_KEY=sk-tu-api-key
+DB_PREFIX=chatbot_
+PORT=3010
+EOF
 
 # Crear datos de prueba
 node src/seeds/all.js --clean
@@ -75,346 +189,168 @@ node src/seeds/all.js --clean
 npm run dev
 ```
 
-### 3. Instalación Frontend
+### 4. Frontend
 ```bash
 cd frontend
 npm install
 
-# Ya está configurado en .env
+# Configurar API (ya viene configurado)
 # VITE_API_URL=http://localhost:3010/api
 
 # Iniciar servidor
 npm run dev
 ```
 
-### 4. Abrir navegador
+### 5. Abrir Aplicación
 ```
 http://localhost:3020
 ```
 
-**Ver guía completa:** [INICIO_RAPIDO.md](INICIO_RAPIDO.md)
+---
+
+## 📱 Páginas de la Aplicación
+
+| Página | Ruta | Descripción |
+|--------|------|-------------|
+| **Dashboard** | `/` | Vista general con estadísticas y acciones rápidas |
+| **Chat** | `/chat` | Conversaciones con agentes IA |
+| **Tables** | `/tables` | Gestión de tablas y datos |
+| **Agents** | `/agents` | Configuración de agentes |
+| **Workspaces** | `/workspaces` | Gestión de workspaces |
+| **Flow Editor** | `/flows` | Editor visual de automatizaciones |
+| **Guía** | `/guia` | Documentación interactiva |
 
 ---
 
-## 📚 Documentación
+## 🎯 Tipos de Nodos del Editor de Flujos
 
-### Guías Principales
-
-#### 🚀 [INICIO_RAPIDO.md](INICIO_RAPIDO.md)
-**Para empezar a usar el sistema**
-- Requisitos previos
-- Instalación paso a paso
-- Verificación
-- Uso del sistema
-- Solución de problemas
-
-#### 📖 [COMO_FUNCIONA_TODO.md](COMO_FUNCIONA_TODO.md)
-**Para entender el sistema**
-- Conceptos básicos (Workspace, Agente, Tabla, Campo)
-- Diferencia bot normal vs bot con flujos
-- Componentes clave (Engine, Context, FieldCollector, EntityRepository)
-- Flujo completo de un mensaje
-- Estructura de base de datos
-- Validaciones aplicadas
-
-#### ⚙️ [CONFIGURACION_DINAMICA.md](CONFIGURACION_DINAMICA.md)
-**Para configurar y extender**
-- Arquitectura dinámica
-- Prefijo de BD configurable
-- Funciones de BD dinámicas
-- Frontend dinámico
-- Para agregar nueva empresa
-
-#### 📋 [ESTADO_ACTUAL.md](ESTADO_ACTUAL.md)
-**Para ver qué está implementado**
-- Mejoras implementadas
-- EntityRepository
-- FieldCollector mejorado
-- Context.mergeFields()
-- Seeds genéricos
-- Validaciones aplicadas
-
-#### 🗄️ [INSTALACION_COUCHDB.md](INSTALACION_COUCHDB.md)
-**Para instalar CouchDB**
-- Instalación en Windows/Mac/Linux
-- Configuración
-- Verificación
-- Problemas comunes
-
-### READMEs Específicos
-
-- [backend/README.md](backend/README.md) - Documentación del backend
-- [frontend/README.md](frontend/README.md) - Documentación del frontend
+| Nodo | Icono | Descripción |
+|------|-------|-------------|
+| **Trigger** | ⚡ | Inicia el flujo (mensaje, evento, schedule) |
+| **Action** | 🎯 | Ejecuta acciones: crear, actualizar, eliminar |
+| **Condition** | 🔀 | Bifurcación condicional |
+| **Response** | 💬 | Envía mensaje al usuario |
+| **Collect** | 📝 | Recolecta datos del usuario |
+| **Query** | 🔍 | Consulta datos de tablas |
+| **Availability** | 📅 | Verifica disponibilidad |
+| **Update** | ✏️ | Actualiza registros existentes |
+| **Notify** | 🔔 | Envía notificaciones |
 
 ---
 
-## 🎯 Casos de Uso
-
-### 1. Restaurante - Sistema de Reservas
-```
-Campos: cliente, teléfono, fecha, hora, personas, mesa, estado
-Bot recolecta datos paso a paso
-Valida teléfono (10 dígitos), fecha (YYYY-MM-DD), hora (HH:MM)
-Guarda en BD automáticamente
-```
-
-### 2. Salón de Belleza - Sistema de Citas
-```
-Campos: cliente, teléfono, fecha, hora, servicio, especialista, estado
-Bot relaciona servicio con catálogo de servicios
-Valida disponibilidad de horarios
-Confirma y guarda cita
-```
-
-### 3. Clínica/Veterinaria - Sistema de Citas Médicas
-```
-Campos: paciente, dueño, teléfono, fecha, hora, motivo, doctor, notas
-Bot maneja urgencias con prioridad
-Valida campos opcionales (email, notas)
-Guarda historial médico
-```
-
-### 4. ¡Cualquier Negocio!
-**NO necesitas programar nada:**
-1. Crear workspace
-2. Crear tabla con fieldsConfig
-3. Crear agente con useFlows: true
-4. ¡El bot funciona automáticamente!
-
----
-
-## 🔧 Tecnologías
-
-### Backend
-- **Node.js** v20.19.6 con ES Modules
-- **Express.js** v4.18.2 para API REST
-- **CouchDB** v3.x para base de datos NoSQL
-- **nano** v10.1.2 como cliente de CouchDB
-- **OpenAI** GPT-4o-mini para IA
-- **uuid** v9.0.0 para IDs únicos
-
-### Frontend
-- **React** 18 con Hooks
-- **React Router DOM** para enrutamiento
-- **React Flow** para editor visual de flujos
-- **Axios** para HTTP requests
-- **Vite** como build tool
-- **CSS Modules** para estilos
-
-### Arquitectura
-- **Chain of Responsibility** (Engine + Handlers)
-- **Repository Pattern** (EntityRepository universal)
-- **Factory Pattern** (ActionFactory)
-- **Context Pattern** (WorkspaceContext)
-
----
-
-## 🎨 Flujo de Trabajo
-
-### Conversación de Ejemplo (Restaurante)
-
-```
-Usuario: "Quiero hacer una reserva"
-Bot: "¡Perfecto! ¿A nombre de quién será la reserva?"
-
-Usuario: "Juan Pérez"
-Bot: "¿A qué número te contactamos?"
-
-Usuario: "123"
-Bot: "❌ El teléfono debe tener 10 dígitos."
-
-Usuario: "3001234567"
-Bot: "¿Para qué fecha necesitas la reserva?"
-
-Usuario: "mañana"
-Bot: "¿A qué hora te gustaría?"
-
-Usuario: "8pm"
-Bot: "¿Para cuántas personas?"
-
-Usuario: "4"
-Bot muestra resumen:
-   👤 Cliente: Juan Pérez
-   📱 Teléfono: 3001234567
-   📅 Fecha: 2026-02-11
-   🕐 Hora: 20:00
-   👥 Personas: 4
-   
-Bot: "¿Todo correcto? (Sí/No)"
-
-Usuario: "Sí"
-Bot: "¡Reserva confirmada! Código: abc-123-xyz"
-```
-
-**Todo validado y guardado automáticamente** ✅
-
----
-
-## 🔥 Características Destacadas
-
-### EntityRepository Universal
-```javascript
-// Funciona con CUALQUIER tabla sin código específico
-const result = await entityRepo.create(workspaceId, tableId, data);
-
-// Valida automáticamente según fieldsConfig:
-// ✓ phone: 10 dígitos
-// ✓ email: formato válido
-// ✓ date: YYYY-MM-DD
-// ✓ time: HH:MM
-// ✓ number: min/max
-// ✓ select: opciones válidas
-```
-
-### FieldCollector Inteligente
-```javascript
-// NO extrae de mensajes de intención
-"quiero agendar" → NO extrae nada ✅
-
-// SÍ extrae de datos concretos
-"para 4 personas el viernes" → { personas: 4, fecha: "2026-02-14" } ✅
-
-// Valida ANTES de aceptar
-"teléfono 123" → Rechaza (no son 10 dígitos) ✅
-```
-
-### Context con Validación
-```javascript
-// Valida y normaliza antes de aceptar
-context.mergeFields({ telefono: "123" });
-// Retorna: {
-//   accepted: {},
-//   rejected: [{ field: "telefono", reason: "debe tener 10 dígitos" }]
-// }
-```
-
----
-
-## 📊 Base de Datos
-
-### Estructura de CouchDB
-```
-chatbot_workspaces               # Workspaces (empresas)
-chatbot_agents_{workspaceId}     # Agentes por workspace
-chatbot_tables_{workspaceId}     # Tablas por workspace
-chatbot_tabledata_{workspaceId}  # Datos de tablas
-chatbot_chat_{workspaceId}       # Chats por workspace
-chatbot_flows_{workspaceId}      # Flujos visuales
-```
-
-### Prefijo Configurable
-```env
-# En .env puedes cambiar el prefijo
-DB_PREFIX=miempresa_
-
-# Resultado:
-# miempresa_workspaces
-# miempresa_agents_{workspaceId}
-# etc.
-```
-
----
-
-## 🧪 Testing
-
-### Seeds de Prueba
-```bash
-# Crear 3 workspaces de prueba
-node src/seeds/all.js --clean
-
-# Crea:
-# - Restaurante (reservas)
-# - Salón de Belleza (citas de belleza)
-# - Clínica (citas médicas)
-```
-
-### Verificar Seeds
-```bash
-node check-seeds.js
-```
-
----
-
-## 🛠️ Comandos Útiles
+## 🔧 Comandos Útiles
 
 ### Backend
 ```bash
 cd backend
 
-# Desarrollo
-npm run dev
-
-# Producción
-npm start
-
-# Seeds
-node src/seeds/all.js --clean
-
-# Verificar
-node check-seeds.js
+npm run dev          # Desarrollo con hot-reload
+npm start            # Producción
+node src/seeds/all.js --clean  # Regenerar datos de prueba
+node check-seeds.js  # Verificar seeds
 ```
 
 ### Frontend
 ```bash
 cd frontend
 
-# Desarrollo
-npm run dev
-
-# Build
-npm run build
-
-# Preview
-npm run preview
+npm run dev          # Desarrollo
+npm run build        # Build para producción
+npm run preview      # Preview del build
 ```
 
 ---
 
-## 🚀 Despliegue
+## 🏗️ Arquitectura del Sistema
+
+### Patrones de Diseño
+- **Chain of Responsibility** - Engine + Handlers
+- **Repository Pattern** - EntityRepository universal
+- **Factory Pattern** - ActionFactory
+- **Pipeline Pattern** - Procesamiento de mensajes
+- **Strategy Pattern** - Estrategias de detección de intención
+
+### Flujo de un Mensaje
+```
+Usuario → [TextPreprocessor] → [IntentDetector] → [ActionHandler] → [ResponseBuilder] → Usuario
+              ↓                      ↓                  ↓                  ↓
+          Corrección            Intención           Acción            Respuesta
+          Normalización         Confianza           Datos BD          Formateada
+```
+
+---
+
+## 🗄️ Base de Datos
+
+### Estructura CouchDB
+```
+chatbot_workspaces                    # Workspaces globales
+chatbot_agents_{workspaceId}          # Agentes por workspace
+chatbot_tables_{workspaceId}          # Definición de tablas
+chatbot_tabledata_{workspaceId}_{tableId}  # Datos de cada tabla
+chatbot_chat_{workspaceId}            # Conversaciones
+chatbot_flows_{workspaceId}           # Flujos de automatización
+chatbot_flow_templates                # Plantillas globales de flujos
+```
+
+---
+
+## 🎨 Sistema de Diseño
+
+El frontend sigue un sistema de diseño moderno inspirado en **Linear**, **Vercel** y **Stripe**:
+
+- **Paleta oscura** - Fondo `#0a0a12` con superficies sutiles
+- **Acentos** - Violeta (`#8b5cf6`) y Esmeralda (`#10b981`)
+- **Tipografía** - Inter/System con jerarquía clara
+- **Espaciado** - Sistema de 8px
+- **Componentes** - Cards con bordes sutiles y estados hover
+
+Ver [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) para detalles completos.
+
+---
+
+## 🔐 Variables de Entorno
+
+### Backend (`.env`)
+```env
+COUCHDB_URL=http://admin:password@127.0.0.1:5984
+OPENAI_API_KEY=sk-...
+DB_PREFIX=chatbot_
+PORT=3010
+NODE_ENV=development
+```
+
+### Frontend (`.env`)
+```env
+VITE_API_URL=http://localhost:3010/api
+```
+
+---
+
+## 📚 Documentación
+
+- [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) - Sistema de diseño UI
+- [backend/README.md](backend/README.md) - Documentación del backend
+- [frontend/README.md](frontend/README.md) - Documentación del frontend
+- [backend/src/ARCHITECTURE.md](backend/src/ARCHITECTURE.md) - Arquitectura técnica
+
+---
+
+## 🚢 Despliegue
 
 ### Backend (Producción)
 ```env
 NODE_ENV=production
-COUCHDB_URL=https://usuario:password@tu-servidor.com:6984
-DB_PREFIX=prod_
+COUCHDB_URL=https://user:pass@tu-servidor:6984
 OPENAI_API_KEY=sk-...
 PORT=3010
 ```
 
 ### Frontend (Producción)
-```env
-VITE_API_URL=https://tu-backend.com/api
-```
-
 ```bash
 npm run build
-# Servir carpeta dist/ con Nginx/Apache/Vercel/Netlify
+# Servir carpeta dist/ con Nginx, Vercel o Netlify
 ```
-
----
-
-## 🐛 Problemas Comunes
-
-### Error 401: Unauthorized
-```
-Error: You are not authorized to access this db.
-```
-**Solución:** Configurar `COUCHDB_URL` en `backend/.env`
-
-Ver: [INSTALACION_COUCHDB.md](INSTALACION_COUCHDB.md)
-
----
-
-### Error ECONNREFUSED
-```
-Error: connect ECONNREFUSED 127.0.0.1:5984
-```
-**Solución:** CouchDB no está corriendo. Iniciarlo.
-
----
-
-### Frontend no conecta
-**Solución:** Verificar que backend esté en `http://localhost:3010`
 
 ---
 
@@ -423,50 +359,47 @@ Error: connect ECONNREFUSED 127.0.0.1:5984
 - [x] Sistema dinámico 100%
 - [x] EntityRepository universal
 - [x] Validaciones en 3 niveles
-- [x] Seeds genéricos
-- [x] Frontend adaptativo
+- [x] Editor visual de flujos
+- [x] Plantillas de flujos
+- [x] Multi-agente con indicador
+- [x] UI moderna con TailwindCSS v4
 - [ ] Autenticación de usuarios
 - [ ] Roles y permisos
-- [ ] Notificaciones en tiempo real
-- [ ] Webhooks
-- [ ] API de integración
-- [ ] Dark mode
+- [ ] Webhooks externos
+- [ ] API pública
 - [ ] Tests automatizados
 
 ---
 
-## 🤝 Contribuir
+## 🐛 Troubleshooting
 
-El sistema es completamente extensible:
+### Error 401: Unauthorized
+```
+Solución: Verificar COUCHDB_URL en backend/.env
+```
 
-### Agregar nuevo tipo de campo:
-1. Agregar validación en `EntityRepository._validateFields()`
-2. Agregar normalización en `EntityRepository._normalizeFields()`
-3. Agregar en `FieldCollector.validateField()`
+### Error ECONNREFUSED
+```
+Solución: Iniciar CouchDB con docker-compose up -d
+```
 
-### Agregar nuevo Handler:
-1. Crear en `backend/src/domain/actions/`
-2. Extender `ActionHandler`
-3. Implementar `canHandle()` y `execute()`
-4. Agregar en `ActionFactory`
-
-### Agregar nueva página en frontend:
-1. Crear en `frontend/src/pages/`
-2. Agregar ruta en `App.jsx`
-3. Agregar link en `Layout.jsx`
+### Frontend no conecta
+```
+Solución: Verificar que backend esté corriendo en puerto 3010
+```
 
 ---
 
 ## 📄 Licencia
 
-Este proyecto es privado y propiedad de [Tu Empresa].
+Proyecto privado - Todos los derechos reservados.
 
 ---
 
-## 🎉 ¡Listo para Usar!
+<div align="center">
 
-El sistema está **100% configurado** y **listo para producción**.
+**FlowAI** - Plataforma de Automatización con IA
 
-**Ver guía de inicio:** [INICIO_RAPIDO.md](INICIO_RAPIDO.md)
+Hecho con ❤️ usando React, Node.js y CouchDB
 
-**¡Disfruta del sistema dinámico multi-empresa!** 🚀
+</div>

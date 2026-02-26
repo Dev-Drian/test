@@ -38,7 +38,7 @@ function renderMarkdown(text) {
             if (beforeBold) {
               parts.push(<span key={key++}>{beforeBold}</span>);
             }
-            parts.push(<strong key={key++} className="font-semibold text-white">{boldMatch[1]}</strong>);
+            parts.push(<strong key={key++} className="font-semibold text-content-primary">{boldMatch[1]}</strong>);
             remaining = remaining.slice(boldMatch.index + boldMatch[0].length);
           } else {
             parts.push(<span key={key++}>{remaining}</span>);
@@ -269,18 +269,18 @@ export default function Chat() {
   // Sin workspace
   if (!workspaceId) {
     return (
-      <div className="flex items-center justify-center h-full bg-[#0a0a0a]">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-6 text-emerald-400">
+      <div className="flex items-center justify-center h-full bg-surface-0">
+        <div className="text-center animate-fade-up">
+          <div className="w-16 h-16 rounded-2xl bg-primary-500/10 flex items-center justify-center mx-auto mb-6 text-primary-400">
             <ChatIcon size="lg" />
           </div>
-          <h1 className="text-2xl font-semibold text-white mb-2">Chat con IA</h1>
-          <p className="text-zinc-500 mb-6 max-w-sm">
+          <h1 className="text-2xl font-semibold text-content-primary mb-2">Chat con IA</h1>
+          <p className="text-content-tertiary mb-6 max-w-sm">
             Selecciona un workspace para comenzar a chatear
           </p>
           <Link 
             to="/workspaces"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-400 transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-400 transition-colors"
           >
             Ir a Workspaces
           </Link>
@@ -290,16 +290,21 @@ export default function Chat() {
   }
 
   return (
-    <div className="h-[calc(100vh-60px)] flex bg-[#0a0a0a]">
+    <div className="h-[calc(100vh-60px)] flex" style={{ background: '#0a0a12' }}>
       {/* Sidebar */}
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-0'} flex-shrink-0 flex flex-col bg-[#0f0f0f] border-r border-white/5 transition-all duration-300 overflow-hidden`}>
+      <aside className={`${sidebarOpen ? 'w-64' : 'w-0'} flex-shrink-0 flex flex-col transition-all duration-300 overflow-hidden`}
+        style={{ background: '#0e0e1a', borderRight: '1px solid rgba(255, 255, 255, 0.06)' }}>
         <div className="flex flex-col h-full min-w-64">
           {/* Header del sidebar */}
           <div className="p-3">
             <button
               onClick={handleNewChat}
               disabled={!selectedAgentId}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-white/10 text-zinc-300 text-sm hover:bg-white/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-white/80 text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5"
+              style={{ 
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid rgba(255, 255, 255, 0.08)'
+              }}
             >
               <PlusIcon size="sm" />
               <span>Nueva conversación</span>
@@ -307,12 +312,12 @@ export default function Chat() {
           </div>
 
           {/* Selector de agente */}
-          <div className="px-3 pb-3 border-b border-white/5">
-            <p className="text-[10px] uppercase tracking-wider text-zinc-600 mb-2 px-1">Agente</p>
+          <div className="px-3 pb-3" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
+            <p className="text-[10px] uppercase tracking-wider mb-2 px-1 text-white/40">Agente</p>
             {loading ? (
-              <div className="px-3 py-2 text-zinc-600 text-sm">Cargando...</div>
+              <div className="px-3 py-2 text-white/40 text-sm">Cargando...</div>
             ) : agents.length === 0 ? (
-              <Link to="/agents" className="flex items-center gap-2 px-3 py-2 rounded-lg text-emerald-400 text-sm hover:bg-emerald-500/10">
+              <Link to="/agents" className="flex items-center gap-2 px-3 py-2 rounded-lg text-violet-400 text-sm hover:bg-violet-500/10">
                 <PlusIcon size="sm" />
                 Crear agente
               </Link>
@@ -322,14 +327,19 @@ export default function Chat() {
                   <button
                     key={agent._id}
                     onClick={() => handleAgentChange(agent._id)}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all ${
+                    className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-all ${
                       selectedAgentId === agent._id
-                        ? 'bg-white/10 text-white'
-                        : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
+                        ? 'text-white bg-white/8'
+                        : 'text-white/50 hover:text-white/80 hover:bg-white/4'
                     }`}
+                    style={selectedAgentId === agent._id ? {
+                      border: '1px solid rgba(255, 255, 255, 0.1)'
+                    } : { border: '1px solid transparent' }}
                   >
-                    <div className={`w-6 h-6 rounded-md flex items-center justify-center ${
-                      selectedAgentId === agent._id ? 'bg-emerald-500 text-white' : 'bg-white/10 text-zinc-400'
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                      selectedAgentId === agent._id 
+                        ? 'bg-violet-500 text-white' 
+                        : 'bg-white/10 text-white/50'
                     }`}>
                       <RobotIcon size="xs" />
                     </div>
@@ -343,28 +353,29 @@ export default function Chat() {
           {/* Lista de conversaciones */}
           <div className="flex-1 overflow-y-auto p-2">
             {loadingChats ? (
-              <div className="px-3 py-4 text-zinc-600 text-sm text-center">Cargando...</div>
+              <div className="px-3 py-4 text-white/40 text-sm text-center">Cargando...</div>
             ) : !selectedAgentId ? (
               <div className="px-3 py-8 text-center">
-                <p className="text-zinc-600 text-sm">Selecciona un agente</p>
+                <p className="text-white/30 text-sm">Selecciona un agente</p>
               </div>
             ) : chatList.length === 0 ? (
               <div className="px-3 py-8 text-center">
-                <p className="text-zinc-600 text-sm">Sin conversaciones</p>
+                <p className="text-white/30 text-sm">Sin conversaciones</p>
               </div>
             ) : (
               <div className="space-y-1">
                 {chatList.map((chat) => (
                   <div 
                     key={chat._id} 
-                    className={`group relative flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all ${
+                    className={`group relative flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${
                       chatId === chat._id 
-                        ? 'bg-white/10 text-white' 
-                        : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
+                        ? 'text-white bg-white/8' 
+                        : 'text-white/50 hover:text-white/80 hover:bg-white/4'
                     }`}
+                    style={chatId === chat._id ? { border: '1px solid rgba(255, 255, 255, 0.08)' } : { border: '1px solid transparent' }}
                     onClick={() => handleSelectChat(chat)}
                   >
-                    <ChatIcon size="sm" className="shrink-0 opacity-60" />
+                    <ChatIcon size="sm" className={`shrink-0 ${chatId === chat._id ? 'text-violet-400' : 'opacity-50'}`} />
                     {editingChatId === chat._id ? (
                       <input 
                         type="text" 
@@ -373,7 +384,8 @@ export default function Chat() {
                         onBlur={handleSaveRename} 
                         onKeyDown={(e) => e.key === "Enter" && handleSaveRename(e)} 
                         onClick={(e) => e.stopPropagation()} 
-                        className="flex-1 px-2 py-0.5 rounded bg-black/50 border border-white/20 text-sm text-white focus:outline-none focus:border-emerald-500"
+                        className="flex-1 px-2 py-0.5 rounded-lg text-sm text-white focus:outline-none"
+                        style={{ background: 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.15)' }}
                         autoFocus 
                       />
                     ) : (
@@ -381,14 +393,14 @@ export default function Chat() {
                         <span className="flex-1 text-sm truncate">{chat.title || "Nueva conversación"}</span>
                         <div className="hidden group-hover:flex items-center gap-0.5 shrink-0">
                           <button 
-                            className="p-1 rounded text-zinc-500 hover:text-white hover:bg-white/10" 
+                            className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-violet-500/20 transition-all" 
                             onClick={(e) => handleStartRename(e, chat)} 
                             title="Renombrar"
                           >
                             <EditIcon size="xs" />
                           </button>
                           <button 
-                            className="p-1 rounded text-zinc-500 hover:text-red-400 hover:bg-red-500/10" 
+                            className="p-1.5 rounded-lg text-white/50 hover:text-pink-400 hover:bg-pink-500/20 transition-all" 
                             onClick={(e) => handleDeleteChat(e, chat._id)} 
                             title="Eliminar"
                           >
@@ -408,8 +420,13 @@ export default function Chat() {
       {/* Toggle sidebar button */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="absolute left-2 top-20 z-10 p-2 rounded-lg bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-all"
-        style={{ left: sidebarOpen ? '252px' : '8px' }}
+        className="absolute left-2 top-20 z-10 p-2 rounded-xl transition-all hover:bg-white/10"
+        style={{ 
+          left: sidebarOpen ? '252px' : '8px',
+          background: 'rgba(255, 255, 255, 0.05)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          color: 'rgba(255, 255, 255, 0.6)'
+        }}
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           {sidebarOpen ? (
@@ -422,15 +439,44 @@ export default function Chat() {
 
       {/* Área principal */}
       <main className="flex-1 flex flex-col min-w-0">
+        {/* Header con agente activo */}
+        {selectedAgentId && (
+          <div className="shrink-0 px-6 py-3" style={{ 
+            background: 'rgba(255, 255, 255, 0.02)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
+          }}>
+            <div className="max-w-3xl mx-auto flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white bg-violet-500">
+                <RobotIcon size="sm" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">{selectedAgentName}</p>
+                <p className="text-xs text-white/40">Asistente activo</p>
+              </div>
+              <div className="ml-auto flex items-center gap-2">
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs"
+                  style={{ 
+                    background: 'rgba(52, 211, 153, 0.1)',
+                    border: '1px solid rgba(52, 211, 153, 0.2)',
+                    color: '#34d399'
+                  }}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  En línea
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {!selectedAgentId ? (
           /* Sin agente seleccionado */
           <div className="flex-1 flex items-center justify-center">
-            <div className="text-center max-w-md px-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 flex items-center justify-center mx-auto mb-6 text-purple-400">
+            <div className="text-center max-w-md px-4 animate-fade-up">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 text-violet-400 bg-violet-500/10">
                 <RobotIcon size="lg" />
               </div>
               <h2 className="text-xl font-medium text-white mb-2">Selecciona un agente</h2>
-              <p className="text-zinc-500 text-sm">
+              <p className="text-white/40 text-sm">
                 Elige un agente de la lista para comenzar a chatear
               </p>
             </div>
@@ -439,25 +485,25 @@ export default function Chat() {
           /* Estado inicial - sin chat */
           <div className="flex-1 flex flex-col">
             <div className="flex-1 flex items-center justify-center">
-              <div className="text-center max-w-2xl px-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center mx-auto mb-6 text-emerald-400">
-                  <SparklesIcon size="lg" />
+              <div className="text-center max-w-2xl px-4 animate-fade-up">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 bg-violet-500/10">
+                  <SparklesIcon size="lg" className="text-violet-400" />
                 </div>
                 <h1 className="text-2xl font-medium text-white mb-2">¿En qué puedo ayudarte?</h1>
-                <p className="text-zinc-500 mb-8">
-                  Estoy listo para responder tus preguntas sobre {workspaceName}
+                <p className="text-white/40 mb-8">
+                  Estoy listo para responder tus preguntas sobre <span className="text-violet-400">{workspaceName}</span>
                 </p>
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-zinc-400 text-sm">
-                  <RobotIcon size="sm" />
-                  <span>{selectedAgentName}</span>
-                </div>
               </div>
             </div>
             
             {/* Input centrado en estado inicial */}
             <div className="p-4 pb-8">
               <form onSubmit={handleSend} className="max-w-3xl mx-auto">
-                <div className="relative bg-[#1a1a1a] rounded-2xl border border-white/10 focus-within:border-white/20 transition-colors shadow-lg">
+                <div className="relative rounded-2xl transition-all"
+                  style={{ 
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)'
+                  }}>
                   <textarea
                     ref={textareaRef}
                     placeholder="Escribe un mensaje..."
@@ -465,19 +511,19 @@ export default function Chat() {
                     onChange={handleTextareaChange}
                     onKeyDown={handleKeyDown}
                     rows={1}
-                    className="w-full px-4 py-4 pr-14 bg-transparent text-white text-sm placeholder-zinc-500 resize-none focus:outline-none max-h-48"
+                    className="w-full px-5 py-4 pr-14 bg-transparent text-white text-sm placeholder-white/30 resize-none focus:outline-none max-h-48"
                     disabled={sending}
                   />
                   <button
                     type="submit"
                     disabled={sending || !input.trim()}
-                    className="absolute right-2 bottom-2 p-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="absolute right-3 bottom-3 p-2.5 rounded-xl text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:opacity-80 bg-violet-500"
                   >
                     <SendIcon size="sm" />
                   </button>
                 </div>
-                <p className="text-center text-xs text-zinc-600 mt-3">
-                  Presiona Enter para enviar, Shift + Enter para nueva línea
+                <p className="text-center text-xs text-white/30 mt-3">
+                  Presiona <span className="text-white/50">Enter</span> para enviar, <span className="text-white/50">Shift + Enter</span> para nueva línea
                 </p>
               </form>
             </div>
@@ -491,14 +537,15 @@ export default function Chat() {
                 {messages.map((m, idx) => (
                   <div 
                     key={m._id || m.id || `msg-${idx}`} 
-                    className={`py-6 ${idx !== 0 ? 'border-t border-white/5' : ''}`}
+                    className={`py-5 ${idx !== 0 ? '' : ''}`}
+                    style={idx !== 0 ? { borderTop: '1px solid rgba(255, 255, 255, 0.05)' } : {}}
                   >
                     <div className="flex gap-4">
                       {/* Avatar */}
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                         m.role === "user" 
-                          ? "bg-emerald-500 text-white" 
-                          : "bg-purple-500/20 text-purple-400"
+                          ? "bg-violet-500 text-white" 
+                          : "bg-emerald-500 text-white"
                       }`}>
                         {m.role === "user" ? (
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -512,11 +559,13 @@ export default function Chat() {
                       {/* Contenido */}
                       <div className="flex-1 min-w-0">
                         <p className={`text-xs font-medium mb-1.5 ${
-                          m.role === "user" ? "text-emerald-400" : "text-purple-400"
+                          m.role === "user" ? "text-violet-400" : "text-emerald-400"
                         }`}>
                           {m.role === "user" ? "Tú" : selectedAgentName}
                         </p>
-                        <div className="text-zinc-200 text-sm leading-relaxed whitespace-pre-wrap">
+                        <div className={`text-sm leading-relaxed whitespace-pre-wrap ${
+                          m.role === "user" ? "text-white/70" : "text-white/90"
+                        }`}>
                           {m.role === "user" ? m.content : renderMarkdown(m.content)}
                         </div>
                       </div>
@@ -526,17 +575,20 @@ export default function Chat() {
                 
                 {/* Indicador de escritura */}
                 {sending && (
-                  <div className="py-6 border-t border-white/5">
+                  <div className="py-5 animate-fade-in" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
                     <div className="flex gap-4">
-                      <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-emerald-500 text-white">
                         <SparklesIcon size="sm" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs font-medium mb-2 text-purple-400">{selectedAgentName}</p>
-                        <div className="flex gap-1">
-                          <span className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce [animation-delay:0ms]"></span>
-                          <span className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce [animation-delay:150ms]"></span>
-                          <span className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce [animation-delay:300ms]"></span>
+                        <p className="text-xs font-medium mb-2 text-emerald-400">{selectedAgentName}</p>
+                        <div className="flex items-center gap-3">
+                          <div className="flex gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 typing-dot"></span>
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 typing-dot"></span>
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 typing-dot"></span>
+                          </div>
+                          <span className="text-xs text-white/40">Escribiendo...</span>
                         </div>
                       </div>
                     </div>
@@ -547,9 +599,16 @@ export default function Chat() {
             </div>
 
             {/* Input fijo en la parte inferior */}
-            <div className="border-t border-white/5 bg-[#0a0a0a]">
+            <div style={{ 
+              borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+              background: 'rgba(10, 10, 18, 0.95)'
+            }}>
               <form onSubmit={handleSend} className="max-w-3xl mx-auto p-4">
-                <div className="relative bg-[#1a1a1a] rounded-2xl border border-white/10 focus-within:border-white/20 transition-colors shadow-lg">
+                <div className="relative rounded-2xl transition-all"
+                  style={{ 
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)'
+                  }}>
                   <textarea
                     ref={textareaRef}
                     placeholder="Escribe un mensaje..."
@@ -557,13 +616,13 @@ export default function Chat() {
                     onChange={handleTextareaChange}
                     onKeyDown={handleKeyDown}
                     rows={1}
-                    className="w-full px-4 py-4 pr-14 bg-transparent text-white text-sm placeholder-zinc-500 resize-none focus:outline-none max-h-48"
+                    className="w-full px-5 py-4 pr-14 bg-transparent text-white text-sm placeholder-white/30 resize-none focus:outline-none max-h-48"
                     disabled={sending}
                   />
                   <button
                     type="submit"
                     disabled={sending || !input.trim()}
-                    className="absolute right-2 bottom-2 p-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="absolute right-3 bottom-3 p-2.5 rounded-xl text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:opacity-80 bg-violet-500"
                   >
                     <SendIcon size="sm" />
                   </button>

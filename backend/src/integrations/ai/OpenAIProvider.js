@@ -166,6 +166,31 @@ export class OpenAIProvider extends AIProvider {
    * @returns {Promise<{category: string, isValid: boolean}>}
    */
   async classifyMessage(message, model = 'gpt-4o-mini') {
+    // Pre-check: Detectar patrones válidos sin necesidad de LLM
+    const msg = String(message).trim();
+    
+    // Emails válidos (cualquier dominio)
+    if (/^[\w.-]+@[\w.-]+\.\w{2,}$/i.test(msg)) {
+      return { category: 'VALID', isValid: true };
+    }
+    
+    // Números de teléfono (8-15 dígitos, con o sin espacios/guiones)
+    const digitsOnly = msg.replace(/[\s\-\(\)\.]/g, '');
+    if (/^\d{8,15}$/.test(digitsOnly)) {
+      return { category: 'VALID', isValid: true };
+    }
+    
+    // Mensajes cortos que son respuestas comunes
+    const shortValidResponses = ['si', 'sí', 'no', 'ok', 'hola', 'gracias', 'cancelar'];
+    if (shortValidResponses.includes(msg.toLowerCase())) {
+      return { category: 'VALID', isValid: true };
+    }
+    
+    // Si contiene @ es probablemente un email
+    if (msg.includes('@') && msg.includes('.')) {
+      return { category: 'VALID', isValid: true };
+    }
+    
     const prompt = `Clasifica el mensaje en UNA categoría:
 
 - VALID: Mensaje coherente, solicitud, datos, nombres, productos, cantidades, fechas
@@ -173,17 +198,23 @@ export class OpenAIProvider extends AIProvider {
 - SPAM: Publicidad externa no solicitada (ej: "COMPRA VIAGRA", "Gana dinero fácil")
 - ABUSE: Insultos, amenazas, contenido ofensivo
 
-IMPORTANTE - Son VALID (NO son SPAM):
+IMPORTANTE - Son VALID (NO son SPAM ni GARBAGE):
 - Datos de transacciones: "Juan compro 100 productos"
 - Nombres con cantidades: "Maria, 50 licencias"
 - Respuestas a formularios con datos
 - Cualquier mensaje con información de negocio
+- Emails de CUALQUIER dominio (gmail, outlook, .site, .tech, .xyz, etc.)
+- Números de teléfono (secuencias de dígitos de 8-15 caracteres)
+- URLs y dominios
+- Nombres de empresas o productos
 
 Reglas:
 1. Si tiene nombres de personas + datos → VALID
 2. Si tiene productos + cantidades → VALID
 3. Mensajes cortos ("hola", "si", "ok") → VALID
-4. Si dudas → VALID
+4. Emails con cualquier dominio → VALID
+5. Secuencias de dígitos (teléfonos, códigos) → VALID
+6. Si dudas → VALID
 
 Mensaje: "${String(message).slice(0, 200)}"
 

@@ -1,12 +1,13 @@
 /**
  * QueryNode - Nodo de consulta simplificado
  * Dos salidas: Sí encuentra / No encuentra
+ * Compatible con plantillas (tablePlaceholder) y sistema (targetTable)
  */
 import { Handle, Position } from '@xyflow/react';
 import { SearchIcon } from '../Icons';
 
 export default function QueryNode({ data, selected }) {
-  const { filterField, filterValueType, filterValueField, filterValueFixed, targetTableName, tables, targetTable, label } = data || {};
+  const { filterField, filterValueType, filterValueField, filterValueFixed, targetTableName, tables, targetTable, label, tablePlaceholder, filters, operation } = data || {};
   
   // Obtener label del campo
   const getFieldLabel = (fieldName) => {
@@ -20,6 +21,12 @@ export default function QueryNode({ data, selected }) {
   const valueDisplay = filterValueType === 'fixed' 
     ? (filterValueFixed || '?') 
     : (filterValueField ? getFieldLabel(filterValueField) : '?');
+    
+  // Nombre de tabla (sistema o plantilla)
+  const tableName = targetTableName || tablePlaceholder || 'Tabla';
+  
+  // Mostrar filtros de plantilla si existen
+  const hasTemplateFilters = filters && filters.length > 0;
 
   return (
     <div 
@@ -57,9 +64,10 @@ export default function QueryNode({ data, selected }) {
       <div className="p-4 space-y-2 text-center">
         <div>
           <span className="text-[10px] text-zinc-500">Buscar en</span>
-          <p className="text-sm font-semibold text-blue-400">{targetTableName || 'Tabla'}</p>
+          <p className="text-sm font-semibold text-blue-400">{tableName}</p>
         </div>
         
+        {/* Filtros del sistema */}
         {filterField && (
           <div 
             className="px-3 py-2 rounded-lg text-xs"
@@ -68,6 +76,30 @@ export default function QueryNode({ data, selected }) {
             <span className="text-blue-300">{getFieldLabel(filterField)}</span>
             <span className="text-amber-400 font-bold mx-1">=</span>
             <span className="text-amber-300">{valueDisplay}</span>
+          </div>
+        )}
+        
+        {/* Filtros de plantilla */}
+        {hasTemplateFilters && (
+          <div className="space-y-1">
+            {filters.slice(0, 2).map((f, i) => (
+              <div 
+                key={i}
+                className="px-3 py-1.5 rounded-lg text-xs text-left"
+                style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)' }}
+              >
+                <span className="text-blue-300">{f.field}</span>
+                <span className="text-zinc-500 mx-1">{f.operator}</span>
+                <span className="text-amber-300">{f.value}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Operación si existe */}
+        {operation && (
+          <div className="text-[10px] text-zinc-500">
+            Operación: <span className="text-blue-400">{operation}</span>
           </div>
         )}
       </div>

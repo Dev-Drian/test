@@ -14,7 +14,7 @@ import { TableDataRepository } from '../../repositories/TableDataRepository.js';
 import { processRelations, findTableByName } from '../../services/relationHandler.js';
 import { TablePermissions } from '../../services/TablePermissions.js';
 import { getOpenAIProvider } from '../../integrations/ai/OpenAIProvider.js';
-import { executeBeforeCreateFlows } from '../../services/FlowExecutor.js';
+import { executeBeforeCreateFlows, executeFlowsForTrigger, executePendingActions } from '../../services/FlowExecutor.js';
 
 export class CreateHandler extends ActionHandler {
   constructor(dependencies = {}) {
@@ -35,38 +35,42 @@ export class CreateHandler extends ActionHandler {
     const intent = context.intent || {};
     const message = (context.message || '').toLowerCase();
     
-    // Factor 1: pendingCreate activo (muy alto peso)
+    // Factor 1: pendingCreate activo (MUY alto peso - el usuario está en medio de un flujo)
     if (context.pendingCreate) {
-      score += 0.5;
+      score += 0.7; // Aumentado de 0.5 a 0.7
       
-      // Pero si el intent es query con alta confianza, reducir
-      if (intent.actionType === 'query' && intent.confidence >= 70) {
+      // Si el mensaje contiene datos relevantes para campos faltantes, aumentar más
+      const missingFields = context.missingFields || [];
+      const hasQuantityKeywords = /\d+/.test(message); // Tiene números (posible cantidad)
+      const hasProductKeywords = missingFields.includes('producto') && message.length > 3;
+      
+      if (hasQuantityKeywords && missingFields.includes('cantidad')) {
+        score += 0.15;
+      }
+      if (hasProductKeywords) {
+        score += 0.1;
+      }
+      
+      // SOLO reducir score si es una PREGUNTA explícita (tiene ?)
+      if (message.includes('?') || message.startsWith('¿')) {
         score -= 0.3;
       }
       
-      // Si es pregunta (tiene signos de interrogación), reducir
-      if (message.includes('?') || message.startsWith('¿')) {
-        score -= 0.15;
-      }
-      
-      // Si tiene campos recolectados y faltan más, aumentar
-      const collected = Object.keys(context.collectedFields || {}).length;
-      const missing = (context.missingFields || []).length;
-      if (collected > 0 && missing > 0) {
-        score += 0.2;
-      }
+      // NO reducir por intent query - el FieldCollector decidirá si es datos o consulta
     }
     
     // Factor 2: Intent del LLM es create
     if (intent.actionType === 'create') {
       const intentScore = (intent.confidence || 0) / 100;
-      score += intentScore * 0.4;
+      score += intentScore * 0.3;
     }
     
-    // Factor 3: Keywords de creación
-    const createKeywords = ['crear', 'nuevo', 'agregar', 'registrar', 'agendar', 'reservar'];
-    const keywordMatches = createKeywords.filter(kw => message.includes(kw)).length;
-    score += Math.min(keywordMatches * 0.1, 0.2);
+    // Factor 3: Keywords de creación (solo si no hay pendingCreate)
+    if (!context.pendingCreate) {
+      const createKeywords = ['crear', 'nuevo', 'agregar', 'registrar', 'agendar', 'reservar', 'compra', 'comprar'];
+      const keywordMatches = createKeywords.filter(kw => message.includes(kw)).length;
+      score += Math.min(keywordMatches * 0.1, 0.2);
+    }
     
     // Factor 4: Cancelación explícita (score 0)
     const cancelPatterns = /^(cancelar?|no\s*(quiero)?|olvidalo|dejalo|salir|exit)$/i;
@@ -155,6 +159,106 @@ export class CreateHandler extends ActionHandler {
       context.mergeFields(context.analysis.create.fields);
     }
     
+    // 2a. Verificar si hay una confirmación de coincidencia pendiente (confirmOnMatch)
+    if (context.pendingCreate?.pendingConfirmation) {
+      const confirmation = context.pendingCreate.pendingConfirmation;
+      const message = (context.message || '').toLowerCase().trim();
+      
+      // Detectar respuesta sí/no
+      const isYes = /^(s[ií]|yes|si|sip|ok|correcto|exacto|ese|esa|soy yo|es[eo])$/i.test(message);
+      const isNo = /^(no|nop|otro|nueva?|diferente|no soy|no es)$/i.test(message);
+      
+      if (isYes) {
+        // Usuario confirmó que es él - usar el cliente existente
+        console.log('[CreateHandler] User confirmed match, using existing:', confirmation.matchFound);
+        const matchName = confirmation.matchFound.nombre || confirmation.matchFound[confirmation.field];
+        context.addFields({ [confirmation.field]: matchName });
+        delete context.pendingCreate.pendingConfirmation;
+        context.savePendingState();
+        
+        // Continuar con el siguiente campo (el flujo normal lo manejará)
+      }
+      
+      if (isNo) {
+        // Usuario dijo que no es él - pedir datos para crear nuevo cliente
+        console.log('[CreateHandler] User rejected match, will create new');
+        delete context.pendingCreate.pendingConfirmation;
+        
+        // Guardar el nombre que ingresó para el nuevo cliente
+        context.pendingCreate.newRelatedRecord = {
+          tableName: confirmation.tableName,
+          field: confirmation.field,
+          partialData: { nombre: confirmation.inputValue },
+        };
+        context.savePendingState();
+        
+        return {
+          handled: true,
+          response: `👍 Entendido, crearemos tu registro.\n\n📧 ¿Cuál es tu correo electrónico?`,
+        };
+      }
+      
+      // Si no es sí ni no, recordarle la pregunta
+      if (!isYes && !isNo && message.length > 0 && message.length < 20) {
+        const matchName = confirmation.matchFound.nombre || confirmation.inputValue;
+        return {
+          handled: true,
+          response: `Por favor, responde **sí** o **no**.\n\n¿Eres **${matchName}**?`,
+        };
+      }
+    }
+    
+    // 2b. Verificar si estamos creando un nuevo registro relacionado
+    if (context.pendingCreate?.newRelatedRecord) {
+      const newRecord = context.pendingCreate.newRelatedRecord;
+      const message = (context.message || '').trim();
+      
+      // Detectar si es email
+      const emailMatch = message.match(/[\w.-]+@[\w.-]+\.\w+/);
+      if (emailMatch && !newRecord.partialData.email) {
+        newRecord.partialData.email = emailMatch[0];
+        context.savePendingState();
+        
+        return {
+          handled: true,
+          response: `✅ Email: ${emailMatch[0]}\n\n📱 ¿Cuál es tu número de teléfono?`,
+        };
+      }
+      
+      // Detectar si es teléfono (10 dígitos)
+      const phoneMatch = message.replace(/\D/g, '');
+      if (phoneMatch.length >= 10 && !newRecord.partialData.telefono) {
+        newRecord.partialData.telefono = phoneMatch.slice(0, 10);
+        
+        // Ya tenemos todos los datos - crear el cliente
+        try {
+          const { createRelatedRecord, findTableByName } = await import('../../services/relationHandler.js');
+          const relatedTable = await findTableByName(context.workspaceId, newRecord.tableName);
+          
+          if (relatedTable) {
+            const created = await createRelatedRecord(context.workspaceId, relatedTable._id, newRecord.partialData);
+            console.log('[CreateHandler] Created new related record:', created);
+            
+            // Asignar el cliente a la venta
+            context.addFields({ [newRecord.field]: newRecord.partialData.nombre });
+            delete context.pendingCreate.newRelatedRecord;
+            context.savePendingState();
+            
+            const successMsg = `✅ ¡Bienvenido/a **${newRecord.partialData.nombre}**!\n\nTe he registrado como nuevo cliente.`;
+            
+            // Continuar con el siguiente campo
+            const nextField = await this._askForNextField(context);
+            return {
+              handled: true,
+              response: `${successMsg}\n\n${nextField.response}`,
+            };
+          }
+        } catch (err) {
+          console.error('[CreateHandler] Error creating related record:', err);
+        }
+      }
+    }
+
     // Si es un nuevo pendingCreate Y el mensaje no contiene datos (solo intención),
     // ir directo a preguntar el primer campo sin correr FieldCollector
     const analysisHasFields = context.analysis?.create?.fields && 
@@ -184,6 +288,14 @@ export class CreateHandler extends ActionHandler {
         if (extracted?.wantsToChangeFlow && extracted?.newIntent) {
           console.log('[CreateHandler] User wants to change flow:', extracted.newIntent);
           
+          // PRIMERO: Guardar cualquier campo extraído ANTES de cambiar de flujo
+          // Esto permite que "Mauro, qué productos hay?" capture "Mauro" como cliente
+          if (extracted?.extractedFields && Object.keys(extracted.extractedFields).length > 0) {
+            console.log('[CreateHandler] Saving extracted fields before flow change:', extracted.extractedFields);
+            context.addFields(extracted.extractedFields);
+            context.savePendingState();
+          }
+          
           if (extracted.newIntent === 'cancel') {
             context.clearPendingCreate();
             context.savePendingState();
@@ -194,6 +306,7 @@ export class CreateHandler extends ActionHandler {
           }
           
           // Para query, availability, thanks → dejar que otro handler lo maneje
+          // Los campos ya fueron guardados arriba, así que el contexto se preserva
           // Devolver handled: false para que el Engine pase al siguiente handler
           return { handled: false };
         }
@@ -217,6 +330,31 @@ export class CreateHandler extends ActionHandler {
           return {
             handled: true,
             response: `⚠️ "${value}" no está registrado como ${label}.\n\n📋 Opciones disponibles: ${optionsStr}\n\n¿Cuál ${label} deseas seleccionar?`,
+          };
+        }
+        
+        // Si se encontró coincidencia que necesita confirmación (confirmOnMatch)
+        if (extracted?.confirmationNeeded) {
+          const { field, value, matchFound, tableName, message } = extracted.confirmationNeeded;
+          console.log('[CreateHandler] Confirmation needed for relation match:', matchFound);
+          
+          // Guardar en contexto el estado de confirmación pendiente
+          context.pendingCreate.pendingConfirmation = {
+            field: field,
+            inputValue: value,
+            matchFound: matchFound,
+            tableName: tableName,
+          };
+          context.savePendingState();
+          
+          // Construir mensaje de confirmación amigable
+          const matchName = matchFound.nombre || matchFound[extracted.confirmationNeeded.matchField] || value;
+          const matchEmail = matchFound.email ? ` (${matchFound.email})` : '';
+          const matchPhone = matchFound.telefono ? ` - Tel: ${matchFound.telefono}` : '';
+          
+          return {
+            handled: true,
+            response: `🔍 Encontré a **${matchName}**${matchEmail}${matchPhone} registrado.\n\n¿Eres tú? (sí/no)`,
           };
         }
         
@@ -710,8 +848,19 @@ NO uses emojis excesivos.`,
         };
       }
       
-      // Usar los campos modificados por el flow (incluye cálculos como total)
-      const fieldsWithCalculations = beforeCreateResult.fields;
+      // Fusionar campos originales con campos modificados por el flow (incluye cálculos como total)
+      // Los campos del flow tienen prioridad (pueden normalizar nombres, calcular totales, etc.)
+      const fieldsWithCalculations = { ...collectedFields, ...beforeCreateResult.fields };
+      
+      // Guardar acciones pendientes para ejecutar después de crear (updates a otras tablas, etc.)
+      const pendingActions = beforeCreateResult.pendingActions || [];
+      
+      console.log('[CreateHandler] Fields after beforeCreate:', {
+        original: collectedFields,
+        flowModified: beforeCreateResult.fields,
+        final: fieldsWithCalculations,
+        pendingActionsCount: pendingActions.length,
+      });
       
       // Usar EntityRepository para crear con validación automática
       const result = await this.entityRepo.create(workspaceId, tableId, fieldsWithCalculations, {
@@ -730,6 +879,28 @@ NO uses emojis excesivos.`,
       }
       
       const created = result.record;
+      
+      // Ejecutar acciones pendientes del beforeCreate (updates a otras tablas como descontar stock)
+      if (pendingActions.length > 0) {
+        try {
+          console.log(`[CreateHandler] Executing ${pendingActions.length} pending actions from beforeCreate...`);
+          const pendingResult = await executePendingActions(workspaceId, pendingActions, created);
+          console.log('[CreateHandler] Pending actions result:', pendingResult);
+        } catch (pendingError) {
+          console.error('[CreateHandler] Error in pending actions:', pendingError.message);
+          // No fallar la creación por errores en acciones secundarias
+        }
+      }
+      
+      // Ejecutar flujos afterCreate (triggerType: 'create') para acciones post-creación
+      // como descontar stock, crear seguimientos, etc.
+      try {
+        console.log('[CreateHandler] Executing afterCreate flows...');
+        await executeFlowsForTrigger(workspaceId, 'create', tableId, created);
+      } catch (flowError) {
+        console.error('[CreateHandler] Error in afterCreate flows:', flowError.message);
+        // No fallar la creación por errores en flows secundarios
+      }
       
       // Emitir evento para notificaciones
       this.eventEmitter.emit(EVENTS.RECORD_CREATED, {

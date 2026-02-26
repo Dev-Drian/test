@@ -22,7 +22,7 @@ export class FieldCollector {
    * @param {*} value - Valor extraído
    * @param {object} fieldConfig - Configuración del campo
    * @param {object} pendingCreate - Estado actual
-   * @returns {object} { valid: boolean, normalizedValue?: any, error?: string }
+   * @returns {object} { valid: boolean, normalizedValue?: any, error?: string, needsConfirmation?: object }
    */
   async validateExtractedField(fieldKey, value, fieldConfig, pendingCreate) {
     // 1. Verificar que el campo realmente esté faltante
@@ -38,6 +38,32 @@ export class FieldCollector {
     if (fieldConfig.type === 'relation' && fieldConfig.relation) {
       const workspaceId = pendingCreate.workspaceId;
       const relationValidation = await validateRelationField(workspaceId, value, fieldConfig);
+      
+      // Si necesita confirmación (confirmOnMatch), propagar ese estado
+      if (relationValidation.needsConfirmation) {
+        return {
+          valid: false,
+          needsConfirmation: true,
+          matchFound: relationValidation.matchFound,
+          matchField: relationValidation.matchField,
+          tableName: relationValidation.tableName,
+          tableId: relationValidation.tableId,
+          fieldKey: fieldKey,
+          fieldValue: value,
+          message: relationValidation.message,
+        };
+      }
+      
+      // Si no encontró coincidencia pero puede crear nuevo
+      if (relationValidation.needsNewRecord) {
+        return {
+          valid: true,
+          normalizedValue: value,
+          needsNewRecord: true,
+          tableName: relationValidation.tableName,
+          tableId: relationValidation.tableId,
+        };
+      }
       
       if (!relationValidation.valid) {
         return {
@@ -148,8 +174,32 @@ export class FieldCollector {
           
           // Validar campo (ahora es async para validar relaciones)
           const validation = await this.validateExtractedField(key, value, config, pendingCreate);
+          
           if (validation.valid) {
             validatedFields[key] = validation.normalizedValue;
+            
+            // Si necesita crear nuevo registro relacionado (confirmOnMatch sin coincidencia)
+            if (validation.needsNewRecord) {
+              extracted.needsNewRelatedRecord = {
+                field: key,
+                value: value,
+                tableName: validation.tableName,
+                tableId: validation.tableId,
+              };
+            }
+          } else if (validation.needsConfirmation) {
+            // Coincidencia encontrada que necesita confirmación del usuario
+            console.log(`[FieldCollector] Confirmation needed for ${key}:`, validation.matchFound);
+            extracted.confirmationNeeded = {
+              field: key,
+              value: value,
+              matchFound: validation.matchFound,
+              matchField: validation.matchField,
+              tableName: validation.tableName,
+              tableId: validation.tableId,
+              message: validation.message,
+            };
+            // No agregar a validatedFields hasta que confirme
           } else {
             console.warn(`[FieldCollector] Field validation failed: ${key} - ${validation.error}`);
             // Si hay opciones disponibles (campo de tipo relation), guardarlas para mostrar al usuario
@@ -334,7 +384,7 @@ REGLAS CRÍTICAS:
 7. Si el usuario dice algo como "el que te pasé antes", "el mismo", etc., revisa el CONTEXTO para encontrar el valor.
 8. Si el usuario MENCIONA una fecha ("hoy", "mañana", "lunes", "el 15", etc.), conviértela a YYYY-MM-DD e inclúyela.
 9. Si el usuario MENCIONA una hora ("a las 3", "7pm", etc.), conviértela a HH:MM 24h e inclúyela.
-10. Si el usuario pregunta algo ("qué servicios tienen?", "cuánto cuesta?", "hay disponibilidad?") → isDataResponse: false, wantsToChangeFlow: true, newIntent: "query".
+10. Si el usuario da datos Y TAMBIÉN pregunta algo ("Mauro, qué productos hay?"), EXTRAE los datos (isDataResponse: true, extractedFields: {...}) Y marca wantsToChangeFlow: true, newIntent: "query". Los datos van PRIMERO, la pregunta se procesa DESPUÉS.
 11. "cancelar", "no quiero" → isDataResponse: false, wantsToChangeFlow: true, newIntent: "cancel".
 12. MENSAJES DE INTENCIÓN ("quiero agendar", "necesito una cita") SIN detalles específicos → isDataResponse: false, extractedFields: {}
 13. Si el mensaje NO responde a una pregunta específica ni da datos concretos → isDataResponse: false
@@ -351,10 +401,18 @@ REGLAS PARA NOMBRES DE PRODUCTOS CON NÚMEROS:
 20. Si el producto termina en número (ej: "CRM 2.0", "Windows 11", "PS5"), el número ES PARTE DEL NOMBRE.
 21. Solo extrae cantidad cuando el usuario EXPLÍCITAMENTE la separa: "2 unidades de CRM", "CRM Pro, 5", "quiero 3".
 
+REGLA CRÍTICA PARA PATRÓN "quiero/necesito N [producto]":
+22. "quiero 2 servidores cloud" → producto: "servidores cloud" (o "Servidor Cloud"), cantidad: 2
+23. "necesito 5 licencias" → producto: "licencias", cantidad: 5
+24. Cuando el número está ANTES del producto/servicio, el número es CANTIDAD, el resto es el PRODUCTO.
+25. Patrones equivalentes: "quiero N X", "necesito N X", "dame N X", "me dan N X" → cantidad: N, producto: X
+26. CRÍTICO: Las palabras "quiero", "necesito", "dame", "me dan", "compro" SON VERBOS DE INTENCIÓN, NO son valores de campos. NUNCA extraigas estas palabras como cliente, producto u otro campo.
+
 REGLAS CONTRA TEXTO BASURA:
-22. NUNCA uses el mensaje del usuario como valor de un campo a menos que sea una respuesta directa válida.
-23. Si el usuario habla sobre el proceso ("de la cantidad de software") NO es un nombre de cliente válido.
-24. Mensajes como "cambia X por Y", "el producto por el cliente" son INSTRUCCIONES, no datos → isDataResponse: false
+27. NUNCA uses el mensaje del usuario como valor de un campo a menos que sea una respuesta directa válida.
+28. Si el usuario habla sobre el proceso ("de la cantidad de software") NO es un nombre de cliente válido.
+29. Mensajes como "cambia X por Y", "el producto por el cliente" son INSTRUCCIONES, no datos → isDataResponse: false
+30. VERBOS DE INTENCIÓN PROHIBIDOS como valores: quiero, necesito, dame, compro, pido, solicito, requiero, deseo. Estos NUNCA son nombres de cliente/producto.
 
 REGLA FINAL - EXTRACCIÓN MÚLTIPLE:
 - Si el usuario proporciona VARIOS datos en un mensaje, EXTRÁELOS TODOS.
