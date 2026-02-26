@@ -72,7 +72,9 @@ export class ChatEngine {
     const startTime = Date.now();
     
     // 1. Clasificar mensaje (reemplaza _isGarbageText hardcodeado)
-    const classification = await this.aiProvider.classifyMessage(context.message);
+    // Pasar nombres de tablas para que el clasificador sepa qué es válido
+    const tableNames = (context.tables || []).map(t => t.name);
+    const classification = await this.aiProvider.classifyMessage(context.message, 'gpt-4o-mini', tableNames);
     
     if (!classification.isValid) {
       log.info('Message classified as invalid', { 

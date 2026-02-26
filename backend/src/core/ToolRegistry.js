@@ -79,7 +79,21 @@ const CORE_TOOLS = [
           },
           filters: {
             type: 'object',
-            description: 'Extrae todos los criterios de búsqueda mencionados por el usuario. USA LOS NOMBRES DE CAMPOS REALES de la tabla (ver system prompt). Si el usuario dice un criterio, mapéalo al campo correcto de la tabla. Sin criterios específicos → {} vacío.',
+            description: `CRÍTICO: Extrae TODOS los criterios de búsqueda del mensaje del usuario.
+            
+REGLAS:
+1. Cada criterio mencionado = un campo en filters
+2. Usa los nombres de campos de la tabla (cliente, estado, fecha, producto, etc.)
+3. NUNCA devuelvas {} si el usuario menciona criterios
+
+EJEMPLOS:
+- "ventas de Juan" → {"cliente": "Juan"}
+- "ventas de María García con estado pendiente" → {"cliente": "María García", "estado": "Pendiente"}
+- "citas de hoy" → {"fecha": "2026-02-26"}
+- "clientes activos de Bogotá" → {"estado": "Activo", "ciudad": "Bogotá"}
+- "productos con precio mayor a 100" → {"precio": ">100"}
+
+Si el usuario NO menciona ningún criterio específico → {} vacío.`,
             additionalProperties: true,
           },
           limit: {

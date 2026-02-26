@@ -66,6 +66,13 @@ export class QueryHandler extends ActionHandler {
     
     try {
       
+      // ═══ DETECTAR PREGUNTAS SOBRE OPCIONES DE CAMPO ═══
+      // "qué tipos de clientes existen", "cuáles son las categorías"
+      const fieldOptionsResult = this._checkForFieldOptionsQuestion(message, tableSchema);
+      if (fieldOptionsResult) {
+        return fieldOptionsResult;
+      }
+      
       // Verificar permisos
       const permission = TablePermissions.check(tableSchema, 'query');
       if (!permission.allowed) {
@@ -80,8 +87,17 @@ export class QueryHandler extends ActionHandler {
       console.log('[QueryHandler] ParsedQuery:', JSON.stringify(parsedQuery, null, 2));
       
       // Normalizar nombres de campos de los filtros del LLM para que coincidan con la tabla
-      const llmFilters = this._normalizeFilters(analysis.query?.filters || {}, tableSchema);
+      let llmFilters = this._normalizeFilters(analysis.query?.filters || {}, tableSchema);
       console.log('[QueryHandler] LLM filters normalized:', JSON.stringify(llmFilters, null, 2));
+      
+      // ═══ FALLBACK: Extraer filtros si el LLM falló ═══
+      if (Object.keys(llmFilters).length === 0) {
+        const fallbackFilters = this._extractFallbackFilters(message, tableSchema);
+        if (Object.keys(fallbackFilters).length > 0) {
+          console.log('[QueryHandler] FALLBACK filters extracted:', JSON.stringify(fallbackFilters, null, 2));
+          llmFilters = fallbackFilters;
+        }
+      }
       
       // Combinar filtros del LLM con los del QueryParser
       let combinedFilters = {
@@ -494,6 +510,140 @@ export class QueryHandler extends ActionHandler {
     }
     
     return response;
+  }
+  
+  /**
+   * Extrae filtros del mensaje del usuario cuando el LLM falla
+   * Usa NLP básico para detectar patrones comunes
+   * 
+   * @param {string} message - Mensaje del usuario
+   * @param {object} tableSchema - Schema de la tabla
+   * @returns {object} - Filtros extraídos
+   * @private
+   */
+  _extractFallbackFilters(message, tableSchema) {
+    const filters = {};
+    const msgLower = message.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    
+    // Obtener campos de la tabla
+    const realFields = (tableSchema?.headers || tableSchema?.fields || []).map(h => {
+      if (typeof h === 'string') return h;
+      return h.name || h.key || h.label || h;
+    });
+    
+    // Campo de nombre/cliente
+    const nameField = realFields.find(f => 
+      /^(nombre|cliente|customer|contact|paciente|usuario)$/i.test(f)
+    );
+    
+    // Campo de estado
+    const statusField = realFields.find(f => 
+      /^(estado|status|situacion)$/i.test(f)
+    );
+    
+    // ═══ PATRÓN 1: "de [nombre]" ═══
+    // Matches: "ventas de María García", "citas de Juan Pérez"
+    const namePattern = /(?:de|del?)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*)/i;
+    const nameMatch = message.match(namePattern);
+    if (nameMatch && nameField) {
+      filters[nameField] = nameMatch[1].trim();
+    }
+    
+    // ═══ PATRÓN 2: "con estado [estado]" o "estado [estado]" ═══
+    // Matches: "con estado pendiente", "estado cancelada"
+    const statusPattern = /(?:con\s+)?estado\s+([a-záéíóúñ]+)/i;
+    const statusMatch = message.match(statusPattern);
+    if (statusMatch && statusField) {
+      // Capitalizar primera letra
+      const status = statusMatch[1].charAt(0).toUpperCase() + statusMatch[1].slice(1).toLowerCase();
+      filters[statusField] = status;
+    }
+    
+    // ═══ PATRÓN 3: "[estado]s" como adjetivo (pendientes, canceladas) ═══
+    // Matches: "ventas pendientes", "citas canceladas"
+    if (!filters[statusField] && statusField) {
+      const statusAdjectivePattern = /\b(pendiente|cancelad[oa]|completad[oa]|activ[oa]|inactiv[oa])s?\b/i;
+      const adjMatch = msgLower.match(statusAdjectivePattern);
+      if (adjMatch) {
+        // Normalizar: "pendientes" → "Pendiente"
+        let status = adjMatch[1].replace(/s$/, '').replace(/[oa]$/, 'o');
+        status = status.charAt(0).toUpperCase() + status.slice(1);
+        if (status === 'Cancelado') status = 'Cancelada';
+        if (status === 'Completado') status = 'Completada';
+        filters[statusField] = status;
+      }
+    }
+    
+    console.log('[QueryHandler] Fallback extraction:', { 
+      message: message.substring(0, 50),
+      nameField,
+      statusField,
+      filters 
+    });
+    
+    return filters;
+  }
+  
+  /**
+   * Detecta si el usuario pregunta por opciones de un campo (tipo, categoría, estado)
+   * Ej: "qué tipos de clientes existen", "cuáles son las categorías"
+   * 
+   * @param {string} message - Mensaje del usuario
+   * @param {object} tableSchema - Schema de la tabla
+   * @returns {object|null} - Respuesta con opciones o null si no aplica
+   * @private
+   */
+  _checkForFieldOptionsQuestion(message, tableSchema) {
+    const msgLower = message.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    
+    // Patrones que indican pregunta sobre opciones
+    const askingForOptions = /\b(que|cual|cuales)\s+(tipo|tipos|categoria|categorias|estado|estados|opciones)\b/i.test(msgLower)
+      || /\b(tipo|tipos|categoria|categorias)\s+(de|hay|existen|tienen)/i.test(msgLower)
+      || /\bexisten\s+(tipo|categoria)/i.test(msgLower);
+    
+    if (!askingForOptions) return null;
+    
+    // Obtener campos de la tabla
+    const fields = tableSchema?.headers || tableSchema?.fields || [];
+    
+    // Buscar campo con opciones que coincida con la pregunta
+    const fieldKeywords = {
+      'tipo': ['tipo', 'types'],
+      'categoria': ['categoria', 'category'],
+      'estado': ['estado', 'status'],
+    };
+    
+    for (const field of fields) {
+      const fieldConfig = typeof field === 'object' ? field : { key: field };
+      const fieldKey = (fieldConfig.key || fieldConfig.name || '').toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      
+      // Verificar si el campo tiene opciones y coincide con la pregunta
+      const options = fieldConfig.options;
+      if (!options || !Array.isArray(options) || options.length === 0) continue;
+      
+      // Verificar si la pregunta menciona este tipo de campo
+      for (const [keyword, aliases] of Object.entries(fieldKeywords)) {
+        if (msgLower.includes(keyword) && (fieldKey.includes(keyword) || aliases.some(a => fieldKey.includes(a)))) {
+          const label = fieldConfig.label || fieldConfig.key || keyword;
+          const emoji = fieldConfig.emoji || '📋';
+          
+          console.log('[QueryHandler] Field options question detected:', {
+            field: fieldKey,
+            options
+          });
+          
+          return {
+            handled: true,
+            response: `${emoji} Los **${label.toLowerCase()}s** disponibles son:\n\n${options.map(opt => `• ${opt}`).join('\n')}\n\n¿Cuál deseas usar?`,
+          };
+        }
+      }
+    }
+    
+    return null;
   }
 }
 

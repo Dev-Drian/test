@@ -230,13 +230,20 @@ Mantén respuestas concisas (2-3 oraciones cuando sea posible).`;
       lines.push('');
       lines.push('🔵 query_records - CONSULTAR/VER datos existentes:');
       lines.push('   • Cuando el usuario quiera ver/buscar/consultar datos');
-      lines.push('   • SIEMPRE extrae los criterios de búsqueda en "filters"');
+      lines.push('   • SIEMPRE extrae TODOS los criterios de búsqueda en "filters"');
       lines.push('');
-      lines.push('   🚨 REGLA CRÍTICA: MIRA LOS CAMPOS DE LA TABLA');
-      lines.push('   1. Identifica QUÉ quiere filtrar el usuario (nombre, estado, fecha, etc.)');
-      lines.push('   2. Busca en los "Campos" de la tabla cuál corresponde semánticamente');
-      lines.push('   3. Usa ESE campo exacto en filters');
+      lines.push('   🚨 REGLA CRÍTICA: EXTRAE TODOS LOS FILTROS');
+      lines.push('   1. Lee el mensaje completo del usuario');
+      lines.push('   2. Identifica CADA criterio mencionado (cliente, estado, fecha, etc.)');
+      lines.push('   3. Mapea cada criterio al campo correcto de la tabla');
+      lines.push('   4. Incluye TODOS en filters - nunca omitas ninguno');
       lines.push('');
+      lines.push('   ✅ EJEMPLOS CORRECTOS:');
+      lines.push('   • "ventas de Juan" → filters: {"cliente": "Juan"}');
+      lines.push('   • "ventas de María con estado Pendiente" → filters: {"cliente": "María", "estado": "Pendiente"}');
+      lines.push('   • "citas canceladas de hoy" → filters: {"estado": "Cancelada", "fecha": "..."}');
+      lines.push('');
+      lines.push('   ❌ ERROR COMÚN: Solo extraer UN filtro cuando hay varios');
       lines.push('   ⚠️ NUNCA envíes filters: {} cuando el usuario menciona criterios de búsqueda');
       
       // Generar ejemplos DINÁMICOS basados en tablas reales

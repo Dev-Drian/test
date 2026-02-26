@@ -166,11 +166,35 @@ export class OpenAIProvider extends AIProvider {
    * Reemplaza los regex hardcodeados de _isGarbageText
    * @param {string} message - Mensaje a clasificar
    * @param {string} model - Modelo a usar (default: gpt-4o-mini para costo)
+   * @param {string[]} tableNames - Nombres de tablas del workspace (para validar consultas)
    * @returns {Promise<{category: string, isValid: boolean}>}
    */
-  async classifyMessage(message, model = 'gpt-4o-mini') {
+  async classifyMessage(message, model = 'gpt-4o-mini', tableNames = []) {
     // Pre-check: Detectar patrones válidos sin necesidad de LLM
     const msg = String(message).trim();
+    const msgLower = msg.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    
+    // ═══ PRE-CHECK: Si menciona una tabla conocida → VALID ═══
+    // Esto evita clasificar "que tipo de clientes existen" como garbage
+    if (tableNames.length > 0) {
+      const tableNamesLower = tableNames.map(t => 
+        t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      );
+      for (const tableName of tableNamesLower) {
+        // Buscar tanto singular como plural
+        const singular = tableName.replace(/s$/, '');
+        if (msgLower.includes(tableName) || msgLower.includes(singular)) {
+          return { category: 'VALID', isValid: true };
+        }
+      }
+    }
+    
+    // Palabras clave de consultas válidas (preguntas sobre datos)
+    const queryKeywords = ['que', 'cual', 'cuales', 'cuantos', 'cuantas', 'mostrar', 'dame', 'lista', 'buscar', 'ver', 'existen', 'hay', 'tienen'];
+    const hasQueryKeyword = queryKeywords.some(kw => msgLower.includes(kw));
+    if (hasQueryKeyword && msg.length > 10) {
+      return { category: 'VALID', isValid: true };
+    }
     
     // Emails válidos (cualquier dominio)
     if (/^[\w.-]+@[\w.-]+\.\w{2,}$/i.test(msg)) {
