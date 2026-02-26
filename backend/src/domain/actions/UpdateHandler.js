@@ -1,7 +1,8 @@
 /**
- * UpdateHandler - Handler para actualizar registros
+ * UpdateHandler - Handler para actualizar registros (LLM-First)
  * 
- * Maneja actualizaciones y cancelaciones con flujo de confirmación
+ * El LLM decide cuándo usar update_record.
+ * Este handler ejecuta actualizaciones y cancelaciones con confirmación.
  */
 
 import { ActionHandler } from './ActionHandler.js';
@@ -12,45 +13,6 @@ export class UpdateHandler extends ActionHandler {
   constructor(dependencies = {}) {
     super(dependencies);
     this.eventEmitter = dependencies.eventEmitter || getEventEmitter();
-  }
-  
-  /**
-   * V2: Calcula score de confianza para este handler
-   * @param {Context} context 
-   * @returns {Promise<number>} Score 0-1
-   */
-  async confidence(context) {
-    let score = 0;
-    const intent = context.intent || {};
-    const message = (context.message || '').toLowerCase();
-    
-    // Factor 1: Confirmación pendiente (máxima prioridad)
-    if (context.pendingConfirmation?.action === 'cancel') {
-      return 0.95;
-    }
-    
-    // Factor 2: Intent del LLM es update/delete
-    if (intent.actionType === 'update' || intent.actionType === 'delete') {
-      const intentScore = (intent.confidence || 0) / 100;
-      score += intentScore * 0.5;
-    }
-    
-    // Factor 3: Keywords de modificación/cancelación
-    const updateKeywords = ['actualizar', 'cambiar', 'modificar', 'editar', 'cancelar', 'anular', 'reprogramar'];
-    const keywordMatches = updateKeywords.filter(kw => message.includes(kw)).length;
-    score += Math.min(keywordMatches * 0.15, 0.3);
-    
-    // Factor 4: Referencias a registros existentes
-    if (message.includes('mi cita') || message.includes('mi reserva') || message.includes('la cita')) {
-      score += 0.15;
-    }
-    
-    // Factor 5: Patrón "X por Y" (cambio)
-    if (/\bpor\b/.test(message) && updateKeywords.some(kw => message.includes(kw))) {
-      score += 0.1;
-    }
-    
-    return Math.max(0, Math.min(1, score));
   }
   
   /**

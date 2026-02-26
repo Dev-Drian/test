@@ -1,14 +1,14 @@
 /**
- * ChatService - Servicio principal de chat
+ * ChatService - Servicio principal de chat (LLM-First)
  * 
  * Orquesta todos los componentes para procesar mensajes:
  * - Repositories para acceso a datos
  * - OpenAIProvider para IA
- * - Engine para cadena de responsabilidad (V3: LLM-First)
+ * - Engine con Function Calling para decidir acciones
  * - EventEmitter para eventos
  */
 
-import { Engine, ENGINE_MODES } from '../core/Engine.js';
+import { Engine } from '../core/Engine.js';
 import { Context } from '../core/Context.js';
 import { getEventEmitter, EVENTS } from '../core/EventEmitter.js';
 import { ChatRepository } from '../repositories/ChatRepository.js';
@@ -200,57 +200,21 @@ export class ChatService {
         canDelete: t.permissions?.allowDelete === true,
       },
     }));
-    context.tables = tablesInfo; // Para V3 LLM-First
+    context.tables = tablesInfo;
     
-    // ─── DETERMINAR MODO DEL ENGINE ───────────────────────────
-    // V3: configurable por agente, default es LLM-First
-    const engineMode = agent?.engineMode || ENGINE_MODES.LLM_FIRST;
-    log.debug('Engine mode', { mode: engineMode });
-    
-    // Variable para almacenar el intent (solo se usa en modos legacy/scoring)
-    let intent = null;
-    
-    // ─── DETECTAR INTENCIÓN (solo para modos legacy/scoring) ──
-    if (engineMode !== ENGINE_MODES.LLM_FIRST) {
-      log.debug('Detecting intent (legacy mode)...');
-      intent = await this.aiProvider.detectIntent(message, agent);
-      log.debug('Intent detected', intent);
-      context.intent = intent;
-      
-      // Limpiar analysis anterior para evitar datos stale
-      context.analysis = null;
-      
-      // Si hay acción sobre tablas, analizar el mensaje para extraer datos
-      if (intent.hasTableAction && intent.actionType) {
-        log.debug('Analyzing message', { actionType: intent.actionType });
-        const analysis = await this.aiProvider.analyzeMessage(
-          message, 
-          tablesInfo, 
-          intent.actionType,
-          context.dateContext,
-          agent
-        );
-        log.debug('Analysis result', { analysis });
-        context.analysis = analysis;
-      }
-    } else {
-      // V3 LLM-First: El Engine hace todo con Function Calling
-      log.debug('Using LLM-First mode - Engine will handle intent detection');
-    }
-    
-    // Crear engine con handlers y modo configurado
-    const engine = new Engine({ mode: engineMode });
+    // Crear engine LLM-First con handlers
+    const engine = new Engine();
     const handlers = ActionFactory.createAll();
     log.debug('Handlers loaded', { handlers: handlers.map(h => h.constructor.name) });
     handlers.forEach(h => engine.addHandler(h));
     
-    // Procesar
+    // Procesar con LLM-First (Function Calling)
     log.debug('Processing message with engine...');
     const result = await engine.process(context);
     log.info('Engine result', { 
       handled: result.handled, 
       handler: result.handler,
-      mode: result.mode || engineMode,
+      mode: 'llm-first',
       tool: result.tool || null,
     });
     
@@ -297,7 +261,7 @@ export class ChatService {
     // Emitir eventos según la acción
     this._emitActionEvents(result, context);
     
-    // V2: Log final de auditoría estructurada
+    // Log final de auditoría
     log.info('processMessage:end', {
       requestId,
       workspaceId,
@@ -305,13 +269,10 @@ export class ChatService {
       duration: Date.now() - startTime,
       handled: result.handled,
       handler: result.handler,
-      score: result.score,
-      intentDetected: intent?.actionType,
-      intentConfidence: intent?.confidence,
-      hasTableAction: intent?.hasTableAction,
+      tool: result.tool,
       hasPendingCreate: !!context.pendingCreate,
       fieldsCollected: Object.keys(context.collectedFields || {}),
-      llmUsed: !!intent?.actionType,
+      llmUsed: true,
       responseLength: responseContent?.length,
     });
     
@@ -351,8 +312,8 @@ export class ChatService {
     const tables = await this._getAgentTables(agent, workspaceId);
     context.setMetadata('tables', tables);
     
-    // Procesar con el CreateHandler (modo scoring para flujos existentes)
-    const engine = new Engine({ mode: ENGINE_MODES.SCORING });
+    // Procesar con LLM-First
+    const engine = new Engine();
     const handlers = ActionFactory.createAll();
     handlers.forEach(h => engine.addHandler(h));
     

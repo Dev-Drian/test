@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
-const DEFAULT_MODEL = "gpt-4o-mini";
+const DEFAULT_MODEL = process.env.DEFAULT_AI_MODEL || "gpt-4o";
 
 /**
  * Calcula la fecha de mañana basándose en una fecha string YYYY-MM-DD

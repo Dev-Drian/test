@@ -1,13 +1,8 @@
 /**
- * QueryHandler - Handler para consultas de datos
+ * QueryHandler - Handler para consultas de datos (LLM-First)
  * 
- * Maneja consultas como:
- * - Ver servicios/precios
- * - Listar citas
- * - Buscar registros
- * - "mis ventas del último mes"
- * - "citas de esta semana"
- * - "ventas mayores a 100000"
+ * El LLM decide cuándo usar query_records y extrae los filtros.
+ * Este handler solo ejecuta la consulta.
  */
 
 import { ActionHandler } from './ActionHandler.js';
@@ -23,57 +18,6 @@ export class QueryHandler extends ActionHandler {
   }
   
   /**
-   * V2: Calcula score de confianza para este handler
-   * @param {Context} context 
-   * @returns {Promise<number>} Score 0-1
-   */
-  async confidence(context) {
-    let score = 0;
-    const intent = context.intent || {};
-    const message = (context.message || '').toLowerCase();
-    
-    // Factor 0: Si hay pendingCreate activo, FUERTE penalización
-    // El usuario está en medio de un flujo de creación - queries solo si es pregunta explícita
-    if (context.pendingCreate) {
-      // Solo procesar como query si hay signo de interrogación explícito
-      if (message.includes('?') || message.startsWith('¿')) {
-        score -= 0.2; // Penalización leve si es pregunta
-      } else {
-        // No es pregunta → probablemente es respuesta a campos del flujo de creación
-        return 0.1; // Score muy bajo para dar prioridad a CreateHandler
-      }
-    }
-    
-    // Factor 1: Intent del LLM es query/search
-    if (intent.actionType === 'query' || intent.actionType === 'search') {
-      const intentScore = (intent.confidence || 0) / 100;
-      score += intentScore * 0.5;
-    }
-    
-    // Factor 2: Es pregunta (signos de interrogación)
-    if (message.includes('?') || message.startsWith('¿')) {
-      score += 0.2;
-    }
-    
-    // Factor 3: Keywords de consulta
-    const queryKeywords = ['ver', 'mostrar', 'listar', 'buscar', 'consultar', 'cuáles', 'cuántos', 'dime', 'qué hay'];
-    const keywordMatches = queryKeywords.filter(kw => message.includes(kw)).length;
-    score += Math.min(keywordMatches * 0.1, 0.25);
-    
-    // NOTE: "dame" y "quiero" se quitaron de queryKeywords porque son ambiguos
-    // "dame 2 productos" puede ser query o crear orden con cantidad
-    
-    // Factor 4: Palabras de tiempo/periodo aumentan score
-    const timeKeywords = ['hoy', 'mañana', 'ayer', 'semana', 'mes', 'año', 'últimos', 'últimas'];
-    const timeMatches = timeKeywords.filter(kw => message.includes(kw)).length;
-    if (timeMatches > 0) {
-      score += 0.1;
-    }
-    
-    return Math.max(0, Math.min(1, score));
-  }
-  
-  /**
    * Verifica si puede manejar una acción de tipo QUERY
    */
   async canHandle(context) {
@@ -83,9 +27,6 @@ export class QueryHandler extends ActionHandler {
   
   /**
    * Ejecuta la consulta
-   * 
-   * V3 LLM-First: El Engine ya resolvió tableId en _mapToolArgsToContext()
-   * No necesitamos fallbacks con keywords - el LLM entiende semánticamente
    */
   async execute(context) {
     const { workspaceId, analysis, message, tables } = context;
@@ -95,12 +36,31 @@ export class QueryHandler extends ActionHandler {
     // Soportar tanto 'id' (de ChatService) como '_id' (de DB directa)
     const tableSchema = tableId ? tables?.find(t => (t.id || t._id) === tableId) : null;
     
-    // Si no hay tableId, el LLM no pudo determinar la tabla → preguntar
+    // Si no hay tableId, el LLM no pudo determinar la tabla → sugerir opciones
     if (!tableId || !tableSchema) {
-      const tableNames = tables?.map(t => t.name).join(', ') || 'ninguna';
+      const tableNames = tables?.map(t => t.name) || [];
+      const requestedType = context.llmExtracted?.record_type || analysis?.requestedType;
+      
+      // Respuesta amigable según el contexto
+      if (tableNames.length === 0) {
+        return {
+          handled: true,
+          response: 'No tengo tablas configuradas para consultar información. Por favor, contacta al administrador.',
+        };
+      }
+      
+      // Si el usuario pidió algo específico que no existe
+      if (requestedType) {
+        return {
+          handled: true,
+          response: `No encontré información sobre "${requestedType}". 📋 Puedo ayudarte con: ${tableNames.join(', ')}. ¿Qué te gustaría consultar?`,
+        };
+      }
+      
+      // Respuesta genérica
       return {
         handled: true,
-        response: `¿Sobre qué tabla quieres consultar? Las disponibles son: ${tableNames}`,
+        response: `📋 Puedo mostrarte información sobre: ${tableNames.join(', ')}. ¿Qué te gustaría consultar?`,
       };
     }
     
@@ -119,9 +79,13 @@ export class QueryHandler extends ActionHandler {
       const parsedQuery = this.queryParser.parse(message, tableSchema);
       console.log('[QueryHandler] ParsedQuery:', JSON.stringify(parsedQuery, null, 2));
       
+      // Normalizar nombres de campos de los filtros del LLM para que coincidan con la tabla
+      const llmFilters = this._normalizeFilters(analysis.query?.filters || {}, tableSchema);
+      console.log('[QueryHandler] LLM filters normalized:', JSON.stringify(llmFilters, null, 2));
+      
       // Combinar filtros del LLM con los del QueryParser
       let combinedFilters = {
-        ...(analysis.query?.filters || {}),
+        ...llmFilters,
         ...parsedQuery.filters,
       };
       
@@ -153,12 +117,32 @@ export class QueryHandler extends ActionHandler {
         return await this._handleAggregation(context, combinedFilters, parsedQuery.aggregation);
       }
       
-      const rows = await this.tableDataRepository.query(
+      // Separar filtros: exactos van a CouchDB, texto se filtra en JS
+      const { dbFilters, textFilters } = this._separateFilters(combinedFilters);
+      console.log('[QueryHandler] DB filters:', JSON.stringify(dbFilters));
+      console.log('[QueryHandler] Text filters:', JSON.stringify(textFilters));
+      
+      // Query con filtros exactos (más registros si hay filtros de texto)
+      const queryLimit = Object.keys(textFilters).length > 0 ? Math.max(limit * 10, 100) : limit;
+      
+      let rows = await this.tableDataRepository.query(
         workspaceId,
         analysis.tableId,
-        combinedFilters,
-        { limit, sort }
+        dbFilters,
+        { limit: queryLimit, sort }
       );
+      
+      // Aplicar filtros de texto case-insensitive en JavaScript
+      if (Object.keys(textFilters).length > 0) {
+        const beforeCount = rows.length;
+        rows = this._applyTextFilters(rows, textFilters);
+        console.log(`[QueryHandler] Text filter applied: ${beforeCount} → ${rows.length} rows`);
+        
+        // Aplicar límite después del filtrado
+        if (rows.length > limit) {
+          rows = rows.slice(0, limit);
+        }
+      }
       
       this.eventEmitter.emit(EVENTS.RECORD_QUERIED, {
         workspaceId,
@@ -281,6 +265,160 @@ export class QueryHandler extends ActionHandler {
       console.error('[QueryHandler] Aggregation error:', error);
       return { handled: true, response: 'Error al calcular.' };
     }
+  }
+  
+  /**
+   * Normaliza los nombres de campos de los filtros del LLM
+   * para que coincidan con los nombres reales de los campos en la tabla.
+   * Hace matching case-insensitive y por contenido parcial.
+   * 
+   * @param {object} filters - Filtros del LLM
+   * @param {object} tableSchema - Schema de la tabla con headers/fields
+   * @returns {object} - Filtros normalizados con nombres correctos de campos
+   * @private
+   */
+  _normalizeFilters(filters, tableSchema) {
+    if (!filters || Object.keys(filters).length === 0) return {};
+    if (!tableSchema?.headers?.length && !tableSchema?.fields?.length) return filters;
+    
+    // Obtener lista de campos reales de la tabla
+    const realFields = (tableSchema.headers || tableSchema.fields || []).map(h => {
+      if (typeof h === 'string') return h;
+      return h.name || h.key || h.label || h;
+    });
+    
+    const normalizedFilters = {};
+    
+    for (const [filterKey, filterValue] of Object.entries(filters)) {
+      const filterKeyLower = filterKey.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      
+      // Buscar campo real que coincida
+      let matchedField = null;
+      
+      // 1. Coincidencia exacta (case-insensitive)
+      for (const field of realFields) {
+        const fieldLower = field.toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        if (fieldLower === filterKeyLower) {
+          matchedField = field;
+          break;
+        }
+      }
+      
+      // 2. Coincidencia parcial (uno contiene al otro)
+      if (!matchedField) {
+        for (const field of realFields) {
+          const fieldLower = field.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          if (fieldLower.includes(filterKeyLower) || filterKeyLower.includes(fieldLower)) {
+            matchedField = field;
+            break;
+          }
+        }
+      }
+      
+      // 3. Matching por alias comunes (cliente ↔ nombre, comprador ↔ cliente, etc.)
+      if (!matchedField) {
+        const aliases = {
+          'cliente': ['nombre', 'client', 'customer', 'comprador'],
+          'nombre': ['cliente', 'client', 'name'],
+          'fecha': ['date', 'dia'],
+          'tipo': ['type', 'categoria'],
+          'estado': ['status', 'state'],
+          'producto': ['product', 'item', 'articulo'],
+        };
+        
+        for (const field of realFields) {
+          const fieldLower = field.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          
+          // Verificar si filterKey tiene alias que matchee con el field
+          const filterAliases = aliases[filterKeyLower] || [];
+          if (filterAliases.some(alias => fieldLower.includes(alias) || alias.includes(fieldLower))) {
+            matchedField = field;
+            break;
+          }
+          
+          // Verificar si el field tiene alias que matchee con filterKey
+          const fieldAliases = aliases[fieldLower] || [];
+          if (fieldAliases.some(alias => filterKeyLower.includes(alias) || alias.includes(filterKeyLower))) {
+            matchedField = field;
+            break;
+          }
+        }
+      }
+      
+      // Usar el campo encontrado o el original
+      const finalKey = matchedField || filterKey;
+      normalizedFilters[finalKey] = filterValue;
+      
+      if (matchedField && matchedField !== filterKey) {
+        console.log(`[QueryHandler] Filter normalized: "${filterKey}" → "${matchedField}"`);
+      }
+    }
+    
+    return normalizedFilters;
+  }
+  
+  /**
+   * Separa filtros en: exactos (para CouchDB) y texto (para filtrar en JS)
+   * Los filtros de texto se manejan en JavaScript porque CouchDB no soporta
+   * búsqueda case-insensitive de forma nativa.
+   * 
+   * @param {object} filters - Filtros combinados
+   * @returns {{dbFilters: object, textFilters: object}}
+   * @private
+   */
+  _separateFilters(filters) {
+    const dbFilters = {};
+    const textFilters = {};
+    
+    for (const [key, value] of Object.entries(filters)) {
+      if (typeof value === 'string' && value.length > 0) {
+        // Texto → filtrar en JavaScript (case-insensitive)
+        textFilters[key] = value;
+      } else if (value !== undefined && value !== null) {
+        // Números, booleanos, etc. → filtrar en CouchDB
+        dbFilters[key] = value;
+      }
+    }
+    
+    return { dbFilters, textFilters };
+  }
+  
+  /**
+   * Aplica filtros de texto case-insensitive después de la query
+   * (CouchDB no siempre soporta $regex, así que filtramos en JS)
+   * 
+   * @param {object[]} rows - Resultados de la query
+   * @param {object} filters - Filtros a aplicar
+   * @returns {object[]} - Resultados filtrados
+   * @private
+   */
+  _applyTextFilters(rows, filters) {
+    if (!filters || Object.keys(filters).length === 0) return rows;
+    
+    return rows.filter(row => {
+      for (const [key, value] of Object.entries(filters)) {
+        if (typeof value !== 'string') continue;
+        
+        const rowValue = row[key];
+        if (rowValue === undefined || rowValue === null) return false;
+        
+        // Comparación case-insensitive con normalización de acentos
+        const rowValueNorm = String(rowValue).toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const filterValueNorm = value.toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        
+        // Verificar si contiene (no exacto)
+        if (!rowValueNorm.includes(filterValueNorm)) {
+          return false;
+        }
+      }
+      return true;
+    });
   }
   
   /**

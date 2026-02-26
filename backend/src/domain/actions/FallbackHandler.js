@@ -11,6 +11,9 @@
 import { ActionHandler } from './ActionHandler.js';
 import { AgentCapabilities } from '../../services/AgentCapabilities.js';
 
+// Modelo por defecto configurable via environment
+const DEFAULT_MODEL = process.env.DEFAULT_AI_MODEL || 'gpt-4o';
+
 // Patrones para detectar si el usuario pregunta qué puede hacer el bot
 const HELP_PATTERNS = [
   /qu[eé]\s+(puedes|sabes)\s+hacer/i,
@@ -264,9 +267,9 @@ REGLAS CRÍTICAS:
     const aiModel = agent?.aiModel;
     if (Array.isArray(aiModel) && aiModel.length > 0) {
       const first = aiModel[0];
-      return typeof first === 'string' ? first : first?.id || 'gpt-4o-mini';
+      return typeof first === 'string' ? first : first?.id || DEFAULT_MODEL;
     }
-    return typeof aiModel === 'string' ? aiModel : 'gpt-4o-mini';
+    return typeof aiModel === 'string' ? aiModel : DEFAULT_MODEL;
   }
   
   _processTemplate(template, context) {

@@ -1,11 +1,8 @@
 /**
- * AvailabilityHandler - Handler para consultas de disponibilidad
+ * AvailabilityHandler - Handler para consultas de disponibilidad (LLM-First)
  * 
- * Maneja preguntas como:
- * - ¿Hay disponibilidad mañana?
- * - ¿Qué productos hay disponibles?
- * - ¿Qué servicios tienen?
- * - ¿Qué horarios hay libres?
+ * El LLM decide cuándo usar check_availability.
+ * Este handler ejecuta la consulta de horarios/espacios disponibles.
  */
 
 import { ActionHandler } from './ActionHandler.js';
@@ -18,40 +15,6 @@ export class AvailabilityHandler extends ActionHandler {
   }
   
   /**
-   * V2: Calcula score de confianza para este handler
-   * @param {Context} context 
-   * @returns {Promise<number>} Score 0-1
-   */
-  async confidence(context) {
-    let score = 0;
-    const intent = context.intent || {};
-    const message = (context.message || '').toLowerCase();
-    
-    // Factor 1: Intent del LLM es availability
-    if (intent.actionType === 'availability') {
-      const intentScore = (intent.confidence || 0) / 100;
-      score += intentScore * 0.5;
-    }
-    
-    // Factor 2: Keywords de disponibilidad
-    const availKeywords = ['disponibilidad', 'disponible', 'libre', 'horarios', 'espacio', 'hay cita', 'pueden atenderme'];
-    const keywordMatches = availKeywords.filter(kw => message.includes(kw)).length;
-    score += Math.min(keywordMatches * 0.2, 0.35);
-    
-    // Factor 3: Pregunta sobre capacidad
-    if (message.includes('hay') && (message.includes('?') || message.startsWith('¿'))) {
-      score += 0.15;
-    }
-    
-    // Factor 4: Referencias a tiempo futuro
-    if (message.includes('mañana') || message.includes('hoy') || message.includes('semana')) {
-      score += 0.1;
-    }
-    
-    return Math.max(0, Math.min(1, score));
-  }
-  
-  /**
    * Verifica si puede manejar una consulta de disponibilidad
    */
   async canHandle(context) {
@@ -60,9 +23,6 @@ export class AvailabilityHandler extends ActionHandler {
   
   /**
    * Ejecuta la consulta de disponibilidad
-   * 
-   * V3 LLM-First: El Engine ya resolvió tableId en _mapToolArgsToContext()
-   * No necesitamos fallbacks con keywords - el LLM entiende semánticamente
    */
   async execute(context) {
     const { workspaceId, analysis, tablesInfo } = context;

@@ -10,6 +10,9 @@
 
 import { validateRelationField } from '../../services/relationHandler.js';
 
+// Modelo por defecto configurable via environment
+const DEFAULT_MODEL = process.env.DEFAULT_AI_MODEL || 'gpt-4o';
+
 export class FieldCollector {
   constructor(dependencies = {}) {
     this.aiProvider = dependencies.aiProvider;
@@ -380,20 +383,23 @@ REGLAS CRÍTICAS:
 3. Si el campo que se pregunta es "${currentlyAsking || '(ninguno)'}" y el usuario da un valor simple (sin otros datos), asígnalo a ESE campo.
 4. NO inventes datos. Solo extrae lo que el usuario dice EXPLÍCITAMENTE en su mensaje.
 5. Si un nombre tiene varias palabras (ej: "Adrian Castro"), es UN solo valor para UN solo campo.
-6. "gracias", "ok", "perfecto" → isDataResponse: false, newIntent: "thanks"
-7. Si el usuario dice algo como "el que te pasé antes", "el mismo", etc., revisa el CONTEXTO para encontrar el valor.
-8. Si el usuario MENCIONA una fecha ("hoy", "mañana", "lunes", "el 15", etc.), conviértela a YYYY-MM-DD e inclúyela.
-9. Si el usuario MENCIONA una hora ("a las 3", "7pm", etc.), conviértela a HH:MM 24h e inclúyela.
-10. Si el usuario da datos Y TAMBIÉN pregunta algo ("Mauro, qué productos hay?"), EXTRAE los datos (isDataResponse: true, extractedFields: {...}) Y marca wantsToChangeFlow: true, newIntent: "query". Los datos van PRIMERO, la pregunta se procesa DESPUÉS.
-11. "cancelar", "no quiero" → isDataResponse: false, wantsToChangeFlow: true, newIntent: "cancel".
-12. MENSAJES DE INTENCIÓN ("quiero agendar", "necesito una cita") SIN detalles específicos → isDataResponse: false, extractedFields: {}
-13. Si el mensaje NO responde a una pregunta específica ni da datos concretos → isDataResponse: false
-14. Si el usuario dice "cambiar X", "el X es otro", "no, el X es...", "corregir X", "en lugar de X quiero Y" → wantsToChangeField: { "field": "campo_key", "newValue": "nuevo_valor" }. Aplica para CUALQUIER campo ya recolectado.
+6. Si el usuario dice algo como "el que te pasé antes", "el mismo", etc., revisa el CONTEXTO para encontrar el valor.
+7. Si el usuario MENCIONA una fecha ("hoy", "mañana", "lunes", "el 15", etc.), conviértela a YYYY-MM-DD e inclúyela.
+8. Si el usuario MENCIONA una hora ("a las 3", "7pm", etc.), conviértela a HH:MM 24h e inclúyela.
+9. Si el usuario da datos Y TAMBIÉN pregunta algo ("Mauro, qué productos hay?"), EXTRAE los datos (isDataResponse: true, extractedFields: {...}) Y marca wantsToChangeFlow: true, newIntent: "query". Los datos van PRIMERO, la pregunta se procesa DESPUÉS.
+10. MENSAJES DE INTENCIÓN ("quiero agendar", "necesito una cita") SIN detalles específicos → isDataResponse: false, extractedFields: {}
 
-REGLAS PARA CAMPOS NUMÉRICOS (cantidad, precio, etc.):
-15. Los campos de tipo number SOLO aceptan números positivos (a menos que se especifique lo contrario).
-16. NUNCA extraigas valores negativos para cantidad, precio, stock u otros campos numéricos con validación min >= 0.
-17. Si el usuario dice "-20 cantidad" o "cantidad negativa", → isDataResponse: false, clarificationNeeded: "La cantidad debe ser un número positivo"
+REGLA IMPORTANTE - INTENCIONES DE FLUJO:
+11. CANCELAR: "cancelar", "no quiero", "déjalo", "olvídalo" → isDataResponse: false, wantsToChangeFlow: true, newIntent: "cancel"
+12. CONTINUAR: Cualquier mensaje que indique que el usuario quiere seguir con el registro (incluso si no da datos nuevos) como "ok", "sí", "dale", "sigamos", "continúa", "va", "listo", "perfecto" → isDataResponse: false, wantsToChangeFlow: false, extractedFields: {}. El sistema preguntará el siguiente campo.
+13. AGRADECER: SOLO si es un agradecimiento claro Y final (sin ninguna intención de continuar) como "muchas gracias por todo" → wantsToChangeFlow: true, newIntent: "thanks"
+14. CONSULTAR: Si el usuario hace una pregunta sobre datos existentes → wantsToChangeFlow: true, newIntent: "query"
+15. Si el usuario dice "cambiar X", "el X es otro", "corregir X" → wantsToChangeField: { "field": "campo_key", "newValue": "nuevo_valor" }
+
+REGLAS PARA CAMPOS NUMÉRICOS:
+16. Los campos de tipo number SOLO aceptan números positivos (a menos que se especifique lo contrario).
+17. NUNCA extraigas valores negativos para cantidad, precio, stock u otros campos numéricos con validación min >= 0.
+18. Si el usuario dice "-20 cantidad" o "cantidad negativa" → isDataResponse: false, clarificationNeeded: "La cantidad debe ser un número positivo"
 18. Si el usuario dice "n + 1", "el doble", expresiones matemáticas → eso NO es un valor válido, clarificationNeeded: "Por favor indica un número específico"
 
 REGLAS PARA NOMBRES DE PRODUCTOS CON NÚMEROS:
@@ -555,9 +561,9 @@ REGLA FINAL - EXTRACCIÓN MÚLTIPLE:
     const aiModel = agent?.aiModel;
     if (Array.isArray(aiModel) && aiModel.length > 0) {
       const first = aiModel[0];
-      return typeof first === 'string' ? first : first?.id || 'gpt-4o-mini';
+      return typeof first === 'string' ? first : first?.id || DEFAULT_MODEL;
     }
-    return typeof aiModel === 'string' ? aiModel : 'gpt-4o-mini';
+    return typeof aiModel === 'string' ? aiModel : DEFAULT_MODEL;
   }
 }
 

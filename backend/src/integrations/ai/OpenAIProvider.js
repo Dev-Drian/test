@@ -10,6 +10,9 @@
 import axios from 'axios';
 import { AIProvider } from './AIProvider.js';
 
+// Modelo por defecto configurable via environment
+const DEFAULT_MODEL = process.env.DEFAULT_AI_MODEL || 'gpt-4o';
+
 const MODEL_MAP = {
   'gpt-4o-mini': 'gpt-4o-mini',
   'gpt-4o': 'gpt-4o',
@@ -37,15 +40,15 @@ export class OpenAIProvider extends AIProvider {
    * Resuelve el nombre del modelo
    */
   resolveModel(userModel) {
-    if (!userModel) return 'gpt-4o-mini';
-    return MODEL_MAP[String(userModel).trim()] || 'gpt-4o-mini';
+    if (!userModel) return DEFAULT_MODEL;
+    return MODEL_MAP[String(userModel).trim()] || DEFAULT_MODEL;
   }
   
   /**
    * Genera una respuesta de chat
    */
   async complete(options) {
-    const { messages, model = 'gpt-4o-mini', maxTokens = 1024, temperature = 0.7 } = options;
+    const { messages, model = DEFAULT_MODEL, maxTokens = 1024, temperature = 0.7 } = options;
     
     if (!this.apiKey) {
       throw new Error('OpenAI API key not configured');
@@ -95,7 +98,7 @@ export class OpenAIProvider extends AIProvider {
       systemPrompt, 
       messages, 
       tools, 
-      model = 'gpt-4o-mini',
+      model = DEFAULT_MODEL,
       maxTokens = 1024,
       temperature = 0.3,
     } = options;
@@ -457,9 +460,9 @@ Responde SOLO con el título.`;
     const aiModel = agent?.aiModel;
     if (Array.isArray(aiModel) && aiModel.length > 0) {
       const first = aiModel[0];
-      return typeof first === 'string' ? first : first?.id || 'gpt-4o-mini';
+      return typeof first === 'string' ? first : first?.id || DEFAULT_MODEL;
     }
-    return typeof aiModel === 'string' ? aiModel : 'gpt-4o-mini';
+    return typeof aiModel === 'string' ? aiModel : DEFAULT_MODEL;
   }
   
   _getTodayInColombia() {

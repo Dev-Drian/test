@@ -75,11 +75,11 @@ const CORE_TOOLS = [
         properties: {
           record_type: {
             type: 'string',
-            description: 'Tipo de registro a consultar: "appointments", "clients", "products", "orders", etc.',
+            description: 'Tipo de registro a consultar. Usa el nombre EXACTO de la tabla (ej: "Clientes", "Ventas", "Citas").',
           },
           filters: {
             type: 'object',
-            description: 'Filtros de búsqueda extraídos del mensaje del usuario.',
+            description: 'Extrae todos los criterios de búsqueda mencionados por el usuario. USA LOS NOMBRES DE CAMPOS REALES de la tabla (ver system prompt). Si el usuario dice un criterio, mapéalo al campo correcto de la tabla. Sin criterios específicos → {} vacío.',
             additionalProperties: true,
           },
           limit: {

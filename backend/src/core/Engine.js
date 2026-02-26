@@ -1,59 +1,30 @@
 /**
- * ChatEngine - Motor principal del chat
+ * ChatEngine - Motor principal del chat (LLM-First)
  * 
- * V3: LLM-First Architecture
- * - El LLM decide qué acción tomar usando Function Calling
- * - Elimina hardcoding de keywords/regex
- * - Soporta rollback a V2 (ScoringEngine) y Legacy (Chain of Responsibility)
+ * El LLM decide qué acción tomar usando Function Calling.
+ * Arquitectura sin keywords/regex hardcodeados.
  */
 
 import { getEventEmitter, EVENTS } from './EventEmitter.js';
-import { ScoringEngine } from './ScoringEngine.js';
 import { getToolRegistry } from './ToolRegistry.js';
 import { getAgentPromptBuilder } from './AgentPromptBuilder.js';
 import { getOpenAIProvider } from '../integrations/ai/OpenAIProvider.js';
+import { getIntentClassifier } from '../services/IntentClassifier.js';
 import logger from '../config/logger.js';
 
 const log = logger.child('Engine');
 
-/**
- * Modos de procesamiento disponibles
- */
-export const ENGINE_MODES = {
-  LLM_FIRST: 'llm-first',     // V3: El LLM decide todo
-  SCORING: 'scoring',          // V2: ScoringEngine con keywords
-  LEGACY: 'legacy',            // V1: Chain of Responsibility
-};
+// Modelo por defecto configurable via environment
+const DEFAULT_MODEL = process.env.DEFAULT_AI_MODEL || 'gpt-4o';
 
 export class ChatEngine {
   constructor(options = {}) {
     this.handlers = [];
     this.eventEmitter = getEventEmitter();
-    this.scoringEngine = new ScoringEngine(options.scoring);
     this.toolRegistry = getToolRegistry();
     this.promptBuilder = getAgentPromptBuilder();
     this.aiProvider = getOpenAIProvider();
-    
-    // V3: Modo por defecto es LLM-First
-    this.mode = options.mode || ENGINE_MODES.LLM_FIRST;
-    
-    // Compatibilidad con opciones anteriores
-    if (options.useLegacyMode) {
-      this.mode = ENGINE_MODES.LEGACY;
-    }
-  }
-  
-  /**
-   * Configura el modo de procesamiento
-   * @param {string} mode - Uno de ENGINE_MODES
-   */
-  setMode(mode) {
-    if (!Object.values(ENGINE_MODES).includes(mode)) {
-      log.warn('Invalid engine mode, using LLM_FIRST', { requested: mode });
-      mode = ENGINE_MODES.LLM_FIRST;
-    }
-    this.mode = mode;
-    log.info('Engine mode set', { mode });
+    this.intentClassifier = getIntentClassifier();
   }
   
   /**
@@ -67,8 +38,7 @@ export class ChatEngine {
   }
   
   /**
-   * Procesa un mensaje a través del pipeline
-   * V3: Usa el modo configurado (LLM-First por defecto)
+   * Procesa un mensaje usando LLM-First con Function Calling
    * @param {Context} context - Contexto de la conversación
    * @returns {Promise<{handled: boolean, response: string}>}
    */
@@ -80,18 +50,7 @@ export class ChatEngine {
     });
     
     try {
-      switch (this.mode) {
-        case ENGINE_MODES.LLM_FIRST:
-          return await this._processWithLLM(context);
-          
-        case ENGINE_MODES.SCORING:
-          return await this._processWithScoring(context);
-          
-        case ENGINE_MODES.LEGACY:
-        default:
-          return await this._processLegacy(context);
-      }
-      
+      return await this._processWithLLM(context);
     } catch (error) {
       log.error('Error processing message', { error: error.message, stack: error.stack });
       
@@ -105,7 +64,7 @@ export class ChatEngine {
   }
   
   /**
-   * V3: Procesamiento LLM-First con Function Calling
+   * Procesamiento LLM-First con Function Calling
    * El LLM decide qué acción tomar basándose en semántica
    * @private
    */
@@ -228,6 +187,21 @@ export class ChatEngine {
     
     const result = await handler.execute(context);
     
+    // Si el handler indica cambio de flujo, re-procesar con el nuevo intent
+    if (result.flowChange && result.newIntent) {
+      log.info('Handler requested flow change', { 
+        fromHandler: handlerName, 
+        newIntent: result.newIntent,
+        message: context.message?.substring(0, 50),
+      });
+      
+      // Marcar como consulta lateral para agregar reminder después
+      context.sideQuery = true;
+      
+      // Re-procesar con el nuevo intent
+      return await this._reprocessWithNewIntent(result.newIntent, context);
+    }
+    
     if (result.handled) {
       context.handled = true;
       context.response = result.response;
@@ -337,9 +311,11 @@ export class ChatEngine {
         
       case 'query_records':
         context.intent = { hasTableAction: true, actionType: 'query' };
+        const queryTableId = tableId || this._findTableByType(args?.record_type, context.tables)?.id;
         context.analysis = {
           actionType: 'query',
-          tableId: tableId || this._findTableByType(args?.record_type, context.tables)?.id,
+          tableId: queryTableId,
+          requestedType: args?.record_type, // Guardar lo que pidió para respuesta amigable
           query: {
             filters: args.filters || {},
             limit: args.limit || 10,
@@ -486,6 +462,240 @@ export class ChatEngine {
   }
   
   /**
+   * Clasifica la intención del usuario cuando hay un flujo pendiente
+   * Usa el IntentClassifier centralizado (con cache)
+   * @private
+   */
+  async _classifyFlowIntent(message, pendingCreate) {
+    // Delegar al clasificador centralizado (tiene cache y es más eficiente)
+    return await this.intentClassifier.classifyFlowControl(message, pendingCreate);
+  }
+  
+  /**
+   * Re-procesa el mensaje con un nuevo intent (cambio de flujo)
+   * Usado cuando un handler detecta que el usuario quiere hacer otra cosa
+   * @private
+   */
+  async _reprocessWithNewIntent(newIntent, context) {
+    log.debug('Re-processing with new intent', { newIntent, message: context.message?.substring(0, 50) });
+    
+    // Si hay pendingCreate activo, analizar con IA si realmente quiere cambiar de flujo
+    // o si es una forma coloquial de continuar
+    if (context.pendingCreate && (newIntent === 'thanks' || newIntent === 'greeting')) {
+      // Usar el LLM para determinar la intención REAL
+      const realIntent = await this._classifyFlowIntent(context.message, context.pendingCreate);
+      
+      log.info('LLM classified flow intent', { 
+        originalIntent: newIntent, 
+        realIntent,
+        hasPendingCreate: true,
+        tableName: context.pendingCreate.tableName,
+      });
+      
+      // Si el LLM determina que quiere continuar, hacerlo
+      if (realIntent === 'continue') {
+        const createHandler = this.handlers.find(h => h.constructor.name === 'CreateHandler');
+        if (createHandler) {
+          context.intent = { hasTableAction: true, actionType: 'create' };
+          context.analysis = {
+            actionType: 'create',
+            tableId: context.pendingCreate.tableId,
+            tableName: context.pendingCreate.tableName,
+            create: {
+              isComplete: false,
+              fields: context.collectedFields || context.pendingCreate.fields || {},
+            },
+          };
+          
+          const result = await createHandler._askForNextField(context);
+          
+          if (result.handled) {
+            return {
+              handled: true,
+              response: result.response,
+              handler: 'CreateHandler',
+              tool: 'create_record',
+              mode: 'llm-first',
+              continuedFlow: true,
+            };
+          }
+        }
+        
+        // Fallback
+        const tableName = context.pendingCreate.tableName || 'registro';
+        const collectedCount = Object.keys(context.collectedFields || context.pendingCreate.fields || {}).length;
+        
+        return {
+          handled: true,
+          response: `Continuemos con el registro de tu ${tableName}. Ya tengo ${collectedCount} dato(s). ¿Me podrías dar los datos faltantes?`,
+          handler: 'FlowContinueHandler',
+          mode: 'llm-first',
+        };
+      }
+      
+      // Si el LLM dice que es "cancel", limpiar el flujo
+      if (realIntent === 'cancel') {
+        context.clearPendingCreate();
+        context.savePendingState();
+        return {
+          handled: true,
+          response: 'Operación cancelada. ¿En qué más puedo ayudarte?',
+          handler: 'FlowCancelHandler',
+          mode: 'llm-first',
+        };
+      }
+      
+      // Si es realmente "thanks" (agradecimiento final), responder y recordar el flujo
+      if (realIntent === 'thanks') {
+        const tableName = context.pendingCreate.tableName || 'registro';
+        const collectedCount = Object.keys(context.collectedFields || context.pendingCreate.fields || {}).length;
+        
+        return {
+          handled: true,
+          response: `¡De nada! 😊\n\n---\n💡 Recuerda que estábamos registrando tu ${tableName} (tengo ${collectedCount} dato(s)). ¿Continuamos o prefieres dejarlo para después?`,
+          handler: 'ThanksWithReminder',
+          mode: 'llm-first',
+        };
+      }
+      
+      // Otro intent → continuar con el flujo normal de cambio
+    }
+    
+    // Mapear intent a tool
+    const intentToTool = {
+      'query': 'query_records',
+      'search': 'query_records',
+      'availability': 'check_availability',
+      'thanks': 'general_conversation',
+      'greeting': 'general_conversation',
+      'help': 'general_conversation',
+    };
+    
+    const tool = intentToTool[newIntent] || 'general_conversation';
+    
+    // Buscar el handler correspondiente
+    const handlerName = this.toolRegistry.mapToLegacyHandler(tool);
+    const handler = this.handlers.find(h => h.constructor.name === handlerName);
+    
+    if (!handler) {
+      log.warn('No handler found for new intent', { newIntent, tool, handlerName });
+      
+      // Fallback: responder de forma inteligente según el intent
+      const fallbackResponses = {
+        'query': `Entiendo que quieres consultar información. ¿Qué datos te gustaría ver? Tengo estas tablas disponibles: ${context.tables?.map(t => t.name).join(', ') || 'ninguna configurada'}.`,
+        'thanks': '¡De nada! ¿Hay algo más en lo que pueda ayudarte?',
+        'help': `Puedo ayudarte con: ${context.tables?.map(t => `consultar ${t.name}`).join(', ') || 'responder preguntas'}.`,
+      };
+      
+      let response = fallbackResponses[newIntent] || 'Entendido. ¿En qué puedo ayudarte?';
+      
+      // Si hay pendingCreate, agregar reminder
+      if (context.pendingCreate) {
+        const tableName = context.pendingCreate.tableName || 'registro';
+        const collectedCount = Object.keys(context.collectedFields || context.pendingCreate.fields || {}).length;
+        
+        response += `\n\n---\n💡 Recuerda que estábamos registrando tu ${tableName}`;
+        if (collectedCount > 0) {
+          response += ` (ya tengo ${collectedCount} dato(s))`;
+        }
+        response += '. ¿Continuamos?';
+      }
+      
+      return {
+        handled: true,
+        response,
+        handler: 'FlowChangeHandler',
+        mode: 'llm-first',
+        flowChange: true,
+        newIntent,
+      };
+    }
+    
+    // Configurar contexto para el nuevo intent
+    context.intent = { hasTableAction: newIntent !== 'thanks' && newIntent !== 'greeting', actionType: newIntent };
+    context.selectedTool = tool;
+    
+    // Si es query, intentar detectar qué tabla quiere consultar
+    if (newIntent === 'query' || newIntent === 'search') {
+      context.analysis = {
+        actionType: 'query',
+        query: { filters: {}, limit: 10 },
+      };
+      
+      // Intentar detectar la tabla del mensaje
+      const messageNorm = this._normalizeString(context.message);
+      for (const table of (context.tables || [])) {
+        const tableNameNorm = this._normalizeString(table.name);
+        if (messageNorm.includes(tableNameNorm) || tableNameNorm.includes(messageNorm.split(' ')[0])) {
+          context.analysis.tableId = table.id || table._id;
+          context.analysis.tableName = table.name;
+          break;
+        }
+      }
+    }
+    
+    log.debug('Executing handler for flow change', { handler: handlerName, tool });
+    const result = await handler.execute(context);
+    
+    if (result.handled) {
+      let response = result.response;
+      
+      // Agregar reminder de pendingCreate si aplica
+      if (context.pendingCreate && tool !== 'create_record') {
+        const tableName = context.pendingCreate.tableName || 'registro';
+        const collectedCount = Object.keys(context.collectedFields || context.pendingCreate.fields || {}).length;
+        
+        response += `\n\n---\n💡 Recuerda que estábamos registrando tu ${tableName}`;
+        if (collectedCount > 0) {
+          response += ` (ya tengo ${collectedCount} dato(s))`;
+        }
+        response += '. ¿Continuamos?';
+      }
+      
+      this.eventEmitter.emit(EVENTS.MESSAGE_PROCESSED, {
+        workspaceId: context.workspaceId,
+        handler: handlerName,
+        tool,
+        mode: 'llm-first',
+        flowChange: true,
+        originalIntent: 'create',
+        newIntent,
+      });
+      
+      return {
+        handled: true,
+        response,
+        handler: handlerName,
+        tool,
+        mode: 'llm-first',
+        flowChange: true,
+      };
+    }
+    
+    // Si el handler tampoco pudo manejar, dar respuesta genérica inteligente
+    log.warn('Handler could not process flow change', { handlerName, newIntent });
+    
+    let fallbackResponse = 'Entendido. ';
+    if (newIntent === 'query') {
+      fallbackResponse += `Para consultar datos, dime qué información necesitas. Tengo disponible: ${context.tables?.map(t => t.name).join(', ') || 'información general'}.`;
+    } else {
+      fallbackResponse += '¿En qué más puedo ayudarte?';
+    }
+    
+    if (context.pendingCreate) {
+      const tableName = context.pendingCreate.tableName || 'registro';
+      fallbackResponse += `\n\n---\n💡 Recuerda que estábamos registrando tu ${tableName}. ¿Continuamos?`;
+    }
+    
+    return {
+      handled: true,
+      response: fallbackResponse,
+      handler: 'FlowChangeFallback',
+      mode: 'llm-first',
+    };
+  }
+  
+  /**
    * Construye el array de mensajes para el LLM
    * @private
    */
@@ -543,9 +753,9 @@ USA LA TOOL create_record PARA CONTINUAR LA RECOLECCIÓN DE DATOS.`;
     const aiModel = agent?.aiModel;
     if (Array.isArray(aiModel) && aiModel.length > 0) {
       const first = aiModel[0];
-      return typeof first === 'string' ? first : first?.id || 'gpt-4o-mini';
+      return typeof first === 'string' ? first : first?.id || DEFAULT_MODEL;
     }
-    return typeof aiModel === 'string' ? aiModel : 'gpt-4o-mini';
+    return typeof aiModel === 'string' ? aiModel : DEFAULT_MODEL;
   }
   
   /**
@@ -568,107 +778,6 @@ USA LA TOOL create_record PARA CONTINUAR LA RECOLECCIÓN DE DATOS.`;
   }
   
   /**
-   * V2: Procesamiento con scoring
-   * @private
-   */
-  async _processWithScoring(context) {
-    // Evaluar todos los handlers
-    const evaluation = await this.scoringEngine.evaluateAll(this.handlers, context);
-    
-    log.debug('Scoring evaluation', {
-      decision: evaluation.decision,
-      topHandler: evaluation.topHandler,
-      topScore: evaluation.topScore?.toFixed(3),
-      candidateCount: evaluation.candidates.length,
-      candidates: evaluation.candidates.slice(0, 3).map(c => ({
-        name: c.name,
-        score: c.score.toFixed(3),
-      })),
-    });
-    
-    // Emitir evento de scoring para auditoría
-    this.eventEmitter.emit(EVENTS.HANDLER_SCORED, {
-      workspaceId: context.workspaceId,
-      evaluation: {
-        decision: evaluation.decision,
-        topHandler: evaluation.topHandler,
-        topScore: evaluation.topScore,
-        candidates: evaluation.candidates.map(c => ({ name: c.name, score: c.score })),
-      },
-    });
-    
-    // Decisión basada en scoring
-    switch (evaluation.decision) {
-      case 'execute':
-      case 'llm_assist': // En V2, LLM ya participó en la detección de intent
-        return await this._executeHandler(evaluation.candidates[0], context);
-        
-      case 'ambiguous':
-        log.warn('Ambiguous intent detected', {
-          handlers: evaluation.candidates.slice(0, 2).map(c => c.name),
-          scores: evaluation.candidates.slice(0, 2).map(c => c.score),
-        });
-        // Intentar con el de mayor score de todas formas
-        if (evaluation.candidates.length > 0) {
-          return await this._executeHandler(evaluation.candidates[0], context);
-        }
-        return this._handleNoMatch(context);
-        
-      case 'clarify':
-        log.info('Clarification needed', { topScore: evaluation.topScore });
-        // Intentar fallback
-        const fallback = this.handlers.find(h => h.constructor.name === 'FallbackHandler');
-        if (fallback) {
-          return await this._executeHandler({ handler: fallback, name: 'FallbackHandler' }, context);
-        }
-        return this._handleNoMatch(context);
-        
-      case 'fallback':
-      default:
-        return this._handleNoMatch(context);
-    }
-  }
-  
-  /**
-   * Ejecuta un handler seleccionado
-   * @private
-   */
-  async _executeHandler(candidate, context) {
-    const { handler, name } = candidate;
-    
-    log.debug(`Executing handler "${name}"`);
-    
-    const result = await handler.execute(context);
-    
-    if (result.handled) {
-      context.handled = true;
-      context.response = result.response;
-      
-      // Formatear respuesta si el handler no lo hizo
-      if (!result.formatted && handler.formatResponse) {
-        context.response = await handler.formatResponse(context, result);
-      }
-      
-      this.eventEmitter.emit(EVENTS.MESSAGE_PROCESSED, {
-        workspaceId: context.workspaceId,
-        handler: name,
-        duration: Date.now() - context.startTime,
-        score: candidate.score,
-      });
-      
-      return {
-        handled: true,
-        response: context.response,
-        handler: name,
-        score: candidate.score,
-      };
-    }
-    
-    // Si el handler no manejó, continuar con el siguiente candidato
-    return { handled: false, response: null };
-  }
-  
-  /**
    * Maneja el caso donde ningún handler puede procesar
    * @private
    */
@@ -685,57 +794,12 @@ USA LA TOOL create_record PARA CONTINUAR LA RECOLECCIÓN DE DATOS.`;
   }
   
   /**
-   * Legacy: Procesamiento con Chain of Responsibility clásico
-   * @private
-   */
-  async _processLegacy(context) {
-    // Recorrer handlers en orden
-    for (const handler of this.handlers) {
-      // Verificar si el handler puede manejar este contexto
-      const canHandle = await handler.canHandle(context);
-      
-      if (canHandle) {
-        log.debug(`Handler "${handler.constructor.name}" can handle (legacy mode)`);
-        
-        // Ejecutar el handler
-        const result = await handler.execute(context);
-        
-        // Si el handler marcó como manejado, terminar
-        if (result.handled) {
-          context.handled = true;
-          context.response = result.response;
-          
-          // Formatear respuesta si el handler no lo hizo
-          if (!result.formatted && handler.formatResponse) {
-            context.response = await handler.formatResponse(context, result);
-          }
-          
-          this.eventEmitter.emit(EVENTS.MESSAGE_PROCESSED, {
-            workspaceId: context.workspaceId,
-            handler: handler.constructor.name,
-            duration: Date.now() - context.startTime,
-          });
-          
-          return {
-            handled: true,
-            response: context.response,
-            handler: handler.constructor.name,
-          };
-        }
-      }
-    }
-    
-    return this._handleNoMatch(context);
-  }
-  
-  /**
    * Obtiene estadísticas del engine
    */
   getStats() {
     return {
       handlersCount: this.handlers.length,
       handlers: this.handlers.map(h => h.constructor.name),
-      useLegacyMode: this.useLegacyMode,
     };
   }
   
@@ -757,10 +821,6 @@ export const Engine = ChatEngine;
  */
 export function createEngine(dependencies = {}) {
   const engine = new ChatEngine();
-  
-  // Los handlers se agregarán después de importarlos
-  // Esto permite lazy loading y evita dependencias circulares
-  
   return engine;
 }
 

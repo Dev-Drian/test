@@ -1,7 +1,8 @@
 /**
- * CreateHandler - Handler para crear registros
+ * CreateHandler - Handler para crear registros (LLM-First)
  * 
- * Maneja el flujo completo de creación:
+ * El LLM decide cuándo usar create_record y extrae los datos iniciales.
+ * Este handler maneja el flujo completo:
  * - Iniciar borrador (pendingCreate)
  * - Recolectar campos faltantes
  * - Crear el registro cuando está completo
@@ -14,6 +15,7 @@ import { TableDataRepository } from '../../repositories/TableDataRepository.js';
 import { processRelations, findTableByName } from '../../services/relationHandler.js';
 import { TablePermissions } from '../../services/TablePermissions.js';
 import { getOpenAIProvider } from '../../integrations/ai/OpenAIProvider.js';
+import { getIntentClassifier, INTENTS } from '../../services/IntentClassifier.js';
 import { executeBeforeCreateFlows, executeFlowsForTrigger, executePendingActions } from '../../services/FlowExecutor.js';
 
 export class CreateHandler extends ActionHandler {
@@ -23,87 +25,39 @@ export class CreateHandler extends ActionHandler {
     this.entityRepo = new EntityRepository();
     this.tableDataRepo = new TableDataRepository();
     this.aiProvider = dependencies.aiProvider || getOpenAIProvider();
-  }
-  
-  /**
-   * V2: Calcula score de confianza para este handler
-   * @param {Context} context 
-   * @returns {Promise<number>} Score 0-1
-   */
-  async confidence(context) {
-    let score = 0;
-    const intent = context.intent || {};
-    const message = (context.message || '').toLowerCase();
-    
-    // Factor 1: pendingCreate activo (MUY alto peso - el usuario está en medio de un flujo)
-    if (context.pendingCreate) {
-      score += 0.7; // Aumentado de 0.5 a 0.7
-      
-      // Si el mensaje contiene datos relevantes para campos faltantes, aumentar más
-      const missingFields = context.missingFields || [];
-      const hasQuantityKeywords = /\d+/.test(message); // Tiene números (posible cantidad)
-      const hasProductKeywords = missingFields.includes('producto') && message.length > 3;
-      
-      if (hasQuantityKeywords && missingFields.includes('cantidad')) {
-        score += 0.15;
-      }
-      if (hasProductKeywords) {
-        score += 0.1;
-      }
-      
-      // SOLO reducir score si es una PREGUNTA explícita (tiene ?)
-      if (message.includes('?') || message.startsWith('¿')) {
-        score -= 0.3;
-      }
-      
-      // NO reducir por intent query - el FieldCollector decidirá si es datos o consulta
-    }
-    
-    // Factor 2: Intent del LLM es create
-    if (intent.actionType === 'create') {
-      const intentScore = (intent.confidence || 0) / 100;
-      score += intentScore * 0.3;
-    }
-    
-    // Factor 3: Keywords de creación (solo si no hay pendingCreate)
-    if (!context.pendingCreate) {
-      const createKeywords = ['crear', 'nuevo', 'agregar', 'registrar', 'agendar', 'reservar', 'compra', 'comprar'];
-      const keywordMatches = createKeywords.filter(kw => message.includes(kw)).length;
-      score += Math.min(keywordMatches * 0.1, 0.2);
-    }
-    
-    // Factor 4: Cancelación explícita (score 0)
-    const cancelPatterns = /^(cancelar?|no\s*(quiero)?|olvidalo|dejalo|salir|exit)$/i;
-    if (cancelPatterns.test(message.trim())) {
-      return 0;
-    }
-    
-    return Math.max(0, Math.min(1, score));
+    this.intentClassifier = dependencies.intentClassifier || getIntentClassifier();
   }
   
   /**
    * Verifica si puede manejar una acción de tipo CREATE
+   * Usa IntentClassifier para detectar cancelaciones de forma inteligente
    */
   async canHandle(context) {
     // Si hay pendingCreate activo
     if (context.pendingCreate) {
-      // SOLO limpiar con cancelación EXPLÍCITA del usuario
-      const message = (context.message || '').trim().toLowerCase();
-      const cancelPatterns = /^(cancelar?|no\s*(quiero)?|olvidalo|dejalo|salir|exit|abandonar|ya\s*no)$/i;
+      // Usar IntentClassifier para detectar cancelación de forma inteligente
+      const message = (context.message || '').trim();
       
-      if (cancelPatterns.test(message)) {
+      // Quick check para palabras exactas obvias (evitar llamada LLM innecesaria)
+      if (/^(cancelar?|salir|exit|abandonar)$/i.test(message)) {
         console.log('[CreateHandler] User explicitly cancelled, clearing pendingCreate');
         context.clearPendingCreate();
         context.savePendingState();
         return false;
       }
       
-      // NUNCA limpiar basándose en intent del LLM durante pendingCreate
-      // El usuario puede hacer consultas laterales (disponibilidad, ver citas, etc.)
-      // y el sistema debe preservar el contexto de creación
+      // Para casos ambiguos, usar el clasificador inteligente
+      if (/^(no|ya\s*no|mejor\s*no|dejalo|olvidalo)$/i.test(message)) {
+        const flowIntent = await this.intentClassifier.classifyFlowControl(message, context.pendingCreate);
+        if (flowIntent === 'cancel') {
+          console.log('[CreateHandler] IntentClassifier detected cancel intent');
+          context.clearPendingCreate();
+          context.savePendingState();
+          return false;
+        }
+      }
       
       // Si el LLM eligió otra tool (query, availability, etc.), es consulta lateral
-      // Marcar como sideQuery pero NO limpiar pendingCreate
       if (context.selectedTool && context.selectedTool !== 'create_record') {
         console.log('[CreateHandler] Side query detected during pendingCreate:', context.selectedTool);
         context.sideQuery = true;
@@ -305,10 +259,15 @@ export class CreateHandler extends ActionHandler {
             };
           }
           
-          // Para query, availability, thanks → dejar que otro handler lo maneje
+          // Para query, availability, thanks → indicar al Engine que re-procese
           // Los campos ya fueron guardados arriba, así que el contexto se preserva
-          // Devolver handled: false para que el Engine pase al siguiente handler
-          return { handled: false };
+          // Devolver handled: false CON newIntent para que el Engine re-procese
+          return { 
+            handled: false, 
+            flowChange: true,
+            newIntent: extracted.newIntent,
+            message: `El usuario quiere ${extracted.newIntent} mientras tiene un registro pendiente`,
+          };
         }
         
         // Si hubo error de validación de relación, mostrar mensaje con opciones
@@ -493,7 +452,7 @@ export class CreateHandler extends ActionHandler {
     const tableName = context.analysis?.tableName;
     
     if (!tableId) {
-      // V3: Pedir al LLM que genere una clarificación natural
+      // Pedir al LLM que genere una clarificación natural
       const clarification = await this._askLLMForClarification(context);
       return {
         handled: true,
@@ -712,7 +671,7 @@ export class CreateHandler extends ActionHandler {
   }
   
   /**
-   * V3: Pide al LLM que genere una respuesta de clarificación
+   * Pide al LLM que genere una respuesta de clarificación
    * cuando no se pudo determinar qué acción realizar
    * @private
    */

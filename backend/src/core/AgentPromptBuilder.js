@@ -228,7 +228,43 @@ Mantén respuestas concisas (2-3 oraciones cuando sea posible).`;
       lines.push('   • El sistema pedirá los datos faltantes automáticamente');
       lines.push('   • record_type = nombre EXACTO de la tabla (ej: "Citas")');
       lines.push('');
-      lines.push('🔵 query_records - CONSULTAR/VER datos existentes');
+      lines.push('🔵 query_records - CONSULTAR/VER datos existentes:');
+      lines.push('   • Cuando el usuario quiera ver/buscar/consultar datos');
+      lines.push('   • SIEMPRE extrae los criterios de búsqueda en "filters"');
+      lines.push('');
+      lines.push('   🚨 REGLA CRÍTICA: MIRA LOS CAMPOS DE LA TABLA');
+      lines.push('   1. Identifica QUÉ quiere filtrar el usuario (nombre, estado, fecha, etc.)');
+      lines.push('   2. Busca en los "Campos" de la tabla cuál corresponde semánticamente');
+      lines.push('   3. Usa ESE campo exacto en filters');
+      lines.push('');
+      lines.push('   ⚠️ NUNCA envíes filters: {} cuando el usuario menciona criterios de búsqueda');
+      
+      // Generar ejemplos DINÁMICOS basados en tablas reales
+      if (tablesInfo.length > 0) {
+        lines.push('');
+        lines.push('   📌 USA ESTOS CAMPOS EXACTOS PARA FILTRAR:');
+        tablesInfo.forEach(table => {
+          const fieldNames = table.fields?.map(f => 
+            typeof f === 'string' ? f : (f.name || f.key || f.label || f)
+          ) || [];
+          if (fieldNames.length > 0) {
+            lines.push(`   • ${table.name}: usa {${fieldNames.slice(0, 6).join(', ')}}`);
+          }
+        });
+        
+        // Ejemplo dinámico usando la primera tabla con campos
+        const tableWithFields = tablesInfo.find(t => t.fields?.length > 0);
+        if (tableWithFields) {
+          const fields = tableWithFields.fields.map(f => 
+            typeof f === 'string' ? f : (f.name || f.key || f.label || f)
+          );
+          const nameField = fields.find(f => /nombre|cliente|customer|contact/i.test(f)) || fields[0];
+          lines.push('');
+          lines.push(`   Ejemplo: "datos de Juan Pérez" en ${tableWithFields.name}`);
+          lines.push(`   → filters: {"${nameField}": "Juan Pérez"}`);
+        }
+      }
+      lines.push('');
       lines.push('🔵 check_availability - Preguntar DISPONIBILIDAD');
       lines.push('🔵 update_record - MODIFICAR/CANCELAR registros');
       lines.push('🔵 general_conversation - SOLO saludos y preguntas generales');
@@ -324,22 +360,34 @@ Mantén respuestas concisas (2-3 oraciones cuando sea posible).`;
     return `EJEMPLOS DE USO CORRECTO:
 
 ✅ Usuario: "quiero agendar una cita"
-   → Llama create_record con record_type="Citas", data={}
+   → Llama create_record con record_type="[tabla de citas]", data={}
 
 ✅ Usuario: "soy adrian castro para mañana a las 4"
-   → Llama create_record con data={cliente: "Adrian Castro", fecha: "2026-02-26", hora: "16:00"}
+   → Llama create_record extrayendo los datos mencionados en "data"
+
+✅ Usuario: "dame la información de [NOMBRE]"
+   → Llama query_records 
+   → Busca en "Campos" de la tabla cuál guarda nombres
+   → Usa ESE campo en filters
+
+✅ Usuario: "registros que estén [ESTADO]"
+   → Llama query_records
+   → Busca en "Campos" de la tabla cuál guarda estados
+   → Usa ESE campo en filters
 
 ✅ Usuario: "hola"
    → Llama general_conversation con intent="greeting"
 
-❌ INCORRECTO: Responder "¿Para qué fecha?" sin usar función
-❌ INCORRECTO: Llamar create_record con data={} cuando el usuario SÍ dio datos
+⚠️ IMPORTANTE:
+- Los campos varían por empresa: puede ser "cliente", "nombre", "customer", etc.
+- SIEMPRE mira la sección "TABLAS DEL SISTEMA" para ver los campos REALES
+- El usuario dice "cliente" pero el campo puede llamarse diferente
 
 RECUERDA:
 1. SIEMPRE usa una función
-2. Para crear/agendar → create_record SIEMPRE (aunque falten datos)
-3. Extrae TODOS los datos mencionados al campo "data"
-4. El sistema pide automáticamente los datos faltantes`;
+2. Para crear/agendar → create_record (aunque falten datos)
+3. Para consultar → query_records con filtros en campos REALES de la tabla
+4. El sistema pide los datos faltantes automáticamente`;
   }
   
   /**
