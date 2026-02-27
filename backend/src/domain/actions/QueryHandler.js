@@ -128,9 +128,16 @@ export class QueryHandler extends ActionHandler {
         ? [{ [analysis.query.sortBy]: analysis.query.sortOrder || 'desc' }] 
         : undefined);
       
-      // Si es agregación, manejar diferente
+      // Si es agregación del QueryParser, manejar diferente
       if (parsedQuery.aggregation) {
         return await this._handleAggregation(context, combinedFilters, parsedQuery.aggregation);
+      }
+      
+      // ═══ V3: ANÁLISIS ESTADÍSTICO INTELIGENTE ═══
+      // Si el LLM detectó analyze_data o hay patrones analíticos en el mensaje
+      if (analysis.isAnalysis || this._isAnalyticalQuestion(message)) {
+        console.log('[QueryHandler] Detected analytical question, using smart analysis');
+        return await this._handleSmartAnalysis(context, combinedFilters, tableSchema, analysis);
       }
       
       // Separar filtros: exactos van a CouchDB, texto se filtra en JS
@@ -648,6 +655,174 @@ export class QueryHandler extends ActionHandler {
     }
     
     return null;
+  }
+  
+  /**
+   * Detecta si el mensaje es una pregunta analítica
+   * @private
+   */
+  _isAnalyticalQuestion(message) {
+    const patterns = [
+      /\b(cual|cuales?|quien|quienes?)\s+(es|son|tiene|tienen)\s+(el|la|los|las)?\s*(m[aá]s|menos|mejor|peor|mayor|menor)/i,
+      /\b(m[aá]s|menos)\s+(vendid[oa]s?|comprad[oa]s?|registrad[oa]s?|frecuentes?|important[es]?)/i,
+      /\b(total|promedio|suma|conteo|resumen|estad[íi]sticas?|an[áa]lisis)\b/i,
+      /\b(cu[áa]nt[oa]s?)\s+(hay|tenemos|existen|son|vendimos|ganamos)\b/i,
+      /\bpor\s+(categor[íi]a|tipo|estado|cliente|producto|mes|semana)/i,
+      /\btop\s+(\d+|\w+)/i,
+      /\b(ranking|clasificaci[óo]n|ordenad[oa]s?\s+por)\b/i,
+    ];
+    return patterns.some(p => p.test(message));
+  }
+  
+  /**
+   * Maneja análisis estadístico inteligente
+   * @private
+   */
+  async _handleSmartAnalysis(context, filters, tableSchema, analysis) {
+    const { workspaceId, message, tablesData } = context;
+    
+    try {
+      // Obtener TODOS los datos para análisis (máximo 1000)
+      let allRows = await this.tableDataRepository.query(
+        workspaceId,
+        analysis.tableId,
+        filters,
+        { limit: 1000 }
+      );
+      
+      if (allRows.length === 0) {
+        return { handled: true, response: 'No hay datos disponibles para analizar.' };
+      }
+      
+      const tableName = tableSchema?.name || 'registros';
+      const msgLower = message.toLowerCase();
+      
+      // ═══ ANÁLISIS 1: ¿Quién tiene más/menos? (agrupación) ═══
+      // "cliente con más ventas", "producto más vendido"
+      const groupPattern = /\b(cliente|producto|categor[íi]a|tipo|vendedor|usuario)\s+(con\s+)?m[aá]s\s+(ventas?|compras?|registros?)/i;
+      const groupMatch = message.match(groupPattern);
+      
+      if (groupMatch || msgLower.includes('más vendido') || msgLower.includes('más ventas')) {
+        // Determinar campo de agrupación
+        let groupField = 'cliente';
+        if (msgLower.includes('producto')) groupField = 'producto';
+        else if (msgLower.includes('categoría') || msgLower.includes('categoria')) groupField = 'categoria';
+        else if (msgLower.includes('tipo')) groupField = 'tipo';
+        
+        // Agrupar datos
+        const grouped = {};
+        for (const row of allRows) {
+          const key = row[groupField] || 'Sin asignar';
+          if (!grouped[key]) {
+            grouped[key] = { count: 0, total: 0, items: [] };
+          }
+          grouped[key].count++;
+          grouped[key].total += parseFloat(row.total || row.cantidad || row.monto || 0);
+          grouped[key].items.push(row);
+        }
+        
+        // Ordenar por conteo
+        const sorted = Object.entries(grouped)
+          .map(([name, data]) => ({ name, ...data }))
+          .sort((a, b) => b.count - a.count);
+        
+        if (sorted.length === 0) {
+          return { handled: true, response: 'No pude determinar los datos para el análisis.' };
+        }
+        
+        const top = sorted[0];
+        const response = `📊 **Análisis de ${tableName}**\n\n` +
+          `🏆 **${groupField.charAt(0).toUpperCase() + groupField.slice(1)} con más registros:**\n` +
+          `**${top.name}** con **${top.count}** ${tableName.toLowerCase()}\n\n` +
+          `📋 **Top 5:**\n` +
+          sorted.slice(0, 5).map((item, i) => 
+            `${i + 1}. ${item.name}: ${item.count} (${item.total > 0 ? '$' + item.total.toLocaleString('es-CO') : ''})`
+          ).join('\n');
+        
+        return { handled: true, response };
+      }
+      
+      // ═══ ANÁLISIS 2: Totales y resúmenes ═══
+      if (msgLower.includes('total') || msgLower.includes('resumen') || msgLower.includes('cuántos') || msgLower.includes('cuantos')) {
+        // Buscar campos numéricos
+        const numericFields = (tableSchema?.headers || [])
+          .filter(h => h.type === 'number' || h.key === 'total' || h.key === 'cantidad' || h.key === 'precio')
+          .map(h => h.key);
+        
+        let response = `📊 **Resumen de ${tableName}**\n\n`;
+        response += `📋 **Total de registros:** ${allRows.length}\n\n`;
+        
+        // Calcular sumas de campos numéricos
+        for (const field of numericFields) {
+          const sum = allRows.reduce((acc, row) => acc + (parseFloat(row[field]) || 0), 0);
+          if (sum > 0) {
+            const avg = sum / allRows.length;
+            const fieldLabel = (tableSchema?.headers?.find(h => h.key === field)?.label || field);
+            response += `💰 **${fieldLabel}:**\n`;
+            response += `   • Total: $${sum.toLocaleString('es-CO')}\n`;
+            response += `   • Promedio: $${avg.toLocaleString('es-CO', { maximumFractionDigits: 0 })}\n\n`;
+          }
+        }
+        
+        // Agrupar por campo de estado si existe
+        const statusField = (tableSchema?.headers || []).find(h => 
+          h.type === 'select' && (h.key.includes('estado') || h.key.includes('status'))
+        );
+        if (statusField) {
+          const byStatus = {};
+          for (const row of allRows) {
+            const status = row[statusField.key] || 'Sin estado';
+            byStatus[status] = (byStatus[status] || 0) + 1;
+          }
+          response += `📈 **Por ${statusField.label}:**\n`;
+          for (const [status, count] of Object.entries(byStatus)) {
+            const pct = ((count / allRows.length) * 100).toFixed(1);
+            response += `   • ${status}: ${count} (${pct}%)\n`;
+          }
+        }
+        
+        return { handled: true, response };
+      }
+      
+      // ═══ ANÁLISIS 3: Por categoría/tipo ═══
+      if (msgLower.includes('por categoría') || msgLower.includes('por categoria') || msgLower.includes('por tipo')) {
+        const categoryField = (tableSchema?.headers || []).find(h => 
+          h.type === 'select' || h.key.includes('categoria') || h.key.includes('tipo')
+        );
+        
+        if (categoryField) {
+          const byCategory = {};
+          for (const row of allRows) {
+            const cat = row[categoryField.key] || 'Sin categoría';
+            if (!byCategory[cat]) byCategory[cat] = { count: 0, total: 0 };
+            byCategory[cat].count++;
+            byCategory[cat].total += parseFloat(row.total || row.cantidad || 0);
+          }
+          
+          let response = `📊 **${tableName} por ${categoryField.label}**\n\n`;
+          for (const [cat, data] of Object.entries(byCategory).sort((a, b) => b[1].count - a[1].count)) {
+            const pct = ((data.count / allRows.length) * 100).toFixed(1);
+            response += `• **${cat}**: ${data.count} (${pct}%)`;
+            if (data.total > 0) response += ` - $${data.total.toLocaleString('es-CO')}`;
+            response += '\n';
+          }
+          
+          return { handled: true, response };
+        }
+      }
+      
+      // ═══ FALLBACK: Mostrar estadísticas básicas + datos ═══
+      let response = `📊 **${tableName}** - ${allRows.length} registros\n\n`;
+      
+      // Mostrar los primeros registros formateados
+      response += await this._formatResults(context, allRows.slice(0, 10), analysis, {});
+      
+      return { handled: true, response };
+      
+    } catch (error) {
+      console.error('[QueryHandler] Smart analysis error:', error);
+      return { handled: true, response: 'Error al realizar el análisis. Intenta de nuevo.' };
+    }
   }
 }
 

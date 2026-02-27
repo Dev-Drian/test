@@ -148,12 +148,12 @@ const Toast = ({ message, type, onClose }) => {
     return () => clearTimeout(timer);
   }, [onClose]);
 
-  const bgColor = type === 'success' ? 'from-accent-500/20 to-accent-500/5 border-accent-500/30' :
+  const bgColor = type === 'success' ? 'from-sky-500/20 to-sky-500/5 border-sky-500/30' :
                   type === 'error' ? 'from-red-500/20 to-red-500/5 border-red-500/30' :
-                  'from-primary-500/20 to-primary-500/5 border-primary-500/30';
+                  'from-indigo-500/20 to-indigo-500/5 border-indigo-500/30';
   
-  const iconColor = type === 'success' ? 'text-accent-400' :
-                    type === 'error' ? 'text-red-400' : 'text-primary-400';
+  const iconColor = type === 'success' ? 'text-sky-400' :
+                    type === 'error' ? 'text-red-400' : 'text-indigo-400';
 
   return (
     <div className={`flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r ${bgColor} border backdrop-blur-sm shadow-xl animate-slide-in`}>
@@ -172,8 +172,8 @@ const Toast = ({ message, type, onClose }) => {
           </svg>
         )}
       </div>
-      <span className="text-sm text-content-primary font-medium">{message}</span>
-      <button onClick={onClose} className="ml-2 text-content-secondary hover:text-content-primary transition-colors">
+      <span className="text-sm text-slate-100 font-medium">{message}</span>
+      <button onClick={onClose} className="ml-2 text-slate-400 hover:text-slate-200 transition-colors">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
         </svg>
@@ -186,29 +186,30 @@ const Toast = ({ message, type, onClose }) => {
 const ConfirmModal = ({ isOpen, title, message, confirmText, cancelText, onConfirm, onCancel, type = 'danger' }) => {
   if (!isOpen) return null;
   
-  const buttonColor = type === 'danger' ? 'bg-red-500 hover:bg-red-400' : 'bg-primary-500 hover:bg-primary-400';
+  const buttonColor = type === 'danger' ? 'bg-red-500 hover:bg-red-400' : 'bg-indigo-500 hover:bg-indigo-400';
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-      <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-2xl bg-surface-50 border border-surface-300/50">
+      <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-2xl" style={{ background: '#1e293b', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
         <div className="p-6">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${type === 'danger' ? 'bg-red-500/10' : 'bg-primary-500/10'}`}>
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${type === 'danger' ? 'bg-red-500/10' : 'bg-indigo-500/10'}`}>
             {type === 'danger' ? (
               <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
               </svg>
             ) : (
-              <svg className="w-6 h-6 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-6 h-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             )}
           </div>
-          <h3 className="text-lg font-semibold text-content-primary mb-2">{title}</h3>
-          <p className="text-sm text-content-secondary mb-6">{message}</p>
+          <h3 className="text-lg font-semibold text-slate-100 mb-2">{title}</h3>
+          <p className="text-sm text-slate-400 mb-6">{message}</p>
           <div className="flex gap-3">
             <button
               onClick={onCancel}
-              className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-content-secondary border border-surface-300/50 transition-all hover:bg-surface-200"
+              className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 transition-all hover:bg-slate-600/50"
+              style={{ border: '1px solid rgba(100, 116, 139, 0.3)' }}
             >
               {cancelText || 'Cancelar'}
             </button>
@@ -676,18 +677,18 @@ export default function FlowEditor() {
   // Sin workspace
   if (!workspaceId) {
     return (
-      <div className="flex items-center justify-center h-full bg-surface-0">
+      <div className="flex items-center justify-center h-full" style={{ background: '#0f172a' }}>
         <div className="text-center animate-fade-up">
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 text-amber-400 bg-amber-500/10">
+          <div className="w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-6 text-amber-400 bg-amber-500/15">
             {Icons.flow}
           </div>
-          <h1 className="text-2xl font-semibold text-content-primary mb-2">Editor de Flujos</h1>
-          <p className="text-content-tertiary mb-6 max-w-sm">
+          <h1 className="text-xl font-semibold text-slate-100 mb-2">Editor de Flujos</h1>
+          <p className="text-slate-400 mb-6 max-w-sm">
             Selecciona un workspace para crear automatizaciones
           </p>
           <Link 
             to="/workspaces"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-400 transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-400 transition-colors"
           >
             Ir a Workspaces
           </Link>
@@ -698,31 +699,31 @@ export default function FlowEditor() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full bg-surface-0">
+      <div className="flex items-center justify-center h-full" style={{ background: '#0f172a' }}>
         <div className="flex flex-col items-center gap-4 animate-fade-in">
           <div className="relative w-10 h-10">
             <div className="absolute inset-0 border-2 rounded-full border-amber-500/20" />
             <div className="absolute inset-0 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
           </div>
-          <span className="text-sm text-content-tertiary">Cargando flujos...</span>
+          <span className="text-sm text-slate-400">Cargando flujos...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-[calc(100vh-60px)] flex bg-surface-0">
+    <div className="h-[calc(100vh-60px)] flex" style={{ background: '#0f172a' }}>
       {/* Sidebar izquierdo - Lista de flujos */}
-      <aside className="w-64 flex flex-col bg-surface-50 border-r border-surface-300/50">
+      <aside className="w-64 flex flex-col" style={{ background: '#1e293b', borderRight: '1px solid rgba(100, 116, 139, 0.3)' }}>
         {/* Header */}
-        <div className="p-4 border-b border-surface-300/50">
+        <div className="p-4" style={{ borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg bg-gradient-to-br from-amber-500 to-amber-600">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg bg-amber-500">
               {Icons.flow}
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-content-primary">Flujos</h2>
-              <p className="text-xs text-content-muted truncate max-w-[140px]">{workspaceName}</p>
+              <h2 className="text-sm font-semibold text-slate-100">Flujos</h2>
+              <p className="text-xs text-slate-500 truncate max-w-[140px]">{workspaceName}</p>
             </div>
           </div>
           
@@ -739,11 +740,11 @@ export default function FlowEditor() {
         <div className="flex-1 overflow-y-auto p-3">
           {flows.length === 0 ? (
             <div className="text-center py-8">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 text-content-muted bg-surface-100">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 text-slate-500" style={{ background: 'rgba(71, 85, 105, 0.5)' }}>
                 {Icons.folder}
               </div>
-              <p className="text-sm text-content-tertiary mb-1">Sin flujos</p>
-              <p className="text-xs text-content-muted">Crea tu primer flujo</p>
+              <p className="text-sm text-slate-400 mb-1">Sin flujos</p>
+              <p className="text-xs text-slate-500">Crea tu primer flujo</p>
             </div>
           ) : (
             <div className="space-y-1">
@@ -751,22 +752,23 @@ export default function FlowEditor() {
                 <button
                   key={flow._id}
                   onClick={() => handleSelectFlow(flow)}
-                  className={`w-full text-left px-3 py-3 rounded-xl transition-all flex items-center gap-3 border ${
+                  className={`w-full text-left px-3 py-3 rounded-xl transition-all flex items-center gap-3 ${
                     selectedFlow?._id === flow._id
-                      ? 'text-amber-400 bg-amber-500/10 border-amber-500/30'
-                      : 'text-content-secondary hover:text-content-primary border-transparent'
+                      ? 'text-amber-400 bg-amber-500/15'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'
                   }`}
+                  style={{ border: selectedFlow?._id === flow._id ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid transparent' }}
                 >
                   <div 
                     className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0 ${
-                      selectedFlow?._id === flow._id ? 'bg-amber-500 text-white' : 'bg-surface-100 text-content-muted'
+                      selectedFlow?._id === flow._id ? 'bg-amber-500 text-white' : 'bg-slate-700/50 text-slate-500'
                     }`}
                   >
                     <BoltIcon size="sm" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{flow.name}</p>
-                    <p className="text-[10px] text-content-muted">
+                    <p className="text-[10px] text-slate-500">
                       {flow.nodes?.length || 0} bloques
                     </p>
                   </div>
@@ -777,10 +779,10 @@ export default function FlowEditor() {
         </div>
 
         {/* Ayuda */}
-        <div className="p-3 border-t border-surface-300/50">
+        <div className="p-3" style={{ borderTop: '1px solid rgba(100, 116, 139, 0.3)' }}>
           <button
             onClick={() => setShowHelp(true)}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-content-tertiary text-sm hover:text-amber-400 hover:bg-amber-500/10 transition-all"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-slate-400 text-sm hover:text-amber-400 hover:bg-amber-500/10 transition-all"
           >
             {Icons.help}
             ¿Cómo funciona?
@@ -793,21 +795,22 @@ export default function FlowEditor() {
         {selectedFlow ? (
           <>
             {/* Toolbar */}
-            <div className="h-14 flex items-center gap-3 px-4 bg-surface-50 border-b border-surface-300/50">
+            <div className="h-14 flex items-center gap-3 px-4" style={{ background: '#1e293b', borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
               <input
                 type="text"
                 value={flowName}
                 onChange={(e) => setFlowName(e.target.value)}
-                className="flex-1 max-w-xs px-3 py-2 rounded-lg text-content-primary text-sm bg-surface-100 border border-surface-300/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+                className="flex-1 max-w-xs px-3 py-2 rounded-lg text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+                style={{ background: 'rgba(71, 85, 105, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}
                 placeholder="Nombre del flujo"
               />
               
               {/* Undo/Redo buttons */}
-              <div className="flex items-center gap-1 px-2 border-l border-r border-surface-300/50">
+              <div className="flex items-center gap-1 px-2" style={{ borderLeft: '1px solid rgba(100, 116, 139, 0.3)', borderRight: '1px solid rgba(100, 116, 139, 0.3)' }}>
                 <button 
                   onClick={handleUndo}
                   disabled={historyIndex <= 0}
-                  className="p-2 rounded-lg text-content-tertiary hover:text-content-primary hover:bg-surface-200 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-600/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   title="Deshacer (Ctrl+Z)"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -817,7 +820,7 @@ export default function FlowEditor() {
                 <button 
                   onClick={handleRedo}
                   disabled={historyIndex >= history.length - 1}
-                  className="p-2 rounded-lg text-content-tertiary hover:text-content-primary hover:bg-surface-200 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-600/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   title="Rehacer (Ctrl+Y)"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -827,7 +830,7 @@ export default function FlowEditor() {
               </div>
               
               <div className="flex items-center gap-2 ml-auto">
-                <span className="text-xs text-content-muted px-2">
+                <span className="text-xs text-slate-500 px-2">
                   {nodes.length} bloques · {edges.length} conexiones
                 </span>
                 <button 
@@ -851,7 +854,7 @@ export default function FlowEditor() {
                 <button 
                   onClick={handleSaveFlow} 
                   disabled={isSaving}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-400 disabled:opacity-50 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-400 disabled:opacity-50 transition-colors"
                   title="Guardar (Ctrl+S)"
                 >
                   {isSaving ? (
@@ -860,11 +863,11 @@ export default function FlowEditor() {
                     Icons.save
                   )}
                   {isSaving ? 'Guardando...' : 'Guardar'}
-                  <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[10px] rounded bg-white/10 text-primary-200">⌘S</kbd>
+                  <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[10px] rounded bg-white/10 text-indigo-200">⌘S</kbd>
                 </button>
                 <button 
                   onClick={handleDeleteFlow}
-                  className="p-2 rounded-lg text-content-muted hover:text-red-400 hover:bg-red-500/10 transition-all"
+                  className="p-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
                   title="Eliminar flujo"
                 >
                   {Icons.trash}
@@ -897,10 +900,12 @@ export default function FlowEditor() {
                 }}
               >
                 <Controls 
-                  className="!bg-surface-50 !border-surface-300/50 !rounded-xl"
+                  className="!rounded-xl"
+                  style={{ background: '#1e293b', border: '1px solid rgba(100, 116, 139, 0.3)' }}
                 />
                 <MiniMap 
-                  className="!bg-surface-50 !border-surface-300/50 !rounded-xl"
+                  className="!rounded-xl"
+                  style={{ background: '#1e293b', border: '1px solid rgba(100, 116, 139, 0.3)' }}
                   maskColor="rgba(0, 0, 0, 0.7)"
                   nodeColor={(node) => {
                     const block = availableBlocks.find(b => b.type === node.type);
@@ -912,9 +917,9 @@ export default function FlowEditor() {
                 {/* Instrucciones si está vacío */}
                 {nodes.length === 0 && (
                   <Panel position="top-center">
-                    <div className="px-6 py-4 rounded-xl text-center mt-20 bg-surface-50/95 border border-surface-300/50">
-                      <p className="text-content-primary font-medium mb-1">¡Empieza a crear!</p>
-                      <p className="text-sm text-content-tertiary">
+                    <div className="px-6 py-4 rounded-xl text-center mt-20" style={{ background: 'rgba(30, 41, 59, 0.95)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
+                      <p className="text-slate-100 font-medium mb-1">¡Empieza a crear!</p>
+                      <p className="text-sm text-slate-400">
                         Arrastra bloques desde el panel derecho →
                       </p>
                     </div>
@@ -925,13 +930,15 @@ export default function FlowEditor() {
               {/* Menú contextual (clic derecho) */}
               {contextMenu && (
                 <div 
-                  className="fixed z-50 rounded-xl overflow-hidden shadow-2xl bg-surface-100 border border-surface-300/50"
+                  className="fixed z-50 rounded-xl overflow-hidden shadow-2xl"
                   style={{ 
                     left: contextMenu.x, 
                     top: contextMenu.y,
+                    background: '#1e293b',
+                    border: '1px solid rgba(100, 116, 139, 0.3)'
                   }}
                 >
-                  <div className="px-3 py-2 text-xs text-content-tertiary border-b border-surface-300/50">
+                  <div className="px-3 py-2 text-xs text-slate-400" style={{ borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
                     {contextMenu.nodeName}
                   </div>
                   <button
@@ -940,7 +947,7 @@ export default function FlowEditor() {
                       if (node) setSelectedNode(node);
                       setContextMenu(null);
                     }}
-                    className="w-full px-4 py-2.5 text-left text-sm text-content-primary hover:bg-amber-500/20 flex items-center gap-2"
+                    className="w-full px-4 py-2.5 text-left text-sm text-slate-100 hover:bg-amber-500/20 flex items-center gap-2"
                   >
                     <EditIcon size="sm" /> Editar
                   </button>
@@ -956,7 +963,8 @@ export default function FlowEditor() {
               {/* Panel de prueba del flujo */}
               {testMode && (
                 <div 
-                  className="absolute right-4 bottom-4 w-96 max-h-[500px] rounded-2xl overflow-hidden shadow-2xl z-40 flex flex-col bg-gradient-to-b from-surface-100 to-surface-50 border border-violet-500/30"
+                  className="absolute right-4 bottom-4 w-96 max-h-[500px] rounded-2xl overflow-hidden shadow-2xl z-40 flex flex-col border border-violet-500/30"
+                  style={{ background: 'linear-gradient(to bottom, #1e293b, #0f172a)' }}
                 >
                   {/* Header */}
                   <div className="px-4 py-3 flex items-center justify-between border-b border-violet-500/20 bg-violet-500/5">
@@ -967,7 +975,7 @@ export default function FlowEditor() {
                         </svg>
                       </div>
                       <div>
-                        <h3 className="text-sm font-semibold text-content-primary">Modo de prueba</h3>
+                        <h3 className="text-sm font-semibold text-slate-100">Modo de prueba</h3>
                         <p className="text-xs text-violet-400">Simula una conversación</p>
                       </div>
                     </div>
@@ -977,7 +985,7 @@ export default function FlowEditor() {
                         setTestMessages([]);
                         setHighlightedNode(null);
                       }}
-                      className="p-1.5 rounded-lg text-content-tertiary hover:text-content-primary hover:bg-surface-200 transition-all"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-600/50 transition-all"
                     >
                       {Icons.close}
                     </button>
@@ -994,10 +1002,10 @@ export default function FlowEditor() {
                           msg.type === 'user' 
                             ? 'bg-violet-500 text-white' 
                             : msg.type === 'system'
-                              ? 'bg-surface-200 text-content-secondary border border-surface-300'
+                              ? 'bg-slate-700/50 text-slate-400 border border-slate-600/50'
                               : msg.type === 'node'
-                                ? 'bg-accent-500/10 text-accent-300 border border-accent-500/30'
-                                : 'bg-surface-200 text-content-primary'
+                                ? 'bg-sky-500/10 text-sky-300 border border-sky-500/30'
+                                : 'bg-slate-700/50 text-slate-100'
                         }`}>
                           {msg.text}
                         </div>
@@ -1007,7 +1015,7 @@ export default function FlowEditor() {
                   
                   {/* Sample messages */}
                   <div className="px-4 py-2 border-t border-white/5">
-                    <div className="text-xs text-zinc-500 mb-2">Mensajes de ejemplo:</div>
+                    <div className="text-xs text-slate-500 mb-2">Mensajes de ejemplo:</div>
                     <div className="flex flex-wrap gap-1.5">
                       {['Hola', 'Quiero reservar', 'Mesa para 4 personas', 'Consultar disponibilidad'].map((msg) => (
                         <button
@@ -1034,7 +1042,7 @@ export default function FlowEditor() {
                               }, 800);
                             }, 500);
                           }}
-                          className="px-2 py-1 rounded-lg bg-surface-200 text-xs text-content-secondary hover:bg-violet-500/20 hover:text-violet-300 transition-colors"
+                          className="px-2 py-1 rounded-lg bg-slate-700/50 text-xs text-slate-400 hover:bg-violet-500/20 hover:text-violet-300 transition-colors"
                         >
                           {msg}
                         </button>
@@ -1043,7 +1051,7 @@ export default function FlowEditor() {
                   </div>
                   
                   {/* Input area */}
-                  <div className="px-4 py-3 border-t border-surface-300/50 bg-surface-0/20">
+                  <div className="px-4 py-3" style={{ borderTop: '1px solid rgba(100, 116, 139, 0.3)', background: 'rgba(15, 23, 42, 0.2)' }}>
                     <div className="flex gap-2">
                       <input
                         type="text"
@@ -1074,7 +1082,8 @@ export default function FlowEditor() {
                           }
                         }}
                         placeholder="Escribe un mensaje de prueba..."
-                        className="flex-1 px-3 py-2 rounded-xl bg-surface-100 border border-surface-300/50 text-content-primary text-sm placeholder-content-muted focus:outline-none focus:border-violet-500/50 transition-colors"
+                        className="flex-1 px-3 py-2 rounded-xl text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-colors"
+                        style={{ background: 'rgba(71, 85, 105, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}
                       />
                       <button 
                         onClick={() => {
@@ -1091,7 +1100,7 @@ export default function FlowEditor() {
                       </button>
                     </div>
                     <div className="mt-2 flex items-center justify-between">
-                      <span className="text-xs text-content-muted">Simulación local del flujo</span>
+                      <span className="text-xs text-slate-500">Simulación local del flujo</span>
                       <button
                         onClick={() => {
                           setTestMessages([{
@@ -1100,7 +1109,7 @@ export default function FlowEditor() {
                           }]);
                           setHighlightedNode(null);
                         }}
-                        className="text-xs text-content-tertiary hover:text-violet-400 transition-colors"
+                        className="text-xs text-slate-500 hover:text-violet-400 transition-colors"
                       >
                         Reiniciar
                       </button>
@@ -1112,20 +1121,21 @@ export default function FlowEditor() {
               {/* Panel de edición de nodo */}
               {selectedNode && (
                 <div 
-                  className="absolute right-4 top-4 w-80 rounded-xl overflow-hidden shadow-2xl z-40 bg-surface-50 border border-surface-300/50"
+                  className="absolute right-4 top-4 w-80 rounded-xl overflow-hidden shadow-2xl z-40"
+                  style={{ background: '#1e293b', border: '1px solid rgba(100, 116, 139, 0.3)' }}
                 >
-                  <div className="px-4 py-3 flex items-center justify-between bg-surface-100 border-b border-surface-300/50">
+                  <div className="px-4 py-3 flex items-center justify-between" style={{ background: 'rgba(30, 41, 59, 0.8)', borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
                     <div className="flex items-center gap-2">
                       <span className="text-lg">
                         {availableBlocks.find(b => b.type === selectedNode.type)?.icon || <BoltIcon size="md" />}
                       </span>
-                      <span className="text-sm font-medium text-content-primary">
+                      <span className="text-sm font-medium text-slate-100">
                         Editar {availableBlocks.find(b => b.type === selectedNode.type)?.label || 'Nodo'}
                       </span>
                     </div>
                     <button
                       onClick={() => setSelectedNode(null)}
-                      className="p-1.5 rounded-lg text-content-tertiary hover:text-content-primary hover:bg-surface-200 transition-all"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-600/50 transition-all"
                     >
                       ✕
                     </button>

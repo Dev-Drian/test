@@ -1,91 +1,89 @@
 @import "tailwindcss";
 
 /* ============================================
-   🎨 VIBRANT DESIGN SYSTEM - Bold & Colorful
+   🎨 PROFESSIONAL DESIGN SYSTEM - Clear & Modern
    ============================================ */
 
 :root {
-  /* Superficies con sutil tinte púrpura */
-  --surface-0: #0a0a12;
-  --surface-50: #0e0e1a;
-  --surface-100: #131320;
-  --surface-200: #1a1a2e;
-  --surface-300: #252542;
-  --surface-400: #353560;
+  /* Superficies más claras y profesionales */
+  --surface-0: #0f172a;    /* Slate 900 - Fondo principal */
+  --surface-50: #1e293b;   /* Slate 800 - Fondo elevado */
+  --surface-100: #334155;  /* Slate 700 - Cards */
+  --surface-200: #475569;  /* Slate 600 - Bordes */
+  --surface-300: #64748b;  /* Slate 500 - Bordes hover */
+  --surface-400: #94a3b8;  /* Slate 400 - Texto secundario */
   
-  /* Colores primarios vibrantes */
-  --primary: #8b5cf6;
-  --primary-light: rgba(139, 92, 246, 0.2);
-  --primary-dark: #7c3aed;
+  /* Colores primarios profesionales */
+  --primary: #6366f1;      /* Indigo 500 */
+  --primary-light: rgba(99, 102, 241, 0.15);
+  --primary-dark: #4f46e5;
   
-  /* Acentos llamativos */
-  --accent: #22d3ee;
-  --accent-light: rgba(34, 211, 238, 0.2);
-  --accent-secondary: #f472b6;
-  --accent-tertiary: #34d399;
+  /* Acentos claros y definidos */
+  --accent: #0ea5e9;       /* Sky 500 */
+  --accent-light: rgba(14, 165, 233, 0.15);
+  --accent-secondary: #f43f5e;  /* Rose 500 */
+  --accent-tertiary: #10b981;   /* Emerald 500 */
   
-  /* Glows más intensos */
-  --glow-primary: rgba(139, 92, 246, 0.5);
-  --glow-accent: rgba(34, 211, 238, 0.5);
-  --glow-pink: rgba(244, 114, 182, 0.4);
-  --glow-green: rgba(52, 211, 153, 0.4);
+  /* Glows sutiles */
+  --glow-primary: rgba(99, 102, 241, 0.25);
+  --glow-accent: rgba(14, 165, 233, 0.25);
+  --glow-pink: rgba(244, 63, 94, 0.2);
+  --glow-green: rgba(16, 185, 129, 0.2);
 }
 
 html, body, #root {
   height: 100%;
   background: var(--surface-0);
   background-image: 
-    radial-gradient(ellipse at top left, rgba(139, 92, 246, 0.08) 0%, transparent 40%),
-    radial-gradient(ellipse at top right, rgba(244, 114, 182, 0.06) 0%, transparent 40%),
-    radial-gradient(ellipse at bottom left, rgba(34, 211, 238, 0.05) 0%, transparent 40%),
-    radial-gradient(ellipse at bottom right, rgba(52, 211, 153, 0.04) 0%, transparent 40%);
-  color: #f8fafc;
+    radial-gradient(ellipse at top left, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(14, 165, 233, 0.06) 0%, transparent 50%);
+  color: #f1f5f9;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar colorido */
+/* Scrollbar profesional */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(139, 92, 246, 0.05);
+  background: rgba(30, 41, 59, 0.5);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(139, 92, 246, 0.3), rgba(244, 114, 182, 0.3));
+  background: linear-gradient(180deg, #475569, #64748b);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(139, 92, 246, 0.5), rgba(244, 114, 182, 0.5));
+  background: linear-gradient(180deg, #64748b, #94a3b8);
 }
 
-/* Selection vibrante */
+/* Selection */
 ::selection {
-  background: rgba(139, 92, 246, 0.5);
+  background: rgba(99, 102, 241, 0.4);
   color: #ffffff;
 }
 
-/* Focus ring vibrante */
+/* Focus ring */
 :focus-visible {
-  outline: 2px solid rgba(139, 92, 246, 0.7);
+  outline: 2px solid rgba(99, 102, 241, 0.6);
   outline-offset: 2px;
   border-radius: 4px;
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
 }
 
 /* ============================================
    📐 Componentes Base
    ============================================ */
 
-/* Cards con gradiente */
+/* Cards con mejor contraste */
 .card {
-  background: linear-gradient(135deg, var(--surface-100) 0%, var(--surface-50) 100%);
-  border: 1px solid var(--surface-300);
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid #334155;
   border-radius: 12px;
   transition: all 0.25s ease;
   position: relative;
@@ -97,7 +95,7 @@ html, body, #root {
   inset: 0;
   border-radius: 12px;
   padding: 1px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(244, 114, 182, 0.1) 50%, transparent);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(14, 165, 233, 0.1) 50%, transparent);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
@@ -106,9 +104,9 @@ html, body, #root {
 }
 
 .card:hover {
-  background: linear-gradient(135deg, var(--surface-200) 0%, var(--surface-100) 100%);
-  border-color: rgba(139, 92, 246, 0.3);
-  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2), 0 0 60px rgba(139, 92, 246, 0.1);
+  background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 40px rgba(99, 102, 241, 0.1);
   transform: translateY(-2px);
 }
 
@@ -127,27 +125,27 @@ html, body, #root {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #a78bfa, var(--primary), #c084fc);
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
   color: white;
   border: none;
-  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4), 0 0 40px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #c4b5fd, #a78bfa, #e879f9);
+  background: linear-gradient(135deg, #818cf8, #6366f1);
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(139, 92, 246, 0.5), 0 0 60px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
 }
 
 .btn-secondary {
-  background: var(--surface-200);
-  color: #fafafa;
-  border: 1px solid var(--surface-300);
+  background: #334155;
+  color: #f1f5f9;
+  border: 1px solid #475569;
 }
 
 .btn-secondary:hover {
-  background: var(--surface-300);
-  border-color: var(--surface-400);
+  background: #475569;
+  border-color: #64748b;
 }
 
 .btn-ghost {

@@ -259,18 +259,18 @@ export default function Tables() {
   // Sin workspace
   if (!workspaceId) {
     return (
-      <div className="flex items-center justify-center h-full bg-surface-0">
+      <div className="flex items-center justify-center h-full" style={{ background: '#0f172a' }}>
         <div className="text-center animate-fade-up">
-          <div className="w-20 h-20 rounded-2xl bg-primary-500/10 flex items-center justify-center mx-auto mb-6 text-primary-400">
+          <div className="w-20 h-20 rounded-2xl bg-indigo-500/15 flex items-center justify-center mx-auto mb-6 text-indigo-400">
             {Icons.table}
           </div>
-          <h1 className="text-2xl font-semibold text-content-primary mb-2">Tablas</h1>
-          <p className="text-content-tertiary mb-6 max-w-sm">
+          <h1 className="text-2xl font-semibold text-slate-100 mb-2">Tablas</h1>
+          <p className="text-slate-400 mb-6 max-w-sm">
             Selecciona un workspace para gestionar sus tablas
           </p>
           <Link 
             to="/workspaces"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-400 transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-400 transition-colors"
           >
             Ir a Workspaces
           </Link>
@@ -281,43 +281,35 @@ export default function Tables() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-surface-0 p-8">
+      <div className="min-h-screen p-8" style={{ background: '#0f172a' }}>
         <div className="max-w-7xl mx-auto">
           {/* Skeleton Header */}
           <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-surface-200 animate-pulse" />
+              <div className="w-12 h-12 rounded-xl bg-slate-700 animate-pulse" />
               <div>
-                <div className="h-6 w-32 bg-surface-200 rounded animate-pulse mb-2" />
-                <div className="h-4 w-48 bg-surface-100 rounded animate-pulse" />
+                <div className="h-6 w-32 bg-slate-700 rounded animate-pulse mb-2" />
+                <div className="h-4 w-48 bg-slate-800 rounded animate-pulse" />
               </div>
             </div>
-            <div className="h-10 w-32 bg-surface-200 rounded-lg animate-pulse" />
+            <div className="h-10 w-32 bg-slate-700 rounded-lg animate-pulse" />
           </div>
           
           {/* Skeleton Content */}
           <div className="grid grid-cols-12 gap-8">
             <div className="col-span-12 lg:col-span-3">
-              <div className="p-5 rounded-2xl bg-surface-100 border border-surface-300/50">
-                <div className="h-5 w-20 bg-surface-200 rounded animate-pulse mb-4" />
-                <div className="h-10 w-full bg-surface-200/50 rounded-xl animate-pulse mb-5" />
-                <div className="space-y-2">
+              <div className="p-5 rounded-2xl" style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
+                <div className="h-5 w-20 bg-slate-700 rounded animate-pulse mb-4" />
+                <div className="h-10 w-full bg-slate-700/50 rounded-xl animate-pulse mb-5" />
+                <div className="space-y-3">
                   {[1, 2, 3].map(i => (
-                    <div key={i} className="p-4 rounded-xl bg-surface-200/30 animate-pulse">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-surface-300/50" />
-                        <div className="flex-1">
-                          <div className="h-4 w-24 bg-surface-300/50 rounded mb-2" />
-                          <div className="h-3 w-16 bg-surface-300/30 rounded" />
-                        </div>
-                      </div>
-                    </div>
+                    <div key={i} className="p-4 rounded-xl bg-slate-700/30 animate-pulse h-20" />
                   ))}
                 </div>
               </div>
             </div>
             <div className="col-span-12 lg:col-span-9">
-              <div className="h-[500px] rounded-2xl bg-surface-100 border border-surface-300/50 animate-pulse" />
+              <div className="h-[500px] rounded-2xl bg-slate-700/30 animate-pulse" style={{ border: '1px solid rgba(100, 116, 139, 0.3)' }} />
             </div>
           </div>
         </div>
@@ -326,19 +318,19 @@ export default function Tables() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-0">
+    <div className="min-h-screen" style={{ background: '#0f172a' }}>
       {/* Modal de creación */}
       {showBuilder && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-surface-50 border border-surface-300 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl animate-scale-in">
-            <div className="sticky top-0 bg-surface-50 border-b border-surface-300/50 px-6 py-4 flex items-center justify-between z-10">
+          <div className="rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl animate-scale-in" style={{ background: '#1e293b', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
+            <div className="sticky top-0 px-6 py-4 flex items-center justify-between z-10" style={{ background: '#1e293b', borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
               <div>
-                <h2 className="text-xl font-semibold text-content-primary">Crear nueva tabla</h2>
-                <p className="text-sm text-content-tertiary">Define la estructura de tus datos</p>
+                <h2 className="text-xl font-semibold text-slate-100">Crear nueva tabla</h2>
+                <p className="text-sm text-slate-400">Define la estructura de tus datos</p>
               </div>
               <button
                 onClick={() => setShowBuilder(false)}
-                className="p-2 rounded-lg text-content-muted hover:text-content-primary hover:bg-surface-200 transition-all"
+                className="p-2 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-700/50 transition-all"
               >
                 {Icons.close}
               </button>
@@ -358,12 +350,12 @@ export default function Tables() {
       {/* Modal para EDITAR tabla existente */}
       {editingTableConfig && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-surface-100 rounded-2xl border border-surface-300/50 shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-surface-300/50">
-              <h2 className="text-lg font-semibold text-content-primary">Editar configuración de "{editingTableConfig.name}"</h2>
+          <div className="rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" style={{ background: '#1e293b', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
+            <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
+              <h2 className="text-lg font-semibold text-slate-100">Editar configuración de "{editingTableConfig.name}"</h2>
               <button
                 onClick={() => setEditingTableConfig(null)}
-                className="p-2 rounded-lg text-content-muted hover:text-content-primary hover:bg-surface-200 transition-all"
+                className="p-2 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-700/50 transition-all"
               >
                 {Icons.close}
               </button>
@@ -388,12 +380,12 @@ export default function Tables() {
           <header className="mb-8 animate-fade-up">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20 text-white">
+                <div className="w-12 h-12 rounded-xl bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white">
                   {Icons.table}
                 </div>
                 <div>
-                  <h1 className="text-2xl font-semibold text-content-primary tracking-tight">Tablas</h1>
-                  <p className="text-sm text-content-tertiary mt-0.5">
+                  <h1 className="text-2xl font-semibold text-slate-100 tracking-tight">Tablas</h1>
+                  <p className="text-sm text-slate-400 mt-0.5">
                     Gestiona los datos de {workspaceName}
                   </p>
                 </div>
@@ -401,7 +393,7 @@ export default function Tables() {
               
               <button 
                 onClick={() => setShowBuilder(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-400 transition-colors shadow-lg shadow-primary-500/20"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-400 transition-colors shadow-lg shadow-indigo-500/30"
               >
                 {Icons.plus}
                 <span>Nueva tabla</span>
@@ -426,17 +418,17 @@ export default function Tables() {
 
           {/* Sin tablas */}
           {tables.length === 0 ? (
-            <div className="text-center py-20 bg-surface-100 border border-surface-300 rounded-2xl animate-fade-up">
-              <div className="w-20 h-20 rounded-2xl bg-primary-500/10 flex items-center justify-center mx-auto mb-6 text-primary-400">
+            <div className="text-center py-20 rounded-2xl animate-fade-up" style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
+              <div className="w-20 h-20 rounded-2xl bg-indigo-500/15 flex items-center justify-center mx-auto mb-6 text-indigo-400">
                 {Icons.table}
               </div>
-              <h3 className="text-xl font-semibold text-content-primary mb-2">No hay tablas</h3>
-              <p className="text-content-tertiary mb-8 max-w-md mx-auto">
+              <h3 className="text-xl font-semibold text-slate-100 mb-2">No hay tablas</h3>
+              <p className="text-slate-400 mb-8 max-w-md mx-auto">
                 Crea tu primera tabla para almacenar y organizar los datos de tu negocio
               </p>
               <button 
                 onClick={() => setShowBuilder(true)}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary-500 text-white font-medium hover:bg-primary-400 transition-colors shadow-lg shadow-primary-500/20"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-400 transition-colors shadow-lg shadow-indigo-500/30"
               >
                 {Icons.plus}
                 Crear mi primera tabla
@@ -447,17 +439,17 @@ export default function Tables() {
               {/* Sidebar - Lista de tablas */}
               <div className="col-span-12 lg:col-span-3">
                 <div className="sticky top-8">
-                  <div className="p-5 rounded-2xl bg-surface-100 border border-surface-300">
+                  <div className="p-5 rounded-2xl" style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-semibold text-content-primary">Tablas</h3>
-                      <span className="px-3 py-1.5 rounded-full bg-primary-500 text-white text-xs font-bold shadow-lg shadow-primary-500/30">
+                      <h3 className="text-sm font-semibold text-slate-200">Tablas</h3>
+                      <span className="px-2.5 py-1 rounded-full bg-indigo-500 text-white text-xs font-bold">
                         {tables.length}
                       </span>
                     </div>
                     
                     {/* Barra de búsqueda de tablas */}
                     <div className="relative mb-5">
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
                         {Icons.search}
                       </div>
                       <input 
@@ -465,42 +457,41 @@ export default function Tables() {
                         placeholder="Buscar tabla..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-200/50 border border-surface-300/50 text-content-primary placeholder-content-muted text-sm focus:outline-none focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500/20 transition-all"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition-all"
+                        style={{ background: 'rgba(71, 85, 105, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}
                       />
                     </div>
                     
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {tables.filter(t => !searchQuery.trim() || t.name.toLowerCase().includes(searchQuery.toLowerCase())).map((t) => (
                         <button
                           key={t._id}
                           onClick={() => setSelectedTable(t)}
-                          className={`w-full text-left p-4 rounded-xl transition-all duration-200 group ${
+                          className={`w-full text-left p-4 rounded-xl transition-all duration-200 group h-20 flex items-center ${
                             selectedTable?._id === t._id
-                              ? "bg-primary-500/10 border border-primary-500/30 shadow-lg shadow-primary-500/10"
-                              : "hover:bg-surface-200/50 border border-transparent hover:border-surface-300/50"
+                              ? "bg-indigo-500/15 shadow-lg"
+                              : "hover:bg-slate-600/30"
                           }`}
+                          style={{ border: selectedTable?._id === t._id ? '1px solid rgba(99, 102, 241, 0.4)' : '1px solid transparent' }}
                         >
-                          <div className="flex items-center gap-4">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
+                          <div className="flex items-center gap-4 w-full">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0 ${
                               selectedTable?._id === t._id 
-                                ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/40 scale-110' 
-                                : 'bg-surface-200 text-content-muted group-hover:bg-surface-300 group-hover:scale-105'
+                                ? 'bg-indigo-500 text-white' 
+                                : 'bg-slate-600/50 text-slate-400 group-hover:bg-slate-600'
                             }`}>
                               {Icons.table}
                             </div>
                             <div className="flex-1 min-w-0">
                               <span className={`block font-semibold truncate transition-colors ${
-                                selectedTable?._id === t._id ? 'text-primary-400' : 'text-content-primary group-hover:text-primary-400'
+                                selectedTable?._id === t._id ? 'text-indigo-400' : 'text-slate-200 group-hover:text-indigo-400'
                               }`}>
                                 {t.name}
                               </span>
-                              <span className="text-[11px] text-content-muted font-medium">
+                              <span className="text-xs text-slate-500">
                                 {t.headers?.length || 0} campos
                               </span>
                             </div>
-                            {selectedTable?._id === t._id && (
-                              <div className="w-2 h-2 rounded-full bg-primary-400 animate-pulse" />
-                            )}
                           </div>
                         </button>
                       ))}
@@ -512,36 +503,29 @@ export default function Tables() {
               {/* Main content - Datos de la tabla */}
               <div className="col-span-12 lg:col-span-9">
                 {!selectedTable ? (
-                  <div className="relative h-[500px] flex items-center justify-center rounded-2xl bg-surface-100 border border-surface-300/50 overflow-hidden">
-                    {/* Decorative elements */}
-                    <div className="absolute top-10 left-10 w-20 h-20 bg-primary-500/5 rounded-full blur-2xl" />
-                    <div className="absolute bottom-10 right-10 w-32 h-32 bg-violet-500/5 rounded-full blur-3xl" />
-                    
+                  <div className="relative h-[500px] flex items-center justify-center rounded-2xl overflow-hidden" style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
                     <div className="text-center z-10">
-                      <div className="w-24 h-24 rounded-2xl bg-surface-200 flex items-center justify-center mx-auto mb-6 text-content-muted border border-surface-300/50 shadow-2xl">
+                      <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 text-slate-500" style={{ background: 'rgba(71, 85, 105, 0.5)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
                         {Icons.arrow}
                       </div>
-                      <h3 className="text-2xl font-bold text-content-primary mb-3">Selecciona una tabla</h3>
-                      <p className="text-content-tertiary max-w-sm mx-auto">
+                      <h3 className="text-xl font-bold text-slate-100 mb-3">Selecciona una tabla</h3>
+                      <p className="text-slate-400 max-w-sm mx-auto">
                         Elige una tabla del panel izquierdo para visualizar y gestionar sus registros
                       </p>
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-2xl bg-surface-100 border border-surface-300/50 overflow-hidden shadow-xl">
+                  <div className="rounded-2xl overflow-hidden shadow-xl" style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
                     {/* Table header */}
-                    <div className="relative p-8 border-b border-surface-300/50 overflow-hidden">
-                      {/* Background glow */}
-                      <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary-500/10 rounded-full blur-3xl" />
-                      
+                    <div className="relative p-6" style={{ borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
                       <div className="relative flex items-start justify-between mb-6">
-                        <div className="flex items-center gap-5">
-                          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white shadow-2xl shadow-primary-500/30 ring-4 ring-surface-200/50">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-xl bg-indigo-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
                             {Icons.table}
                           </div>
                           <div>
-                            <h3 className="text-2xl font-bold text-content-primary mb-1">{selectedTable.name}</h3>
-                            <p className="text-sm text-content-tertiary">
+                            <h3 className="text-xl font-bold text-slate-100 mb-1">{selectedTable.name}</h3>
+                            <p className="text-sm text-slate-400">
                               {selectedTable.description || "Gestiona los registros de esta tabla"}
                             </p>
                           </div>
@@ -552,7 +536,8 @@ export default function Tables() {
                             <div className="flex items-center gap-1 mr-2">
                               <button
                                 onClick={exportToCSV}
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-surface-200/50 text-content-secondary hover:bg-surface-300 hover:text-content-primary border border-surface-300/50 transition-all"
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-600/40 transition-all"
+                                style={{ border: '1px solid rgba(100, 116, 139, 0.3)' }}
                                 title="Exportar a CSV"
                               >
                                 {Icons.download}
@@ -560,7 +545,8 @@ export default function Tables() {
                               </button>
                               <button
                                 onClick={exportToJSON}
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-surface-200/50 text-content-secondary hover:bg-surface-300 hover:text-content-primary border border-surface-300/50 transition-all"
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-600/40 transition-all"
+                                style={{ border: '1px solid rgba(100, 116, 139, 0.3)' }}
                                 title="Exportar a JSON"
                               >
                                 {Icons.code}
@@ -572,7 +558,8 @@ export default function Tables() {
                           {tableData.length === 0 && (
                             <button
                               onClick={() => setEditingTableConfig(selectedTable)}
-                              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-surface-200/50 text-content-secondary hover:bg-surface-300 hover:text-content-primary border border-surface-300/50 transition-all mr-2"
+                              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-600/40 transition-all mr-2"
+                              style={{ border: '1px solid rgba(100, 116, 139, 0.3)' }}
                               title="Editar estructura de la tabla"
                             >
                               {Icons.edit}
@@ -587,8 +574,8 @@ export default function Tables() {
                             }}
                             className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all ${
                               showAddRow 
-                                ? 'bg-surface-300 text-content-secondary hover:bg-surface-400' 
-                                : 'bg-gradient-to-r from-accent-500 to-accent-600 text-white hover:from-accent-400 hover:to-accent-500 shadow-xl shadow-accent-500/30 hover:shadow-accent-500/50 hover:scale-105'
+                                ? 'bg-slate-600/50 text-slate-300 hover:bg-slate-600' 
+                                : 'bg-sky-500 text-white hover:bg-sky-400 shadow-lg shadow-sky-500/30'
                             }`}
                           >
                             {showAddRow ? (
@@ -607,40 +594,40 @@ export default function Tables() {
                       </div>
                       
                       {/* Stats cards */}
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="p-4 rounded-xl bg-primary-500/5 border border-primary-500/20 group hover:border-primary-500/40 transition-all">
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="p-3 rounded-xl transition-all" style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
                           <div className="flex items-center gap-2 mb-2">
-                            <div className="p-1.5 rounded-lg bg-primary-500/20 text-primary-400">
+                            <div className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-400">
                               {Icons.rows}
                             </div>
-                            <span className="text-[10px] uppercase tracking-wider text-content-muted font-semibold">Registros</span>
+                            <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Registros</span>
                           </div>
-                          <p className="text-3xl font-bold text-primary-400">{filteredData.length}{dataSearchQuery && ` / ${tableData.length}`}</p>
+                          <p className="text-2xl font-bold text-indigo-400">{filteredData.length}{dataSearchQuery && ` / ${tableData.length}`}</p>
                         </div>
-                        <div className="p-4 rounded-xl bg-violet-500/5 border border-violet-500/20 group hover:border-violet-500/40 transition-all">
+                        <div className="p-3 rounded-xl transition-all" style={{ background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.25)' }}>
                           <div className="flex items-center gap-2 mb-2">
                             <div className="p-1.5 rounded-lg bg-violet-500/20 text-violet-400">
                               {Icons.fields}
                             </div>
-                            <span className="text-[10px] uppercase tracking-wider text-content-muted font-semibold">Campos</span>
+                            <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Campos</span>
                           </div>
-                          <p className="text-3xl font-bold text-violet-400">{selectedTable.headers?.length || 0}</p>
+                          <p className="text-2xl font-bold text-violet-400">{selectedTable.headers?.length || 0}</p>
                         </div>
-                        <div className="p-4 rounded-xl bg-accent-500/5 border border-accent-500/20 group hover:border-accent-500/40 transition-all">
+                        <div className="p-3 rounded-xl transition-all" style={{ background: 'rgba(14, 165, 233, 0.1)', border: '1px solid rgba(14, 165, 233, 0.25)' }}>
                           <div className="flex items-center gap-2 mb-2">
-                            <div className="p-1.5 rounded-lg bg-accent-500/20 text-accent-400">
+                            <div className="p-1.5 rounded-lg bg-sky-500/20 text-sky-400">
                               {Icons.check}
                             </div>
-                            <span className="text-[10px] uppercase tracking-wider text-content-muted font-semibold">Requeridos</span>
+                            <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Requeridos</span>
                           </div>
-                          <p className="text-3xl font-bold text-accent-400">{selectedTable.headers?.filter(h => h.required)?.length || 0}</p>
+                          <p className="text-2xl font-bold text-sky-400">{selectedTable.headers?.filter(h => h.required)?.length || 0}</p>
                         </div>
                       </div>
                       
                       {/* Barra de búsqueda de datos */}
                       {tableData.length > 0 && (
                         <div className="mt-4 relative">
-                          <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted">
+                          <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500">
                             {Icons.search}
                           </div>
                           <input 
@@ -648,12 +635,13 @@ export default function Tables() {
                             placeholder="Buscar en registros..."
                             value={dataSearchQuery}
                             onChange={(e) => setDataSearchQuery(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 rounded-xl bg-surface-200/50 border border-surface-300/50 text-content-primary placeholder-content-muted text-sm focus:outline-none focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500/20 transition-all"
+                            className="w-full pl-12 pr-4 py-3 rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all"
+                            style={{ background: 'rgba(71, 85, 105, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}
                           />
                           {dataSearchQuery && (
                             <button 
                               onClick={() => setDataSearchQuery("")}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-content-muted hover:text-content-primary hover:bg-surface-300 transition-all"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-600/50 transition-all"
                             >
                               {Icons.close}
                             </button>
@@ -664,13 +652,13 @@ export default function Tables() {
 
                     {/* Add row form */}
                     {showAddRow && (
-                      <div className="p-5 border-b border-surface-300/50 bg-surface-50">
+                      <div className="p-5" style={{ background: 'rgba(30, 41, 59, 0.5)', borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
                         <form onSubmit={handleAddRow}>
-                          <h4 className="text-sm font-medium text-content-secondary mb-4">Nueva fila</h4>
+                          <h4 className="text-sm font-medium text-slate-300 mb-4">Nueva fila</h4>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                             {getVisibleHeaders().map((header) => (
                               <div key={header.key}>
-                                <label className="text-xs text-content-muted block mb-1.5">
+                                <label className="text-xs text-slate-500 block mb-1.5">
                                   {header.label}
                                   {header.required && <span className="text-red-400 ml-1">*</span>}
                                 </label>
@@ -679,7 +667,8 @@ export default function Tables() {
                                   value={rowForm[header.key] || ""}
                                   onChange={(e) => setRowForm({ ...rowForm, [header.key]: e.target.value })}
                                   placeholder={header.label}
-                                  className="w-full px-3 py-2.5 rounded-lg bg-surface-200/50 border border-surface-300/50 text-content-primary placeholder-content-muted focus:outline-none focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500/20 transition-all"
+                                  className="w-full px-3 py-2.5 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all"
+                                  style={{ background: 'rgba(71, 85, 105, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}
                                   required={header.required}
                                 />
                               </div>
@@ -694,7 +683,7 @@ export default function Tables() {
                             <button 
                               type="submit" 
                               disabled={addingRow}
-                              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-500 text-white text-sm font-medium hover:bg-accent-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-500 text-white text-sm font-medium hover:bg-sky-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                               {addingRow ? (
                                 <>
@@ -711,7 +700,8 @@ export default function Tables() {
                             <button
                               type="button"
                               onClick={() => setShowAddRow(false)}
-                              className="px-4 py-2 rounded-lg bg-surface-200 border border-surface-300/50 text-content-secondary text-sm font-medium hover:bg-surface-300 hover:text-content-primary transition-all"
+                              className="px-4 py-2 rounded-lg text-slate-400 text-sm font-medium hover:bg-slate-600/50 hover:text-slate-200 transition-all"
+                              style={{ border: '1px solid rgba(100, 116, 139, 0.3)' }}
                             >
                               Cancelar
                             </button>
@@ -724,21 +714,21 @@ export default function Tables() {
                     {loadingData ? (
                       <div className="p-12 text-center">
                         <div className="relative w-8 h-8 mx-auto mb-3">
-                          <div className="absolute inset-0 border-2 border-primary-500/20 rounded-full" />
-                          <div className="absolute inset-0 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                          <div className="absolute inset-0 border-2 border-indigo-500/20 rounded-full" />
+                          <div className="absolute inset-0 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
                         </div>
-                        <p className="text-sm text-content-tertiary">Cargando datos...</p>
+                        <p className="text-sm text-slate-400">Cargando datos...</p>
                       </div>
                     ) : tableData.length === 0 ? (
                       <div className="p-16 text-center">
-                        <div className="w-20 h-20 rounded-2xl bg-surface-200 flex items-center justify-center mx-auto mb-6 text-content-muted border border-surface-300/50">
+                        <div className="w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-6 text-slate-500" style={{ background: 'rgba(71, 85, 105, 0.5)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
                           {Icons.empty}
                         </div>
-                        <h4 className="text-xl text-content-primary font-medium mb-2">Tabla vacía</h4>
-                        <p className="text-sm text-content-tertiary mb-6 max-w-sm mx-auto">No hay registros en esta tabla aún. Comienza agregando tu primer registro.</p>
+                        <h4 className="text-lg text-slate-100 font-medium mb-2">Tabla vacía</h4>
+                        <p className="text-sm text-slate-400 mb-6 max-w-sm mx-auto">No hay registros en esta tabla aún. Comienza agregando tu primer registro.</p>
                         <button
                           onClick={() => setShowAddRow(true)}
-                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-500 text-white text-sm font-medium hover:bg-primary-400 transition-colors shadow-lg shadow-primary-500/20"
+                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-400 transition-colors shadow-lg shadow-indigo-500/20"
                         >
                           {Icons.plus}
                           Agregar primer registro
@@ -748,57 +738,58 @@ export default function Tables() {
                       <div className="overflow-x-auto">
                         <table className="w-full" style={{ minWidth: '800px' }}>
                           <thead>
-                            <tr className="bg-surface-200/80">
-                              <th className="text-left py-4 px-5 text-content-muted font-medium text-[10px] uppercase tracking-wider w-14">#</th>
+                            <tr style={{ background: 'rgba(30, 41, 59, 0.7)' }}>
+                              <th className="text-left py-3 px-4 text-slate-500 font-medium text-[10px] uppercase tracking-wider w-14">#</th>
                               {Object.keys(tableData[0])
                                 .filter((k) => !k.startsWith("_") && k !== "main" && k !== "tableId" && k !== "createdAt" && k !== "updatedAt")
                                 .map((k) => (
                                   <th
                                     key={k}
-                                    className="text-left py-4 px-5 text-content-secondary font-semibold text-[11px] uppercase tracking-wider border-l border-surface-300/50"
-                                    style={{ minWidth: '130px' }}
+                                    className="text-left py-3 px-4 text-slate-400 font-semibold text-[11px] uppercase tracking-wider"
+                                    style={{ minWidth: '130px', borderLeft: '1px solid rgba(100, 116, 139, 0.2)' }}
                                   >
                                     {k}
                                   </th>
                                 ))}
-                              <th className="text-center py-4 px-5 text-content-muted font-medium text-[10px] uppercase tracking-wider border-l border-surface-300/50 w-32">Acciones</th>
+                              <th className="text-center py-3 px-4 text-slate-500 font-medium text-[10px] uppercase tracking-wider w-32" style={{ borderLeft: '1px solid rgba(100, 116, 139, 0.2)' }}>Acciones</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-surface-300/50">
+                          <tbody className="divide-y" style={{ borderColor: 'rgba(100, 116, 139, 0.2)' }}>
                             {filteredData.map((row, i) => (
                               <tr
                                 key={row._id || i}
-                                className={`transition-colors group ${editingRow === row._id ? 'bg-primary-500/10' : 'hover:bg-primary-500/5'}`}
+                                className={`transition-colors group ${editingRow === row._id ? 'bg-indigo-500/10' : 'hover:bg-slate-700/30'}`}
                               >
-                                <td className="py-4 px-5 text-content-muted text-xs font-mono">{i + 1}</td>
+                                <td className="py-3 px-4 text-slate-500 text-xs font-mono">{i + 1}</td>
                                 {Object.keys(tableData[0])
                                   .filter((k) => !k.startsWith("_") && k !== "main" && k !== "tableId" && k !== "createdAt" && k !== "updatedAt")
                                   .map((k) => (
-                                    <td key={k} className="py-4 px-5 text-content-secondary text-sm border-l border-surface-300/50 group-hover:text-content-primary transition-colors" style={{ minWidth: '130px' }}>
+                                    <td key={k} className="py-3 px-4 text-slate-400 text-sm group-hover:text-slate-200 transition-colors" style={{ minWidth: '130px', borderLeft: '1px solid rgba(100, 116, 139, 0.2)' }}>
                                       {editingRow === row._id ? (
                                         <input
                                           type="text"
                                           value={editForm[k] ?? ""}
                                           onChange={(e) => setEditForm({ ...editForm, [k]: e.target.value })}
-                                          className="w-full px-2 py-1.5 rounded bg-surface-300/50 border border-surface-400 text-content-primary text-sm focus:outline-none focus:border-primary-500"
+                                          className="w-full px-2 py-1.5 rounded text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                                          style={{ background: 'rgba(71, 85, 105, 0.5)', border: '1px solid rgba(100, 116, 139, 0.4)' }}
                                         />
                                       ) : (
                                         <span className="block truncate" title={String(row[k] ?? "-")}>{String(row[k] ?? "-")}</span>
                                       )}
                                     </td>
                                   ))}
-                                <td className="py-4 px-3 border-l border-surface-300/50">
+                                <td className="py-3 px-3" style={{ borderLeft: '1px solid rgba(100, 116, 139, 0.2)' }}>
                                   <div className="flex items-center justify-center gap-1">
                                     {editingRow === row._id ? (
                                       <>
                                         <button
                                           onClick={handleSaveEdit}
                                           disabled={savingEdit}
-                                          className="p-2 rounded-lg bg-accent-500/20 text-accent-400 hover:bg-accent-500/30 transition-all disabled:opacity-50"
+                                          className="p-2 rounded-lg bg-sky-500/20 text-sky-400 hover:bg-sky-500/30 transition-all disabled:opacity-50"
                                           title="Guardar"
                                         >
                                           {savingEdit ? (
-                                            <div className="w-4 h-4 border-2 border-accent-400/30 border-t-accent-400 rounded-full animate-spin" />
+                                            <div className="w-4 h-4 border-2 border-sky-400/30 border-t-sky-400 rounded-full animate-spin" />
                                           ) : (
                                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -807,7 +798,7 @@ export default function Tables() {
                                         </button>
                                         <button
                                           onClick={handleCancelEdit}
-                                          className="p-2 rounded-lg bg-surface-300/50 text-content-secondary hover:bg-surface-400 transition-all"
+                                          className="p-2 rounded-lg bg-slate-600/50 text-slate-400 hover:bg-slate-600 transition-all"
                                           title="Cancelar"
                                         >
                                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -819,7 +810,7 @@ export default function Tables() {
                                       <>
                                         <button
                                           onClick={() => handleEditRow(row)}
-                                          className="p-2 rounded-lg text-content-muted hover:bg-primary-500/20 hover:text-primary-400 transition-all opacity-0 group-hover:opacity-100"
+                                          className="p-2 rounded-lg text-slate-500 hover:bg-indigo-500/20 hover:text-indigo-400 transition-all opacity-0 group-hover:opacity-100"
                                           title="Editar"
                                         >
                                           {Icons.edit}
@@ -827,7 +818,7 @@ export default function Tables() {
                                         <button
                                           onClick={() => handleDeleteRow(row)}
                                           disabled={deletingRow === row._id}
-                                          className="p-2 rounded-lg text-content-muted hover:bg-red-500/20 hover:text-red-400 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                                          className="p-2 rounded-lg text-slate-500 hover:bg-red-500/20 hover:text-red-400 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
                                           title="Eliminar"
                                         >
                                           {deletingRow === row._id ? (
@@ -846,20 +837,20 @@ export default function Tables() {
                         </table>
                         
                         {/* Footer de la tabla */}
-                        <div className="px-5 py-3 bg-surface-200/50 border-t border-surface-300/50 flex items-center justify-between">
-                          <span className="text-xs text-content-muted">
+                        <div className="px-5 py-3 flex items-center justify-between" style={{ background: 'rgba(30, 41, 59, 0.5)', borderTop: '1px solid rgba(100, 116, 139, 0.3)' }}>
+                          <span className="text-xs text-slate-500">
                             Mostrando {filteredData.length}{dataSearchQuery ? ` de ${tableData.length}` : ''} registros
                           </span>
                           <div className="flex items-center gap-2">
                             <button 
                               onClick={exportToCSV}
-                              className="px-3 py-1.5 rounded-lg text-xs text-content-muted hover:text-content-primary hover:bg-surface-300 transition-all"
+                              className="px-3 py-1.5 rounded-lg text-xs text-slate-500 hover:text-slate-200 hover:bg-slate-600/50 transition-all"
                             >
                               Exportar CSV
                             </button>
                             <button 
                               onClick={exportToJSON}
-                              className="px-3 py-1.5 rounded-lg text-xs text-content-muted hover:text-content-primary hover:bg-surface-300 transition-all"
+                              className="px-3 py-1.5 rounded-lg text-xs text-slate-500 hover:text-slate-200 hover:bg-slate-600/50 transition-all"
                             >
                               Exportar JSON
                             </button>
@@ -878,7 +869,7 @@ export default function Tables() {
       {/* Botón de ayuda flotante */}
       <button
         onClick={() => setShowHelp(true)}
-        className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-primary-500 text-white shadow-lg shadow-primary-500/30 hover:bg-primary-400 hover:scale-110 transition-all flex items-center justify-center z-40"
+        className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 hover:bg-indigo-400 hover:scale-105 transition-all flex items-center justify-center z-40"
         title="Ayuda"
       >
         {Icons.help}
@@ -887,50 +878,50 @@ export default function Tables() {
       {/* Modal de ayuda */}
       {showHelp && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl bg-surface-50 border border-surface-300/50 animate-scale-in">
-            <div className="px-6 py-4 flex items-center justify-between border-b border-surface-300/50">
-              <h2 className="text-lg font-semibold text-content-primary">¿Cómo funcionan las Tablas?</h2>
+          <div className="w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl animate-scale-in" style={{ background: '#1e293b', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
+            <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
+              <h2 className="text-lg font-semibold text-slate-100">¿Cómo funcionan las Tablas?</h2>
               <button
                 onClick={() => setShowHelp(false)}
-                className="p-2 rounded-lg text-content-muted hover:text-content-primary hover:bg-surface-200 transition-all"
+                className="p-2 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-600/50 transition-all"
               >
                 {Icons.close}
               </button>
             </div>
             
             <div className="p-6 space-y-5">
-              <div className="p-4 rounded-xl bg-primary-500/5 border border-primary-500/10">
-                <h3 className="text-primary-400 font-medium mb-2 flex items-center gap-2">{Icons.table} ¿Qué es una tabla?</h3>
-                <p className="text-sm text-primary-400/70">
+              <div className="p-4 rounded-xl" style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                <h3 className="text-indigo-400 font-medium mb-2 flex items-center gap-2">{Icons.table} ¿Qué es una tabla?</h3>
+                <p className="text-sm text-indigo-400/70">
                   Una tabla es donde guardas información estructurada. Por ejemplo: clientes, reservas, productos, citas médicas, etc.
                 </p>
               </div>
 
               <div className="space-y-3">
-                <h3 className="text-content-primary font-medium flex items-center gap-2">{Icons.lightbulb} Tipos de campos</h3>
+                <h3 className="text-slate-100 font-medium flex items-center gap-2">{Icons.lightbulb} Tipos de campos</h3>
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="p-3 rounded-lg bg-surface-100 border border-surface-300/50">
-                    <span className="text-primary-400 font-medium">Texto</span>
-                    <p className="text-content-muted mt-1">Nombres, descripciones</p>
+                  <div className="p-3 rounded-lg" style={{ background: 'rgba(51, 65, 85, 0.5)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
+                    <span className="text-indigo-400 font-medium">Texto</span>
+                    <p className="text-slate-500 mt-1">Nombres, descripciones</p>
                   </div>
-                  <div className="p-3 rounded-lg bg-surface-100 border border-surface-300/50">
-                    <span className="text-accent-400 font-medium">Número</span>
-                    <p className="text-content-muted mt-1">Cantidades, precios</p>
+                  <div className="p-3 rounded-lg" style={{ background: 'rgba(51, 65, 85, 0.5)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
+                    <span className="text-sky-400 font-medium">Número</span>
+                    <p className="text-slate-500 mt-1">Cantidades, precios</p>
                   </div>
-                  <div className="p-3 rounded-lg bg-surface-100 border border-surface-300/50">
+                  <div className="p-3 rounded-lg" style={{ background: 'rgba(51, 65, 85, 0.5)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
                     <span className="text-amber-400 font-medium">Fecha</span>
-                    <p className="text-content-muted mt-1">Citas, reservaciones</p>
+                    <p className="text-slate-500 mt-1">Citas, reservaciones</p>
                   </div>
-                  <div className="p-3 rounded-lg bg-surface-100 border border-surface-300/50">
+                  <div className="p-3 rounded-lg" style={{ background: 'rgba(51, 65, 85, 0.5)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
                     <span className="text-pink-400 font-medium">Selección</span>
-                    <p className="text-content-muted mt-1">Estados, categorías</p>
+                    <p className="text-slate-500 mt-1">Estados, categorías</p>
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-accent-500/5 border border-accent-500/10">
-                <h3 className="text-accent-400 font-medium mb-2">Pasos rápidos</h3>
-                <ol className="text-sm text-accent-400/70 space-y-1 list-decimal list-inside">
+              <div className="p-4 rounded-xl" style={{ background: 'rgba(14, 165, 233, 0.1)', border: '1px solid rgba(14, 165, 233, 0.2)' }}>
+                <h3 className="text-sky-400 font-medium mb-2">Pasos rápidos</h3>
+                <ol className="text-sm text-sky-400/70 space-y-1 list-decimal list-inside">
                   <li>Haz clic en "Nueva tabla"</li>
                   <li>Elige una plantilla o crea desde cero</li>
                   <li>Define los campos que necesitas</li>

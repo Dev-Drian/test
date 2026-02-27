@@ -31,6 +31,18 @@ function hashPassword(password) {
   return { hash, salt };
 }
 
+/**
+ * Verifica si ya existe una tabla con el mismo nombre
+ */
+async function tableExists(workspaceDb, name) {
+  try {
+    const result = await workspaceDb.list({ include_docs: true });
+    return result.rows.some(r => r.doc && r.doc.name === name && r.doc.headers);
+  } catch {
+    return false;
+  }
+}
+
 export async function seed() {
   console.log(`\n[Seed] Iniciando seed PREMIUM para ${WORKSPACE_NAME}...`);
   
@@ -38,6 +50,12 @@ export async function seed() {
     const workspaceDb = await connectDB(getWorkspaceDbName(WORKSPACE_ID));
     const workspacesDb = await connectDB(getWorkspacesDbName());
     const agentsDb = await connectDB(getAgentsDbName(WORKSPACE_ID));
+    
+    // Verificar si ya existen los datos
+    if (await tableExists(workspaceDb, 'Clientes')) {
+      console.log('  ⏭️ Workspace ya tiene datos, saltando...');
+      return;
+    }
     
     // ========== TABLA 1: CLIENTES ==========
     const clientesTableId = uuidv4();

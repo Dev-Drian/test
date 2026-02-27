@@ -146,23 +146,23 @@ const concepts = [
 
 export default function Guia() {
   return (
-    <div className="min-h-full p-6" style={{ background: '#09090b' }}>
+    <div className="min-h-full p-6" style={{ background: '#0f172a' }}>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 text-emerald-400" style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.05))' }}>
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 text-indigo-400" style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(99, 102, 241, 0.05))' }}>
             {Icons.book}
           </div>
-          <h1 className="text-3xl font-bold text-white mb-3">Guía de Uso</h1>
-          <p className="text-zinc-400 text-lg max-w-xl mx-auto">
+          <h1 className="text-3xl font-bold text-slate-100 mb-3">Guía de Uso</h1>
+          <p className="text-slate-400 text-lg max-w-xl mx-auto">
             Aprende a usar la plataforma paso a paso. Desde crear un workspace hasta chatear con tu agente de IA.
           </p>
         </div>
 
         {/* Pasos */}
         <div className="mb-16">
-          <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-3">
-            <span className="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+          <h2 className="text-xl font-semibold text-slate-100 mb-6 flex items-center gap-3">
+            <span className="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
               <ClipboardIcon size="sm" />
             </span>
             Pasos para comenzar
@@ -174,8 +174,8 @@ export default function Guia() {
                 key={step.number}
                 className="p-5 rounded-2xl transition-all hover:scale-[1.01]"
                 style={{ 
-                  background: '#0c0c0f', 
-                  border: '1px solid rgba(255,255,255,0.06)',
+                  background: 'rgba(51, 65, 85, 0.4)', 
+                  border: '1px solid rgba(100, 116, 139, 0.3)',
                   borderLeft: `4px solid ${step.color}`
                 }}
               >
@@ -191,7 +191,7 @@ export default function Guia() {
                   {/* Contenido */}
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-white">{step.title}</h3>
+                      <h3 className="text-lg font-semibold text-slate-100">{step.title}</h3>
                       <Link 
                         to={step.link}
                         className="text-xs px-3 py-1.5 rounded-lg transition-all hover:scale-105"
@@ -200,11 +200,11 @@ export default function Guia() {
                         Ir →
                       </Link>
                     </div>
-                    <p className="text-sm text-zinc-400 mb-4">{step.description}</p>
+                    <p className="text-sm text-slate-400 mb-4">{step.description}</p>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {step.actions.map((action, i) => (
-                        <div key={i} className="flex items-center gap-2 text-sm text-zinc-500">
+                        <div key={i} className="flex items-center gap-2 text-sm text-slate-500">
                           <span className="w-5 h-5 rounded flex items-center justify-center shrink-0" style={{ background: `${step.color}15`, color: step.color }}>
                             {Icons.check}
                           </span>
@@ -221,7 +221,7 @@ export default function Guia() {
 
         {/* Conceptos */}
         <div className="mb-12">
-          <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-3">
+          <h2 className="text-xl font-semibold text-slate-100 mb-6 flex items-center gap-3">
             <span className="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>
               <LightBulbIcon size="sm" />
             </span>
@@ -233,34 +233,34 @@ export default function Guia() {
               <div 
                 key={concept.title}
                 className="p-4 rounded-xl"
-                style={{ background: '#0c0c0f', border: '1px solid rgba(255,255,255,0.06)' }}
+                style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}
               >
-                <span className="text-3xl mb-3 block text-purple-400">{concept.icon}</span>
-                <h3 className="text-sm font-semibold text-white mb-1">{concept.title}</h3>
-                <p className="text-xs text-zinc-500">{concept.description}</p>
+                <span className="text-3xl mb-3 block text-indigo-400">{concept.icon}</span>
+                <h3 className="text-sm font-semibold text-slate-100 mb-1">{concept.title}</h3>
+                <p className="text-xs text-slate-500">{concept.description}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* Tips */}
-        <div className="p-6 rounded-2xl" style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
-          <h3 className="text-lg font-semibold text-emerald-400 mb-4 flex items-center gap-2"><SparklesIcon size="sm" /> Tips para aprovechar al máximo</h3>
-          <ul className="space-y-3 text-sm text-emerald-400/80">
+        <div className="p-6 rounded-2xl" style={{ background: 'rgba(99, 102, 241, 0.05)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+          <h3 className="text-lg font-semibold text-indigo-400 mb-4 flex items-center gap-2"><SparklesIcon size="sm" /> Tips para aprovechar al máximo</h3>
+          <ul className="space-y-3 text-sm text-indigo-400/80">
             <li className="flex items-start gap-3">
-              <span className="text-emerald-400">•</span>
+              <span className="text-indigo-400">•</span>
               <span>Usa nombres descriptivos para tus tablas y agentes</span>
             </li>
             <li className="flex items-start gap-3">
-              <span className="text-emerald-400">•</span>
+              <span className="text-indigo-400">•</span>
               <span>Vincula solo las tablas necesarias a cada agente</span>
             </li>
             <li className="flex items-start gap-3">
-              <span className="text-emerald-400">•</span>
+              <span className="text-indigo-400">•</span>
               <span>Experimenta con diferentes modelos de IA según tu necesidad</span>
             </li>
             <li className="flex items-start gap-3">
-              <span className="text-emerald-400">•</span>
+              <span className="text-indigo-400">•</span>
               <span>Los flujos te permiten automatizar tareas repetitivas sin código</span>
             </li>
           </ul>

@@ -2,6 +2,61 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
+// Iconos SVG
+const Icons = {
+  bolt: (
+    <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+    </svg>
+  ),
+  user: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+    </svg>
+  ),
+  mail: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+    </svg>
+  ),
+  lock: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+    </svg>
+  ),
+  check: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+  ),
+  star: (
+    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    </svg>
+  ),
+  diamond: (
+    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+    </svg>
+  ),
+  crown: (
+    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z" />
+    </svg>
+  ),
+  userCircle: (
+    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  spinner: (
+    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+    </svg>
+  ),
+};
+
 export default function Login() {
   const [isRegister, setIsRegister] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "", confirmPassword: "" });
@@ -16,32 +71,36 @@ export default function Login() {
       email: "nuevo@migracion.ai", 
       password: "nuevo123", 
       label: "Usuario Nuevo", 
-      badge: "🆓 FREE",
+      plan: "FREE",
       desc: "Probar onboarding completo",
+      icon: Icons.userCircle,
       color: "slate"
     },
     { 
       email: "starter@migracion.ai", 
       password: "starter123", 
       label: "Starter", 
-      badge: "⭐ STARTER",
+      plan: "STARTER",
       desc: "Workspace básico",
+      icon: Icons.star,
       color: "blue"
     },
     { 
       email: "demo@migracion.ai", 
       password: "demo123", 
       label: "Demo Premium", 
-      badge: "💎 PREMIUM",
+      plan: "PREMIUM",
       desc: "CRM completo",
+      icon: Icons.diamond,
       color: "violet"
     },
     { 
       email: "admin@migracion.ai", 
       password: "admin123", 
       label: "Administrador", 
-      badge: "👑 ENTERPRISE",
+      plan: "ENTERPRISE",
       desc: "Super Admin",
+      icon: Icons.crown,
       color: "amber"
     },
   ];
@@ -90,100 +149,117 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <div className="w-full max-w-md p-8">
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-700/50 p-8">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0a0a12 0%, #12121a 50%, #0a0a12 100%)' }}>
+      <div className="w-full max-w-md p-6">
+        {/* Card principal */}
+        <div className="rounded-2xl p-8" style={{ 
+          background: 'rgba(18, 18, 26, 0.8)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255, 255, 255, 0.06)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+        }}>
           {/* Logo/Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-4">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-violet-500 text-white mb-4">
+              {Icons.bolt}
             </div>
-            <h1 className="text-2xl font-bold text-white">Migración AI</h1>
-            <p className="text-slate-400 mt-1">
-              {isRegister ? "Crea tu cuenta" : "Inicia sesión para continuar"}
+            <h1 className="text-2xl font-semibold text-white tracking-tight">FlowAI</h1>
+            <p className="text-white/50 text-sm mt-1">
+              {isRegister ? "Crea tu cuenta para comenzar" : "Inicia sesión para continuar"}
             </p>
           </div>
 
           {/* Error */}
           {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg">
+            <div className="mb-6 p-3 rounded-lg" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
               <p className="text-red-400 text-sm text-center">{error}</p>
             </div>
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {isRegister && (
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Nombre</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={form.name}
-                  onChange={handleChange}
-                  required={isRegister}
-                  className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  placeholder="Tu nombre"
-                />
+                <label className="block text-xs font-medium text-white/60 mb-2 uppercase tracking-wider">Nombre</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30">{Icons.user}</span>
+                  <input
+                    type="text"
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    required={isRegister}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl text-white text-sm placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all"
+                    style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.08)' }}
+                    placeholder="Tu nombre completo"
+                  />
+                </div>
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Email</label>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                placeholder="tu@email.com"
-              />
+              <label className="block text-xs font-medium text-white/60 mb-2 uppercase tracking-wider">Email</label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30">{Icons.mail}</span>
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
+                  className="w-full pl-10 pr-4 py-3 rounded-xl text-white text-sm placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all"
+                  style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.08)' }}
+                  placeholder="tu@email.com"
+                />
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Contraseña</label>
-              <input
-                type="password"
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                required
-                minLength={6}
-                className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                placeholder="••••••••"
-              />
+              <label className="block text-xs font-medium text-white/60 mb-2 uppercase tracking-wider">Contraseña</label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30">{Icons.lock}</span>
+                <input
+                  type="password"
+                  name="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  required
+                  minLength={6}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl text-white text-sm placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all"
+                  style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.08)' }}
+                  placeholder="Mínimo 6 caracteres"
+                />
+              </div>
             </div>
 
             {isRegister && (
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Confirmar Contraseña</label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={form.confirmPassword}
-                  onChange={handleChange}
-                  required={isRegister}
-                  minLength={6}
-                  className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  placeholder="••••••••"
-                />
+                <label className="block text-xs font-medium text-white/60 mb-2 uppercase tracking-wider">Confirmar Contraseña</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30">{Icons.lock}</span>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={form.confirmPassword}
+                    onChange={handleChange}
+                    required={isRegister}
+                    minLength={6}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl text-white text-sm placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all"
+                    style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.08)' }}
+                    placeholder="Repite tu contraseña"
+                  />
+                </div>
               </div>
             )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 px-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-3 px-4 bg-violet-500 hover:bg-violet-600 text-white font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
             >
               {loading ? (
                 <>
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
+                  {Icons.spinner}
                   <span>{isRegister ? "Creando cuenta..." : "Iniciando sesión..."}</span>
                 </>
               ) : (
@@ -200,59 +276,66 @@ export default function Login() {
                 setIsRegister(!isRegister);
                 setError("");
               }}
-              className="text-sm text-slate-400 hover:text-white transition"
+              className="text-sm text-white/50 hover:text-white transition"
             >
               {isRegister ? (
-                <>¿Ya tienes cuenta? <span className="text-blue-400">Inicia sesión</span></>
+                <>¿Ya tienes cuenta? <span className="text-violet-400 font-medium">Inicia sesión</span></>
               ) : (
-                <>¿No tienes cuenta? <span className="text-blue-400">Regístrate</span></>
+                <>¿No tienes cuenta? <span className="text-violet-400 font-medium">Regístrate</span></>
               )}
             </button>
           </div>
 
-          {/* Demo credentials button */}
+          {/* Demo credentials */}
           {!isRegister && (
-            <div className="mt-4 pt-4 border-t border-slate-700/50">
-              <p className="text-xs text-slate-400 text-center mb-3">
-                Usuarios de prueba disponibles:
+            <div className="mt-6 pt-6" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
+              <p className="text-xs text-white/40 text-center mb-4 uppercase tracking-wider font-medium">
+                Cuentas de demostración
               </p>
-              <div className="space-y-2">
-                {TEST_USERS.map((user) => (
-                  <button
-                    key={user.email}
-                    type="button"
-                    onClick={() => fillCredentials(user)}
-                    className={`w-full p-3 rounded-lg border transition-all text-left ${
-                      selectedUser === user.email
-                        ? 'bg-violet-500/20 border-violet-500/50'
-                        : 'bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-white font-medium text-sm">{user.label}</span>
-                        <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-slate-600/50">{user.badge}</span>
+              <div className="grid grid-cols-2 gap-2">
+                {TEST_USERS.map((user) => {
+                  const isSelected = selectedUser === user.email;
+                  const colorMap = {
+                    slate: { bg: 'rgba(100, 116, 139, 0.1)', border: 'rgba(100, 116, 139, 0.3)', text: '#94a3b8' },
+                    blue: { bg: 'rgba(59, 130, 246, 0.1)', border: 'rgba(59, 130, 246, 0.3)', text: '#60a5fa' },
+                    violet: { bg: 'rgba(139, 92, 246, 0.1)', border: 'rgba(139, 92, 246, 0.3)', text: '#a78bfa' },
+                    amber: { bg: 'rgba(245, 158, 11, 0.1)', border: 'rgba(245, 158, 11, 0.3)', text: '#fbbf24' },
+                  };
+                  const colors = colorMap[user.color];
+                  
+                  return (
+                    <button
+                      key={user.email}
+                      type="button"
+                      onClick={() => fillCredentials(user)}
+                      className="p-3 rounded-xl text-left transition-all hover:scale-[1.02]"
+                      style={{ 
+                        background: isSelected ? colors.bg : 'rgba(255, 255, 255, 0.02)',
+                        border: `1px solid ${isSelected ? colors.border : 'rgba(255, 255, 255, 0.06)'}`,
+                      }}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span style={{ color: colors.text }}>{user.icon}</span>
+                        <span className="text-xs font-medium uppercase tracking-wide" style={{ color: colors.text }}>
+                          {user.plan}
+                        </span>
+                        {isSelected && (
+                          <span className="ml-auto text-violet-400">{Icons.check}</span>
+                        )}
                       </div>
-                      {selectedUser === user.email && (
-                        <svg className="w-4 h-4 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-400 mt-1">{user.desc}</p>
-                    <p className="text-[10px] text-slate-500 mt-1 font-mono">
-                      {user.email} / {user.password}
-                    </p>
-                  </button>
-                ))}
+                      <p className="text-white text-sm font-medium truncate">{user.label}</p>
+                      <p className="text-white/40 text-[10px] mt-0.5 truncate">{user.desc}</p>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <p className="text-center text-slate-500 text-sm mt-6">
-          Sistema de gestión impulsado por IA
+        <p className="text-center text-white/30 text-xs mt-6">
+          Plataforma de automatización impulsada por IA
         </p>
       </div>
     </div>
