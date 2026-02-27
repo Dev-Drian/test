@@ -135,32 +135,32 @@ export default function Workspaces() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full bg-[#09090b]">
+      <div className="flex items-center justify-center h-full bg-[#0f172a]">
         <div className="flex flex-col items-center gap-4">
           <div className="relative w-10 h-10">
-            <div className="absolute inset-0 border-2 border-emerald-500/20 rounded-full" />
-            <div className="absolute inset-0 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+            <div className="absolute inset-0 border-2 border-indigo-500/20 rounded-full" />
+            <div className="absolute inset-0 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
           </div>
-          <span className="text-sm text-zinc-500">Cargando proyectos...</span>
+          <span className="text-sm text-slate-500">Cargando proyectos...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#09090b] p-8">
+    <div className="min-h-screen bg-[#0f172a] p-8">
       <div className="max-w-5xl mx-auto">
         
         {/* Header */}
         <header className="mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
                 {Icons.workspace}
               </div>
               <div>
                 <h1 className="text-2xl font-semibold text-white tracking-tight">Mis Proyectos</h1>
-                <p className="text-sm text-zinc-500 mt-0.5">
+                <p className="text-sm text-slate-500 mt-0.5">
                   Cada proyecto agrupa tus datos y tu asistente de IA
                 </p>
               </div>
@@ -169,7 +169,7 @@ export default function Workspaces() {
             {!showForm && (
               <button 
                 onClick={() => setShowForm(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-400 transition-colors shadow-lg shadow-indigo-500/20"
               >
                 {Icons.plus}
                 <span>Nuevo proyecto</span>
@@ -200,7 +200,7 @@ export default function Workspaces() {
           <div className="mb-8 p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold text-white">Crear nuevo proyecto</h2>
-              <button onClick={resetForm} className="text-zinc-500 hover:text-white transition-colors">
+              <button onClick={resetForm} className="text-slate-500 hover:text-white transition-colors">
                 {Icons.close}
               </button>
             </div>
@@ -208,7 +208,7 @@ export default function Workspaces() {
             <form onSubmit={handleCreate} className="space-y-6">
               {/* Nombre */}
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-2">
+                <label className="block text-sm font-medium text-slate-400 mb-2">
                   Nombre del proyecto
                 </label>
                 <input
@@ -216,7 +216,7 @@ export default function Workspaces() {
                   placeholder="Ej: Mi Tienda, Restaurante, Clínica..."
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all"
                   disabled={creating}
                   autoFocus
                 />
@@ -224,7 +224,7 @@ export default function Workspaces() {
 
               {/* Color */}
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-3">
+                <label className="block text-sm font-medium text-slate-400 mb-3">
                   Color del proyecto
                 </label>
                 <div className="flex items-center gap-3">
@@ -235,7 +235,7 @@ export default function Workspaces() {
                       onClick={() => setColor(c)}
                       className={`w-10 h-10 rounded-xl transition-all ${
                         color === c 
-                          ? 'ring-2 ring-white ring-offset-2 ring-offset-[#09090b] scale-110' 
+                          ? 'ring-2 ring-white ring-offset-2 ring-offset-[#0f172a] scale-110' 
                           : 'hover:scale-105'
                       }`}
                       style={{ background: c }}
@@ -250,7 +250,7 @@ export default function Workspaces() {
                       className="absolute inset-0 opacity-0 cursor-pointer"
                     />
                     <div 
-                      className="w-10 h-10 rounded-xl border-2 border-dashed border-white/20 flex items-center justify-center text-zinc-500 hover:border-white/40 transition-colors cursor-pointer"
+                      className="w-10 h-10 rounded-xl border-2 border-dashed border-white/20 flex items-center justify-center text-slate-500 hover:border-white/40 transition-colors cursor-pointer"
                       style={{ background: color }}
                     >
                       <span className="text-xs font-medium text-white/80">+</span>
@@ -261,7 +261,7 @@ export default function Workspaces() {
 
               {/* Preview */}
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-                <p className="text-xs text-zinc-600 mb-3">Vista previa</p>
+                <p className="text-xs text-slate-600 mb-3">Vista previa</p>
                 <div className="flex items-center gap-4">
                   <div
                     className="w-14 h-14 rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg"
@@ -273,7 +273,7 @@ export default function Workspaces() {
                     <h3 className="font-semibold text-white text-lg">
                       {name || "Nombre del proyecto"}
                     </h3>
-                    <p className="text-sm text-zinc-500">Tu nuevo proyecto</p>
+                    <p className="text-sm text-slate-500">Tu nuevo proyecto</p>
                   </div>
                 </div>
               </div>
@@ -283,7 +283,7 @@ export default function Workspaces() {
                 <button 
                   type="submit" 
                   disabled={creating || !name.trim()}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {creating ? (
                     <>
@@ -300,7 +300,7 @@ export default function Workspaces() {
                 <button 
                   type="button" 
                   onClick={resetForm}
-                  className="px-5 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-zinc-400 text-sm font-medium hover:bg-white/[0.06] hover:text-white transition-all"
+                  className="px-5 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-slate-400 text-sm font-medium hover:bg-white/[0.06] hover:text-white transition-all"
                 >
                   Cancelar
                 </button>
@@ -312,18 +312,18 @@ export default function Workspaces() {
         {/* Workspace activo */}
         {workspaceId && (
           <div className="mb-10">
-            <h2 className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <h2 className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
               Proyecto activo
             </h2>
             {workspaces.filter(ws => ws._id === workspaceId).map((ws) => (
               <div 
                 key={ws._id}
-                className="relative overflow-hidden p-8 rounded-3xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20 shadow-2xl shadow-emerald-500/5"
+                className="relative overflow-hidden p-8 rounded-3xl bg-gradient-to-br from-indigo-500/10 via-indigo-500/5 to-transparent border border-indigo-500/20 shadow-2xl shadow-indigo-500/5"
               >
                 {/* Glow effect */}
-                <div className="absolute -top-20 -right-20 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl" />
-                <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-emerald-500/5 rounded-full blur-2xl" />
+                <div className="absolute -top-20 -right-20 w-60 h-60 bg-indigo-500/10 rounded-full blur-3xl" />
+                <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-indigo-500/5 rounded-full blur-2xl" />
                 
                 <div className="relative flex items-center gap-6">
                   <div
@@ -335,18 +335,18 @@ export default function Workspaces() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-2xl font-bold text-white">{ws.name}</h3>
-                      <span className="px-3 py-1 rounded-full bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-500/30">
+                      <span className="px-3 py-1 rounded-full bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/30">
                         Activo
                       </span>
                     </div>
-                    <p className="text-sm text-zinc-500 font-mono">ID: {ws._id}</p>
+                    <p className="text-sm text-slate-500 font-mono">ID: {ws._id}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <a href="/tables" className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 text-sm font-medium transition-all hover:scale-105">
+                    <a href="/tables" className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-sm font-medium transition-all hover:scale-105">
                       {Icons.tables}
                       <span>Mis datos</span>
                     </a>
-                    <a href="/agents" className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 text-sm font-medium transition-all hover:scale-105">
+                    <a href="/agents" className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-sm font-medium transition-all hover:scale-105">
                       {Icons.agents}
                       <span>Asistente</span>
                     </a>
@@ -360,26 +360,26 @@ export default function Workspaces() {
         {/* Lista de proyectos */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wider">
+            <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wider">
               {workspaceId ? 'Otros proyectos' : 'Todos los proyectos'}
             </h2>
-            <span className="text-xs text-zinc-600">
+            <span className="text-xs text-slate-600">
               {workspaces.filter(ws => ws._id !== workspaceId).length} disponibles
             </span>
           </div>
 
           {workspaces.length === 0 ? (
             <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-2xl">
-              <div className="w-16 h-16 rounded-2xl bg-zinc-800/50 flex items-center justify-center mx-auto mb-4 text-zinc-600">
+              <div className="w-16 h-16 rounded-2xl bg-slate-800/50 flex items-center justify-center mx-auto mb-4 text-slate-600">
                 {Icons.workspace}
               </div>
               <h3 className="text-lg font-medium text-white mb-2">No hay proyectos</h3>
-              <p className="text-sm text-zinc-500 mb-6 max-w-sm mx-auto">
+              <p className="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
                 Crea tu primer proyecto para comenzar a organizar tus datos
               </p>
               <button 
                 onClick={() => setShowForm(true)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-400 transition-colors"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-400 transition-colors"
               >
                 {Icons.plus}
                 Crear proyecto
@@ -403,17 +403,17 @@ export default function Workspaces() {
                       {ws.name?.charAt(0)?.toUpperCase() || "W"}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-lg text-white group-hover:text-emerald-400 transition-colors truncate">
+                      <h3 className="font-semibold text-lg text-white group-hover:text-indigo-400 transition-colors truncate">
                         {ws.name}
                       </h3>
-                      <p className="text-xs text-zinc-600 truncate mt-1 font-mono">
+                      <p className="text-xs text-slate-600 truncate mt-1 font-mono">
                         ID: {ws._id?.slice(0, 20)}...
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setWorkspace(ws._id, ws.name)}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 text-white text-sm font-bold hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:scale-105"
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 text-white text-sm font-bold hover:bg-indigo-400 transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:scale-105"
                       >
                         Activar
                         {Icons.arrow}
@@ -421,11 +421,11 @@ export default function Workspaces() {
                       <button
                         onClick={() => handleDelete(ws)}
                         disabled={deleting === ws._id}
-                        className="p-2.5 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all disabled:opacity-50"
+                        className="p-2.5 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all disabled:opacity-50"
                         title="Eliminar proyecto"
                       >
                         {deleting === ws._id ? (
-                          <div className="w-4 h-4 border-2 border-zinc-600 border-t-transparent rounded-full animate-spin" />
+                          <div className="w-4 h-4 border-2 border-slate-600 border-t-transparent rounded-full animate-spin" />
                         ) : (
                           Icons.trash
                         )}
@@ -440,15 +440,15 @@ export default function Workspaces() {
 
         {/* Tip */}
         {workspaces.length > 0 && (
-          <div className="mt-8 p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0 text-blue-400">
+          <div className="mt-8 p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/10 flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center shrink-0 text-indigo-400">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
             <div>
-              <p className="text-sm text-blue-400 font-medium">Tip</p>
-              <p className="text-xs text-blue-400/60 mt-0.5">
+              <p className="text-sm text-indigo-400 font-medium">Tip</p>
+              <p className="text-xs text-indigo-400/60 mt-0.5">
                 Cada proyecto tiene sus propios datos y asistente. Puedes cambiar entre proyectos desde el menú lateral.
               </p>
             </div>
