@@ -7,7 +7,8 @@
 import { connectDB } from '../config/db.js';
 import { 
   getNotificationService, 
-  InAppNotificationProvider 
+  InAppNotificationProvider,
+  ChatMessageProvider
 } from '../integrations/notifications/index.js';
 
 // Inicializar servicio de notificaciones
@@ -21,6 +22,10 @@ async function getService(workspaceId) {
     const db = await connectDB(`chatbot_${workspaceId}`);
     const inAppProvider = new InAppNotificationProvider({ db, enabled: true });
     notificationService.registerProvider(inAppProvider);
+    
+    // Registrar proveedor de chat (para inyección de mensajes en bots)
+    const chatProvider = new ChatMessageProvider({ db, enabled: true });
+    notificationService.registerProvider(chatProvider);
     
     // Iniciar escucha de eventos
     notificationService.startListening();

@@ -5,9 +5,11 @@
  * configurados que tienen ese trigger.
  */
 
-import { connectDB, getFlowsDbName, getTableDataDbName, getWorkspaceDbName } from '../config/db.js';
+import { connectDB, getFlowsDbName, getTableDataDbName, getWorkspaceDbName, getChatDbName } from '../config/db.js';
 import { processTemplate } from './flowEngine.js';
 import { v4 as uuidv4 } from 'uuid';
+import { ChatMessageProvider } from '../integrations/notifications/ChatMessageProvider.js';
+import { getNotificationService } from '../integrations/notifications/NotificationService.js';
 
 /**
  * Obtiene el ID de la tabla de Log de Flujos
@@ -158,6 +160,9 @@ async function executeAction(action, context, workspaceId) {
       console.log(`[FlowExecutor] Notification: ${action.message || action.template}`);
       return { success: true, type: 'notification' };
     
+    case 'send_message':
+      return await executeSendMessage(workspaceId, action, context);
+    
     case 'error':
       return { success: false, error: action.message };
     
@@ -168,6 +173,243 @@ async function executeAction(action, context, workspaceId) {
       console.warn(`[FlowExecutor] Unknown action type: ${actionType}`);
       return { success: false, error: `Unknown action type: ${actionType}` };
   }
+}
+
+/**
+ * Ejecuta acción send_message - envía mensajes a diferentes destinos
+ * 
+ * Tipos de destino (targetType):
+ * - origin_chat: Responde al chat que disparó el flujo
+ * - fixed: Número de WhatsApp fijo
+ * - record_field: Campo del registro con el teléfono/chatId
+ * - table_query: Busca destinatarios en otra tabla
+ * 
+ * Canales:
+ * - chat: Inyecta en chat del bot
+ * - in_app: Notificación en campanita
+ * - whatsapp: WhatsApp (futuro)
+ */
+async function executeSendMessage(workspaceId, action, context) {
+  const { 
+    targetType,      // 'origin_chat' | 'fixed' | 'record_field' | 'table_query'
+    targetValue,     // para 'fixed': el número de WhatsApp
+    targetField,     // para 'record_field' / 'table_query': campo con teléfono
+    queryTable,      // para 'table_query': tabla donde buscar
+    queryFilter,     // para 'table_query': filtro opcional
+    channel,         // 'chat' | 'in_app' | 'whatsapp'
+    message,         // mensaje con {{variables}}
+  } = action;
+  
+  console.log(`[FlowExecutor] send_message:`, { targetType, channel, message: message?.slice(0, 50) });
+  
+  try {
+    // Procesar el mensaje con variables del contexto
+    const processedMessage = processTemplate(message || '', context);
+    
+    // Resolver destinatarios según targetType
+    const recipients = await resolveMessageRecipients(workspaceId, targetType, {
+      targetValue,
+      targetField,
+      queryTable,
+      queryFilter,
+      context,
+    });
+    
+    if (!recipients || recipients.length === 0) {
+      console.warn('[FlowExecutor] send_message: No recipients found');
+      return { success: false, error: 'No se encontraron destinatarios' };
+    }
+    
+    console.log(`[FlowExecutor] send_message: ${recipients.length} recipient(s) found`);
+    
+    // Enviar según canal
+    const results = [];
+    
+    for (const recipient of recipients) {
+      let result;
+      
+      switch (channel) {
+        case 'chat':
+          result = await sendChatMessage(workspaceId, recipient, processedMessage, context);
+          break;
+        
+        case 'in_app':
+          result = await sendInAppNotification(workspaceId, recipient, processedMessage, context);
+          break;
+        
+        case 'whatsapp':
+          // TODO: Integrar con WhatsApp Business API
+          console.log(`[FlowExecutor] WhatsApp message to ${recipient.phone}: ${processedMessage}`);
+          result = { success: true, type: 'whatsapp_pending', phone: recipient.phone };
+          break;
+        
+        default:
+          result = { success: false, error: `Canal no soportado: ${channel}` };
+      }
+      
+      results.push(result);
+    }
+    
+    const allSuccess = results.every(r => r.success);
+    return { 
+      success: allSuccess, 
+      type: 'send_message',
+      channel,
+      recipientCount: recipients.length,
+      results 
+    };
+    
+  } catch (error) {
+    console.error('[FlowExecutor] send_message error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Resuelve los destinatarios según el tipo de destino
+ */
+async function resolveMessageRecipients(workspaceId, targetType, options) {
+  const { targetValue, targetField, queryTable, queryFilter, context } = options;
+  
+  switch (targetType) {
+    case 'origin_chat':
+      // El chat que disparó el flujo (si existe)
+      if (context._chatId) {
+        return [{ chatId: context._chatId, agentId: context._agentId }];
+      }
+      // Si no hay chat, intentar usar agentId del contexto
+      if (context._agentId) {
+        return [{ agentId: context._agentId, createNew: true }];
+      }
+      return [];
+    
+    case 'fixed':
+      // Número fijo de WhatsApp
+      if (targetValue) {
+        return [{ phone: targetValue.replace(/\s+/g, '') }];
+      }
+      return [];
+    
+    case 'record_field':
+      // Obtener valor del campo del registro
+      if (targetField && context[targetField]) {
+        const value = context[targetField];
+        // Detectar si es chatId, teléfono o userId
+        if (value.startsWith?.('chat_') || value.includes?.('-')) {
+          return [{ chatId: value }];
+        } else if (/^\+?\d{10,}$/.test(value.replace(/\s+/g, ''))) {
+          return [{ phone: value.replace(/\s+/g, '') }];
+        } else {
+          return [{ userId: value }];
+        }
+      }
+      return [];
+    
+    case 'table_query':
+      // Buscar en otra tabla
+      if (!queryTable) return [];
+      
+      try {
+        const dataDb = await connectDB(getTableDataDbName(workspaceId, queryTable));
+        
+        // Construir selector
+        let selector = { tableId: queryTable };
+        
+        if (queryFilter) {
+          // Parsear filtro simple: "campo = valor"
+          const filterMatch = queryFilter.match(/(\w+)\s*=\s*["']?([^"']+)["']?/);
+          if (filterMatch) {
+            const [, field, value] = filterMatch;
+            selector[field] = value.toLowerCase() === 'true' ? true :
+                              value.toLowerCase() === 'false' ? false : value;
+          }
+        }
+        
+        const result = await dataDb.find({ selector, limit: 50 });
+        
+        return result.docs
+          .filter(doc => doc[targetField])
+          .map(doc => {
+            const value = doc[targetField];
+            if (/^\+?\d{10,}$/.test(value.replace(/\s+/g, ''))) {
+              return { phone: value.replace(/\s+/g, ''), record: doc };
+            }
+            return { userId: value, record: doc };
+          });
+          
+      } catch (error) {
+        console.error('[FlowExecutor] table_query error:', error);
+        return [];
+      }
+    
+    default:
+      return [];
+  }
+}
+
+/**
+ * Envía mensaje a un chat usando ChatMessageProvider
+ */
+async function sendChatMessage(workspaceId, recipient, message, context) {
+  const chatProvider = new ChatMessageProvider({ enabled: true });
+  
+  // Si tenemos chatId, inyectar en ese chat
+  if (recipient.chatId) {
+    return chatProvider.send({
+      workspaceId,
+      chatId: recipient.chatId,
+      message,
+      title: 'Mensaje automático',
+      metadata: {
+        source: 'flow',
+        triggeredBy: context._id,
+        tableName: context._tableName,
+      },
+    });
+  }
+  
+  // Si tenemos agentId, crear nuevo chat
+  if (recipient.agentId) {
+    return chatProvider.send({
+      workspaceId,
+      agentId: recipient.agentId,
+      message,
+      title: `Mensaje de ${context._tableName || 'Flujo'}`,
+      metadata: {
+        source: 'flow',
+        triggeredBy: context._id,
+      },
+    });
+  }
+  
+  return { success: false, error: 'No chatId or agentId provided' };
+}
+
+/**
+ * Envía notificación in_app
+ */
+async function sendInAppNotification(workspaceId, recipient, message, context) {
+  const notificationService = getNotificationService();
+  const inAppProvider = notificationService.getProvider('in_app');
+  
+  if (!inAppProvider) {
+    console.warn('[FlowExecutor] in_app provider not available');
+    return { success: false, error: 'in_app provider not configured' };
+  }
+  
+  return inAppProvider.send({
+    workspaceId,
+    type: 'flow_message',
+    title: '📨 Mensaje de flujo',
+    message,
+    data: {
+      source: 'flow',
+      triggeredBy: context._id,
+      tableName: context._tableName,
+      recipient,
+    },
+    recipient,
+  });
 }
 
 /**

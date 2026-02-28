@@ -11,6 +11,7 @@ import Tables from "./pages/Tables";
 import Chat from "./pages/Chat";
 import Guia from "./pages/Guia";
 import FlowEditor from "./pages/FlowEditor";
+import Views from "./pages/Views";
 import Login from "./pages/Login";
 import OnboardingWizard from "./components/OnboardingWizard";
 import { listWorkspaces } from "./api/client";
@@ -201,6 +202,7 @@ function AppContent() {
           <Route path="agents" element={<Agents />} />
           <Route path="tables" element={<Tables />} />
           <Route path="flows" element={<FlowEditor />} />
+          <Route path="views" element={<Views />} />
           <Route path="chat" element={<Chat />} />
           <Route path="guia" element={<Guia />} />
           <Route path="*" element={<Navigate to="/" replace />} />

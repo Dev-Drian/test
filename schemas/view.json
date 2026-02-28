@@ -1,0 +1,166 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "View",
+  "description": "Vista configurable para visualización de datos. Base: db_${workspaceId}_views",
+  "type": "object",
+  "required": ["_id", "name", "type"],
+  "properties": {
+    "_id": { 
+      "type": "string", 
+      "description": "UUID de la vista" 
+    },
+    "_rev": { 
+      "type": "string", 
+      "description": "Revisión CouchDB" 
+    },
+    "name": { 
+      "type": "string", 
+      "description": "Nombre descriptivo de la vista",
+      "examples": ["Calendario de Citas", "Pipeline de Ventas", "Mesas del Restaurant"]
+    },
+    "type": { 
+      "type": "string", 
+      "enum": ["calendar", "kanban", "timeline", "table", "cards", "floorplan", "pos"],
+      "description": "Tipo de visualización"
+    },
+    "tableId": { 
+      "type": "string", 
+      "description": "ID de la tabla principal (legacy, usar tables para multi-tabla)" 
+    },
+    "tables": {
+      "type": "object",
+      "description": "Configuración multi-tabla para vistas complejas",
+      "properties": {
+        "primary": {
+          "type": "string",
+          "description": "ID de la tabla principal (ej: Mesas, Tareas)"
+        },
+        "secondary": {
+          "type": "string",
+          "description": "ID de tabla secundaria para estados/relaciones (ej: Reservas, Pedidos)"
+        },
+        "tertiary": {
+          "type": "string",
+          "description": "ID de tabla terciaria (ej: Productos/Menú para POS)"
+        },
+        "joinField": {
+          "type": "string",
+          "description": "Campo de la tabla secundaria que referencia a la primaria"
+        },
+        "joinType": {
+          "type": "string",
+          "enum": ["left", "inner"],
+          "default": "left",
+          "description": "Tipo de join: left = mostrar primarios sin match, inner = solo con match"
+        }
+      }
+    },
+    "enabled": { 
+      "type": "boolean", 
+      "default": true,
+      "description": "Si la vista está activa" 
+    },
+    "icon": {
+      "type": "string",
+      "description": "Icono de la vista (emoji o nombre de icono)"
+    },
+    "color": {
+      "type": "string",
+      "description": "Color de la vista en hex"
+    },
+    "fieldMap": {
+      "type": "object",
+      "description": "Mapeo de campos: campo_vista → campo_tabla",
+      "properties": {
+        "title": { "type": ["string", "null"], "description": "Campo para título/nombre" },
+        "start": { "type": ["string", "null"], "description": "Campo para fecha inicio" },
+        "end": { "type": ["string", "null"], "description": "Campo para fecha fin" },
+        "status": { "type": ["string", "null"], "description": "Campo para estado (kanban)" },
+        "description": { "type": ["string", "null"], "description": "Campo para descripción" },
+        "color": { "type": ["string", "null"], "description": "Campo para color dinámico" },
+        "assignee": { "type": ["string", "null"], "description": "Campo para asignado" },
+        "priority": { "type": ["string", "null"], "description": "Campo para prioridad" },
+        "group": { "type": ["string", "null"], "description": "Campo para agrupar" }
+      }
+    },
+    "computedFields": {
+      "type": "object",
+      "description": "Campos calculados automáticamente",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "type": { 
+            "type": "string", 
+            "enum": ["duration", "concat", "default"],
+            "description": "Tipo de cálculo"
+          },
+          "sourceField": { "type": "string" },
+          "durationField": { "type": "string" },
+          "defaultMinutes": { "type": "integer", "default": 30 },
+          "defaultValue": { "type": "string" }
+        }
+      }
+    },
+    "viewConfig": {
+      "type": "object",
+      "description": "Configuración específica del tipo de vista",
+      "properties": {
+        "defaultView": { 
+          "type": "string",
+          "enum": ["day", "week", "month"],
+          "description": "Vista por defecto del calendario"
+        },
+        "columns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Columnas del kanban (valores del campo status)"
+        },
+        "groupBy": {
+          "type": "string",
+          "description": "Campo para agrupar en timeline/cards"
+        },
+        "sortBy": {
+          "type": "string",
+          "description": "Campo por defecto para ordenar"
+        },
+        "sortOrder": {
+          "type": "string",
+          "enum": ["asc", "desc"],
+          "default": "desc"
+        }
+      }
+    },
+    "filters": {
+      "type": "array",
+      "description": "Filtros predefinidos de la vista",
+      "items": {
+        "type": "object",
+        "properties": {
+          "field": { "type": "string" },
+          "operator": { "type": "string", "enum": ["eq", "ne", "gt", "lt", "contains", "in"] },
+          "value": {}
+        }
+      }
+    },
+    "mappingMetadata": {
+      "type": "object",
+      "description": "Metadata del proceso de mapeo",
+      "properties": {
+        "createdBy": { 
+          "type": "string", 
+          "enum": ["llm", "manual"],
+          "description": "Cómo se creó el mapeo"
+        },
+        "llmModel": { "type": "string" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "suggestions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Sugerencias del LLM para mejorar"
+        }
+      }
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

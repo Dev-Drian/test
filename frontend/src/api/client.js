@@ -102,3 +102,19 @@ export const createPlan = (data) => api.post("/admin/plans", data);
 export const updatePlan = (planId, data) => api.put(`/admin/plans/${planId}`, data);
 export const deletePlan = (planId) => api.delete(`/admin/plans/${planId}`);
 export const getPlanStats = () => api.get("/admin/plans/stats");
+
+// Views
+export const listViewTypes = () => api.get("/views/types");
+export const analyzeViewMapping = (data) => api.post("/views/analyze", data);
+export const listViews = (workspaceId, tableId) => 
+  api.get("/views", { params: { workspaceId, tableId } });
+export const getView = (viewId, workspaceId) => 
+  api.get(`/views/${viewId}`, { params: { workspaceId } });
+export const getViewData = (viewId, workspaceId, params = {}) => 
+  api.get(`/views/${viewId}/data`, { params: { workspaceId, ...params } });
+export const createView = (data) => api.post("/views", data);
+export const updateView = (viewId, data) => api.put(`/views/${viewId}`, data);
+export const deleteView = (viewId, workspaceId) => 
+  api.delete(`/views/${viewId}`, { params: { workspaceId } });
+export const refreshViewMapping = (viewId, data) => 
+  api.post(`/views/${viewId}/refresh-mapping`, data);

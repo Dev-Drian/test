@@ -77,6 +77,10 @@ export function getTableDbName(workspaceId) {
   return `${DB_PREFIX}tables_${workspaceId}`;
 }
 
+export function getViewsDbName(workspaceId) {
+  return `${DB_PREFIX}views_${workspaceId}`;
+}
+
 /**
  * Obtiene el prefijo actual de BD (útil para debugging)
  */

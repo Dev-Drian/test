@@ -7,6 +7,7 @@ import * as flows from "../controllers/flowsController.js";
 import * as notifications from "../controllers/notificationsController.js";
 import * as auth from "../controllers/authController.js";
 import * as plans from "../controllers/plansController.js";
+import * as views from "../controllers/viewsController.js";
 import { requireAuth, optionalAuth, requireWorkspaceMember } from "../middleware/index.js";
 import { validateWorkspace } from "../middleware/index.js";
 import { checkCanCreateWorkspace, checkCanCreateTable, checkCanCreateAgent, checkCanCreateFlow } from "../middleware/limits.js";
@@ -84,5 +85,17 @@ router.put("/notifications/read-all", requireAuth, notifications.markAllAsRead);
 router.post("/notifications/send", requireAuth, notifications.sendNotification);
 router.get("/notifications/config", requireAuth, notifications.getConfig);
 router.put("/notifications/config", requireAuth, notifications.updateConfig);
+
+// ============ VIEWS ============
+router.get("/views/types", requireAuth, views.getViewTypes);
+router.post("/views/analyze", requireAuth, views.analyzeMapping);
+router.get("/views", requireAuth, views.listViews);
+router.get("/views/:viewId", requireAuth, views.getView);
+router.get("/views/:viewId/data", requireAuth, views.getViewData);
+router.post("/views", requireAuth, views.createView);
+router.put("/views/:viewId", requireAuth, views.updateView);
+router.delete("/views/:viewId", requireAuth, views.deleteView);
+router.post("/views/:viewId/refresh-mapping", requireAuth, views.refreshMapping);
+router.post("/views/:viewId/order", requireAuth, views.manageOrder);
 
 export default router;
