@@ -203,262 +203,52 @@ const getTemplateIcon = (iconName) => {
   return icon || Icons.document;
 };
 
-// Bloques disponibles organizados por categorías
+// Bloques disponibles - Simplificados y organizados
 const blockCategories = [
   {
-    id: 'triggers',
-    label: 'Disparadores',
-    icon: '⚡',
-    description: 'Inician el flujo',
+    id: 'start',
+    label: 'Inicio',
+    shortLabel: '▶',
+    color: '#10b981',
     blocks: [
-      { 
-        type: 'trigger', 
-        icon: <RocketIcon size="md" />,
-        label: 'Inicio', 
-        color: '#10b981',
-        description: 'Cuando algo sucede',
-        help: 'Define qué evento dispara el flujo: un mensaje, un webhook, etc.'
-      },
-      { 
-        type: 'schedule', 
-        icon: <ClockIcon size="md" />,
-        label: 'Programado', 
-        color: '#10b981',
-        description: 'En fecha/hora',
-        help: 'Ejecuta el flujo en un horario específico: diario, semanal, etc.'
-      },
+      { type: 'trigger', icon: <RocketIcon size="sm" />, label: 'Disparador', color: '#10b981', desc: 'Inicia el flujo' },
+      { type: 'schedule', icon: <ClockIcon size="sm" />, label: 'Programar', color: '#10b981', desc: 'Por horario' },
     ]
   },
   {
     id: 'data',
     label: 'Datos',
-    icon: '📊',
-    description: 'Consultar y modificar',
+    shortLabel: '📊',
+    color: '#3b82f6',
     blocks: [
-      { 
-        type: 'query', 
-        icon: <SearchIcon size="md" />,
-        label: 'Consulta', 
-        color: '#3b82f6',
-        description: 'Buscar datos',
-        help: 'Busca información en tus tablas. Ej: ver si hay disponibilidad.'
-      },
-      { 
-        type: 'create', 
-        icon: <PlusIcon size="md" />,
-        label: 'Crear', 
-        color: '#22c55e',
-        description: 'Nuevo registro',
-        help: 'Crea un nuevo registro en una tabla. Ej: nueva cita, nuevo cliente.'
-      },
-      { 
-        type: 'update', 
-        icon: <EditIcon size="md" />,
-        label: 'Actualizar', 
-        color: '#f59e0b',
-        description: 'Modificar registro',
-        help: 'Actualiza un registro existente. Ej: cambiar estado de cita.'
-      },
-      { 
-        type: 'delete', 
-        icon: <TrashIcon size="md" />,
-        label: 'Eliminar', 
-        color: '#ef4444',
-        description: 'Borrar registro',
-        help: 'Elimina un registro de la tabla. Usa con precaución.'
-      },
+      { type: 'query', icon: <SearchIcon size="sm" />, label: 'Consultar', color: '#3b82f6', desc: 'Buscar datos' },
+      { type: 'create', icon: <PlusIcon size="sm" />, label: 'Crear', color: '#22c55e', desc: 'Nuevo registro' },
+      { type: 'update', icon: <EditIcon size="sm" />, label: 'Editar', color: '#f59e0b', desc: 'Modificar' },
+      { type: 'delete', icon: <TrashIcon size="sm" />, label: 'Eliminar', color: '#ef4444', desc: 'Borrar' },
     ]
   },
   {
     id: 'logic',
     label: 'Lógica',
-    icon: '🧠',
-    description: 'Decisiones y control',
+    shortLabel: '⚡',
+    color: '#f59e0b',
     blocks: [
-      { 
-        type: 'condition', 
-        icon: <SplitIcon size="md" />,
-        label: 'Condición', 
-        color: '#f59e0b',
-        description: '¿Sí o no?',
-        help: 'Toma un camino u otro según una condición. Ej: si hay espacio → reservar.'
-      },
-      { 
-        type: 'switch', 
-        icon: <SwitchIcon size="md" />,
-        label: 'Switch', 
-        color: '#f59e0b',
-        description: 'Múltiples caminos',
-        help: 'Evalúa múltiples condiciones y elige un camino. Ej: según tipo de cliente.'
-      },
-      { 
-        type: 'loop', 
-        icon: <LoopIcon size="md" />,
-        label: 'Repetir', 
-        color: '#8b5cf6',
-        description: 'Para cada item',
-        help: 'Repite acciones para cada elemento de una lista.'
-      },
-      { 
-        type: 'wait', 
-        icon: <TimerIcon size="md" />,
-        label: 'Esperar', 
-        color: '#06b6d4',
-        description: 'Pausar tiempo',
-        help: 'Espera un tiempo antes de continuar. Ej: esperar 1 hora para follow-up.'
-      },
+      { type: 'condition', icon: <SplitIcon size="sm" />, label: 'Condición', color: '#f59e0b', desc: '¿Sí o no?' },
+      { type: 'switch', icon: <SwitchIcon size="sm" />, label: 'Switch', color: '#f59e0b', desc: 'Multi-opción' },
+      { type: 'loop', icon: <LoopIcon size="sm" />, label: 'Repetir', color: '#8b5cf6', desc: 'Por cada item' },
+      { type: 'wait', icon: <TimerIcon size="sm" />, label: 'Esperar', color: '#06b6d4', desc: 'Pausar' },
     ]
   },
   {
-    id: 'communication',
-    label: 'Comunicación',
-    icon: '💬',
-    description: 'Mensajes y notificaciones',
+    id: 'notify',
+    label: 'Enviar',
+    shortLabel: '💬',
+    color: '#ec4899',
     blocks: [
-      { 
-        type: 'response', 
-        icon: <ChatIcon size="md" />,
-        label: 'Respuesta', 
-        color: '#ec4899',
-        description: 'Mensaje al usuario',
-        help: 'Envía un mensaje al usuario. Puedes incluir datos dinámicos.'
-      },
-      { 
-        type: 'email', 
-        icon: <EmailIcon size="md" />,
-        label: 'Email', 
-        color: '#3b82f6',
-        description: 'Enviar correo',
-        help: 'Envía un correo electrónico. Ideal para confirmaciones.'
-      },
-      { 
-        type: 'whatsapp', 
-        icon: <WhatsAppIcon size="md" />,
-        label: 'WhatsApp', 
-        color: '#25d366',
-        description: 'Enviar mensaje',
-        help: 'Envía un mensaje de WhatsApp al cliente.'
-      },
-      { 
-        type: 'notification', 
-        icon: <BellIcon size="md" />,
-        label: 'Notificación', 
-        color: '#f59e0b',
-        description: 'Alertar al equipo',
-        help: 'Envía una notificación interna a tu equipo.'
-      },
-      { 
-        type: 'sms', 
-        icon: <SmsIcon size="md" />,
-        label: 'SMS', 
-        color: '#8b5cf6',
-        description: 'Mensaje de texto',
-        help: 'Envía un SMS al número del cliente.'
-      },
-    ]
-  },
-  {
-    id: 'integrations',
-    label: 'Integraciones',
-    icon: '🔗',
-    description: 'Conectar servicios externos',
-    blocks: [
-      { 
-        type: 'webhook', 
-        icon: <WebhookIcon size="md" />,
-        label: 'Webhook', 
-        color: '#6366f1',
-        description: 'Llamar API externa',
-        help: 'Conecta con servicios externos: Zapier, Make, APIs.'
-      },
-      { 
-        type: 'http', 
-        icon: <GlobeIcon size="md" />,
-        label: 'HTTP Request', 
-        color: '#06b6d4',
-        description: 'Petición HTTP',
-        help: 'Realiza peticiones HTTP a cualquier URL.'
-      },
-    ]
-  },
-  {
-    id: 'utils',
-    label: 'Utilidades',
-    icon: '🛠️',
-    description: 'Herramientas auxiliares',
-    blocks: [
-      { 
-        type: 'availability', 
-        icon: <CalendarIcon size="md" />,
-        label: 'Horario', 
-        color: '#06b6d4',
-        description: 'Ver disponibilidad',
-        help: 'Verifica horarios de atención y disponibilidad.'
-      },
-      { 
-        type: 'transform', 
-        icon: <TransformIcon size="md" />,
-        label: 'Transformar', 
-        color: '#8b5cf6',
-        description: 'Modificar datos',
-        help: 'Transforma datos: formatear fechas, calcular valores, etc.'
-      },
-      { 
-        type: 'set_variable', 
-        icon: <VariableIcon size="md" />,
-        label: 'Variable', 
-        color: '#64748b',
-        description: 'Guardar valor',
-        help: 'Guarda un valor temporal para usar más adelante en el flujo.'
-      },
-      { 
-        type: 'note', 
-        icon: <NoteIcon size="md" />,
-        label: 'Nota', 
-        color: '#94a3b8',
-        description: 'Comentario',
-        help: 'Agrega una nota para documentar el flujo. No afecta la ejecución.'
-      },
-    ]
-  },
-  {
-    id: 'advanced',
-    label: 'Avanzado',
-    icon: '⚙️',
-    description: 'Funciones especiales',
-    blocks: [
-      { 
-        type: 'approval', 
-        icon: <CheckCircleIcon size="md" />,
-        label: 'Aprobación', 
-        color: '#10b981',
-        description: 'Esperar confirmación',
-        help: 'Pausa el flujo hasta que alguien apruebe manualmente.'
-      },
-      { 
-        type: 'form', 
-        icon: <FormIcon size="md" />,
-        label: 'Formulario', 
-        color: '#ec4899',
-        description: 'Solicitar datos',
-        help: 'Solicita información al usuario paso a paso.'
-      },
-      { 
-        type: 'error_handler', 
-        icon: <ErrorIcon size="md" />,
-        label: 'Error', 
-        color: '#ef4444',
-        description: 'Manejar fallos',
-        help: 'Define qué hacer si algo falla en el flujo.'
-      },
-      { 
-        type: 'subflow', 
-        icon: <SubflowIcon size="md" />,
-        label: 'Subflujo', 
-        color: '#6366f1',
-        description: 'Ejecutar otro flujo',
-        help: 'Ejecuta otro flujo como parte de este. Reutiliza lógica.'
-      },
+      { type: 'response', icon: <ChatIcon size="sm" />, label: 'Responder', color: '#ec4899', desc: 'Al usuario' },
+      { type: 'email', icon: <EmailIcon size="sm" />, label: 'Email', color: '#3b82f6', desc: 'Correo' },
+      { type: 'whatsapp', icon: <WhatsAppIcon size="sm" />, label: 'WhatsApp', color: '#25d366', desc: 'Mensaje WA' },
+      { type: 'notification', icon: <BellIcon size="sm" />, label: 'Notificar', color: '#f59e0b', desc: 'Al equipo' },
     ]
   },
 ];
@@ -599,6 +389,10 @@ export default function FlowEditor() {
   // Estado para edición de nodos
   const [selectedNode, setSelectedNode] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
+  
+  // Estado para filtrado de bloques
+  const [blockSearch, setBlockSearch] = useState('');
+  const [collapsedCategories, setCollapsedCategories] = useState({});
 
   // Estado de React Flow
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -2222,125 +2016,170 @@ export default function FlowEditor() {
         )}
       </main>
 
-      {/* Sidebar derecho - Bloques arrastrables */}
+      {/* Sidebar derecho - Panel de Nodos Profesional */}
       {selectedFlow && (
         <aside 
           data-tour="flow-nodes-panel"
-          className="w-72 flex flex-col backdrop-blur-xl" 
+          className="w-64 flex flex-col" 
           style={{ 
-            background: 'linear-gradient(180deg, rgba(15, 15, 22, 0.98), rgba(10, 10, 15, 0.99))',
-            borderLeft: '1px solid rgba(255,255,255,0.06)' 
+            background: '#0a0a0f',
+            borderLeft: '1px solid rgba(255,255,255,0.08)' 
           }}
         >
-          {/* Header */}
-          <div className="p-4\" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <div className="flex items-center gap-3 mb-1">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-violet-500/20 to-purple-500/20 text-violet-400">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2v2H7a1 1 0 00-1 1v2H4V6zM4 17h2v2a1 1 0 001 1h2v2H7a2 2 0 01-2-2v-3zM17 4h2a2 2 0 012 2v3h-2V7a1 1 0 00-1-1h-2V4h1zM20 17h-2v2a1 1 0 01-1 1h-2v2h3a2 2 0 002-2v-3z" />
+          {/* Header minimalista */}
+          <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}>
+                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16m-7 6h7" />
                 </svg>
               </div>
-              <div>
-                <h3 className="text-sm font-semibold text-white">Bloques</h3>
-                <p className="text-[11px] text-slate-500">Arrastra al canvas</p>
-              </div>
+              <span className="text-sm font-medium text-white">Nodos</span>
+            </div>
+            <span className="text-[10px] text-slate-500 font-mono">
+              {blockCategories.reduce((acc, cat) => acc + cat.blocks.length, 0)}
+            </span>
+          </div>
+
+          {/* Tabs de categorías */}
+          <div className="px-2 py-2 flex gap-1" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+            {blockCategories.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setCollapsedCategories(prev => {
+                  const newState = {};
+                  blockCategories.forEach(c => newState[c.id] = c.id !== cat.id);
+                  return newState;
+                })}
+                className={`flex-1 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all ${
+                  !collapsedCategories[cat.id] 
+                    ? 'text-white shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+                }`}
+                style={!collapsedCategories[cat.id] ? { 
+                  background: `linear-gradient(135deg, ${cat.color}30, ${cat.color}15)`,
+                  border: `1px solid ${cat.color}40`
+                } : {}}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Búsqueda compacta */}
+          <div className="px-3 py-2">
+            <div className="relative">
+              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={blockSearch}
+                onChange={(e) => setBlockSearch(e.target.value)}
+                placeholder="Buscar..."
+                className="w-full pl-8 pr-3 py-1.5 rounded-md text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-violet-500/50"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
+              />
             </div>
           </div>
 
-          {/* Bloques por categoría */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-3">
-            {blockCategories.map(category => (
-              <div key={category.id} className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
-                {/* Category Header */}
-                <div 
-                  className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-white/5 transition-colors"
-                  style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))' }}
-                >
-                  <span className="text-base">{category.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-white">{category.label}</p>
-                    <p className="text-[10px] text-slate-500">{category.description}</p>
+          {/* Grid de bloques */}
+          <div className="flex-1 overflow-y-auto px-3 pb-3">
+            {blockCategories.map(category => {
+              const filteredBlocks = blockSearch
+                ? category.blocks.filter(b => 
+                    b.label.toLowerCase().includes(blockSearch.toLowerCase()) ||
+                    b.desc?.toLowerCase().includes(blockSearch.toLowerCase())
+                  )
+                : category.blocks;
+              
+              if (filteredBlocks.length === 0 || collapsedCategories[category.id]) return null;
+              
+              return (
+                <div key={category.id} className="mb-3">
+                  {/* Label de categoría */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1 h-3 rounded-full" style={{ background: category.color }} />
+                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{category.label}</span>
                   </div>
-                  <span className="text-[10px] text-slate-500 bg-white/5 px-1.5 py-0.5 rounded">
-                    {category.blocks.length}
-                  </span>
-                </div>
-                
-                {/* Category Blocks */}
-                <div className="space-y-1 p-2 bg-black/20">
-                  {category.blocks.map(block => (
-                    <div
-                      key={block.type}
-                      draggable
-                      onDragStart={(e) => onDragStart(e, block.type)}
-                      className="group relative p-2 rounded-lg cursor-grab hover:bg-white/5 active:scale-[0.98] active:cursor-grabbing transition-all duration-150"
-                      style={{ borderLeft: `2px solid ${block.color}` }}
-                    >
-                      <div className="flex items-center gap-2">
+                  
+                  {/* Grid 2x2 */}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {filteredBlocks.map(block => (
+                      <div
+                        key={block.type}
+                        draggable
+                        onDragStart={(e) => onDragStart(e, block.type)}
+                        className="group relative p-2.5 rounded-lg cursor-grab active:scale-95 active:cursor-grabbing transition-all duration-150 hover:ring-1"
+                        style={{ 
+                          background: 'rgba(255,255,255,0.03)',
+                          border: '1px solid rgba(255,255,255,0.06)',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = `${block.color}15`;
+                          e.currentTarget.style.borderColor = `${block.color}40`;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                        }}
+                      >
+                        {/* Icono */}
                         <div 
-                          className="w-7 h-7 rounded-md flex items-center justify-center text-white shrink-0"
+                          className="w-8 h-8 rounded-md flex items-center justify-center text-white mb-1.5 mx-auto"
                           style={{ 
-                            background: `linear-gradient(135deg, ${block.color}, ${block.color}cc)`,
-                            boxShadow: `0 2px 8px ${block.color}30`
+                            background: `linear-gradient(135deg, ${block.color}, ${block.color}bb)`,
+                            boxShadow: `0 2px 8px ${block.color}40`
                           }}
                         >
                           {block.icon}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-white">{block.label}</p>
-                          <p className="text-[10px] text-slate-500 truncate">{block.description}</p>
+                        
+                        {/* Texto */}
+                        <p className="text-[11px] font-medium text-white text-center leading-tight">{block.label}</p>
+                        <p className="text-[9px] text-slate-500 text-center mt-0.5">{block.desc}</p>
+                        
+                        {/* Drag indicator */}
+                        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <svg className="w-3 h-3 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16M4 16h16" />
+                          </svg>
                         </div>
-                        <svg className="w-3 h-3 text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                        </svg>
                       </div>
-                      {/* Tooltip */}
-                      <div 
-                        className="absolute left-0 right-0 bottom-full mb-1 px-2 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50"
-                        style={{ 
-                          background: 'rgba(15, 15, 25, 0.98)',
-                          border: '1px solid rgba(255,255,255,0.1)',
-                          boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
-                        }}
-                      >
-                        <p className="text-[10px] text-slate-300">{block.help}</p>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
+              );
+            })}
+            
+            {/* Sin resultados */}
+            {blockSearch && blockCategories.every(cat => 
+              !cat.blocks.some(b => 
+                b.label.toLowerCase().includes(blockSearch.toLowerCase()) ||
+                b.desc?.toLowerCase().includes(blockSearch.toLowerCase())
+              )
+            ) && (
+              <div className="text-center py-6">
+                <div className="w-10 h-10 rounded-full bg-slate-800/50 flex items-center justify-center mx-auto mb-2">
+                  <svg className="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <p className="text-xs text-slate-500">Sin resultados</p>
               </div>
-            ))}
+            )}
           </div>
 
-          {/* Tip */}
-          <div className="p-4 space-y-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-            <div 
-              className="p-3 rounded-xl" 
-              style={{ 
-                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(245, 158, 11, 0.02))', 
-                border: '1px solid rgba(245, 158, 11, 0.15)' 
-              }}
-            >
-              <p className="text-xs text-amber-400 font-medium mb-2 flex items-center gap-1.5">
-                <LightBulbIcon size="xs" /> Atajos de teclado
-              </p>
-              <div className="space-y-1.5 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-amber-400/60">Guardar</span>
-                  <kbd className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 text-[10px] font-mono">Ctrl+S</kbd>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-amber-400/60">Deshacer</span>
-                  <kbd className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 text-[10px] font-mono">Ctrl+Z</kbd>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-amber-400/60">Rehacer</span>
-                  <kbd className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 text-[10px] font-mono">Ctrl+Y</kbd>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-amber-400/60">Eliminar nodo</span>
-                  <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-amber-300 text-[10px]">Delete</kbd>
-                </div>
+          {/* Footer - Tip compacto */}
+          <div className="p-3" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+            <div className="flex items-center justify-between text-[10px] text-slate-500">
+              <span className="flex items-center gap-1">
+                <LightBulbIcon size="xs" className="text-amber-500" />
+                <span>Arrastra para añadir</span>
+              </span>
+              <div className="flex items-center gap-2">
+                <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono text-[9px]">Del</kbd>
+                <span>eliminar</span>
               </div>
             </div>
           </div>

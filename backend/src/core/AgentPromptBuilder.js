@@ -242,6 +242,8 @@ Mantén respuestas concisas (2-3 oraciones cuando sea posible).`;
       lines.push('   • "ventas de Juan" → filters: {"cliente": "Juan"}');
       lines.push('   • "ventas de María con estado Pendiente" → filters: {"cliente": "María", "estado": "Pendiente"}');
       lines.push('   • "citas canceladas de hoy" → filters: {"estado": "Cancelada", "fecha": "..."}');
+      lines.push('   • "busca al empleado Roberto Silva" → filters: {"nombre": "Roberto Silva"}');
+      lines.push('   • "información de Ana Martínez" → filters: {"nombre": "Ana Martínez"}')
       lines.push('');
       lines.push('   ❌ ERROR COMÚN: Solo extraer UN filtro cuando hay varios');
       lines.push('   ⚠️ NUNCA envíes filters: {} cuando el usuario menciona criterios de búsqueda');
@@ -280,10 +282,22 @@ Mantén respuestas concisas (2-3 oraciones cuando sea posible).`;
       lines.push('- NO pidas datos tú mismo (¿para qué fecha?, ¿a qué hora?)');
       lines.push('- USA create_record y el sistema pedirá los datos');
       lines.push('');
+      lines.push('🚨 DATOS QUE NO EXISTEN:');
+      lines.push('Si el usuario pregunta por datos que NO están en las tablas disponibles');
+      lines.push('(ej: pregunta por "clientes" pero no hay tabla de clientes):');
+      lines.push('→ USA general_conversation con intent="info"');
+      lines.push('→ Responde: "No tengo información sobre [X]. Puedo ayudarte con: [lista de tablas]."');
+      lines.push('→ NUNCA uses una tabla diferente para "aproximar" la respuesta');
+      lines.push('');
       lines.push('EXTRACCIÓN DE DATOS:');
       lines.push('- Si el usuario da datos, EXTRÁELOS en el campo "data"');
       lines.push('- "adrian castro mañana a las 4" → data: {cliente: "Adrian Castro", fecha: "2026-02-26", hora: "16:00"}');
       lines.push('- "quiero una cita" sin datos → data: {} (vacío OK)');
+      // Lista de tablas disponibles para referencia rápida
+      const tableNamesList = tablesInfo.map(t => t.name).join(', ');
+      lines.push('');
+      lines.push('📌 RESUMEN - TABLAS DISPONIBLES: ' + tableNamesList);
+      lines.push('Si el usuario pregunta por algo que NO está en esta lista, dile que no tienes esa información.');
     } else {
       lines.push('No hay tablas configuradas. Solo puedes mantener conversación general.');
     }

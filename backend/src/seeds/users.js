@@ -180,6 +180,23 @@ async function createStarterWorkspace(userId, accountsDb, workspacesDb) {
   console.log('  📦 Creando workspace para usuario starter...');
   
   try {
+    // Verificar si ya existen tablas en el workspace (evitar duplicados)
+    const workspaceDb = await connectDB(getWorkspaceDbName(STARTER_WORKSPACE.id));
+    const existingTables = await workspaceDb.list({ include_docs: true }).catch(() => ({ rows: [] }));
+    const hasTable = existingTables.rows.some(r => r.doc && r.doc.name === 'Productos' && r.doc.headers);
+    
+    if (hasTable) {
+      console.log('  ⏭️ Workspace ya tiene datos, solo vinculando usuario...');
+      // Solo actualizar usuario con workspace existente
+      const user = await accountsDb.get(userId);
+      if (!user.workspacesOwner?.includes(STARTER_WORKSPACE.id)) {
+        user.workspacesOwner = [STARTER_WORKSPACE.id];
+        user.workspaces = [{ id: STARTER_WORKSPACE.id, role: 'owner' }];
+        await accountsDb.insert(user);
+      }
+      return;
+    }
+    
     // Crear workspace
     const workspaceDoc = {
       _id: STARTER_WORKSPACE.id,
@@ -196,30 +213,38 @@ async function createStarterWorkspace(userId, accountsDb, workspacesDb) {
       } else throw err;
     });
     
-    // Crear tablas
-    const workspaceDb = await connectDB(getWorkspaceDbName(STARTER_WORKSPACE.id));
-    
+    // Crear tabla con ID fijo para evitar duplicados
+    const tableId = `table-productos-${STARTER_WORKSPACE.id}`;
     for (const table of STARTER_WORKSPACE.tables) {
       const tableDoc = {
-        _id: uuidv4(),
+        _id: tableId,
         ...table,
         createdAt: new Date().toISOString()
       };
-      await workspaceDb.insert(tableDoc);
+      await workspaceDb.insert(tableDoc).catch(async (err) => {
+        if (err.statusCode === 409) {
+          console.log(`    ⏭️ Tabla "${table.name}" ya existe`);
+        } else throw err;
+      });
       console.log(`    ✅ Tabla "${table.name}" creada`);
     }
     
-    // Crear agente
+    // Crear agente con ID fijo para evitar duplicados
     const agentsDb = await connectDB(getAgentsDbName(STARTER_WORKSPACE.id));
+    const agentId = `agent-asistente-${STARTER_WORKSPACE.id}`;
     const agentDoc = {
-      _id: uuidv4(),
+      _id: agentId,
       ...STARTER_WORKSPACE.agent,
       aiModel: ['gpt-4o-mini'],
-      tables: [],
+      tables: [{ tableId, tableName: 'Productos', fullAccess: true }],
       status: 'active',
       createdAt: new Date().toISOString()
     };
-    await agentsDb.insert(agentDoc);
+    await agentsDb.insert(agentDoc).catch(async (err) => {
+      if (err.statusCode === 409) {
+        console.log(`    ⏭️ Agente "${STARTER_WORKSPACE.agent.name}" ya existe`);
+      } else throw err;
+    });
     console.log(`    ✅ Agente "${STARTER_WORKSPACE.agent.name}" creado`);
     
     // Actualizar usuario con workspace
