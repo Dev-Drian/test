@@ -9,6 +9,7 @@
  */
 
 import { validateRelationField } from '../../services/relationHandler.js';
+import { FieldValidator } from './FieldValidator.js';
 
 // Modelo por defecto configurable via environment
 const DEFAULT_MODEL = process.env.DEFAULT_AI_MODEL || 'gpt-4o';
@@ -438,80 +439,8 @@ REGLA FINAL - EXTRACCIÓN MÚLTIPLE:
    * @returns {object} - { valid: boolean, error?: string }
    */
   validateField(fieldKey, value, fieldConfig) {
-    // Si no hay valor y el campo NO es requerido, es válido
-    if (!value && !fieldConfig?.required) {
-      return { valid: true };
-    }
-    
-    // Si no hay valor y el campo ES requerido, error
-    if (!value && fieldConfig?.required) {
-      const label = fieldConfig?.label || fieldKey;
-      return { valid: false, error: `${label} es requerido` };
-    }
-    
-    const validation = fieldConfig?.validation;
-    if (!validation) return { valid: true };
-    
-    // Validación por tipo
-    switch (fieldConfig.type) {
-      case 'phone':
-      case 'telefono':
-        const digits = String(value).replace(/\D/g, '');
-        const requiredDigits = validation.digits || 10;
-        if (digits.length !== requiredDigits) {
-          return { valid: false, error: `El teléfono debe tener ${requiredDigits} dígitos` };
-        }
-        return { valid: true, normalizedValue: digits };
-        
-      case 'email':
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(value)) {
-          return { valid: false, error: 'Email inválido' };
-        }
-        return { valid: true };
-        
-      case 'date':
-        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-        if (!dateRegex.test(value)) {
-          return { valid: false, error: 'Formato de fecha inválido (use YYYY-MM-DD)' };
-        }
-        return { valid: true };
-        
-      case 'time':
-        const timeRegex = /^\d{1,2}:\d{2}$/;
-        if (!timeRegex.test(value)) {
-          return { valid: false, error: 'Formato de hora inválido (use HH:MM)' };
-        }
-        return { valid: true };
-      
-      case 'number':
-      case 'integer':
-      case 'currency':
-        // Convertir a número
-        const numValue = Number(value);
-        if (isNaN(numValue)) {
-          return { valid: false, error: `${fieldConfig?.label || fieldKey} debe ser un número válido` };
-        }
-        // Validar min
-        if (validation.min !== undefined && numValue < validation.min) {
-          return { valid: false, error: `${fieldConfig?.label || fieldKey} debe ser al menos ${validation.min}` };
-        }
-        // Validar max
-        if (validation.max !== undefined && numValue > validation.max) {
-          return { valid: false, error: `${fieldConfig?.label || fieldKey} no puede ser mayor a ${validation.max}` };
-        }
-        return { valid: true, normalizedValue: numValue };
-        
-      default:
-        // Validaciones genéricas
-        if (validation.minLength && String(value).length < validation.minLength) {
-          return { valid: false, error: `Mínimo ${validation.minLength} caracteres` };
-        }
-        if (validation.maxLength && String(value).length > validation.maxLength) {
-          return { valid: false, error: `Máximo ${validation.maxLength} caracteres` };
-        }
-        return { valid: true };
-    }
+    // Delegar al nuevo FieldValidator para validación robusta
+    return FieldValidator.validate(fieldKey, value, fieldConfig);
   }
   
   /**

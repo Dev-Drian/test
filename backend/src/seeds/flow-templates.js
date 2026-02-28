@@ -2117,11 +2117,11 @@ const FLOW_TEMPLATES = [
     ],
   },
 
-  // Manejo de errores
+  // Manejo de errores y control de stock
   {
     _id: 'template-error-handling',
-    name: 'Flujo con Manejo de Errores',
-    description: 'Demuestra como manejar errores elegantemente en un flujo',
+    name: 'Ventas con Control de Stock',
+    description: 'Verifica stock disponible, crea pedidos, descuenta inventario y notifica por email',
     icon: 'shield-check',
     color: 'red',
     isTemplate: true,
@@ -2202,9 +2202,24 @@ const FLOW_TEMPLATES = [
         },
       },
       {
+        id: 'update-stock',
+        type: 'update',
+        position: { x: 100, y: 670 },
+        data: {
+          label: 'Descontar stock',
+          tablePlaceholder: 'productos',
+          filters: [
+            { field: 'nombre', operator: 'contains', value: '{{producto}}' },
+          ],
+          fields: [
+            { key: 'stock', value: '{{queryResult.docs[0].stock - cantidad}}' },
+          ],
+        },
+      },
+      {
         id: 'email-confirm',
         type: 'email',
-        position: { x: 100, y: 670 },
+        position: { x: 100, y: 800 },
         data: {
           label: 'Confirmar por email',
           to: '{{email}}',
@@ -2215,7 +2230,7 @@ const FLOW_TEMPLATES = [
       {
         id: 'message-success',
         type: 'message',
-        position: { x: 100, y: 800 },
+        position: { x: 100, y: 930 },
         data: {
           label: 'Exito',
           message: 'Pedido registrado! Te enviamos la confirmacion a {{email}}.',
@@ -2245,7 +2260,8 @@ const FLOW_TEMPLATES = [
       { id: 'e2', source: 'collect-1', target: 'query-stock' },
       { id: 'e3', source: 'query-stock', target: 'condition-stock' },
       { id: 'e4', source: 'condition-stock', target: 'insert-order', sourceHandle: 'true' },
-      { id: 'e5', source: 'insert-order', target: 'email-confirm' },
+      { id: 'e5', source: 'insert-order', target: 'update-stock' },
+      { id: 'e5b', source: 'update-stock', target: 'email-confirm' },
       { id: 'e6', source: 'email-confirm', target: 'message-success' },
       { id: 'e7', source: 'condition-stock', target: 'message-no-stock', sourceHandle: 'false' },
       { id: 'e8', source: 'error-handler-1', target: 'message-error' },

@@ -13,6 +13,7 @@
 import { TableDataRepository } from './TableDataRepository.js';
 import { TableRepository } from './TableRepository.js';
 import { FieldCollector } from '../domain/fields/FieldCollector.js';
+import { FieldValidator } from '../domain/fields/FieldValidator.js';
 
 export class EntityRepository {
   constructor() {
@@ -185,51 +186,13 @@ export class EntityRepository {
   }
   
   /**
-   * Valida campos según configuración
+   * Valida campos según configuración usando FieldValidator
    * @private
    */
   _validateFields(data, fieldsConfig, requiredFields = [], isPartial = false) {
-    const errors = [];
-    const configMap = {};
-    fieldsConfig.forEach(fc => {
-      configMap[fc.key] = fc;
-    });
-    
-    // Validar campos requeridos (solo si no es actualización parcial)
-    if (!isPartial) {
-      for (const fieldKey of requiredFields) {
-        const value = data[fieldKey];
-        if (value === undefined || value === null || value === '') {
-          const config = configMap[fieldKey] || {};
-          const label = config.label || fieldKey;
-          errors.push({
-            field: fieldKey,
-            message: `${label} es requerido`,
-          });
-        }
-      }
-    }
-    
-    // Validar cada campo presente
-    for (const [fieldKey, value] of Object.entries(data)) {
-      if (value === undefined || value === null || value === '') continue;
-      
-      const config = configMap[fieldKey];
-      if (!config) continue;
-      
-      const validation = this.fieldCollector.validateField(fieldKey, value, config);
-      if (!validation.valid) {
-        errors.push({
-          field: fieldKey,
-          message: validation.error,
-        });
-      }
-    }
-    
-    return {
-      valid: errors.length === 0,
-      errors,
-    };
+    // Usar el nuevo FieldValidator para validación robusta
+    const result = FieldValidator.validateAll(data, fieldsConfig, { isPartial });
+    return result;
   }
   
   /**

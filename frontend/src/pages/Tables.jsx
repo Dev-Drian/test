@@ -4,6 +4,7 @@ import { WorkspaceContext } from "../context/WorkspaceContext";
 import { listTables, createTable, updateTable, getTableData, addTableRow, updateTableRow, deleteTableRow } from "../api/client";
 import TableBuilder from "../components/TableBuilder";
 import { useToast, useConfirm } from "../components/Toast";
+import { FieldValidator } from "../utils/FieldValidator";
 
 // Iconos SVG compactos
 const Icons = {
@@ -44,6 +45,7 @@ export default function Tables() {
   const [rowForm, setRowForm] = useState({});
   const [addingRow, setAddingRow] = useState(false);
   const [rowError, setRowError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({}); // Errores por campo
 
   // Search & Edit state
   const [searchQuery, setSearchQuery] = useState("");
@@ -52,6 +54,7 @@ export default function Tables() {
   const [editForm, setEditForm] = useState({});
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingRow, setDeletingRow] = useState(null);
+  const [editFieldErrors, setEditFieldErrors] = useState({}); // Errores de edición
   
   // Edit table structure state
   const [editingTableConfig, setEditingTableConfig] = useState(null);
@@ -95,10 +98,35 @@ export default function Tables() {
     }
   };
 
+  // Validar un campo individual mientras escribe
+  const validateField = (key, value) => {
+    if (!selectedTable?.headers) return;
+    const header = selectedTable.headers.find(h => h.key === key);
+    if (!header) return;
+    
+    const result = FieldValidator.validate(key, value, header);
+    setFieldErrors(prev => ({
+      ...prev,
+      [key]: result.valid ? null : result.error
+    }));
+  };
+
   const handleAddRow = async (e) => {
     e.preventDefault();
     if (!workspaceId || !selectedTable) return;
+    
+    // Validar todos los campos antes de enviar
+    const validation = FieldValidator.validateAll(rowForm, selectedTable.headers || []);
+    if (!validation.valid) {
+      setFieldErrors(validation.errors);
+      const firstError = Object.values(validation.errors)[0];
+      setRowError(firstError);
+      toast.error(firstError);
+      return;
+    }
+    
     setRowError("");
+    setFieldErrors({});
     setAddingRow(true);
     try {
       await addTableRow(workspaceId, selectedTable._id, rowForm);
@@ -119,14 +147,40 @@ export default function Tables() {
   const handleEditRow = (row) => {
     setEditingRow(row._id);
     setEditForm({ ...row });
+    setEditFieldErrors({});
+  };
+
+  // Validar campo en edición
+  const validateEditField = (key, value) => {
+    if (!selectedTable?.headers) return;
+    const header = selectedTable.headers.find(h => h.key === key);
+    if (!header) return;
+    
+    const result = FieldValidator.validate(key, value, header);
+    setEditFieldErrors(prev => ({
+      ...prev,
+      [key]: result.valid ? null : result.error
+    }));
   };
 
   const handleSaveEdit = async () => {
     if (!workspaceId || !selectedTable || !editingRow) return;
+    
+    // Filtrar campos internos para validación
+    const { _id, _rev, tableId, createdAt, updatedAt, ...data } = editForm;
+    
+    // Validar antes de guardar
+    const validation = FieldValidator.validateAll(data, selectedTable.headers || []);
+    if (!validation.valid) {
+      setEditFieldErrors(validation.errors);
+      const firstError = Object.values(validation.errors)[0];
+      toast.error(firstError);
+      return;
+    }
+    
     setSavingEdit(true);
+    setEditFieldErrors({});
     try {
-      // Filtrar campos internos
-      const { _id, _rev, tableId, createdAt, updatedAt, ...data } = editForm;
       await updateTableRow(workspaceId, selectedTable._id, editingRow, data);
       const res = await getTableData(workspaceId, selectedTable._id);
       setTableData(res.data || []);
@@ -143,6 +197,7 @@ export default function Tables() {
   const handleCancelEdit = () => {
     setEditingRow(null);
     setEditForm({});
+    setEditFieldErrors({});
   };
 
   // Actualizar configuración de la tabla (solo si está vacía)
@@ -693,14 +748,33 @@ export default function Tables() {
                                   {header.required && <span className="text-red-400 ml-1">*</span>}
                                 </label>
                                 <input
-                                  type={header.type === "number" ? "number" : header.type === "date" ? "date" : header.type === "email" ? "email" : "text"}
+                                  type={header.type === "number" || header.type === "integer" || header.type === "currency" ? "number" : header.type === "date" ? "date" : header.type === "time" ? "time" : header.type === "email" ? "email" : "text"}
                                   value={rowForm[header.key] || ""}
-                                  onChange={(e) => setRowForm({ ...rowForm, [header.key]: e.target.value })}
-                                  placeholder={header.label}
-                                  className="w-full px-3 py-2.5 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all"
-                                  style={{ background: 'rgba(71, 85, 105, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}
-                                  required={header.required}
+                                  onChange={(e) => {
+                                    setRowForm({ ...rowForm, [header.key]: e.target.value });
+                                    validateField(header.key, e.target.value);
+                                  }}
+                                  onBlur={(e) => validateField(header.key, e.target.value)}
+                                  placeholder={header.placeholder || header.label}
+                                  className={`w-full px-3 py-2.5 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 transition-all ${
+                                    fieldErrors[header.key] 
+                                      ? 'ring-2 ring-red-500/50 focus:ring-red-500/50' 
+                                      : 'focus:ring-indigo-500/30'
+                                  }`}
+                                  style={{ 
+                                    background: 'rgba(71, 85, 105, 0.4)', 
+                                    border: fieldErrors[header.key] ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(100, 116, 139, 0.3)' 
+                                  }}
+                                  min={header.type === "number" && header.validation?.min !== undefined ? header.validation.min : undefined}
+                                  max={header.type === "number" && header.validation?.max !== undefined ? header.validation.max : undefined}
+                                  step={header.type === "integer" ? "1" : header.type === "currency" ? "0.01" : undefined}
                                 />
+                                {fieldErrors[header.key] && (
+                                  <p className="text-xs text-red-400 mt-1">{fieldErrors[header.key]}</p>
+                                )}
+                                {header.helpText && !fieldErrors[header.key] && (
+                                  <p className="text-xs text-slate-500 mt-1">{header.helpText}</p>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -729,7 +803,7 @@ export default function Tables() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => setShowAddRow(false)}
+                              onClick={() => { setShowAddRow(false); setFieldErrors({}); setRowError(""); }}
                               className="px-4 py-2 rounded-lg text-slate-400 text-sm font-medium hover:bg-slate-600/50 hover:text-slate-200 transition-all"
                               style={{ border: '1px solid rgba(100, 116, 139, 0.3)' }}
                             >
@@ -793,21 +867,39 @@ export default function Tables() {
                                 <td className="py-3 px-4 text-slate-500 text-xs font-mono">{i + 1}</td>
                                 {Object.keys(tableData[0])
                                   .filter((k) => !k.startsWith("_") && k !== "main" && k !== "tableId" && k !== "createdAt" && k !== "updatedAt")
-                                  .map((k) => (
+                                  .map((k) => {
+                                    const header = selectedTable?.headers?.find(h => h.key === k);
+                                    return (
                                     <td key={k} className="py-3 px-4 text-slate-400 text-sm group-hover:text-slate-200 transition-colors" style={{ minWidth: '130px', borderLeft: '1px solid rgba(100, 116, 139, 0.2)' }}>
                                       {editingRow === row._id ? (
-                                        <input
-                                          type="text"
-                                          value={editForm[k] ?? ""}
-                                          onChange={(e) => setEditForm({ ...editForm, [k]: e.target.value })}
-                                          className="w-full px-2 py-1.5 rounded text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
-                                          style={{ background: 'rgba(71, 85, 105, 0.5)', border: '1px solid rgba(100, 116, 139, 0.4)' }}
-                                        />
+                                        <div>
+                                          <input
+                                            type={header?.type === "number" || header?.type === "integer" || header?.type === "currency" ? "number" : header?.type === "date" ? "date" : header?.type === "time" ? "time" : header?.type === "email" ? "email" : "text"}
+                                            value={editForm[k] ?? ""}
+                                            onChange={(e) => {
+                                              setEditForm({ ...editForm, [k]: e.target.value });
+                                              if (header) validateEditField(k, e.target.value);
+                                            }}
+                                            onBlur={(e) => header && validateEditField(k, e.target.value)}
+                                            className={`w-full px-2 py-1.5 rounded text-slate-100 text-sm focus:outline-none focus:ring-2 ${
+                                              editFieldErrors[k] ? 'ring-2 ring-red-500/50' : 'focus:ring-indigo-500/30'
+                                            }`}
+                                            style={{ 
+                                              background: 'rgba(71, 85, 105, 0.5)', 
+                                              border: editFieldErrors[k] ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(100, 116, 139, 0.4)' 
+                                            }}
+                                            min={header?.type === "number" && header?.validation?.min !== undefined ? header.validation.min : undefined}
+                                            max={header?.type === "number" && header?.validation?.max !== undefined ? header.validation.max : undefined}
+                                          />
+                                          {editFieldErrors[k] && (
+                                            <p className="text-xs text-red-400 mt-1 truncate" title={editFieldErrors[k]}>{editFieldErrors[k]}</p>
+                                          )}
+                                        </div>
                                       ) : (
                                         <span className="block truncate" title={String(row[k] ?? "-")}>{String(row[k] ?? "-")}</span>
                                       )}
                                     </td>
-                                  ))}
+                                  );})}
                                 <td className="py-3 px-3" style={{ borderLeft: '1px solid rgba(100, 116, 139, 0.2)' }}>
                                   <div className="flex items-center justify-center gap-1">
                                     {editingRow === row._id ? (
