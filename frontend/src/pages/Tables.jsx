@@ -318,19 +318,30 @@ export default function Tables() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#0f172a' }}>
-      {/* Modal de creación */}
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #0a0a0f 0%, #0f0f18 100%)' }} data-tour="tables-welcome">
+      {/* Modal de creación - Rediseñado */}
       {showBuilder && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl animate-scale-in" style={{ background: '#1e293b', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
-            <div className="sticky top-0 px-6 py-4 flex items-center justify-between z-10" style={{ background: '#1e293b', borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl animate-scale-in"
+            style={{ 
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)',
+              backdropFilter: 'blur(40px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 100px rgba(139, 92, 246, 0.15)'
+            }}>
+            <div className="sticky top-0 px-6 py-5 flex items-center justify-between z-10" 
+              style={{ 
+                background: 'linear-gradient(180deg, rgba(10, 10, 15, 0.95) 0%, rgba(10, 10, 15, 0.9) 100%)',
+                backdropFilter: 'blur(20px)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+              }}>
               <div>
-                <h2 className="text-xl font-semibold text-slate-100">Crear nueva tabla</h2>
-                <p className="text-sm text-slate-400">Define la estructura de tus datos</p>
+                <h2 className="text-xl font-bold text-white">Crear nueva tabla</h2>
+                <p className="text-sm text-slate-400 mt-1">Define la estructura de tus datos</p>
               </div>
               <button
                 onClick={() => setShowBuilder(false)}
-                className="p-2 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-700/50 transition-all"
+                className="p-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all"
               >
                 {Icons.close}
               </button>
@@ -347,15 +358,21 @@ export default function Tables() {
         </div>
       )}
       
-      {/* Modal para EDITAR tabla existente */}
+      {/* Modal para EDITAR tabla existente - Rediseñado */}
       {editingTableConfig && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" style={{ background: '#1e293b', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
-            <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
-              <h2 className="text-lg font-semibold text-slate-100">Editar configuración de "{editingTableConfig.name}"</h2>
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+            style={{ 
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)',
+              backdropFilter: 'blur(40px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+            }}>
+            <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <h2 className="text-lg font-bold text-white">Editar configuración de "{editingTableConfig.name}"</h2>
               <button
                 onClick={() => setEditingTableConfig(null)}
-                className="p-2 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-700/50 transition-all"
+                className="p-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all"
               >
                 {Icons.close}
               </button>
@@ -376,24 +393,32 @@ export default function Tables() {
       <div className="p-8">
         <div className="max-w-7xl mx-auto">
           
-          {/* Header */}
-          <header className="mb-8 animate-fade-up">
+          {/* Header - Rediseñado */}
+          <header className="mb-10">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white">
-                  {Icons.table}
+              <div className="flex items-center gap-5">
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 blur-lg opacity-50" />
+                  <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-xl text-white">
+                    {Icons.table}
+                  </div>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-semibold text-slate-100 tracking-tight">Tablas</h1>
-                  <p className="text-sm text-slate-400 mt-0.5">
-                    Gestiona los datos de {workspaceName}
+                  <h1 className="text-3xl font-bold text-white tracking-tight">Tablas</h1>
+                  <p className="text-slate-400 mt-1">
+                    Gestiona los datos de <span className="text-violet-400 font-medium">{workspaceName}</span>
                   </p>
                 </div>
               </div>
               
               <button 
                 onClick={() => setShowBuilder(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-400 transition-colors shadow-lg shadow-indigo-500/30"
+                data-tour="tables-create"
+                className="flex items-center gap-2 px-5 py-3 rounded-xl text-white text-sm font-semibold transition-all duration-300 hover:scale-105 active:scale-95"
+                style={{
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
+                  boxShadow: '0 8px 30px rgba(139, 92, 246, 0.4)'
+                }}
               >
                 {Icons.plus}
                 <span>Nueva tabla</span>
@@ -437,7 +462,7 @@ export default function Tables() {
           ) : (
             <div className="grid grid-cols-12 gap-8 animate-fade-up">
               {/* Sidebar - Lista de tablas */}
-              <div className="col-span-12 lg:col-span-3">
+              <div className="col-span-12 lg:col-span-3" data-tour="tables-list">
                 <div className="sticky top-8">
                   <div className="p-5 rounded-2xl" style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
                     <div className="flex items-center justify-between mb-4">
@@ -463,22 +488,27 @@ export default function Tables() {
                     </div>
                     
                     <div className="space-y-3">
-                      {tables.filter(t => !searchQuery.trim() || t.name.toLowerCase().includes(searchQuery.toLowerCase())).map((t) => (
+                      {tables.filter(t => !searchQuery.trim() || t.name.toLowerCase().includes(searchQuery.toLowerCase())).map((t, index) => (
                         <button
                           key={t._id}
                           onClick={() => setSelectedTable(t)}
-                          className={`w-full text-left p-4 rounded-xl transition-all duration-200 group h-20 flex items-center ${
+                          className={`w-full text-left p-4 rounded-xl transition-all duration-300 group h-20 flex items-center hover:scale-[1.02] ${
                             selectedTable?._id === t._id
                               ? "bg-indigo-500/15 shadow-lg"
                               : "hover:bg-slate-600/30"
                           }`}
-                          style={{ border: selectedTable?._id === t._id ? '1px solid rgba(99, 102, 241, 0.4)' : '1px solid transparent' }}
+                          style={{ 
+                            border: selectedTable?._id === t._id ? '1px solid rgba(99, 102, 241, 0.4)' : '1px solid transparent',
+                            animation: 'fade-up 0.3s ease-out forwards',
+                            animationDelay: `${index * 50}ms`,
+                            opacity: 0
+                          }}
                         >
                           <div className="flex items-center gap-4 w-full">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0 ${
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 shrink-0 ${
                               selectedTable?._id === t._id 
-                                ? 'bg-indigo-500 text-white' 
-                                : 'bg-slate-600/50 text-slate-400 group-hover:bg-slate-600'
+                                ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' 
+                                : 'bg-slate-600/50 text-slate-400 group-hover:bg-slate-600 group-hover:shadow-md'
                             }`}>
                               {Icons.table}
                             </div>
@@ -501,7 +531,7 @@ export default function Tables() {
               </div>
 
               {/* Main content - Datos de la tabla */}
-              <div className="col-span-12 lg:col-span-9">
+              <div className="col-span-12 lg:col-span-9" data-tour="tables-data">
                 {!selectedTable ? (
                   <div className="relative h-[500px] flex items-center justify-center rounded-2xl overflow-hidden" style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
                     <div className="text-center z-10">

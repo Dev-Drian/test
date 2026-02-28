@@ -172,11 +172,14 @@ export default function Guia() {
             {steps.map((step, idx) => (
               <div 
                 key={step.number}
-                className="p-5 rounded-2xl transition-all hover:scale-[1.01]"
+                className="p-5 rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
                 style={{ 
                   background: 'rgba(51, 65, 85, 0.4)', 
                   border: '1px solid rgba(100, 116, 139, 0.3)',
-                  borderLeft: `4px solid ${step.color}`
+                  borderLeft: `4px solid ${step.color}`,
+                  animation: 'fade-up 0.4s ease-out forwards',
+                  animationDelay: `${idx * 100}ms`,
+                  opacity: 0
                 }}
               >
                 <div className="flex items-start gap-4">
@@ -229,11 +232,17 @@ export default function Guia() {
           </h2>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {concepts.map((concept) => (
+            {concepts.map((concept, idx) => (
               <div 
                 key={concept.title}
-                className="p-4 rounded-xl"
-                style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}
+                className="p-4 rounded-xl transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-indigo-500/5"
+                style={{ 
+                  background: 'rgba(51, 65, 85, 0.4)', 
+                  border: '1px solid rgba(100, 116, 139, 0.3)',
+                  animation: 'fade-up 0.4s ease-out forwards',
+                  animationDelay: `${600 + idx * 80}ms`,
+                  opacity: 0
+                }}
               >
                 <span className="text-3xl mb-3 block text-indigo-400">{concept.icon}</span>
                 <h3 className="text-sm font-semibold text-slate-100 mb-1">{concept.title}</h3>
@@ -244,7 +253,16 @@ export default function Guia() {
         </div>
 
         {/* Tips */}
-        <div className="p-6 rounded-2xl" style={{ background: 'rgba(99, 102, 241, 0.05)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+        <div 
+          className="p-6 rounded-2xl transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/10" 
+          style={{ 
+            background: 'rgba(99, 102, 241, 0.05)', 
+            border: '1px solid rgba(99, 102, 241, 0.2)',
+            animation: 'fade-up 0.5s ease-out forwards',
+            animationDelay: '900ms',
+            opacity: 0
+          }}
+        >
           <h3 className="text-lg font-semibold text-indigo-400 mb-4 flex items-center gap-2"><SparklesIcon size="sm" /> Tips para aprovechar al máximo</h3>
           <ul className="space-y-3 text-sm text-indigo-400/80">
             <li className="flex items-start gap-3">

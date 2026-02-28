@@ -11,6 +11,8 @@
   "dependencies": {
     "@xyflow/react": "^12.10.0",
     "axios": "^1.6.0",
+    "intro.js": "^8.3.2",
+    "lucide-react": "^0.575.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^5.5.0",

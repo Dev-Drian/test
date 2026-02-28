@@ -1,5 +1,5 @@
 /**
- * QueryNode - Nodo de consulta simplificado
+ * QueryNode - Nodo de consulta simplificado (Estilo n8n)
  * Dos salidas: Sí encuentra / No encuentra
  * Compatible con plantillas (tablePlaceholder) y sistema (targetTable)
  */
@@ -30,52 +30,73 @@ export default function QueryNode({ data, selected }) {
 
   return (
     <div 
-      className={`min-w-[200px] rounded-xl shadow-xl transition-all ${selected ? 'ring-2 ring-blue-400' : ''}`}
-      style={{ background: '#0c0c0f' }}
+      className={`min-w-[180px] max-w-[220px] rounded-2xl overflow-visible transition-all duration-300 ${
+        selected 
+          ? 'ring-2 ring-blue-400/60 shadow-2xl shadow-blue-500/20' 
+          : 'shadow-xl shadow-black/30 hover:shadow-2xl hover:shadow-blue-500/10'
+      }`} 
+      style={{ 
+        background: 'linear-gradient(145deg, #1a1a24, #141418)',
+        border: '1px solid rgba(59, 130, 246, 0.2)'
+      }}
     >
-      {/* Entrada */}
+      {/* Handle de entrada - Estilo n8n */}
       <Handle 
         type="target" 
-        position={Position.Top} 
+        position={Position.Left} 
+        className="!w-3 !h-3 !rounded-full !border-2 !-left-1.5"
         style={{ 
-          width: 14, 
-          height: 14, 
           background: '#3b82f6', 
-          border: '2px solid #0c0c0f',
-          top: -7
+          borderColor: '#1a1a24',
+          boxShadow: '0 0 8px rgba(59, 130, 246, 0.5)'
         }}
       />
       
-      {/* Header */}
+      {/* Header compacto estilo n8n */}
       <div 
-        className="px-4 py-3 flex items-center gap-3"
-        style={{ background: 'rgba(59, 130, 246, 0.15)', borderBottom: '1px solid rgba(59, 130, 246, 0.2)' }}
+        className="px-3 py-2.5 flex items-center gap-2.5" 
+        style={{ 
+          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0.05))',
+          borderBottom: '1px solid rgba(59, 130, 246, 0.15)' 
+        }}
       >
         <div 
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-lg text-white"
-          style={{ background: '#3b82f6' }}
+          className="w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-lg"
+          style={{ 
+            background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)'
+          }}
         >
           <SearchIcon size="sm" />
         </div>
-        <span className="text-sm font-semibold text-blue-400">{label || 'Consulta'}</span>
+        <div className="flex-1 min-w-0">
+          <span className="text-[13px] font-semibold text-blue-300 block truncate">{label || 'Consulta'}</span>
+          <span className="text-[10px] text-blue-500/70">Buscar datos</span>
+        </div>
       </div>
       
       {/* Contenido */}
-      <div className="p-4 space-y-2 text-center">
-        <div>
-          <span className="text-[10px] text-zinc-500">Buscar en</span>
-          <p className="text-sm font-semibold text-blue-400">{tableName}</p>
+      <div className="p-3 space-y-2">
+        <div 
+          className="px-2.5 py-1.5 rounded-xl text-[11px] text-center"
+          style={{ 
+            background: 'rgba(59, 130, 246, 0.08)', 
+            border: '1px solid rgba(59, 130, 246, 0.15)',
+            color: '#93c5fd'
+          }}
+        >
+          En <span className="font-semibold text-blue-300">{tableName}</span>
         </div>
         
         {/* Filtros del sistema */}
         {filterField && (
           <div 
-            className="px-3 py-2 rounded-lg text-xs"
-            style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)' }}
+            className="px-2 py-1 rounded-lg text-[10px] flex items-center gap-1"
+            style={{ background: 'rgba(59, 130, 246, 0.06)' }}
           >
-            <span className="text-blue-300">{getFieldLabel(filterField)}</span>
-            <span className="text-amber-400 font-bold mx-1">=</span>
-            <span className="text-amber-300">{valueDisplay}</span>
+            <span className="text-blue-300 truncate">{getFieldLabel(filterField)}</span>
+            <span className="text-amber-400">=</span>
+            <span className="text-amber-300 truncate">{valueDisplay}</span>
           </div>
         )}
         
@@ -85,63 +106,62 @@ export default function QueryNode({ data, selected }) {
             {filters.slice(0, 2).map((f, i) => (
               <div 
                 key={i}
-                className="px-3 py-1.5 rounded-lg text-xs text-left"
-                style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)' }}
+                className="px-2 py-1 rounded-lg text-[10px] flex items-center gap-1"
+                style={{ background: 'rgba(59, 130, 246, 0.06)' }}
               >
-                <span className="text-blue-300">{f.field}</span>
-                <span className="text-zinc-500 mx-1">{f.operator}</span>
-                <span className="text-amber-300">{f.value}</span>
+                <span className="text-blue-300 truncate">{f.field}</span>
+                <span className="text-slate-500">{f.operator}</span>
+                <span className="text-amber-300 truncate">{f.value}</span>
               </div>
             ))}
-          </div>
-        )}
-        
-        {/* Operación si existe */}
-        {operation && (
-          <div className="text-[10px] text-zinc-500">
-            Operación: <span className="text-blue-400">{operation}</span>
           </div>
         )}
       </div>
       
       {/* Salidas Sí / No */}
-      <div className="flex" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <div className="flex-1 py-3 text-center" style={{ background: 'rgba(16, 185, 129, 0.15)' }}>
-          <span className="text-xs text-emerald-400 font-medium">✓ Sí</span>
+      <div className="flex rounded-b-2xl overflow-hidden" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div 
+          className="flex-1 py-2 text-center"
+          style={{ background: 'rgba(16, 185, 129, 0.1)' }}
+        >
+          <span className="text-[10px] text-emerald-400 font-medium">✓ Sí</span>
         </div>
         <div style={{ width: 1, background: 'rgba(255,255,255,0.06)' }} />
-        <div className="flex-1 py-3 text-center" style={{ background: 'rgba(239, 68, 68, 0.15)' }}>
-          <span className="text-xs text-red-400 font-medium">✗ No</span>
+        <div 
+          className="flex-1 py-2 text-center"
+          style={{ background: 'rgba(239, 68, 68, 0.1)' }}
+        >
+          <span className="text-[10px] text-red-400 font-medium">✗ No</span>
         </div>
       </div>
       
-      {/* Handle Sí (izquierda) */}
+      {/* Handle Sí (abajo izquierda) */}
       <Handle 
         type="source" 
         position={Position.Bottom}
-        id="yes"
+        id="true"
+        className="!w-3 !h-3 !rounded-full !border-2"
         style={{ 
-          width: 12, 
-          height: 12, 
           background: '#10b981', 
-          border: '2px solid #0c0c0f',
+          borderColor: '#1a1a24',
           left: '25%',
-          bottom: -6
+          bottom: -6,
+          boxShadow: '0 0 8px rgba(16, 185, 129, 0.5)'
         }}
       />
       
-      {/* Handle No (derecha) */}
+      {/* Handle No (abajo derecha) */}
       <Handle 
         type="source" 
         position={Position.Bottom}
-        id="no"
+        id="false"
+        className="!w-3 !h-3 !rounded-full !border-2"
         style={{ 
-          width: 12, 
-          height: 12, 
           background: '#ef4444', 
-          border: '2px solid #0c0c0f',
+          borderColor: '#1a1a24',
           left: '75%',
-          bottom: -6
+          bottom: -6,
+          boxShadow: '0 0 8px rgba(239, 68, 68, 0.5)'
         }}
       />
     </div>

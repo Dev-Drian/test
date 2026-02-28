@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { WorkspaceContext } from "./context/WorkspaceContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { TourProvider } from "./context/TourContext";
 import { ToastProvider } from "./components/Toast";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
@@ -11,6 +12,7 @@ import Tables from "./pages/Tables";
 import Chat from "./pages/Chat";
 import Guia from "./pages/Guia";
 import FlowEditor from "./pages/FlowEditor";
+import Flows from "./pages/Flows";
 import Login from "./pages/Login";
 import OnboardingWizard from "./components/OnboardingWizard";
 import { listWorkspaces } from "./api/client";
@@ -193,19 +195,23 @@ function AppContent() {
 
   return (
     <WorkspaceContext.Provider value={workspaceContext}>
-      <Routes>
-        <Route path="/login" element={<LoginRoute />} />
-        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          <Route index element={<Dashboard />} />
-          <Route path="workspaces" element={<Workspaces />} />
-          <Route path="agents" element={<Agents />} />
-          <Route path="tables" element={<Tables />} />
-          <Route path="flows" element={<FlowEditor />} />
-          <Route path="chat" element={<Chat />} />
-          <Route path="guia" element={<Guia />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
+      <TourProvider>
+        <Routes>
+          <Route path="/login" element={<LoginRoute />} />
+          <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+            <Route index element={<Dashboard />} />
+            <Route path="workspaces" element={<Workspaces />} />
+            <Route path="agents" element={<Agents />} />
+            <Route path="tables" element={<Tables />} />
+            <Route path="flows" element={<Flows />} />
+            <Route path="flows/editor" element={<FlowEditor />} />
+            <Route path="flows/editor/:flowId" element={<FlowEditor />} />
+            <Route path="chat" element={<Chat />} />
+            <Route path="guia" element={<Guia />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </TourProvider>
     </WorkspaceContext.Provider>
   );
 }

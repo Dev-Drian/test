@@ -116,31 +116,31 @@ async function main() {
     console.log('─'.repeat(60));
     await seedFlowTemplates();
     
-    // 3. Seed CRM Premium (a menos que sea --v3 only)
+    // 3. Seed de Usuarios (primero para que existan cuando se vinculen workspaces)
+    console.log('\n👥 Ejecutando seed: Usuarios de prueba');
+    console.log('─'.repeat(60));
+    await seedUsers();
+    
+    // 4. Seed CRM Premium (a menos que sea --v3 only)
     if (!V3_ONLY) {
       console.log('\n📦 Ejecutando seed: CRM Premium');
       console.log('─'.repeat(60));
       await seedPremiumCRM();
     }
     
-    // 4. Seed de Workspaces por Plan (Free, Starter, Enterprise)
+    // 5. Seed de Workspaces por Plan (Free, Starter, Enterprise)
     if (!V3_ONLY) {
       console.log('\n🏢 Ejecutando seed: Workspaces por Plan');
       console.log('─'.repeat(60));
       await seedAllWorkspaces();
     }
     
-    // 5. Seed Testing V3 (si es --v3 o --all)
+    // 6. Seed Testing V3 (si es --v3 o --all)
     if (V3_ONLY || RUN_ALL) {
       console.log('\n🧪 Ejecutando seed: Testing V3');
       console.log('─'.repeat(60));
       await seedTestingV3();
     }
-    
-    // 6. Seed de Usuarios (siempre al final - depende de workspaces)
-    console.log('\n👥 Ejecutando seed: Usuarios de prueba');
-    console.log('─'.repeat(60));
-    await seedUsers();
     
     console.log('\n✅ Seed completado exitosamente');
     

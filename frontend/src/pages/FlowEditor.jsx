@@ -28,7 +28,7 @@ import ResponseNode from '../components/nodes/ResponseNode';
 import QueryNode from '../components/nodes/QueryNode';
 import DefaultNode from '../components/nodes/DefaultNode';
 import CollectNode from '../components/nodes/CollectNode';
-import { RocketIcon, SearchIcon, SplitIcon, BoltIcon, CalendarIcon, ChatIcon, EditIcon, TrashIcon, ClipboardIcon, LightBulbIcon, TargetIcon, SparklesIcon, LinkIcon, FolderIcon } from '../components/Icons';
+import { RocketIcon, SearchIcon, SplitIcon, BoltIcon, CalendarIcon, ChatIcon, EditIcon, TrashIcon, ClipboardIcon, LightBulbIcon, TargetIcon, SparklesIcon, LinkIcon, FolderIcon, PlusIcon, ClockIcon, BellIcon, SwitchIcon, LoopIcon, TimerIcon, EmailIcon, WhatsAppIcon, SmsIcon, WebhookIcon, GlobeIcon, TransformIcon, VariableIcon, NoteIcon, CheckCircleIcon, FormIcon, ErrorIcon, SubflowIcon } from '../components/Icons';
 
 // Mapeo de tipos de nodos - incluye aliases para plantillas
 const nodeTypes = {
@@ -48,6 +48,26 @@ const nodeTypes = {
   update: ActionNode,      // 'update' → usa ActionNode
   notify: ActionNode,      // 'notify' → usa ActionNode
   message: ResponseNode,   // 'message' → usa ResponseNode
+  // Nuevos tipos
+  schedule: TriggerNode,      // Disparador programado
+  create: ActionNode,         // Crear registro
+  delete: ActionNode,         // Eliminar registro
+  switch: ConditionNode,      // Switch múltiples condiciones
+  loop: ActionNode,           // Repetir para cada item
+  wait: ActionNode,           // Esperar tiempo
+  email: ActionNode,          // Enviar email
+  whatsapp: ActionNode,       // Enviar WhatsApp
+  notification: ActionNode,   // Notificación interna
+  sms: ActionNode,            // Enviar SMS
+  webhook: ActionNode,        // Llamar webhook
+  http: ActionNode,           // Petición HTTP
+  transform: ActionNode,      // Transformar datos
+  set_variable: ActionNode,   // Guardar variable
+  note: DefaultNode,          // Nota/comentario
+  approval: ActionNode,       // Aprobación manual
+  form: CollectNode,          // Formulario
+  error_handler: ActionNode,  // Manejo de errores
+  subflow: ActionNode,        // Ejecutar subflujo
 };
 
 // Iconos SVG
@@ -87,59 +107,364 @@ const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
     </svg>
   ),
+  // Iconos para plantillas de flujos
+  mail: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+    </svg>
+  ),
+  question: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+    </svg>
+  ),
+  calendar: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+    </svg>
+  ),
+  'calendar-check': (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6l2 2 4-4" />
+    </svg>
+  ),
+  sparkles: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+    </svg>
+  ),
+  'user-plus': (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+    </svg>
+  ),
+  phone: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+    </svg>
+  ),
+  bell: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+    </svg>
+  ),
+  'bell-ring': (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0M3.124 7.5A8.969 8.969 0 015.292 3m13.416 0a8.969 8.969 0 012.168 4.5" />
+    </svg>
+  ),
+  star: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+    </svg>
+  ),
+  gift: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+    </svg>
+  ),
+  clock: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  users: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+    </svg>
+  ),
+  clipboard: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+    </svg>
+  ),
+  'file-text': (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 9h3.75m-3.75 3h3.75m-3.75 3h3.75M6 18.75V6.375c0-.621.504-1.125 1.125-1.125h5.25L18 10.5v8.25c0 .621-.504 1.125-1.125 1.125H7.125A1.125 1.125 0 016 18.75z" />
+    </svg>
+  ),
+  document: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+    </svg>
+  ),
+  bolt: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+    </svg>
+  ),
 };
 
-// Bloques disponibles con descripciones amigables
-const availableBlocks = [
-  { 
-    type: 'trigger', 
-    icon: <RocketIcon size="md" />,
-    label: 'Inicio', 
-    color: '#10b981',
-    description: 'Cuando algo sucede',
-    help: 'Define qué evento dispara el flujo: un mensaje, una nueva reserva, etc.'
+// Función para obtener icono por nombre
+const getTemplateIcon = (iconName) => {
+  if (!iconName) return Icons.document;
+  if (typeof iconName !== 'string') return iconName; // Ya es un elemento JSX
+  const icon = Icons[iconName];
+  return icon || Icons.document;
+};
+
+// Bloques disponibles organizados por categorías
+const blockCategories = [
+  {
+    id: 'triggers',
+    label: 'Disparadores',
+    icon: '⚡',
+    description: 'Inician el flujo',
+    blocks: [
+      { 
+        type: 'trigger', 
+        icon: <RocketIcon size="md" />,
+        label: 'Inicio', 
+        color: '#10b981',
+        description: 'Cuando algo sucede',
+        help: 'Define qué evento dispara el flujo: un mensaje, un webhook, etc.'
+      },
+      { 
+        type: 'schedule', 
+        icon: <ClockIcon size="md" />,
+        label: 'Programado', 
+        color: '#10b981',
+        description: 'En fecha/hora',
+        help: 'Ejecuta el flujo en un horario específico: diario, semanal, etc.'
+      },
+    ]
   },
-  { 
-    type: 'query', 
-    icon: <SearchIcon size="md" />,
-    label: 'Consulta', 
-    color: '#3b82f6',
-    description: 'Buscar datos',
-    help: 'Busca información en tus tablas. Ej: ver si hay disponibilidad.'
+  {
+    id: 'data',
+    label: 'Datos',
+    icon: '📊',
+    description: 'Consultar y modificar',
+    blocks: [
+      { 
+        type: 'query', 
+        icon: <SearchIcon size="md" />,
+        label: 'Consulta', 
+        color: '#3b82f6',
+        description: 'Buscar datos',
+        help: 'Busca información en tus tablas. Ej: ver si hay disponibilidad.'
+      },
+      { 
+        type: 'create', 
+        icon: <PlusIcon size="md" />,
+        label: 'Crear', 
+        color: '#22c55e',
+        description: 'Nuevo registro',
+        help: 'Crea un nuevo registro en una tabla. Ej: nueva cita, nuevo cliente.'
+      },
+      { 
+        type: 'update', 
+        icon: <EditIcon size="md" />,
+        label: 'Actualizar', 
+        color: '#f59e0b',
+        description: 'Modificar registro',
+        help: 'Actualiza un registro existente. Ej: cambiar estado de cita.'
+      },
+      { 
+        type: 'delete', 
+        icon: <TrashIcon size="md" />,
+        label: 'Eliminar', 
+        color: '#ef4444',
+        description: 'Borrar registro',
+        help: 'Elimina un registro de la tabla. Usa con precaución.'
+      },
+    ]
   },
-  { 
-    type: 'condition', 
-    icon: <SplitIcon size="md" />,
-    label: 'Decisión', 
-    color: '#f59e0b',
-    description: '¿Sí o no?',
-    help: 'Toma un camino u otro según una condición. Ej: si hay espacio → reservar.'
+  {
+    id: 'logic',
+    label: 'Lógica',
+    icon: '🧠',
+    description: 'Decisiones y control',
+    blocks: [
+      { 
+        type: 'condition', 
+        icon: <SplitIcon size="md" />,
+        label: 'Condición', 
+        color: '#f59e0b',
+        description: '¿Sí o no?',
+        help: 'Toma un camino u otro según una condición. Ej: si hay espacio → reservar.'
+      },
+      { 
+        type: 'switch', 
+        icon: <SwitchIcon size="md" />,
+        label: 'Switch', 
+        color: '#f59e0b',
+        description: 'Múltiples caminos',
+        help: 'Evalúa múltiples condiciones y elige un camino. Ej: según tipo de cliente.'
+      },
+      { 
+        type: 'loop', 
+        icon: <LoopIcon size="md" />,
+        label: 'Repetir', 
+        color: '#8b5cf6',
+        description: 'Para cada item',
+        help: 'Repite acciones para cada elemento de una lista.'
+      },
+      { 
+        type: 'wait', 
+        icon: <TimerIcon size="md" />,
+        label: 'Esperar', 
+        color: '#06b6d4',
+        description: 'Pausar tiempo',
+        help: 'Espera un tiempo antes de continuar. Ej: esperar 1 hora para follow-up.'
+      },
+    ]
   },
-  { 
-    type: 'action', 
-    icon: <BoltIcon size="md" />,
-    label: 'Acción', 
-    color: '#8b5cf6',
-    description: 'Hacer algo',
-    help: 'Ejecuta una acción: crear registro, actualizar, enviar notificación.'
+  {
+    id: 'communication',
+    label: 'Comunicación',
+    icon: '💬',
+    description: 'Mensajes y notificaciones',
+    blocks: [
+      { 
+        type: 'response', 
+        icon: <ChatIcon size="md" />,
+        label: 'Respuesta', 
+        color: '#ec4899',
+        description: 'Mensaje al usuario',
+        help: 'Envía un mensaje al usuario. Puedes incluir datos dinámicos.'
+      },
+      { 
+        type: 'email', 
+        icon: <EmailIcon size="md" />,
+        label: 'Email', 
+        color: '#3b82f6',
+        description: 'Enviar correo',
+        help: 'Envía un correo electrónico. Ideal para confirmaciones.'
+      },
+      { 
+        type: 'whatsapp', 
+        icon: <WhatsAppIcon size="md" />,
+        label: 'WhatsApp', 
+        color: '#25d366',
+        description: 'Enviar mensaje',
+        help: 'Envía un mensaje de WhatsApp al cliente.'
+      },
+      { 
+        type: 'notification', 
+        icon: <BellIcon size="md" />,
+        label: 'Notificación', 
+        color: '#f59e0b',
+        description: 'Alertar al equipo',
+        help: 'Envía una notificación interna a tu equipo.'
+      },
+      { 
+        type: 'sms', 
+        icon: <SmsIcon size="md" />,
+        label: 'SMS', 
+        color: '#8b5cf6',
+        description: 'Mensaje de texto',
+        help: 'Envía un SMS al número del cliente.'
+      },
+    ]
   },
-  { 
-    type: 'availability', 
-    icon: <CalendarIcon size="md" />,
-    label: 'Horario', 
-    color: '#06b6d4',
-    description: 'Ver disponibilidad',
-    help: 'Verifica horarios de atención y disponibilidad según la tabla de horarios.'
+  {
+    id: 'integrations',
+    label: 'Integraciones',
+    icon: '🔗',
+    description: 'Conectar servicios externos',
+    blocks: [
+      { 
+        type: 'webhook', 
+        icon: <WebhookIcon size="md" />,
+        label: 'Webhook', 
+        color: '#6366f1',
+        description: 'Llamar API externa',
+        help: 'Conecta con servicios externos: Zapier, Make, APIs.'
+      },
+      { 
+        type: 'http', 
+        icon: <GlobeIcon size="md" />,
+        label: 'HTTP Request', 
+        color: '#06b6d4',
+        description: 'Petición HTTP',
+        help: 'Realiza peticiones HTTP a cualquier URL.'
+      },
+    ]
   },
-  { 
-    type: 'response', 
-    icon: <ChatIcon size="md" />,
-    label: 'Respuesta', 
-    color: '#ec4899',
-    description: 'Enviar mensaje',
-    help: 'Envía un mensaje al usuario. Puedes incluir datos dinámicos.'
+  {
+    id: 'utils',
+    label: 'Utilidades',
+    icon: '🛠️',
+    description: 'Herramientas auxiliares',
+    blocks: [
+      { 
+        type: 'availability', 
+        icon: <CalendarIcon size="md" />,
+        label: 'Horario', 
+        color: '#06b6d4',
+        description: 'Ver disponibilidad',
+        help: 'Verifica horarios de atención y disponibilidad.'
+      },
+      { 
+        type: 'transform', 
+        icon: <TransformIcon size="md" />,
+        label: 'Transformar', 
+        color: '#8b5cf6',
+        description: 'Modificar datos',
+        help: 'Transforma datos: formatear fechas, calcular valores, etc.'
+      },
+      { 
+        type: 'set_variable', 
+        icon: <VariableIcon size="md" />,
+        label: 'Variable', 
+        color: '#64748b',
+        description: 'Guardar valor',
+        help: 'Guarda un valor temporal para usar más adelante en el flujo.'
+      },
+      { 
+        type: 'note', 
+        icon: <NoteIcon size="md" />,
+        label: 'Nota', 
+        color: '#94a3b8',
+        description: 'Comentario',
+        help: 'Agrega una nota para documentar el flujo. No afecta la ejecución.'
+      },
+    ]
+  },
+  {
+    id: 'advanced',
+    label: 'Avanzado',
+    icon: '⚙️',
+    description: 'Funciones especiales',
+    blocks: [
+      { 
+        type: 'approval', 
+        icon: <CheckCircleIcon size="md" />,
+        label: 'Aprobación', 
+        color: '#10b981',
+        description: 'Esperar confirmación',
+        help: 'Pausa el flujo hasta que alguien apruebe manualmente.'
+      },
+      { 
+        type: 'form', 
+        icon: <FormIcon size="md" />,
+        label: 'Formulario', 
+        color: '#ec4899',
+        description: 'Solicitar datos',
+        help: 'Solicita información al usuario paso a paso.'
+      },
+      { 
+        type: 'error_handler', 
+        icon: <ErrorIcon size="md" />,
+        label: 'Error', 
+        color: '#ef4444',
+        description: 'Manejar fallos',
+        help: 'Define qué hacer si algo falla en el flujo.'
+      },
+      { 
+        type: 'subflow', 
+        icon: <SubflowIcon size="md" />,
+        label: 'Subflujo', 
+        color: '#6366f1',
+        description: 'Ejecutar otro flujo',
+        help: 'Ejecuta otro flujo como parte de este. Reutiliza lógica.'
+      },
+    ]
   },
 ];
+
+// Lista plana para compatibilidad
+const availableBlocks = blockCategories.flatMap(cat => cat.blocks);
 
 // Toast notification component
 const Toast = ({ message, type, onClose }) => {
@@ -225,6 +550,19 @@ const ConfirmModal = ({ isOpen, title, message, confirmText, cancelText, onConfi
     </div>
   );
 };
+
+// Tarjeta de consejo para panel de ayuda
+const TipCard = ({ icon, title, text }) => (
+  <div className="p-3 rounded-xl bg-slate-700/30 border border-slate-600/30">
+    <div className="flex items-start gap-3">
+      <span className="text-lg">{icon}</span>
+      <div>
+        <h4 className="text-sm font-medium text-slate-200">{title}</h4>
+        <p className="text-xs text-slate-400 mt-0.5">{text}</p>
+      </div>
+    </div>
+  </div>
+);
 
 export default function FlowEditor() {
   const { workspaceId, workspaceName } = useWorkspace();
@@ -340,7 +678,7 @@ export default function FlowEditor() {
     const loadTemplates = async () => {
       try {
         const res = await api.get('/flow/templates');
-        setFlowTemplates(res.data || []);
+        setFlowTemplates(res.data?.templates || res.data || []);
       } catch (err) {
         console.error('Error loading flow templates:', err);
         // Fallback: plantilla vacía
@@ -476,11 +814,18 @@ export default function FlowEditor() {
         data: { ...n.data, tables }
       }));
       
+      // Normalizar sourceHandle: yes/no → true/false
+      const edgesToUse = res.data.edges || template?.edges || [];
+      const normalizedEdges = edgesToUse.map(edge => ({
+        ...edge,
+        sourceHandle: edge.sourceHandle === 'yes' ? 'true' : edge.sourceHandle === 'no' ? 'false' : edge.sourceHandle
+      }));
+      
       setFlows([...flows, res.data]);
       setSelectedFlow(res.data);
       setFlowName(res.data.name);
       setNodes(nodesWithTables);
-      setEdges(res.data.edges || template?.edges || []);
+      setEdges(normalizedEdges);
       setShowTemplates(false);
       addToast(`Flujo "${res.data.name}" creado correctamente`, 'success');
     } catch (err) {
@@ -529,8 +874,14 @@ export default function FlowEditor() {
       };
     });
     
+    // Normalizar sourceHandle: yes/no → true/false para compatibilidad
+    const normalizedEdges = (flow.edges || []).map(edge => ({
+      ...edge,
+      sourceHandle: edge.sourceHandle === 'yes' ? 'true' : edge.sourceHandle === 'no' ? 'false' : edge.sourceHandle
+    }));
+    
     setNodes(nodesWithTableNames);
-    setEdges(flow.edges || []);
+    setEdges(normalizedEdges);
   };
 
   // Guardar flujo
@@ -699,10 +1050,10 @@ export default function FlowEditor() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full" style={{ background: '#0f172a' }}>
+      <div className="flex items-center justify-center h-full" style={{ background: '#0a0a0f' }}>
         <div className="flex flex-col items-center gap-4 animate-fade-in">
-          <div className="relative w-10 h-10">
-            <div className="absolute inset-0 border-2 rounded-full border-amber-500/20" />
+          <div className="relative w-12 h-12">
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 animate-pulse" />
             <div className="absolute inset-0 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
           </div>
           <span className="text-sm text-slate-400">Cargando flujos...</span>
@@ -712,24 +1063,34 @@ export default function FlowEditor() {
   }
 
   return (
-    <div className="h-[calc(100vh-60px)] flex" style={{ background: '#0f172a' }}>
+    <div className="h-[calc(100vh-60px)] flex" style={{ background: '#0a0a0f' }} data-tour="flow-welcome">
       {/* Sidebar izquierdo - Lista de flujos */}
-      <aside className="w-64 flex flex-col" style={{ background: '#1e293b', borderRight: '1px solid rgba(100, 116, 139, 0.3)' }}>
+      <aside 
+        className="w-64 flex flex-col backdrop-blur-xl" 
+        style={{ 
+          background: 'linear-gradient(180deg, rgba(20, 20, 30, 0.95), rgba(10, 10, 15, 0.98))',
+          borderRight: '1px solid rgba(255, 255, 255, 0.06)'
+        }}
+        data-tour="flow-templates"
+      >
         {/* Header */}
-        <div className="p-4" style={{ borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
+        <div className="p-4" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg bg-amber-500">
-              {Icons.flow}
+            <div className="relative">
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 blur-lg opacity-50" />
+              <div className="relative w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg bg-gradient-to-br from-amber-500 to-orange-600">
+                {Icons.flow}
+              </div>
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-slate-100">Flujos</h2>
+              <h2 className="text-sm font-semibold text-white">Flujos</h2>
               <p className="text-xs text-slate-500 truncate max-w-[140px]">{workspaceName}</p>
             </div>
           </div>
           
           <button
             onClick={() => setShowTemplates(true)}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-amber-500 text-white text-sm font-medium hover:bg-amber-400 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium hover:shadow-lg hover:shadow-amber-500/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             {Icons.plus}
             Nuevo flujo
@@ -737,31 +1098,43 @@ export default function FlowEditor() {
         </div>
 
         {/* Lista de flujos */}
-        <div className="flex-1 overflow-y-auto p-3">
+        <div className="flex-1 overflow-y-auto p-3 space-y-1">
           {flows.length === 0 ? (
             <div className="text-center py-8">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 text-slate-500" style={{ background: 'rgba(71, 85, 105, 0.5)' }}>
+              <div 
+                className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 text-slate-500" 
+                style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.06)' }}
+              >
                 {Icons.folder}
               </div>
-              <p className="text-sm text-slate-400 mb-1">Sin flujos</p>
+              <p className="text-sm text-slate-300 mb-1">Sin flujos</p>
               <p className="text-xs text-slate-500">Crea tu primer flujo</p>
             </div>
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               {flows.map(flow => (
                 <button
                   key={flow._id}
                   onClick={() => handleSelectFlow(flow)}
-                  className={`w-full text-left px-3 py-3 rounded-xl transition-all flex items-center gap-3 ${
+                  className={`w-full text-left px-3 py-3 rounded-xl transition-all duration-300 flex items-center gap-3 group ${
                     selectedFlow?._id === flow._id
-                      ? 'text-amber-400 bg-amber-500/15'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'
+                      ? 'text-amber-300'
+                      : 'text-slate-400 hover:text-white'
                   }`}
-                  style={{ border: selectedFlow?._id === flow._id ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid transparent' }}
+                  style={{ 
+                    background: selectedFlow?._id === flow._id 
+                      ? 'linear-gradient(90deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05))' 
+                      : 'transparent',
+                    border: selectedFlow?._id === flow._id 
+                      ? '1px solid rgba(245, 158, 11, 0.2)' 
+                      : '1px solid transparent'
+                  }}
                 >
                   <div 
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0 ${
-                      selectedFlow?._id === flow._id ? 'bg-amber-500 text-white' : 'bg-slate-700/50 text-slate-500'
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 transition-all duration-300 ${
+                      selectedFlow?._id === flow._id 
+                        ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/30' 
+                        : 'bg-white/5 text-slate-500 group-hover:bg-white/10 group-hover:text-slate-300'
                     }`}
                   >
                     <BoltIcon size="sm" />
@@ -772,6 +1145,9 @@ export default function FlowEditor() {
                       {flow.nodes?.length || 0} bloques
                     </p>
                   </div>
+                  {selectedFlow?._id === flow._id && (
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  )}
                 </button>
               ))}
             </div>
@@ -779,10 +1155,11 @@ export default function FlowEditor() {
         </div>
 
         {/* Ayuda */}
-        <div className="p-3" style={{ borderTop: '1px solid rgba(100, 116, 139, 0.3)' }}>
+        <div className="p-3" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
           <button
             onClick={() => setShowHelp(true)}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-slate-400 text-sm hover:text-amber-400 hover:bg-amber-500/10 transition-all"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-slate-400 text-sm hover:text-amber-400 hover:bg-amber-500/10 transition-all duration-300"
+            style={{ border: '1px solid rgba(255, 255, 255, 0.04)' }}
           >
             {Icons.help}
             ¿Cómo funciona?
@@ -791,26 +1168,35 @@ export default function FlowEditor() {
       </aside>
 
       {/* Área principal - Canvas */}
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col" style={{ background: '#0a0a0f' }}>
         {selectedFlow ? (
           <>
             {/* Toolbar */}
-            <div className="h-14 flex items-center gap-3 px-4" style={{ background: '#1e293b', borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
+            <div 
+              className="h-14 flex items-center gap-3 px-4 backdrop-blur-xl" 
+              style={{ 
+                background: 'linear-gradient(90deg, rgba(20, 20, 30, 0.9), rgba(15, 15, 25, 0.95))',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
+              }}
+            >
               <input
                 type="text"
                 value={flowName}
                 onChange={(e) => setFlowName(e.target.value)}
-                className="flex-1 max-w-xs px-3 py-2 rounded-lg text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
-                style={{ background: 'rgba(71, 85, 105, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}
+                className="flex-1 max-w-xs px-4 py-2 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+                style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.08)' }}
                 placeholder="Nombre del flujo"
               />
               
               {/* Undo/Redo buttons */}
-              <div className="flex items-center gap-1 px-2" style={{ borderLeft: '1px solid rgba(100, 116, 139, 0.3)', borderRight: '1px solid rgba(100, 116, 139, 0.3)' }}>
+              <div 
+                className="flex items-center gap-1 px-3 py-1 rounded-lg" 
+                style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.06)' }}
+              >
                 <button 
                   onClick={handleUndo}
                   disabled={historyIndex <= 0}
-                  className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-600/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   title="Deshacer (Ctrl+Z)"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -820,7 +1206,7 @@ export default function FlowEditor() {
                 <button 
                   onClick={handleRedo}
                   disabled={historyIndex >= history.length - 1}
-                  className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-600/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   title="Rehacer (Ctrl+Y)"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -829,8 +1215,8 @@ export default function FlowEditor() {
                 </button>
               </div>
               
-              <div className="flex items-center gap-2 ml-auto">
-                <span className="text-xs text-slate-500 px-2">
+              <div className="flex items-center gap-3 ml-auto">
+                <span className="text-xs text-slate-500 px-3 py-1.5 rounded-lg" style={{ background: 'rgba(255, 255, 255, 0.03)' }}>
                   {nodes.length} bloques · {edges.length} conexiones
                 </span>
                 <button 
@@ -843,7 +1229,8 @@ export default function FlowEditor() {
                     setTestStep(0);
                     setHighlightedNode(null);
                   }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-500/20 border border-violet-500/30 text-violet-300 text-sm font-medium hover:bg-violet-500/30 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-violet-300 text-sm font-medium hover:shadow-lg hover:shadow-violet-500/20 transition-all"
+                  style={{ background: 'rgba(139, 92, 246, 0.15)', border: '1px solid rgba(139, 92, 246, 0.3)' }}
                   title="Probar flujo"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -854,7 +1241,8 @@ export default function FlowEditor() {
                 <button 
                   onClick={handleSaveFlow} 
                   disabled={isSaving}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-400 disabled:opacity-50 transition-colors"
+                  data-tour="flow-save"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-medium hover:shadow-lg hover:shadow-emerald-500/30 disabled:opacity-50 transition-all"
                   title="Guardar (Ctrl+S)"
                 >
                   {isSaving ? (
@@ -863,20 +1251,72 @@ export default function FlowEditor() {
                     Icons.save
                   )}
                   {isSaving ? 'Guardando...' : 'Guardar'}
-                  <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[10px] rounded bg-white/10 text-indigo-200">⌘S</kbd>
+                  <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[10px] rounded bg-white/20 text-emerald-100">⌘S</kbd>
                 </button>
                 <button 
                   onClick={handleDeleteFlow}
-                  className="p-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                  className="p-2.5 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                  style={{ border: '1px solid rgba(255, 255, 255, 0.04)' }}
                   title="Eliminar flujo"
                 >
                   {Icons.trash}
                 </button>
+                <button 
+                  onClick={() => setShowHelp(!showHelp)}
+                  className={`p-2.5 rounded-xl transition-all ${showHelp ? 'text-amber-400 bg-amber-500/15' : 'text-slate-500 hover:text-amber-400 hover:bg-amber-500/10'}`}
+                  style={{ border: '1px solid rgba(255, 255, 255, 0.04)' }}
+                  title="Ayuda y consejos"
+                >
+                  {Icons.help}
+                </button>
               </div>
             </div>
 
+            {/* Panel de ayuda contextual */}
+            {showHelp && (
+              <div 
+                className="absolute top-20 right-4 w-80 rounded-2xl overflow-hidden shadow-2xl z-50 animate-fade-up"
+                style={{ background: 'linear-gradient(to bottom, #1e293b, #0f172a)', border: '1px solid rgba(251, 191, 36, 0.2)' }}
+              >
+                <div className="px-4 py-3 flex items-center justify-between border-b border-amber-500/20 bg-amber-500/5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                      <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+                      </svg>
+                    </div>
+                    <h3 className="text-sm font-semibold text-slate-100">Consejos</h3>
+                  </div>
+                  <button onClick={() => setShowHelp(false)} className="p-1 text-slate-400 hover:text-white">{Icons.close}</button>
+                </div>
+                <div className="p-4 space-y-3 max-h-80 overflow-y-auto">
+                  {nodes.length === 0 ? (
+                    <>
+                      <TipCard icon="🎯" title="Empieza con un Trigger" text="Arrastra un bloque 'Inicio' desde el panel derecho para definir qué inicia tu flujo." />
+                      <TipCard icon="💡" title="Usa plantillas" text="Haz clic en 'Plantillas' para usar flujos predefinidos y ahorrarte tiempo." />
+                    </>
+                  ) : nodes.length === 1 ? (
+                    <>
+                      <TipCard icon="🔗" title="Conecta bloques" text="Ahora arrastra otro bloque y conéctalo haciendo clic y arrastrando desde el punto de conexión." />
+                      <TipCard icon="⚡" title="Define acciones" text="Usa bloques de 'Acción' para guardar datos, enviar mensajes o notificaciones." />
+                    </>
+                  ) : edges.length === 0 ? (
+                    <>
+                      <TipCard icon="🔗" title="¡Conecta tus bloques!" text="Haz clic en un punto de salida (abajo del bloque) y arrastra hasta el punto de entrada de otro bloque." />
+                    </>
+                  ) : (
+                    <>
+                      <TipCard icon="✅" title="¡Bien hecho!" text="Tu flujo está tomando forma. Usa el modo 'Probar' para simular cómo funcionará." />
+                      <TipCard icon="💾" title="Guarda tu trabajo" text="No olvides guardar con Ctrl+S o el botón 'Guardar' para no perder tus cambios." />
+                      <TipCard icon="🔄" title="Undo/Redo" text="Si te equivocas, usa Ctrl+Z para deshacer o Ctrl+Y para rehacer." />
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Canvas */}
-            <div className="flex-1 relative">
+            <div className="flex-1 relative" data-tour="flow-canvas">
               <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -898,27 +1338,53 @@ export default function FlowEditor() {
                   animated: true,
                   style: { stroke: '#10b981', strokeWidth: 2 },
                 }}
+                style={{ background: '#0a0a0f' }}
               >
                 <Controls 
-                  className="!rounded-xl"
-                  style={{ background: '#1e293b', border: '1px solid rgba(100, 116, 139, 0.3)' }}
+                  className="!rounded-xl !shadow-xl"
+                  style={{ 
+                    background: 'linear-gradient(135deg, rgba(30, 30, 45, 0.95), rgba(20, 20, 30, 0.98))', 
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    backdropFilter: 'blur(10px)'
+                  }}
                 />
                 <MiniMap 
-                  className="!rounded-xl"
-                  style={{ background: '#1e293b', border: '1px solid rgba(100, 116, 139, 0.3)' }}
-                  maskColor="rgba(0, 0, 0, 0.7)"
+                  className="!rounded-xl !shadow-xl"
+                  style={{ 
+                    background: 'linear-gradient(135deg, rgba(30, 30, 45, 0.95), rgba(20, 20, 30, 0.98))', 
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    backdropFilter: 'blur(10px)'
+                  }}
+                  maskColor="rgba(0, 0, 0, 0.8)"
                   nodeColor={(node) => {
                     const block = availableBlocks.find(b => b.type === node.type);
                     return block?.color || '#3b82f6';
                   }}
                 />
-                <Background variant="dots" gap={20} size={1} color="rgba(255,255,255,0.03)" />
+                <Background 
+                  variant="dots" 
+                  gap={25} 
+                  size={1} 
+                  color="rgba(255,255,255,0.04)" 
+                  style={{ background: '#0a0a0f' }}
+                />
 
                 {/* Instrucciones si está vacío */}
                 {nodes.length === 0 && (
                   <Panel position="top-center">
-                    <div className="px-6 py-4 rounded-xl text-center mt-20" style={{ background: 'rgba(30, 41, 59, 0.95)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
-                      <p className="text-slate-100 font-medium mb-1">¡Empieza a crear!</p>
+                    <div 
+                      className="px-8 py-6 rounded-2xl text-center mt-20 backdrop-blur-xl shadow-2xl"
+                      style={{ 
+                        background: 'linear-gradient(135deg, rgba(30, 30, 45, 0.9), rgba(20, 20, 30, 0.95))', 
+                        border: '1px solid rgba(255, 255, 255, 0.1)' 
+                      }}
+                    >
+                      <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-gradient-to-br from-amber-500/20 to-orange-500/20 text-amber-400">
+                        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                      </div>
+                      <p className="text-white font-semibold mb-1 text-lg">¡Empieza a crear!</p>
                       <p className="text-sm text-slate-400">
                         Arrastra bloques desde el panel derecho →
                       </p>
@@ -1758,42 +2224,89 @@ export default function FlowEditor() {
 
       {/* Sidebar derecho - Bloques arrastrables */}
       {selectedFlow && (
-        <aside className="w-72 flex flex-col" style={{ background: '#0c0c0f', borderLeft: '1px solid rgba(255,255,255,0.06)' }}>
+        <aside 
+          data-tour="flow-nodes-panel"
+          className="w-72 flex flex-col backdrop-blur-xl" 
+          style={{ 
+            background: 'linear-gradient(180deg, rgba(15, 15, 22, 0.98), rgba(10, 10, 15, 0.99))',
+            borderLeft: '1px solid rgba(255,255,255,0.06)' 
+          }}
+        >
           {/* Header */}
-          <div className="p-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <h3 className="text-sm font-semibold text-white mb-1">Bloques</h3>
-            <p className="text-xs text-zinc-600">Arrastra al canvas para agregar</p>
+          <div className="p-4\" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-violet-500/20 to-purple-500/20 text-violet-400">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2v2H7a1 1 0 00-1 1v2H4V6zM4 17h2v2a1 1 0 001 1h2v2H7a2 2 0 01-2-2v-3zM17 4h2a2 2 0 012 2v3h-2V7a1 1 0 00-1-1h-2V4h1zM20 17h-2v2a1 1 0 01-1 1h-2v2h3a2 2 0 002-2v-3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-white">Bloques</h3>
+                <p className="text-[11px] text-slate-500">Arrastra al canvas</p>
+              </div>
+            </div>
           </div>
 
-          {/* Bloques */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {availableBlocks.map(block => (
-              <div
-                key={block.type}
-                draggable
-                onDragStart={(e) => onDragStart(e, block.type)}
-                className="group relative p-4 rounded-xl cursor-grab hover:scale-[1.02] active:scale-[0.98] active:cursor-grabbing transition-all"
-                style={{ 
-                  background: 'rgba(255,255,255,0.02)', 
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  borderLeft: `4px solid ${block.color}`
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <div 
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white shrink-0"
-                    style={{ background: block.color }}
-                  >
-                    {block.icon}
+          {/* Bloques por categoría */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-3">
+            {blockCategories.map(category => (
+              <div key={category.id} className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
+                {/* Category Header */}
+                <div 
+                  className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-white/5 transition-colors"
+                  style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))' }}
+                >
+                  <span className="text-base">{category.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-white">{category.label}</p>
+                    <p className="text-[10px] text-slate-500">{category.description}</p>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-white">{block.label}</p>
-                    <p className="text-xs text-zinc-500">{block.description}</p>
-                  </div>
+                  <span className="text-[10px] text-slate-500 bg-white/5 px-1.5 py-0.5 rounded">
+                    {category.blocks.length}
+                  </span>
                 </div>
-                {/* Tooltip de ayuda */}
-                <div className="absolute left-0 right-0 bottom-full mb-2 px-3 py-2 bg-zinc-900 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-white/10 z-50">
-                  <p className="text-xs text-zinc-300">{block.help}</p>
+                
+                {/* Category Blocks */}
+                <div className="space-y-1 p-2 bg-black/20">
+                  {category.blocks.map(block => (
+                    <div
+                      key={block.type}
+                      draggable
+                      onDragStart={(e) => onDragStart(e, block.type)}
+                      className="group relative p-2 rounded-lg cursor-grab hover:bg-white/5 active:scale-[0.98] active:cursor-grabbing transition-all duration-150"
+                      style={{ borderLeft: `2px solid ${block.color}` }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-7 h-7 rounded-md flex items-center justify-center text-white shrink-0"
+                          style={{ 
+                            background: `linear-gradient(135deg, ${block.color}, ${block.color}cc)`,
+                            boxShadow: `0 2px 8px ${block.color}30`
+                          }}
+                        >
+                          {block.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-white">{block.label}</p>
+                          <p className="text-[10px] text-slate-500 truncate">{block.description}</p>
+                        </div>
+                        <svg className="w-3 h-3 text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                        </svg>
+                      </div>
+                      {/* Tooltip */}
+                      <div 
+                        className="absolute left-0 right-0 bottom-full mb-1 px-2 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50"
+                        style={{ 
+                          background: 'rgba(15, 15, 25, 0.98)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+                        }}
+                      >
+                        <p className="text-[10px] text-slate-300">{block.help}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
@@ -1801,20 +2314,28 @@ export default function FlowEditor() {
 
           {/* Tip */}
           <div className="p-4 space-y-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-            <div className="p-3 rounded-xl" style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
-              <p className="text-xs text-amber-400 font-medium mb-2 flex items-center gap-1"><LightBulbIcon size="xs" /> Atajos de teclado</p>
+            <div 
+              className="p-3 rounded-xl" 
+              style={{ 
+                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(245, 158, 11, 0.02))', 
+                border: '1px solid rgba(245, 158, 11, 0.15)' 
+              }}
+            >
+              <p className="text-xs text-amber-400 font-medium mb-2 flex items-center gap-1.5">
+                <LightBulbIcon size="xs" /> Atajos de teclado
+              </p>
               <div className="space-y-1.5 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-amber-400/60">Guardar</span>
-                  <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-amber-300 text-[10px]">Ctrl+S</kbd>
+                  <kbd className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 text-[10px] font-mono">Ctrl+S</kbd>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-amber-400/60">Deshacer</span>
-                  <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-amber-300 text-[10px]">Ctrl+Z</kbd>
+                  <kbd className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 text-[10px] font-mono">Ctrl+Z</kbd>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-amber-400/60">Rehacer</span>
-                  <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-amber-300 text-[10px]">Ctrl+Y</kbd>
+                  <kbd className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 text-[10px] font-mono">Ctrl+Y</kbd>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-amber-400/60">Eliminar nodo</span>
@@ -1918,14 +2439,14 @@ export default function FlowEditor() {
                       'border-white/10 hover:border-white/20 hover:bg-white/5'
                     }`}
                   >
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl mb-3 ${
-                      template.color === 'emerald' ? 'bg-emerald-500/10' :
-                      template.color === 'blue' ? 'bg-blue-500/10' :
-                      template.color === 'purple' ? 'bg-purple-500/10' :
-                      template.color === 'red' ? 'bg-red-500/10' :
-                      'bg-white/5'
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${
+                      template.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-400' :
+                      template.color === 'blue' ? 'bg-blue-500/10 text-blue-400' :
+                      template.color === 'purple' ? 'bg-purple-500/10 text-purple-400' :
+                      template.color === 'red' ? 'bg-red-500/10 text-red-400' :
+                      'bg-white/5 text-zinc-400'
                     }`}>
-                      {template.icon}
+                      {getTemplateIcon(template.icon)}
                     </div>
                     <h3 className="text-base font-semibold text-white mb-1">{template.name}</h3>
                     <p className="text-sm text-zinc-400">{template.description}</p>

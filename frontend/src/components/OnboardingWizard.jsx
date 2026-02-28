@@ -1238,16 +1238,25 @@ export default function OnboardingWizard({ onComplete, onSkip, showPlanStep = tr
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0, 0, 0, 0.95)" }}>
-      <div className="w-full max-w-3xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto" 
+      style={{ 
+        background: "linear-gradient(180deg, rgba(0, 0, 0, 0.97) 0%, rgba(10, 10, 20, 0.98) 100%)",
+        backdropFilter: "blur(8px)"
+      }}
+    >
+      {/* Decorative gradient orbs */}
+      <div className="fixed top-0 left-1/4 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-fuchsia-600/10 rounded-full blur-3xl pointer-events-none" />
+      
+      <div className="w-full max-w-3xl relative z-10 animate-fade-up">
         {/* Stepper profesional */}
         {step < 5 && (
           <div className="mb-10">
             {/* Progress bar de fondo */}
             <div className="relative mb-4">
-              <div className="absolute top-4 left-0 right-0 h-0.5 bg-zinc-800" />
+              <div className="absolute top-4 left-0 right-0 h-0.5 bg-zinc-800/50 rounded-full" />
               <div 
-                className="absolute top-4 left-0 h-0.5 bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-500"
+                className="absolute top-4 left-0 h-0.5 bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-500 rounded-full shadow-lg shadow-violet-500/30"
                 style={{ width: `${(step / 4) * 100}%` }}
               />
               
@@ -1256,12 +1265,12 @@ export default function OnboardingWizard({ onComplete, onSkip, showPlanStep = tr
                 {STEPS.filter(s => s.id < 5).map((s) => (
                   <div key={s.id} className="flex flex-col items-center">
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 relative z-10 ${
+                      className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 relative z-10 ${
                         step > s.id
-                          ? "bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/30"
+                          ? "bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/40"
                           : step === s.id
-                          ? "bg-violet-500 text-white ring-4 ring-violet-500/30 shadow-lg shadow-violet-500/50"
-                          : "bg-zinc-800 text-zinc-500"
+                          ? "bg-violet-500 text-white ring-4 ring-violet-500/30 shadow-lg shadow-violet-500/50 scale-110"
+                          : "bg-zinc-800/80 text-zinc-500 border border-zinc-700/50"
                       }`}
                     >
                       {step > s.id ? (
@@ -1272,7 +1281,7 @@ export default function OnboardingWizard({ onComplete, onSkip, showPlanStep = tr
                         s.id + 1
                       )}
                     </div>
-                    <span className={`mt-2 text-xs font-medium whitespace-nowrap transition-colors ${
+                    <span className={`mt-2.5 text-xs font-medium whitespace-nowrap transition-all duration-300 ${
                       step >= s.id ? "text-white" : "text-zinc-600"
                     }`}>
                       {s.title}
@@ -1282,13 +1291,22 @@ export default function OnboardingWizard({ onComplete, onSkip, showPlanStep = tr
               </div>
             </div>
 
-            {/* Skip button */}
+            {/* Skip button - Diseño Premium */}
             <div className="flex justify-end">
               <button
                 onClick={onSkip}
-                className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+                className="group flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-zinc-400 bg-white/5 border border-white/10 hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/20 transition-all duration-300 backdrop-blur-sm"
               >
-                Omitir configuración →
+                <svg 
+                  className="w-4 h-4 opacity-60 group-hover:opacity-100 transition-opacity" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor" 
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Omitir tour
               </button>
             </div>
           </div>

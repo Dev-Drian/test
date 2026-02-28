@@ -88,11 +88,15 @@ export class QueryHandler extends ActionHandler {
       
       // Normalizar nombres de campos de los filtros del LLM para que coincidan con la tabla
       let llmFilters = this._normalizeFilters(analysis.query?.filters || {}, tableSchema);
+      // Normalizar valores de estado/tipo para que coincidan con opciones reales
+      llmFilters = this._normalizeFilterValues(llmFilters, tableSchema);
       console.log('[QueryHandler] LLM filters normalized:', JSON.stringify(llmFilters, null, 2));
       
       // ═══ FALLBACK: Extraer filtros si el LLM falló ═══
       if (Object.keys(llmFilters).length === 0) {
-        const fallbackFilters = this._extractFallbackFilters(message, tableSchema);
+        let fallbackFilters = this._extractFallbackFilters(message, tableSchema);
+        // IMPORTANTE: También normalizar valores de fallback (activo→En Curso, etc.)
+        fallbackFilters = this._normalizeFilterValues(fallbackFilters, tableSchema);
         if (Object.keys(fallbackFilters).length > 0) {
           console.log('[QueryHandler] FALLBACK filters extracted:', JSON.stringify(fallbackFilters, null, 2));
           llmFilters = fallbackFilters;
@@ -129,7 +133,31 @@ export class QueryHandler extends ActionHandler {
         : undefined);
       
       // Si es agregación del QueryParser, manejar diferente
+      // PERO: si el LLM devolvió un campo válido, usarlo en vez del QueryParser
       if (parsedQuery.aggregation) {
+        const llmField = analysis.field || analysis.query?.field;
+        const realFields = (tableSchema?.headers || tableSchema?.fields || []).map(h => (h.key || h.name || h).toString().toLowerCase());
+        
+        // Validar que el campo del QueryParser sea un campo real de la tabla
+        const parserFieldIsValid = realFields.includes((parsedQuery.aggregation.field || '').toLowerCase());
+        
+        // Si el LLM devolvió un campo y es válido, usarlo
+        if (llmField && realFields.includes(llmField.toLowerCase())) {
+          console.log(`[QueryHandler] Using LLM field for aggregation: ${llmField} (parser had: ${parsedQuery.aggregation.field})`);
+          parsedQuery.aggregation.field = llmField;
+        } else if (!parserFieldIsValid) {
+          // Si ni el LLM ni el parser tienen un campo válido, usar smart analysis
+          console.log('[QueryHandler] No valid aggregation field, falling through to smart analysis');
+          // Fall through to smart analysis below
+        } else {
+          return await this._handleAggregation(context, combinedFilters, parsedQuery.aggregation);
+        }
+        
+        // Si llegamos aquí, el parser no tiene campo válido y el LLM tampoco - usar smart analysis
+        if (!parserFieldIsValid) {
+          return await this._handleSmartAnalysis(context, combinedFilters, tableSchema, analysis);
+        }
+        
         return await this._handleAggregation(context, combinedFilters, parsedQuery.aggregation);
       }
       
@@ -385,6 +413,117 @@ export class QueryHandler extends ActionHandler {
   }
   
   /**
+   * Normaliza valores de filtros para que coincidan con opciones reales de la tabla.
+   * Mapea términos comunes del usuario a valores exactos de los campos select.
+   * 
+   * Ejemplos:
+   * - "activos", "activo" → "En Curso"
+   * - "terminados", "completados", "finalizados" → "Completado"
+   * - "pendientes" → "Pendiente"
+   * - "cancelados" → "Cancelado"
+   * 
+   * @param {object} filters - Filtros normalizados
+   * @param {object} tableSchema - Esquema de la tabla
+   * @returns {object} Filtros con valores normalizados
+   * @private
+   */
+  _normalizeFilterValues(filters, tableSchema) {
+    if (!filters || Object.keys(filters).length === 0) return filters;
+    const schemaHeaders = tableSchema?.headers || tableSchema?.fields || [];
+    if (!schemaHeaders.length) return filters;
+    
+    // Mapeo de términos comunes a valores de estado
+    const statusMappings = {
+      // Activo/En curso
+      'activo': ['En Curso', 'Activo', 'En Progreso', 'En proceso'],
+      'activos': ['En Curso', 'Activo', 'En Progreso', 'En proceso'],
+      'active': ['En Curso', 'Activo', 'En Progreso', 'Active'],
+      'en curso': ['En Curso', 'En Progreso'],
+      'en progreso': ['En Progreso', 'En Curso'],
+      'in progress': ['En Progreso', 'En Curso', 'In Progress'],
+      
+      // Completado/Terminado
+      'completado': ['Completado', 'Completada', 'Terminado', 'Finalizado'],
+      'completados': ['Completado', 'Completada', 'Terminado', 'Finalizado'],
+      'terminado': ['Completado', 'Terminado', 'Finalizado'],
+      'terminados': ['Completado', 'Terminado', 'Finalizado'],
+      'finalizado': ['Completado', 'Finalizado', 'Terminado'],
+      'finalizados': ['Completado', 'Finalizado', 'Terminado'],
+      'done': ['Completado', 'Done', 'Completada'],
+      'completed': ['Completado', 'Completed', 'Completada'],
+      
+      // Pendiente
+      'pendiente': ['Pendiente', 'Por hacer', 'Pending'],
+      'pendientes': ['Pendiente', 'Por hacer', 'Pending'],
+      'pending': ['Pendiente', 'Pending'],
+      
+      // Cancelado
+      'cancelado': ['Cancelado', 'Cancelada', 'Cancelled'],
+      'cancelados': ['Cancelado', 'Cancelada', 'Cancelled'],
+      'cancelled': ['Cancelado', 'Cancelled'],
+      'canceled': ['Cancelado', 'Cancelled'],
+      
+      // Pausado
+      'pausado': ['Pausado', 'En espera', 'On hold'],
+      'pausados': ['Pausado', 'En espera'],
+      'paused': ['Pausado', 'Paused'],
+      
+      // Planificación
+      'planificacion': ['Planificación', 'Planeado', 'Por iniciar'],
+      'planeado': ['Planificación', 'Planeado'],
+      'planned': ['Planificación', 'Planned'],
+      
+      // Entregado/Enviado
+      'entregado': ['Entregado', 'Delivered', 'Enviado'],
+      'entregados': ['Entregado', 'Delivered'],
+      'enviado': ['Enviado', 'Sent', 'Entregado'],
+      'enviados': ['Enviado', 'Sent'],
+      'delivered': ['Entregado', 'Delivered'],
+      'sent': ['Enviado', 'Sent'],
+    };
+    
+    const normalizedFilters = { ...filters };
+    
+    for (const [key, value] of Object.entries(filters)) {
+      if (typeof value !== 'string') continue;
+      
+      // Buscar el header correspondiente para ver si es un campo select
+      const header = schemaHeaders.find(h => 
+        (h.key || h.name) === key || 
+        (h.key || h.name).toLowerCase() === key.toLowerCase()
+      );
+      
+      if (!header || header.type !== 'select' || !header.options?.length) continue;
+      
+      // Normalizar el valor del usuario
+      const valueLower = value.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // quitar acentos
+      
+      // Buscar en el mapeo de términos
+      const possibleValues = statusMappings[valueLower] || statusMappings[value.toLowerCase()];
+      
+      if (possibleValues) {
+        // Buscar cuál de los valores posibles existe en las opciones de la tabla
+        for (const possibleValue of possibleValues) {
+          const match = header.options.find(opt => 
+            opt.toLowerCase() === possibleValue.toLowerCase() ||
+            opt.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() === 
+              possibleValue.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+          );
+          
+          if (match) {
+            console.log(`[QueryHandler] Filter value normalized: "${value}" → "${match}"`);
+            normalizedFilters[key] = match;
+            break;
+          }
+        }
+      }
+    }
+    
+    return normalizedFilters;
+  }
+
+  /**
    * Separa filtros en: exactos (para CouchDB) y texto (para filtrar en JS)
    * Los filtros de texto se manejan en JavaScript porque CouchDB no soporta
    * búsqueda case-insensitive de forma nativa.
@@ -537,6 +676,10 @@ export class QueryHandler extends ActionHandler {
     const msgLower = message.toLowerCase()
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     
+    // ═══ SKIP: Si es pregunta analítica, no extraer filtros de nombre ═══
+    // "presupuesto total de los proyectos" → no filtrar por nombre "los proyectos"
+    const isAnalyticalQuestion = /\b(total|promedio|media|suma|contar|cuantos|cuántos|resumen|estadisticas?|analisis)\b/i.test(message);
+    
     // Obtener campos de la tabla
     const realFields = (tableSchema?.headers || tableSchema?.fields || []).map(h => {
       if (typeof h === 'string') return h;
@@ -555,10 +698,19 @@ export class QueryHandler extends ActionHandler {
     
     // ═══ PATRÓN 1: "de [nombre]" ═══
     // Matches: "ventas de María García", "citas de Juan Pérez"
-    const namePattern = /(?:de|del?)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*)/i;
-    const nameMatch = message.match(namePattern);
-    if (nameMatch && nameField) {
-      filters[nameField] = nameMatch[1].trim();
+    // SKIP if analytical question (to avoid "de los proyectos" being extracted as a name)
+    if (!isAnalyticalQuestion) {
+      const namePattern = /(?:de|del?)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*)/i;
+      const nameMatch = message.match(namePattern);
+      if (nameMatch && nameField) {
+        // Ignorar palabras genéricas como "los", "las", "el", "la", etc.
+        const ignoredWords = /^(los|las|el|la|un|una|unos|unas|todos?|todas?)$/i;
+        const extracted = nameMatch[1].trim();
+        const firstWord = extracted.split(/\s+/)[0];
+        if (!ignoredWords.test(firstWord)) {
+          filters[nameField] = extracted;
+        }
+      }
     }
     
     // ═══ PATRÓN 2: "con estado [estado]" o "estado [estado]" ═══
@@ -571,18 +723,17 @@ export class QueryHandler extends ActionHandler {
       filters[statusField] = status;
     }
     
-    // ═══ PATRÓN 3: "[estado]s" como adjetivo (pendientes, canceladas) ═══
-    // Matches: "ventas pendientes", "citas canceladas"
+    // ═══ PATRÓN 3: "[estado]s" como adjetivo (pendientes, canceladas, activos) ═══
+    // Matches: "ventas pendientes", "citas canceladas", "proyectos activos"
     if (!filters[statusField] && statusField) {
-      const statusAdjectivePattern = /\b(pendiente|cancelad[oa]|completad[oa]|activ[oa]|inactiv[oa])s?\b/i;
+      const statusAdjectivePattern = /\b(pendiente|cancelad[oa]|completad[oa]|activ[oa]|inactiv[oa]|en\s*curso|pausad[oa]|planificad[oa])s?\b/i;
       const adjMatch = msgLower.match(statusAdjectivePattern);
       if (adjMatch) {
-        // Normalizar: "pendientes" → "Pendiente"
-        let status = adjMatch[1].replace(/s$/, '').replace(/[oa]$/, 'o');
-        status = status.charAt(0).toUpperCase() + status.slice(1);
-        if (status === 'Cancelado') status = 'Cancelada';
-        if (status === 'Completado') status = 'Completada';
-        filters[statusField] = status;
+        // Normalizar: usar el término original del usuario para que _normalizeFilterValues lo mapee
+        let rawStatus = adjMatch[1].replace(/s$/, '');
+        // Capitalizar primera letra
+        rawStatus = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1);
+        filters[statusField] = rawStatus;
       }
     }
     
@@ -682,13 +833,57 @@ export class QueryHandler extends ActionHandler {
     const { workspaceId, message, tablesData } = context;
     
     try {
+      // ═══ IMPORTANTE: Extraer filtros del mensaje si no los hay ═══
+      // Esto permite que "cuántos proyectos activos hay?" funcione correctamente
+      let effectiveFilters = { ...filters };
+      if (Object.keys(effectiveFilters).length === 0) {
+        const msgLower = message.toLowerCase();
+        
+        // Extraer estado del mensaje: activos, pendientes, completados, etc.
+        const statusPatterns = [
+          { regex: /\bactivos?\b/i, values: ['En Curso', 'Activo', 'En Progreso'] },
+          { regex: /\bpendientes?\b/i, values: ['Pendiente', 'Por hacer'] },
+          { regex: /\bcompletad[oa]s?\b|terminad[oa]s?\b|finalizad[oa]s?\b/i, values: ['Completado', 'Completada', 'Terminado'] },
+          { regex: /\bcancelad[oa]s?\b/i, values: ['Cancelado', 'Cancelada'] },
+          { regex: /\bpausad[oa]s?\b|en\s*espera/i, values: ['Pausado', 'En espera'] },
+          { regex: /\ben\s*curso/i, values: ['En Curso', 'En Progreso'] },
+          { regex: /\bplanificad[oa]s?\b|por\s*iniciar/i, values: ['Planificación', 'Planeado'] },
+        ];
+        
+        // Encontrar campo de estado en la tabla
+        const statusField = (tableSchema?.headers || tableSchema?.fields || []).find(h => 
+          h.type === 'select' && (h.key?.toLowerCase().includes('estado') || h.key?.toLowerCase().includes('status'))
+        );
+        
+        if (statusField) {
+          for (const pattern of statusPatterns) {
+            if (pattern.regex.test(message)) {
+              // Encontrar cuál de los valores posibles está en las opciones de la tabla
+              for (const value of pattern.values) {
+                const match = statusField.options?.find(opt => 
+                  opt.toLowerCase() === value.toLowerCase()
+                );
+                if (match) {
+                  effectiveFilters[statusField.key] = match;
+                  console.log(`[QueryHandler] Smart analysis extracted filter: ${statusField.key}="${match}"`);
+                  break;
+                }
+              }
+              if (effectiveFilters[statusField.key]) break;
+            }
+          }
+        }
+      }
+      
       // Obtener TODOS los datos para análisis (máximo 1000)
+      console.log('[QueryHandler] Smart analysis query:', { tableId: analysis.tableId, effectiveFilters });
       let allRows = await this.tableDataRepository.query(
         workspaceId,
         analysis.tableId,
-        filters,
+        effectiveFilters,
         { limit: 1000 }
       );
+      console.log('[QueryHandler] Smart analysis rows found:', allRows.length);
       
       if (allRows.length === 0) {
         return { handled: true, response: 'No hay datos disponibles para analizar.' };
@@ -745,7 +940,7 @@ export class QueryHandler extends ActionHandler {
       // ═══ ANÁLISIS 2: Totales y resúmenes ═══
       if (msgLower.includes('total') || msgLower.includes('resumen') || msgLower.includes('cuántos') || msgLower.includes('cuantos')) {
         // Buscar campos numéricos
-        const numericFields = (tableSchema?.headers || [])
+        const numericFields = (tableSchema?.headers || tableSchema?.fields || [])
           .filter(h => h.type === 'number' || h.key === 'total' || h.key === 'cantidad' || h.key === 'precio')
           .map(h => h.key);
         
@@ -757,7 +952,7 @@ export class QueryHandler extends ActionHandler {
           const sum = allRows.reduce((acc, row) => acc + (parseFloat(row[field]) || 0), 0);
           if (sum > 0) {
             const avg = sum / allRows.length;
-            const fieldLabel = (tableSchema?.headers?.find(h => h.key === field)?.label || field);
+            const fieldLabel = ((tableSchema?.headers || tableSchema?.fields || []).find(h => h.key === field)?.label || field);
             response += `💰 **${fieldLabel}:**\n`;
             response += `   • Total: $${sum.toLocaleString('es-CO')}\n`;
             response += `   • Promedio: $${avg.toLocaleString('es-CO', { maximumFractionDigits: 0 })}\n\n`;
@@ -765,7 +960,7 @@ export class QueryHandler extends ActionHandler {
         }
         
         // Agrupar por campo de estado si existe
-        const statusField = (tableSchema?.headers || []).find(h => 
+        const statusField = (tableSchema?.headers || tableSchema?.fields || []).find(h => 
           h.type === 'select' && (h.key.includes('estado') || h.key.includes('status'))
         );
         if (statusField) {
@@ -786,7 +981,7 @@ export class QueryHandler extends ActionHandler {
       
       // ═══ ANÁLISIS 3: Por categoría/tipo ═══
       if (msgLower.includes('por categoría') || msgLower.includes('por categoria') || msgLower.includes('por tipo')) {
-        const categoryField = (tableSchema?.headers || []).find(h => 
+        const categoryField = (tableSchema?.headers || tableSchema?.fields || []).find(h => 
           h.type === 'select' || h.key.includes('categoria') || h.key.includes('tipo')
         );
         

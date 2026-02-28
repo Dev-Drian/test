@@ -116,6 +116,14 @@ export async function seedUsers() {
         // Hash password
         const { hash, salt } = hashPassword(userData.password);
         
+        // Preservar workspaces existentes si ya tiene (vinculados por workspaces-by-plan.js)
+        const workspacesOwner = existing?.workspacesOwner?.length 
+          ? existing.workspacesOwner 
+          : [...userData.workspacesOwner];
+        const workspaces = existing?.workspaces?.length 
+          ? existing.workspaces 
+          : [...userData.workspaces];
+        
         const userDoc = {
           _id: userData._id,
           email: userData.email,
@@ -124,8 +132,8 @@ export async function seedUsers() {
           plan: userData.plan,
           planExpiresAt: null, // null = no expira
           role: userData.role,
-          workspacesOwner: [...userData.workspacesOwner],
-          workspaces: [...userData.workspaces],
+          workspacesOwner,
+          workspaces,
           onboardingCompleted: userData.onboardingCompleted,
           businessType: userData.businessType,
           permissions: userData.permissions || {},

@@ -112,7 +112,7 @@ async function seedFreeWorkspace() {
       type: 'agent',
       name: 'Asistente de Tareas',
       description: 'Te ayudo a organizar tus tareas del día',
-      tables: [{ tableId: tareasTableId, fullAccess: true }],
+      tables: [{ tableId: tareasTableId, tableName: 'Tareas', fullAccess: true, permissions: { query: true, create: true, update: true, delete: false } }],
       engineMode: 'llm-first',
       vertical: 'productivity',
       toneStyle: 'friendly',
@@ -283,9 +283,9 @@ async function seedStarterWorkspace() {
       name: 'Vendedor Online',
       description: 'Gestiona productos, clientes y pedidos de tu tienda',
       tables: [
-        { tableId: productosTableId, fullAccess: true },
-        { tableId: clientesTableId, fullAccess: true },
-        { tableId: pedidosTableId, fullAccess: true }
+        { tableId: productosTableId, tableName: 'Productos', fullAccess: true, permissions: { query: true, create: true, update: true, delete: false } },
+        { tableId: clientesTableId, tableName: 'Clientes', fullAccess: true, permissions: { query: true, create: true, update: true, delete: false } },
+        { tableId: pedidosTableId, tableName: 'Pedidos', fullAccess: true, permissions: { query: true, create: true, update: false, delete: false } }
       ],
       engineMode: 'llm-first',
       vertical: 'ecommerce',
@@ -510,19 +510,31 @@ async function seedEnterpriseWorkspace() {
     await agentsDb.insert({
       _id: agenteRRHHId,
       type: 'agent',
-      name: 'Asistente de RRHH',
-      description: 'Gestión de empleados y departamentos',
+      name: 'Asistente Corporativo',
+      description: 'Gestión completa: empleados, proyectos, gastos y KPIs',
       tables: [
-        { tableId: empleadosTableId, fullAccess: true },
-        { tableId: deptosTableId, fullAccess: true }
+        { tableId: empleadosTableId, tableName: 'Empleados', fullAccess: true, permissions: { query: true, create: true, update: true, delete: false } },
+        { tableId: deptosTableId, tableName: 'Departamentos', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } },
+        { tableId: proyectosTableId, tableName: 'Proyectos', fullAccess: true, permissions: { query: true, create: true, update: true, delete: false } },
+        { tableId: gastosTableId, tableName: 'Gastos', fullAccess: true, permissions: { query: true, create: true, update: false, delete: false } },
+        { tableId: kpisTableId, tableName: 'KPIs', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } }
       ],
       engineMode: 'llm-first',
       vertical: 'hr',
       toneStyle: 'professional',
       enabledTools: ['create_record', 'query_records', 'update_record', 'analyze_data', 'general_conversation'],
-      prompt: `Eres el asistente de Recursos Humanos de una corporación.
-Funciones: registrar empleados, consultar directorio, ver estructura departamental.
-Mantén confidencialidad de datos sensibles como salarios.`,
+      fewShotExamples: [
+        { user: 'cuántos proyectos activos hay', assistant: 'Te muestro los proyectos activos con su estado y avance.' },
+        { user: 'dame los KPIs del mes', assistant: 'Te presento los indicadores clave actuales comparados con sus metas.' }
+      ],
+      prompt: `Eres el asistente corporativo de una empresa.
+Funciones: 
+- Gestionar empleados y directorio
+- Ver estructura departamental
+- Consultar y analizar proyectos (estado, avance, presupuesto)
+- Revisar gastos por departamento
+- Mostrar KPIs e indicadores de rendimiento
+Presenta datos con cifras claras y porcentajes cuando aplique.`,
       aiModel: ['gpt-4o-mini'],
       active: true,
       createdAt: new Date().toISOString()
@@ -537,10 +549,10 @@ Mantén confidencialidad de datos sensibles como salarios.`,
       name: 'Analista de Gestión',
       description: 'Análisis de proyectos, gastos y KPIs',
       tables: [
-        { tableId: proyectosTableId, fullAccess: true },
-        { tableId: gastosTableId, fullAccess: true },
-        { tableId: kpisTableId, fullAccess: true },
-        { tableId: deptosTableId, fullAccess: true }
+        { tableId: proyectosTableId, tableName: 'Proyectos', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } },
+        { tableId: gastosTableId, tableName: 'Gastos', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } },
+        { tableId: kpisTableId, tableName: 'KPIs', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } },
+        { tableId: deptosTableId, tableName: 'Departamentos', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } }
       ],
       engineMode: 'llm-first',
       vertical: 'analytics',
@@ -672,8 +684,8 @@ async function linkUsersToWorkspaces() {
   try {
     const accountsDb = await connectDB(`${getDbPrefix()}accounts`);
     
+    // user-nuevo (FREE) NO se vincula - hará onboarding
     const userWorkspaces = {
-      'user-nuevo': { workspaces: [{ id: 'free-tasks', role: 'owner' }], workspacesOwner: ['free-tasks'] },
       'user-starter': { workspaces: [{ id: 'starter-tienda', role: 'owner' }], workspacesOwner: ['starter-tienda'] },
       'user-demo': { workspaces: [{ id: 'premium-crm', role: 'owner' }], workspacesOwner: ['premium-crm'] },
       'user-admin': { workspaces: [{ id: 'enterprise-corp', role: 'owner' }], workspacesOwner: ['enterprise-corp'] }
@@ -707,7 +719,9 @@ export async function seedAllWorkspaces() {
   console.log('║        🏢 SEED: WORKSPACES POR PLAN                      ║');
   console.log('╚══════════════════════════════════════════════════════════╝');
   
-  await seedFreeWorkspace();
+  // FREE: NO crear workspace - el usuario hará onboarding
+  // await seedFreeWorkspace();
+  
   await seedStarterWorkspace();
   // premium-crm ya existe en premium-crm.js
   await seedEnterpriseWorkspace();
@@ -716,7 +730,7 @@ export async function seedAllWorkspaces() {
   console.log('════════════════════════════════════════════════════════════');
   console.log('📦 WORKSPACES CREADOS:');
   console.log('────────────────────────────────────────────────────────────');
-  console.log('🆓 FREE:       free-tasks (1 tabla, 1 agente)');
+  console.log('🆓 FREE:       (onboarding requerido)');
   console.log('⭐ STARTER:    starter-tienda (3 tablas, 1 agente)');
   console.log('💎 PREMIUM:    premium-crm (9 tablas, 2 agentes)');
   console.log('👑 ENTERPRISE: enterprise-corp (5 tablas, 2 agentes)');

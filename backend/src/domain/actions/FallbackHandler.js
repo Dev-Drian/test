@@ -16,14 +16,21 @@ const DEFAULT_MODEL = process.env.DEFAULT_AI_MODEL || 'gpt-4o';
 
 // Patrones para detectar si el usuario pregunta qué puede hacer el bot
 const HELP_PATTERNS = [
-  /qu[eé]\s+(puedes|sabes)\s+hacer/i,
+  /qu[eé]\s+[op]uedes\s+hacer/i,  // "que puedes/ouedes hacer" (con typos)
+  /qu[eé]\s+(puedes|sabes|podes)\s+hacer/i,
   /qu[eé]\s+servicios/i,
+  /qu[eé]\s+haces/i,
+  /para\s+qu[eé]\s+sirves/i,
   /c[oó]mo\s+(me\s+)?puedes\s+ayudar/i,
-  /ayuda/i,
-  /help/i,
+  /en\s+qu[eé]\s+me\s+ayudas/i,
+  /cu[aá]les\s+son\s+tus\s+(funciones|capacidades|servicios)/i,
+  /tus\s+(capacidades|funciones|habilidades)/i,
+  /\bpuedes\s+hacer\b/i,
+  /\bayuda\b/i,
+  /\bhelp\b/i,
   /what\s+can\s+you\s+do/i,
   /men[uú]/i,
-  /opciones/i,
+  /\bopciones\b/i,
 ];
 
 export class FallbackHandler extends ActionHandler {
