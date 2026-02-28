@@ -185,6 +185,8 @@ export class ChatEngine {
     
     log.debug('Executing handler for tool', { tool, handlerName });
     
+    // DEBUG: Log LLM arguments
+    console.log('[Engine] LLM tool:', tool, 'args:', JSON.stringify(args));
     // Enriquecer contexto con los argumentos extraídos por el LLM
     context.llmExtracted = args;
     context.selectedTool = tool;
@@ -350,6 +352,10 @@ export class ChatEngine {
           tableId: tableId || this._findTableByType(args?.record_type, context.tables)?.id,
           isAnalysis: true,
           analysisType: args.analysis_type,
+          query: {
+            filters: args.filters || {},
+            limit: 1000,
+          },
         };
         break;
         

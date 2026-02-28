@@ -290,20 +290,24 @@ export default function Chat() {
   }
 
   return (
-    <div className="h-[calc(100vh-60px)] flex" style={{ background: '#0f172a' }}>
-      {/* Sidebar */}
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-0'} flex-shrink-0 flex flex-col transition-all duration-300 overflow-hidden`}
-        style={{ background: '#1e293b', borderRight: '1px solid rgba(100, 116, 139, 0.3)' }}>
-        <div className="flex flex-col h-full min-w-64">
+    <div className="h-[calc(100vh-60px)] flex" style={{ background: 'linear-gradient(135deg, #0a0a0f 0%, #0f0f18 100%)' }} data-tour="chat-welcome">
+      {/* Sidebar - Rediseñado con glassmorphism */}
+      <aside data-tour="chat-sidebar" className={`${sidebarOpen ? 'w-72' : 'w-0'} shrink-0 flex flex-col transition-all duration-300 overflow-hidden`}
+        style={{ 
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
+          backdropFilter: 'blur(20px)',
+          borderRight: '1px solid rgba(255, 255, 255, 0.08)'
+        }}>
+        <div className="flex flex-col h-full min-w-72">
           {/* Header del sidebar */}
-          <div className="p-3">
+          <div className="p-4">
             <button
               onClick={handleNewChat}
               disabled={!selectedAgentId}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-slate-300 text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-600/40"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl text-white text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
               style={{ 
-                background: 'rgba(51, 65, 85, 0.4)',
-                border: '1px solid rgba(100, 116, 139, 0.3)'
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
+                boxShadow: '0 4px 20px rgba(139, 92, 246, 0.4)',
               }}
             >
               <PlusIcon size="sm" />
@@ -312,38 +316,42 @@ export default function Chat() {
           </div>
 
           {/* Selector de agente */}
-          <div className="px-3 pb-3" style={{ borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
-            <p className="text-[10px] uppercase tracking-wider mb-2 px-1 text-slate-500">Agente</p>
+          <div className="px-4 pb-4" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }} data-tour="chat-agent-selector">
+            <p className="text-[10px] uppercase tracking-wider mb-3 px-1 text-slate-500 font-semibold">Agente activo</p>
             {loading ? (
               <div className="px-3 py-2 text-slate-500 text-sm">Cargando...</div>
             ) : agents.length === 0 ? (
-              <Link to="/agents" className="flex items-center gap-2 px-3 py-2 rounded-lg text-indigo-400 text-sm hover:bg-indigo-500/15">
+              <Link to="/agents" className="flex items-center gap-2 px-4 py-3 rounded-xl text-violet-400 text-sm font-medium hover:bg-violet-500/15 transition-all border border-violet-500/30">
                 <PlusIcon size="sm" />
-                Crear agente
+                Crear primer agente
               </Link>
             ) : (
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {agents.map(agent => (
                   <button
                     key={agent._id}
                     onClick={() => handleAgentChange(agent._id)}
-                    className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-all ${
+                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-all duration-300 ${
                       selectedAgentId === agent._id
-                        ? 'text-slate-100 bg-slate-600/50'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-600/30'
+                        ? 'text-white bg-gradient-to-r from-violet-500/20 to-indigo-500/20'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'
                     }`}
                     style={selectedAgentId === agent._id ? {
-                      border: '1px solid rgba(100, 116, 139, 0.4)'
+                      border: '1px solid rgba(139, 92, 246, 0.4)',
+                      boxShadow: '0 0 20px rgba(139, 92, 246, 0.15)'
                     } : { border: '1px solid transparent' }}
                   >
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
                       selectedAgentId === agent._id 
-                        ? 'bg-indigo-500 text-white' 
-                        : 'bg-slate-600/50 text-slate-400'
+                        ? 'bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-lg shadow-violet-500/30' 
+                        : 'bg-white/5 text-slate-400'
                     }`}>
-                      <RobotIcon size="xs" />
+                      <RobotIcon size="sm" />
                     </div>
-                    <span className="truncate">{agent.name}</span>
+                    <span className="truncate font-medium">{agent.name}</span>
+                    {selectedAgentId === agent._id && (
+                      <span className="ml-auto w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    )}
                   </button>
                 ))}
               </div>
@@ -482,25 +490,30 @@ export default function Chat() {
             </div>
           </div>
         ) : !chatId && messages.length === 0 ? (
-          /* Estado inicial - sin chat */
+          /* Estado inicial - sin chat - Rediseñado */
           <div className="flex-1 flex flex-col">
             <div className="flex-1 flex items-center justify-center">
-              <div className="text-center max-w-2xl px-4 animate-fade-up">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 bg-indigo-500/15">
-                  <SparklesIcon size="lg" className="text-indigo-400" />
+              <div className="text-center max-w-2xl px-4">
+                {/* Icono animado */}
+                <div className="relative w-24 h-24 mx-auto mb-8">
+                  <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-violet-500/30 to-indigo-600/30 blur-xl animate-pulse" />
+                  <div className="relative w-24 h-24 rounded-3xl flex items-center justify-center bg-gradient-to-br from-violet-500 to-indigo-600 shadow-2xl shadow-violet-500/30">
+                    <SparklesIcon size="xl" className="text-white" />
+                  </div>
                 </div>
-                <h1 className="text-2xl font-medium text-slate-100 mb-2">¿En qué puedo ayudarte?</h1>
-                <p className="text-slate-400 mb-8">
-                  Estoy listo para responder tus preguntas sobre <span className="text-indigo-400">{workspaceName}</span>
+                
+                <h1 className="text-3xl font-bold text-white mb-3">¿En qué puedo ayudarte?</h1>
+                <p className="text-slate-400 mb-10 text-lg">
+                  Estoy listo para gestionar tus datos en <span className="text-violet-400 font-semibold">{workspaceName}</span>
                 </p>
                 
-                {/* Sugerencias de preguntas */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-xl mx-auto text-left">
+                {/* Sugerencias de preguntas - Rediseñadas */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-xl mx-auto text-left">
                   {[
-                    { icon: "📊", text: "¿Cuántos registros tengo?", desc: "Ver resumen de datos" },
-                    { icon: "📅", text: "¿Qué citas hay para hoy?", desc: "Consultar agenda" },
-                    { icon: "➕", text: "Quiero agregar un cliente", desc: "Crear nuevo registro" },
-                    { icon: "🔍", text: "Buscar información", desc: "Filtrar datos" },
+                    { icon: "📊", text: "¿Cuántos registros tengo?", desc: "Ver resumen de datos", gradient: "from-blue-500/20 to-cyan-500/20", border: "border-blue-500/30" },
+                    { icon: "📅", text: "¿Qué citas hay para hoy?", desc: "Consultar agenda", gradient: "from-emerald-500/20 to-teal-500/20", border: "border-emerald-500/30" },
+                    { icon: "➕", text: "Quiero agregar un cliente", desc: "Crear nuevo registro", gradient: "from-violet-500/20 to-purple-500/20", border: "border-violet-500/30" },
+                    { icon: "🔍", text: "Buscar información", desc: "Filtrar datos", gradient: "from-amber-500/20 to-orange-500/20", border: "border-amber-500/30" },
                   ].map((suggestion, idx) => (
                     <button
                       key={idx}
@@ -508,17 +521,21 @@ export default function Chat() {
                         setInput(suggestion.text);
                         textareaRef.current?.focus();
                       }}
-                      className="flex items-center gap-3 p-3 rounded-xl text-left transition-all hover:scale-[1.02]"
+                      className={`group flex items-center gap-4 p-5 rounded-2xl text-left transition-all duration-500 hover:scale-[1.03] hover:-translate-y-1 bg-gradient-to-br ${suggestion.gradient} border ${suggestion.border} hover:shadow-xl`}
                       style={{
-                        background: 'rgba(51, 65, 85, 0.4)',
-                        border: '1px solid rgba(100, 116, 139, 0.3)',
+                        animation: 'fade-up 0.5s ease-out forwards',
+                        animationDelay: `${200 + idx * 100}ms`,
+                        opacity: 0
                       }}
                     >
-                      <span className="text-xl">{suggestion.icon}</span>
+                      <span className="text-3xl transition-transform duration-500 group-hover:scale-125 group-hover:rotate-12">{suggestion.icon}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-slate-200 truncate">{suggestion.text}</p>
-                        <p className="text-xs text-slate-500">{suggestion.desc}</p>
+                        <p className="text-sm text-white font-semibold group-hover:text-white transition-colors">{suggestion.text}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{suggestion.desc}</p>
                       </div>
+                      <svg className="w-5 h-5 text-slate-500 opacity-0 group-hover:opacity-100 transition-all transform translate-x-0 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
                     </button>
                   ))}
                 </div>
@@ -528,7 +545,7 @@ export default function Chat() {
             {/* Input centrado en estado inicial */}
             <div className="p-4 pb-8">
               <form onSubmit={handleSend} className="max-w-3xl mx-auto">
-                <div className="relative rounded-2xl transition-all"
+                <div className="relative rounded-2xl transition-all duration-300 focus-within:shadow-lg focus-within:shadow-indigo-500/10"
                   style={{ 
                     background: 'rgba(51, 65, 85, 0.4)',
                     border: '1px solid rgba(100, 116, 139, 0.3)'
@@ -540,19 +557,19 @@ export default function Chat() {
                     onChange={handleTextareaChange}
                     onKeyDown={handleKeyDown}
                     rows={1}
-                    className="w-full px-5 py-4 pr-14 bg-transparent text-slate-100 text-sm placeholder-slate-500 resize-none focus:outline-none max-h-48"
+                    className="w-full px-5 py-4 pr-16 bg-transparent text-slate-100 text-sm placeholder-slate-500 resize-none focus:outline-none max-h-48"
                     disabled={sending}
                   />
                   <button
                     type="submit"
                     disabled={sending || !input.trim()}
-                    className="absolute right-3 bottom-3 p-2.5 rounded-xl text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:opacity-80 bg-indigo-500"
+                    className="absolute right-3 bottom-3 p-2.5 rounded-xl text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 hover:scale-105 active:scale-95 bg-gradient-to-r from-indigo-500 to-violet-600 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40"
                   >
                     <SendIcon size="sm" />
                   </button>
                 </div>
                 <p className="text-center text-xs text-slate-500 mt-3">
-                  Presiona <span className="text-slate-400">Enter</span> para enviar, <span className="text-slate-400">Shift + Enter</span> para nueva línea
+                  Presiona <kbd className="px-1.5 py-0.5 rounded bg-slate-700/50 text-slate-400 text-[10px] font-mono">Enter</kbd> para enviar, <kbd className="px-1.5 py-0.5 rounded bg-slate-700/50 text-slate-400 text-[10px] font-mono">Shift + Enter</kbd> para nueva línea
                 </p>
               </form>
             </div>
@@ -561,20 +578,23 @@ export default function Chat() {
           /* Chat activo con mensajes */
           <>
             {/* Área de mensajes */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto" data-tour="chat-messages">
               <div className="max-w-3xl mx-auto py-6 px-4">
                 {messages.map((m, idx) => (
                   <div 
                     key={m._id || m.id || `msg-${idx}`} 
-                    className={`py-5 ${idx !== 0 ? '' : ''}`}
-                    style={idx !== 0 ? { borderTop: '1px solid rgba(100, 116, 139, 0.2)' } : {}}
+                    className={`py-5 animate-slide-in-message ${m.role === "user" ? "message-user" : "message-assistant"}`}
+                    style={{
+                      ...(idx !== 0 ? { borderTop: '1px solid rgba(100, 116, 139, 0.15)' } : {}),
+                      animationDelay: `${idx * 30}ms`
+                    }}
                   >
                     <div className="flex gap-4">
                       {/* Avatar */}
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 hover:scale-110 ${
                         m.role === "user" 
-                          ? "bg-indigo-500 text-white" 
-                          : "bg-emerald-500 text-white"
+                          ? "bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/20" 
+                          : "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20"
                       }`}>
                         {m.role === "user" ? (
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -587,7 +607,7 @@ export default function Chat() {
                       
                       {/* Contenido */}
                       <div className="flex-1 min-w-0">
-                        <p className={`text-xs font-medium mb-1.5 ${
+                        <p className={`text-xs font-semibold mb-2 uppercase tracking-wide ${
                           m.role === "user" ? "text-indigo-400" : "text-emerald-400"
                         }`}>
                           {m.role === "user" ? "Tú" : selectedAgentName}
@@ -604,20 +624,20 @@ export default function Chat() {
                 
                 {/* Indicador de escritura */}
                 {sending && (
-                  <div className="py-5 animate-fade-in" style={{ borderTop: '1px solid rgba(100, 116, 139, 0.2)' }}>
+                  <div className="py-5 animate-fade-in" style={{ borderTop: '1px solid rgba(100, 116, 139, 0.15)' }}>
                     <div className="flex gap-4">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-emerald-500 text-white">
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
                         <SparklesIcon size="sm" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs font-medium mb-2 text-emerald-400">{selectedAgentName}</p>
+                        <p className="text-xs font-semibold mb-2 uppercase tracking-wide text-emerald-400">{selectedAgentName}</p>
                         <div className="flex items-center gap-3">
                           <div className="flex gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 typing-dot"></span>
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 typing-dot"></span>
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 typing-dot"></span>
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 typing-dot"></span>
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 typing-dot"></span>
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 typing-dot"></span>
                           </div>
-                          <span className="text-xs text-slate-500">Escribiendo...</span>
+                          <span className="text-xs text-slate-500">Pensando...</span>
                         </div>
                       </div>
                     </div>
@@ -628,12 +648,13 @@ export default function Chat() {
             </div>
 
             {/* Input fijo en la parte inferior */}
-            <div style={{ 
-              borderTop: '1px solid rgba(100, 116, 139, 0.3)',
-              background: 'rgba(15, 23, 42, 0.95)'
+            <div data-tour="chat-input" style={{ 
+              borderTop: '1px solid rgba(100, 116, 139, 0.2)',
+              background: 'linear-gradient(to top, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.95))',
+              backdropFilter: 'blur(12px)'
             }}>
               <form onSubmit={handleSend} className="max-w-3xl mx-auto p-4">
-                <div className="relative rounded-2xl transition-all"
+                <div className="relative rounded-2xl transition-all duration-300 focus-within:shadow-lg focus-within:shadow-indigo-500/10 focus-within:border-indigo-500/30"
                   style={{ 
                     background: 'rgba(51, 65, 85, 0.4)',
                     border: '1px solid rgba(100, 116, 139, 0.3)'
@@ -645,13 +666,13 @@ export default function Chat() {
                     onChange={handleTextareaChange}
                     onKeyDown={handleKeyDown}
                     rows={1}
-                    className="w-full px-5 py-4 pr-14 bg-transparent text-slate-100 text-sm placeholder-slate-500 resize-none focus:outline-none max-h-48"
+                    className="w-full px-5 py-4 pr-16 bg-transparent text-slate-100 text-sm placeholder-slate-500 resize-none focus:outline-none max-h-48"
                     disabled={sending}
                   />
                   <button
                     type="submit"
                     disabled={sending || !input.trim()}
-                    className="absolute right-3 bottom-3 p-2.5 rounded-xl text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:opacity-80 bg-indigo-500"
+                    className="absolute right-3 bottom-3 p-2.5 rounded-xl text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 hover:scale-105 active:scale-95 bg-gradient-to-r from-indigo-500 to-violet-600 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40"
                   >
                     <SendIcon size="sm" />
                   </button>

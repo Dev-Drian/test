@@ -25,7 +25,7 @@ export const DEFAULT_PLANS = {
       tablesPerWorkspace: 3,
       recordsPerTable: 100,
       agents: 1,
-      flows: 0,
+      flows: 1,
       storage: 100, // MB
       apiCalls: 0, // 0 = sin acceso API
     },

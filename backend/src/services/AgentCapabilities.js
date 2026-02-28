@@ -11,70 +11,70 @@ const TABLE_TYPE_TO_SERVICES = {
   calendar: {
     icon: '📅',
     // Servicios por tipo de permiso
-    query: ['Consultar citas', 'Ver disponibilidad', 'Ver historial de citas'],
-    create: ['Agendar citas'],
-    update: ['Reprogramar citas'],
-    delete: ['Cancelar citas'],
+    query: ['Consultar {tableName}'],
+    create: ['Crear registros en {tableName}'],
+    update: ['Editar registros de {tableName}'],
+    delete: ['Eliminar registros de {tableName}'],
     keywords: ['cita', 'citas', 'agenda', 'calendario', 'reserva', 'reservas', 'appointment']
   },
   
   // Tablas de contactos/clientes
   contacts: {
     icon: '👥',
-    query: ['Buscar clientes', 'Consultar información de contacto', 'Ver historial'],
-    create: ['Registrar clientes'],
-    update: ['Actualizar información de clientes'],
-    delete: ['Eliminar clientes'],
+    query: ['Consultar {tableName}'],
+    create: ['Crear nuevos registros en {tableName}'],
+    update: ['Editar registros de {tableName}'],
+    delete: ['Eliminar registros de {tableName}'],
     keywords: ['cliente', 'clientes', 'contacto', 'contactos', 'paciente', 'pacientes', 'customer']
   },
   
   // Tablas de productos/inventario
   products: {
     icon: '📦',
-    query: ['Consultar productos', 'Ver precios', 'Buscar por categoría', 'Verificar stock'],
-    create: ['Agregar productos'],
-    update: ['Actualizar productos'],
-    delete: ['Eliminar productos'],
+    query: ['Consultar {tableName}'],
+    create: ['Crear registros en {tableName}'],
+    update: ['Editar registros de {tableName}'],
+    delete: ['Eliminar registros de {tableName}'],
     keywords: ['producto', 'productos', 'inventario', 'stock', 'artículo', 'item']
   },
   
   // Tablas de servicios ofrecidos
   services: {
     icon: '💼',
-    query: ['Consultar servicios', 'Ver precios de servicios', 'Información de servicios'],
-    create: ['Agregar servicios'],
-    update: ['Modificar servicios'],
-    delete: ['Eliminar servicios'],
+    query: ['Consultar {tableName}'],
+    create: ['Crear registros en {tableName}'],
+    update: ['Editar registros de {tableName}'],
+    delete: ['Eliminar registros de {tableName}'],
     keywords: ['servicio', 'servicios', 'tratamiento', 'tratamientos', 'service']
   },
   
   // Tablas de ventas/pedidos
   orders: {
     icon: '🛒',
-    query: ['Consultar pedidos', 'Ver estado de pedido', 'Historial de compras'],
-    create: ['Crear pedidos'],
-    update: ['Modificar pedidos'],
-    delete: ['Cancelar pedidos'],
+    query: ['Consultar {tableName}'],
+    create: ['Crear registros en {tableName}'],
+    update: ['Editar registros de {tableName}'],
+    delete: ['Eliminar registros de {tableName}'],
     keywords: ['venta', 'ventas', 'pedido', 'pedidos', 'orden', 'ordenes', 'order', 'sale']
   },
   
   // Tablas de empleados/staff
   staff: {
     icon: '👨‍⚕️',
-    query: ['Ver disponibilidad de personal', 'Información de especialistas'],
-    create: ['Agregar personal'],
-    update: ['Actualizar información de personal'],
-    delete: ['Dar de baja personal'],
+    query: ['Consultar {tableName}'],
+    create: ['Crear registros en {tableName}'],
+    update: ['Editar registros de {tableName}'],
+    delete: ['Eliminar registros de {tableName}'],
     keywords: ['empleado', 'empleados', 'doctor', 'doctores', 'staff', 'personal', 'especialista']
   },
   
   // Tabla genérica/custom
   custom: {
     icon: '📋',
-    query: ['Consultar registros', 'Buscar información'],
-    create: ['Crear registros'],
-    update: ['Modificar registros'],
-    delete: ['Eliminar registros'],
+    query: ['Consultar {tableName}'],
+    create: ['Crear registros en {tableName}'],
+    update: ['Editar registros de {tableName}'],
+    delete: ['Eliminar registros de {tableName}'],
     keywords: []
   }
 };
@@ -181,16 +181,60 @@ export class AgentCapabilities {
   
   /**
    * Obtiene todas las capacidades del agente
-   * @param {object} agent - El agente
-   * @param {array} tables - Tablas vinculadas al agente
+   * @param {object} agent - El agente (incluye agent.tables con permisos)
+   * @param {array} tables - Tablas reales del workspace
    * @returns {object} - Capacidades completas
    */
   static getCapabilities(agent, tables = []) {
     const industry = agent.businessInfo?.industry || detectIndustry(tables);
     const companyName = agent.businessInfo?.companyName || agent.name || 'Asistente';
     
-    // Servicios derivados de las tablas (considera permisos)
-    const derivedServices = this.deriveServicesFromTables(tables);
+    // Crear mapa de permisos del agente por tableId
+    // Soportar múltiples formatos de agent.tables
+    const agentTableConfig = new Map();
+    (agent.tables || []).forEach(t => {
+      // Normalizar: puede ser string o objeto con diferentes propiedades
+      let tableId, permissions;
+      
+      if (typeof t === 'string') {
+        tableId = t;
+        permissions = { query: true, create: true, update: false, delete: false };
+      } else {
+        // Buscar tableId en diferentes propiedades posibles
+        tableId = t.tableId || t.id || t._id;
+        permissions = t.permissions || { query: true, create: true, update: false, delete: false };
+      }
+      
+      if (tableId) {
+        agentTableConfig.set(tableId, permissions);
+      }
+    });
+    
+    // Filtrar solo las tablas que el agente tiene configuradas
+    // Soportar múltiples formatos
+    const agentTableIds = new Set((agent.tables || []).map(t => {
+      if (typeof t === 'string') return t;
+      return t.tableId || t.id || t._id;
+    }).filter(Boolean));
+    
+    // Soportar tanto _id como id (tablesInfo usa id)
+    const linkedTables = tables.filter(t => agentTableIds.has(t._id || t.id));
+    
+    // Si no hay tablas configuradas, usar todas las disponibles con permisos por defecto
+    const effectiveTables = linkedTables.length > 0 ? linkedTables : tables;
+    
+    // Merge tablas con permisos del agente
+    const tablesWithAgentPermissions = effectiveTables.map(t => {
+      const tableId = t._id || t.id;
+      const agentPerms = agentTableConfig.get(tableId);
+      return {
+        ...t,
+        agentPermissions: agentPerms || { query: true, create: true, update: false, delete: false }
+      };
+    });
+    
+    // Servicios derivados de las tablas (usa permisos del agente)
+    const derivedServices = this.deriveServicesFromTables(tablesWithAgentPermissions, true);
     
     // Limitaciones (las del usuario + las default de la industria)
     const userLimitations = agent.limitations || [];
@@ -206,13 +250,13 @@ export class AgentCapabilities {
       },
       services: derivedServices,
       limitations: allLimitations,
-      tables: tables.map(t => {
-        // Obtener permisos reales (con defaults del esquema)
-        const permissions = {
-          query: t.permissions?.allowQuery !== false,    // default: true
-          create: t.permissions?.allowCreate !== false,  // default: true
-          update: t.permissions?.allowUpdate !== false,  // default: true
-          delete: t.permissions?.allowDelete === true,   // default: false
+      tables: tablesWithAgentPermissions.map(t => {
+        // Usar permisos del agente, no de la tabla
+        const permissions = t.agentPermissions || {
+          query: true,
+          create: true,
+          update: false,
+          delete: false,
         };
         return {
           id: t._id,
@@ -227,8 +271,10 @@ export class AgentCapabilities {
   
   /**
    * Deriva servicios automáticamente de las tablas
+   * @param {array} tables - Tablas con agentPermissions ya mergeados
+   * @param {boolean} useAgentPermissions - Si usar permisos del agente (nuevo) o de la tabla (legacy)
    */
-  static deriveServicesFromTables(tables) {
+  static deriveServicesFromTables(tables, useAgentPermissions = false) {
     const servicesSet = new Set();
     const servicesList = [];
     
@@ -237,18 +283,31 @@ export class AgentCapabilities {
       const config = TABLE_TYPE_TO_SERVICES[type] || TABLE_TYPE_TO_SERVICES.custom;
       const tableName = table.name || 'registros';
       
-      // Obtener permisos efectivos de la tabla
-      const permissions = {
-        allowQuery: true,
-        allowCreate: true,
-        allowUpdate: true,
-        allowDelete: false,
-        ...(table.permissions || {})
-      };
+      // Obtener permisos - usar del agente si disponibles, sino de la tabla
+      let permissions;
+      if (useAgentPermissions && table.agentPermissions) {
+        // Ser más permisivo en la evaluación de permisos (truthy en vez de === true)
+        permissions = {
+          allowQuery: table.agentPermissions.query !== false,
+          allowCreate: !!table.agentPermissions.create,
+          allowUpdate: !!table.agentPermissions.update,
+          allowDelete: !!table.agentPermissions.delete,
+        };
+      } else {
+        permissions = {
+          allowQuery: true,
+          allowCreate: true,
+          allowUpdate: true,
+          allowDelete: false,
+          ...(table.permissions || {})
+        };
+      }
       
       // Agregar servicios según permisos
       const addServices = (servicesArray, icon) => {
-        servicesArray.forEach(service => {
+        servicesArray.forEach(serviceTemplate => {
+          // Reemplazar {tableName} con el nombre real de la tabla
+          const service = serviceTemplate.replace('{tableName}', tableName);
           if (!servicesSet.has(service)) {
             servicesSet.add(service);
             servicesList.push({
@@ -294,6 +353,7 @@ export class AgentCapabilities {
   
   /**
    * Genera texto para cuando el usuario pregunta "¿qué puedes hacer?"
+   * Muestra capacidades de forma amigable sin mencionar detalles técnicos
    */
   static generateHelpText(agent, tables = []) {
     const caps = this.getCapabilities(agent, tables);
@@ -304,19 +364,49 @@ export class AgentCapabilities {
     }
     text += '.\n\n';
     
-    text += '**Puedo ayudarte con:**\n';
-    caps.services.forEach(s => {
-      text += `${s.icon} ${s.text}\n`;
-    });
-    
-    if (caps.limitations.length > 0) {
-      text += '\n**Importante:**\n';
-      caps.limitations.slice(0, 3).forEach(l => {
-        text += `⚠️ ${l}\n`;
-      });
+    // Agrupar capacidades de forma amigable
+    if (caps.tables && caps.tables.length > 0) {
+      // Recopilar todas las acciones únicas
+      const canQuery = caps.tables.some(t => t.permissions?.query);
+      const canCreate = caps.tables.some(t => t.permissions?.create);
+      const canUpdate = caps.tables.some(t => t.permissions?.update);
+      const canDelete = caps.tables.some(t => t.permissions?.delete);
+      
+      // Construir lista de capacidades de forma natural
+      const capabilities = [];
+      
+      if (canQuery) {
+        capabilities.push('📋 Consultar información y responder preguntas');
+      }
+      if (canCreate) {
+        capabilities.push('✏️ Registrar nuevos datos');
+      }
+      if (canUpdate) {
+        capabilities.push('🔄 Modificar información existente');
+      }
+      if (canDelete) {
+        capabilities.push('🗑️ Eliminar registros cuando lo necesites');
+      }
+      
+      if (capabilities.length > 0) {
+        text += '**Puedo ayudarte a:**\n';
+        capabilities.forEach(cap => {
+          text += `${cap}\n`;
+        });
+        text += '\n';
+      }
     }
     
-    text += '\n¿En qué te puedo ayudar?';
+    // Mostrar limitaciones si las hay (máximo 2 para no saturar)
+    if (caps.limitations.length > 0) {
+      text += '**Ten en cuenta:**\n';
+      caps.limitations.slice(0, 2).forEach(l => {
+        text += `⚠️ ${l}\n`;
+      });
+      text += '\n';
+    }
+    
+    text += '¿En qué te puedo ayudar?';
     
     return text;
   }

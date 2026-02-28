@@ -393,11 +393,9 @@ export async function seed() {
       name: 'Asistente de Ventas',
       description: 'Especializado en registrar ventas y gestionar clientes',
       tables: [
-        { tableId: clientesTableId, fullAccess: true },
-        { tableId: productosTableId, fullAccess: true },
-        { tableId: ventasTableId, fullAccess: true },
-        { tableId: proveedoresTableId, fullAccess: true },
-        { tableId: facturasTableId, fullAccess: true },
+        { tableId: clientesTableId, tableName: 'Clientes', fullAccess: true, permissions: { query: true, create: true, update: true, delete: false } },
+        { tableId: productosTableId, tableName: 'Productos', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } },
+        { tableId: ventasTableId, tableName: 'Ventas', fullAccess: true, permissions: { query: true, create: true, update: false, delete: false } },
       ],
       
       // ═══════════════════════════════════════════════════════════
@@ -504,16 +502,13 @@ Mantén un tono profesional y amigable. Usa emojis apropiados.`,
       _id: agenteEstadisticasId,
       type: 'agent',
       name: 'Analista de Datos',
-      description: 'Especializado en análisis y reportes',
+      description: 'Especializado en analisis y reportes',
       tables: [
-        { tableId: clientesTableId, fullAccess: true },
-        { tableId: productosTableId, fullAccess: true },
-        { tableId: ventasTableId, fullAccess: true },
-        { tableId: seguimientosTableId, fullAccess: true },
-        { tableId: tareasTableId, fullAccess: true },
-        { tableId: proveedoresTableId, fullAccess: true },
-        { tableId: facturasTableId, fullAccess: true },
-        { tableId: campanasTableId, fullAccess: true },
+        { tableId: clientesTableId, tableName: 'Clientes', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } },
+        { tableId: productosTableId, tableName: 'Productos', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } },
+        { tableId: ventasTableId, tableName: 'Ventas', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } },
+        { tableId: seguimientosTableId, tableName: 'Seguimientos', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } },
+        { tableId: tareasTableId, tableName: 'Tareas', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } },
       ],
       
       // ═══════════════════════════════════════════════════════════
@@ -800,19 +795,19 @@ Sé analítico, objetivo y orientado a resultados. Usa gráficos de texto cuando
         // Trigger → Query Cliente
         { id: 'e1', source: 'trigger-1', target: 'query-cliente' },
         // Query Cliente: NO → Crear cliente nuevo
-        { id: 'e2-no', source: 'query-cliente', sourceHandle: 'no', target: 'create-cliente', label: 'No' },
+        { id: 'e2-no', source: 'query-cliente', sourceHandle: 'false', target: 'create-cliente', label: 'No' },
         // Crear cliente → Query Producto
         { id: 'e2-create', source: 'create-cliente', target: 'query-producto' },
         // Query Cliente: YES → Query Producto
-        { id: 'e2-yes', source: 'query-cliente', sourceHandle: 'yes', target: 'query-producto', label: 'Sí' },
+        { id: 'e2-yes', source: 'query-cliente', sourceHandle: 'true', target: 'query-producto', label: 'Sí' },
         // Query Producto: NO → Error
-        { id: 'e3-no', source: 'query-producto', sourceHandle: 'no', target: 'error-producto', label: 'No' },
+        { id: 'e3-no', source: 'query-producto', sourceHandle: 'false', target: 'error-producto', label: 'No' },
         // Query Producto: YES → Condition Stock
-        { id: 'e3-yes', source: 'query-producto', sourceHandle: 'yes', target: 'condition-stock', label: 'Sí' },
+        { id: 'e3-yes', source: 'query-producto', sourceHandle: 'true', target: 'condition-stock', label: 'Sí' },
         // Condition Stock: NO → Error
-        { id: 'e4-no', source: 'condition-stock', sourceHandle: 'no', target: 'error-stock', label: 'No' },
+        { id: 'e4-no', source: 'condition-stock', sourceHandle: 'false', target: 'error-stock', label: 'No' },
         // Condition Stock: YES → Allow
-        { id: 'e4-yes', source: 'condition-stock', sourceHandle: 'yes', target: 'allow-venta', label: 'Sí' },
+        { id: 'e4-yes', source: 'condition-stock', sourceHandle: 'true', target: 'allow-venta', label: 'Sí' },
         // Allow → Update Total
         { id: 'e5', source: 'allow-venta', target: 'update-total' },
         // Update Total → Update Stock

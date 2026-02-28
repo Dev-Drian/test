@@ -4,6 +4,7 @@ import { WorkspaceContext } from "../context/WorkspaceContext";
 import { listTables, createTable, updateTable, getTableData, addTableRow, updateTableRow, deleteTableRow } from "../api/client";
 import TableBuilder from "../components/TableBuilder";
 import { useToast, useConfirm } from "../components/Toast";
+import { FieldValidator } from "../utils/FieldValidator";
 
 // Iconos SVG compactos
 const Icons = {
@@ -44,6 +45,7 @@ export default function Tables() {
   const [rowForm, setRowForm] = useState({});
   const [addingRow, setAddingRow] = useState(false);
   const [rowError, setRowError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({}); // Errores por campo
 
   // Search & Edit state
   const [searchQuery, setSearchQuery] = useState("");
@@ -52,6 +54,7 @@ export default function Tables() {
   const [editForm, setEditForm] = useState({});
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingRow, setDeletingRow] = useState(null);
+  const [editFieldErrors, setEditFieldErrors] = useState({}); // Errores de edición
   
   // Edit table structure state
   const [editingTableConfig, setEditingTableConfig] = useState(null);
@@ -95,10 +98,35 @@ export default function Tables() {
     }
   };
 
+  // Validar un campo individual mientras escribe
+  const validateField = (key, value) => {
+    if (!selectedTable?.headers) return;
+    const header = selectedTable.headers.find(h => h.key === key);
+    if (!header) return;
+    
+    const result = FieldValidator.validate(key, value, header);
+    setFieldErrors(prev => ({
+      ...prev,
+      [key]: result.valid ? null : result.error
+    }));
+  };
+
   const handleAddRow = async (e) => {
     e.preventDefault();
     if (!workspaceId || !selectedTable) return;
+    
+    // Validar todos los campos antes de enviar
+    const validation = FieldValidator.validateAll(rowForm, selectedTable.headers || []);
+    if (!validation.valid) {
+      setFieldErrors(validation.errors);
+      const firstError = Object.values(validation.errors)[0];
+      setRowError(firstError);
+      toast.error(firstError);
+      return;
+    }
+    
     setRowError("");
+    setFieldErrors({});
     setAddingRow(true);
     try {
       await addTableRow(workspaceId, selectedTable._id, rowForm);
@@ -119,14 +147,40 @@ export default function Tables() {
   const handleEditRow = (row) => {
     setEditingRow(row._id);
     setEditForm({ ...row });
+    setEditFieldErrors({});
+  };
+
+  // Validar campo en edición
+  const validateEditField = (key, value) => {
+    if (!selectedTable?.headers) return;
+    const header = selectedTable.headers.find(h => h.key === key);
+    if (!header) return;
+    
+    const result = FieldValidator.validate(key, value, header);
+    setEditFieldErrors(prev => ({
+      ...prev,
+      [key]: result.valid ? null : result.error
+    }));
   };
 
   const handleSaveEdit = async () => {
     if (!workspaceId || !selectedTable || !editingRow) return;
+    
+    // Filtrar campos internos para validación
+    const { _id, _rev, tableId, createdAt, updatedAt, ...data } = editForm;
+    
+    // Validar antes de guardar
+    const validation = FieldValidator.validateAll(data, selectedTable.headers || []);
+    if (!validation.valid) {
+      setEditFieldErrors(validation.errors);
+      const firstError = Object.values(validation.errors)[0];
+      toast.error(firstError);
+      return;
+    }
+    
     setSavingEdit(true);
+    setEditFieldErrors({});
     try {
-      // Filtrar campos internos
-      const { _id, _rev, tableId, createdAt, updatedAt, ...data } = editForm;
       await updateTableRow(workspaceId, selectedTable._id, editingRow, data);
       const res = await getTableData(workspaceId, selectedTable._id);
       setTableData(res.data || []);
@@ -143,6 +197,7 @@ export default function Tables() {
   const handleCancelEdit = () => {
     setEditingRow(null);
     setEditForm({});
+    setEditFieldErrors({});
   };
 
   // Actualizar configuración de la tabla (solo si está vacía)
@@ -318,19 +373,30 @@ export default function Tables() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#0f172a' }}>
-      {/* Modal de creación */}
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #0a0a0f 0%, #0f0f18 100%)' }} data-tour="tables-welcome">
+      {/* Modal de creación - Rediseñado */}
       {showBuilder && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl animate-scale-in" style={{ background: '#1e293b', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
-            <div className="sticky top-0 px-6 py-4 flex items-center justify-between z-10" style={{ background: '#1e293b', borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl animate-scale-in"
+            style={{ 
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)',
+              backdropFilter: 'blur(40px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 100px rgba(139, 92, 246, 0.15)'
+            }}>
+            <div className="sticky top-0 px-6 py-5 flex items-center justify-between z-10" 
+              style={{ 
+                background: 'linear-gradient(180deg, rgba(10, 10, 15, 0.95) 0%, rgba(10, 10, 15, 0.9) 100%)',
+                backdropFilter: 'blur(20px)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+              }}>
               <div>
-                <h2 className="text-xl font-semibold text-slate-100">Crear nueva tabla</h2>
-                <p className="text-sm text-slate-400">Define la estructura de tus datos</p>
+                <h2 className="text-xl font-bold text-white">Crear nueva tabla</h2>
+                <p className="text-sm text-slate-400 mt-1">Define la estructura de tus datos</p>
               </div>
               <button
                 onClick={() => setShowBuilder(false)}
-                className="p-2 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-700/50 transition-all"
+                className="p-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all"
               >
                 {Icons.close}
               </button>
@@ -347,15 +413,21 @@ export default function Tables() {
         </div>
       )}
       
-      {/* Modal para EDITAR tabla existente */}
+      {/* Modal para EDITAR tabla existente - Rediseñado */}
       {editingTableConfig && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" style={{ background: '#1e293b', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
-            <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
-              <h2 className="text-lg font-semibold text-slate-100">Editar configuración de "{editingTableConfig.name}"</h2>
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+            style={{ 
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)',
+              backdropFilter: 'blur(40px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+            }}>
+            <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <h2 className="text-lg font-bold text-white">Editar configuración de "{editingTableConfig.name}"</h2>
               <button
                 onClick={() => setEditingTableConfig(null)}
-                className="p-2 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-700/50 transition-all"
+                className="p-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all"
               >
                 {Icons.close}
               </button>
@@ -376,24 +448,32 @@ export default function Tables() {
       <div className="p-8">
         <div className="max-w-7xl mx-auto">
           
-          {/* Header */}
-          <header className="mb-8 animate-fade-up">
+          {/* Header - Rediseñado */}
+          <header className="mb-10">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white">
-                  {Icons.table}
+              <div className="flex items-center gap-5">
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 blur-lg opacity-50" />
+                  <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-xl text-white">
+                    {Icons.table}
+                  </div>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-semibold text-slate-100 tracking-tight">Tablas</h1>
-                  <p className="text-sm text-slate-400 mt-0.5">
-                    Gestiona los datos de {workspaceName}
+                  <h1 className="text-3xl font-bold text-white tracking-tight">Tablas</h1>
+                  <p className="text-slate-400 mt-1">
+                    Gestiona los datos de <span className="text-violet-400 font-medium">{workspaceName}</span>
                   </p>
                 </div>
               </div>
               
               <button 
                 onClick={() => setShowBuilder(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-400 transition-colors shadow-lg shadow-indigo-500/30"
+                data-tour="tables-create"
+                className="flex items-center gap-2 px-5 py-3 rounded-xl text-white text-sm font-semibold transition-all duration-300 hover:scale-105 active:scale-95"
+                style={{
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
+                  boxShadow: '0 8px 30px rgba(139, 92, 246, 0.4)'
+                }}
               >
                 {Icons.plus}
                 <span>Nueva tabla</span>
@@ -437,7 +517,7 @@ export default function Tables() {
           ) : (
             <div className="grid grid-cols-12 gap-8 animate-fade-up">
               {/* Sidebar - Lista de tablas */}
-              <div className="col-span-12 lg:col-span-3">
+              <div className="col-span-12 lg:col-span-3" data-tour="tables-list">
                 <div className="sticky top-8">
                   <div className="p-5 rounded-2xl" style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
                     <div className="flex items-center justify-between mb-4">
@@ -463,22 +543,27 @@ export default function Tables() {
                     </div>
                     
                     <div className="space-y-3">
-                      {tables.filter(t => !searchQuery.trim() || t.name.toLowerCase().includes(searchQuery.toLowerCase())).map((t) => (
+                      {tables.filter(t => !searchQuery.trim() || t.name.toLowerCase().includes(searchQuery.toLowerCase())).map((t, index) => (
                         <button
                           key={t._id}
                           onClick={() => setSelectedTable(t)}
-                          className={`w-full text-left p-4 rounded-xl transition-all duration-200 group h-20 flex items-center ${
+                          className={`w-full text-left p-4 rounded-xl transition-all duration-300 group h-20 flex items-center hover:scale-[1.02] ${
                             selectedTable?._id === t._id
                               ? "bg-indigo-500/15 shadow-lg"
                               : "hover:bg-slate-600/30"
                           }`}
-                          style={{ border: selectedTable?._id === t._id ? '1px solid rgba(99, 102, 241, 0.4)' : '1px solid transparent' }}
+                          style={{ 
+                            border: selectedTable?._id === t._id ? '1px solid rgba(99, 102, 241, 0.4)' : '1px solid transparent',
+                            animation: 'fade-up 0.3s ease-out forwards',
+                            animationDelay: `${index * 50}ms`,
+                            opacity: 0
+                          }}
                         >
                           <div className="flex items-center gap-4 w-full">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0 ${
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 shrink-0 ${
                               selectedTable?._id === t._id 
-                                ? 'bg-indigo-500 text-white' 
-                                : 'bg-slate-600/50 text-slate-400 group-hover:bg-slate-600'
+                                ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' 
+                                : 'bg-slate-600/50 text-slate-400 group-hover:bg-slate-600 group-hover:shadow-md'
                             }`}>
                               {Icons.table}
                             </div>
@@ -501,7 +586,7 @@ export default function Tables() {
               </div>
 
               {/* Main content - Datos de la tabla */}
-              <div className="col-span-12 lg:col-span-9">
+              <div className="col-span-12 lg:col-span-9" data-tour="tables-data">
                 {!selectedTable ? (
                   <div className="relative h-[500px] flex items-center justify-center rounded-2xl overflow-hidden" style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
                     <div className="text-center z-10">
@@ -663,14 +748,33 @@ export default function Tables() {
                                   {header.required && <span className="text-red-400 ml-1">*</span>}
                                 </label>
                                 <input
-                                  type={header.type === "number" ? "number" : header.type === "date" ? "date" : header.type === "email" ? "email" : "text"}
+                                  type={header.type === "number" || header.type === "integer" || header.type === "currency" ? "number" : header.type === "date" ? "date" : header.type === "time" ? "time" : header.type === "email" ? "email" : "text"}
                                   value={rowForm[header.key] || ""}
-                                  onChange={(e) => setRowForm({ ...rowForm, [header.key]: e.target.value })}
-                                  placeholder={header.label}
-                                  className="w-full px-3 py-2.5 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all"
-                                  style={{ background: 'rgba(71, 85, 105, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}
-                                  required={header.required}
+                                  onChange={(e) => {
+                                    setRowForm({ ...rowForm, [header.key]: e.target.value });
+                                    validateField(header.key, e.target.value);
+                                  }}
+                                  onBlur={(e) => validateField(header.key, e.target.value)}
+                                  placeholder={header.placeholder || header.label}
+                                  className={`w-full px-3 py-2.5 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 transition-all ${
+                                    fieldErrors[header.key] 
+                                      ? 'ring-2 ring-red-500/50 focus:ring-red-500/50' 
+                                      : 'focus:ring-indigo-500/30'
+                                  }`}
+                                  style={{ 
+                                    background: 'rgba(71, 85, 105, 0.4)', 
+                                    border: fieldErrors[header.key] ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(100, 116, 139, 0.3)' 
+                                  }}
+                                  min={header.type === "number" && header.validation?.min !== undefined ? header.validation.min : undefined}
+                                  max={header.type === "number" && header.validation?.max !== undefined ? header.validation.max : undefined}
+                                  step={header.type === "integer" ? "1" : header.type === "currency" ? "0.01" : undefined}
                                 />
+                                {fieldErrors[header.key] && (
+                                  <p className="text-xs text-red-400 mt-1">{fieldErrors[header.key]}</p>
+                                )}
+                                {header.helpText && !fieldErrors[header.key] && (
+                                  <p className="text-xs text-slate-500 mt-1">{header.helpText}</p>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -699,7 +803,7 @@ export default function Tables() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => setShowAddRow(false)}
+                              onClick={() => { setShowAddRow(false); setFieldErrors({}); setRowError(""); }}
                               className="px-4 py-2 rounded-lg text-slate-400 text-sm font-medium hover:bg-slate-600/50 hover:text-slate-200 transition-all"
                               style={{ border: '1px solid rgba(100, 116, 139, 0.3)' }}
                             >
@@ -763,21 +867,39 @@ export default function Tables() {
                                 <td className="py-3 px-4 text-slate-500 text-xs font-mono">{i + 1}</td>
                                 {Object.keys(tableData[0])
                                   .filter((k) => !k.startsWith("_") && k !== "main" && k !== "tableId" && k !== "createdAt" && k !== "updatedAt")
-                                  .map((k) => (
+                                  .map((k) => {
+                                    const header = selectedTable?.headers?.find(h => h.key === k);
+                                    return (
                                     <td key={k} className="py-3 px-4 text-slate-400 text-sm group-hover:text-slate-200 transition-colors" style={{ minWidth: '130px', borderLeft: '1px solid rgba(100, 116, 139, 0.2)' }}>
                                       {editingRow === row._id ? (
-                                        <input
-                                          type="text"
-                                          value={editForm[k] ?? ""}
-                                          onChange={(e) => setEditForm({ ...editForm, [k]: e.target.value })}
-                                          className="w-full px-2 py-1.5 rounded text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
-                                          style={{ background: 'rgba(71, 85, 105, 0.5)', border: '1px solid rgba(100, 116, 139, 0.4)' }}
-                                        />
+                                        <div>
+                                          <input
+                                            type={header?.type === "number" || header?.type === "integer" || header?.type === "currency" ? "number" : header?.type === "date" ? "date" : header?.type === "time" ? "time" : header?.type === "email" ? "email" : "text"}
+                                            value={editForm[k] ?? ""}
+                                            onChange={(e) => {
+                                              setEditForm({ ...editForm, [k]: e.target.value });
+                                              if (header) validateEditField(k, e.target.value);
+                                            }}
+                                            onBlur={(e) => header && validateEditField(k, e.target.value)}
+                                            className={`w-full px-2 py-1.5 rounded text-slate-100 text-sm focus:outline-none focus:ring-2 ${
+                                              editFieldErrors[k] ? 'ring-2 ring-red-500/50' : 'focus:ring-indigo-500/30'
+                                            }`}
+                                            style={{ 
+                                              background: 'rgba(71, 85, 105, 0.5)', 
+                                              border: editFieldErrors[k] ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(100, 116, 139, 0.4)' 
+                                            }}
+                                            min={header?.type === "number" && header?.validation?.min !== undefined ? header.validation.min : undefined}
+                                            max={header?.type === "number" && header?.validation?.max !== undefined ? header.validation.max : undefined}
+                                          />
+                                          {editFieldErrors[k] && (
+                                            <p className="text-xs text-red-400 mt-1 truncate" title={editFieldErrors[k]}>{editFieldErrors[k]}</p>
+                                          )}
+                                        </div>
                                       ) : (
                                         <span className="block truncate" title={String(row[k] ?? "-")}>{String(row[k] ?? "-")}</span>
                                       )}
                                     </td>
-                                  ))}
+                                  );})}
                                 <td className="py-3 px-3" style={{ borderLeft: '1px solid rgba(100, 116, 139, 0.2)' }}>
                                   <div className="flex items-center justify-center gap-1">
                                     {editingRow === row._id ? (

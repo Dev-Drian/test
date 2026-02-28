@@ -175,7 +175,6 @@ export class OpenAIProvider extends AIProvider {
     const msgLower = msg.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     
     // ═══ PRE-CHECK: Si menciona una tabla conocida → VALID ═══
-    // Esto evita clasificar "que tipo de clientes existen" como garbage
     if (tableNames.length > 0) {
       const tableNamesLower = tableNames.map(t => 
         t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -189,10 +188,32 @@ export class OpenAIProvider extends AIProvider {
       }
     }
     
-    // Palabras clave de consultas válidas (preguntas sobre datos)
-    const queryKeywords = ['que', 'cual', 'cuales', 'cuantos', 'cuantas', 'mostrar', 'dame', 'lista', 'buscar', 'ver', 'existen', 'hay', 'tienen'];
-    const hasQueryKeyword = queryKeywords.some(kw => msgLower.includes(kw));
-    if (hasQueryKeyword && msg.length > 10) {
+    // ═══ KEYWORDS MULTIIDIOMA (español, inglés, portugués) ═══
+    const validKeywords = [
+      // Español
+      'que', 'cual', 'cuales', 'cuantos', 'cuantas', 'mostrar', 'dame', 'lista', 
+      'buscar', 'ver', 'existen', 'hay', 'tienen', 'quiero', 'necesito', 'agendar',
+      'registrar', 'crear', 'nuevo', 'nueva', 'agregar', 'cancelar', 'modificar',
+      'hola', 'buenos', 'buenas', 'gracias', 'soy', 'me llamo',
+      // Inglés
+      'show', 'list', 'find', 'search', 'get', 'want', 'need', 'book', 'schedule',
+      'create', 'new', 'add', 'cancel', 'update', 'modify', 'hello', 'hi', 'thanks',
+      'please', 'client', 'customer', 'appointment', 'sale', 'product', 'order',
+      // Portugués
+      'mostrar', 'listar', 'buscar', 'quero', 'preciso', 'agendar', 'criar', 'novo',
+      'ola', 'obrigado', 'cliente', 'venda', 'produto',
+      // Acciones comunes con typos
+      'agndar', 'agnedar', 'registar', 'creat', 'mostrame', 'damelo'
+    ];
+    
+    const hasValidKeyword = validKeywords.some(kw => msgLower.includes(kw));
+    if (hasValidKeyword) {
+      return { category: 'VALID', isValid: true };
+    }
+    
+    // ═══ MENSAJES LARGOS (>15 chars) CON ESTRUCTURA → VALID ═══
+    // Si tiene más de 15 caracteres y palabras coherentes, probablemente es válido
+    if (msg.length > 15 && /[a-záéíóúñ]{3,}/i.test(msg)) {
       return { category: 'VALID', isValid: true };
     }
     
@@ -208,7 +229,7 @@ export class OpenAIProvider extends AIProvider {
     }
     
     // Mensajes cortos que son respuestas comunes
-    const shortValidResponses = ['si', 'sí', 'no', 'ok', 'hola', 'gracias', 'cancelar'];
+    const shortValidResponses = ['si', 'sí', 'no', 'ok', 'hola', 'gracias', 'cancelar', 'yes', 'hi', 'hey', 'hello', 'thanks'];
     if (shortValidResponses.includes(msg.toLowerCase())) {
       return { category: 'VALID', isValid: true };
     }
@@ -218,30 +239,39 @@ export class OpenAIProvider extends AIProvider {
       return { category: 'VALID', isValid: true };
     }
     
+    // Si tiene emojis, probablemente es válido
+    if (/[\u{1F300}-\u{1F9FF}]/u.test(msg)) {
+      return { category: 'VALID', isValid: true };
+    }
+    
     const prompt = `Clasifica el mensaje en UNA categoría:
 
-- VALID: Mensaje coherente, solicitud, datos, nombres, productos, cantidades, fechas
-- GARBAGE: Texto sin sentido, caracteres aleatorios (ej: "asdfasdf", "aaaa", "xyzxyz")
+- VALID: Mensaje coherente en CUALQUIER idioma (español, inglés, portugués, etc.), solicitud, datos, nombres, productos, cantidades, fechas, saludos, preguntas
+- GARBAGE: SOLO texto completamente incoherente: caracteres aleatorios (ej: "asdfasdf", "aaaa", "xyzxyz", "!@#$%^")
 - SPAM: Publicidad externa no solicitada (ej: "COMPRA VIAGRA", "Gana dinero fácil")
 - ABUSE: Insultos, amenazas, contenido ofensivo
 
 IMPORTANTE - Son VALID (NO son SPAM ni GARBAGE):
+- Cualquier mensaje en INGLÉS: "show me clients", "I want to book", "list products"
+- Cualquier mensaje en PORTUGUÉS: "mostrar clientes", "quero agendar"
+- SPANGLISH/mezclado: "quiero make an appointment", "necesito el product"
+- Mensajes con TYPOS: "agndar sita", "mostrame los cleintes", "qiero ver"
 - Datos de transacciones: "Juan compro 100 productos"
 - Nombres con cantidades: "Maria, 50 licencias"
+- Mensajes completos: "Hola, soy Luis y quiero registrar una venta"
 - Respuestas a formularios con datos
-- Cualquier mensaje con información de negocio
-- Emails de CUALQUIER dominio (gmail, outlook, .site, .tech, .xyz, etc.)
-- Números de teléfono (secuencias de dígitos de 8-15 caracteres)
-- URLs y dominios
-- Nombres de empresas o productos
+- Emails de CUALQUIER dominio
+- Números de teléfono
+- Mensajes con emojis: "👋 hola", "quiero info 😊"
 
 Reglas:
-1. Si tiene nombres de personas + datos → VALID
-2. Si tiene productos + cantidades → VALID
-3. Mensajes cortos ("hola", "si", "ok") → VALID
-4. Emails con cualquier dominio → VALID
-5. Secuencias de dígitos (teléfonos, códigos) → VALID
-6. Si dudas → VALID
+1. Si tiene palabras reconocibles en cualquier idioma → VALID
+2. Si tiene nombres de personas o datos → VALID
+3. Si tiene errores ortográficos pero es entendible → VALID
+4. Si tiene emojis → VALID
+5. Si parece una solicitud legítima → VALID
+6. SOLO marcar GARBAGE si es texto completamente aleatorio sin sentido
+7. Si dudas → VALID
 
 Mensaje: "${String(message).slice(0, 200)}"
 

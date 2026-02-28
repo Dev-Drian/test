@@ -148,19 +148,22 @@ export default function Workspaces() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f172a] p-8">
+    <div className="min-h-screen p-8" data-tour="workspaces-welcome" style={{ background: 'linear-gradient(135deg, #0a0a0f 0%, #0f0f18 100%)' }}>
       <div className="max-w-5xl mx-auto">
         
-        {/* Header */}
-        <header className="mb-8">
+        {/* Header - Rediseñado */}
+        <header className="mb-10">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                {Icons.workspace}
+            <div className="flex items-center gap-5">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 blur-lg opacity-50" />
+                <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-xl text-white">
+                  {Icons.workspace}
+                </div>
               </div>
               <div>
-                <h1 className="text-2xl font-semibold text-white tracking-tight">Mis Proyectos</h1>
-                <p className="text-sm text-slate-500 mt-0.5">
+                <h1 className="text-3xl font-bold text-white tracking-tight">Mis Proyectos</h1>
+                <p className="text-slate-400 mt-1">
                   Cada proyecto agrupa tus datos y tu asistente de IA
                 </p>
               </div>
@@ -169,7 +172,12 @@ export default function Workspaces() {
             {!showForm && (
               <button 
                 onClick={() => setShowForm(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-400 transition-colors shadow-lg shadow-indigo-500/20"
+                data-tour="workspaces-create"
+                className="flex items-center gap-2 px-5 py-3 rounded-xl text-white text-sm font-semibold transition-all duration-300 hover:scale-105 active:scale-95"
+                style={{
+                  background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                  boxShadow: '0 8px 30px rgba(99, 102, 241, 0.4)'
+                }}
               >
                 {Icons.plus}
                 <span>Nuevo proyecto</span>
@@ -180,8 +188,8 @@ export default function Workspaces() {
 
         {/* Error */}
         {error && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center shrink-0">
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-2xl flex items-center gap-3 backdrop-blur-sm">
+            <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center shrink-0">
               <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -189,15 +197,20 @@ export default function Workspaces() {
             <div className="flex-1">
               <p className="text-sm text-red-400">{error}</p>
             </div>
-            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-300">
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-300 transition-colors">
               {Icons.close}
             </button>
           </div>
         )}
 
-        {/* Formulario de creación */}
+        {/* Formulario de creación - Rediseñado */}
         {showForm && (
-          <div className="mb-8 p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+          <div className="mb-8 p-6 rounded-2xl"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+            }}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold text-white">Crear nuevo proyecto</h2>
               <button onClick={resetForm} className="text-slate-500 hover:text-white transition-colors">
@@ -386,11 +399,16 @@ export default function Workspaces() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {workspaces.filter(ws => ws._id !== workspaceId).map((ws) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5" data-tour="workspaces-list">
+              {workspaces.filter(ws => ws._id !== workspaceId).map((ws, index) => (
                 <div
                   key={ws._id}
-                  className="group relative p-6 rounded-2xl bg-gradient-to-br from-white/[0.03] to-transparent border border-white/[0.06] hover:border-white/[0.15] hover:shadow-xl hover:shadow-black/20 transition-all duration-300 hover:-translate-y-1"
+                  className="group relative p-6 rounded-2xl bg-gradient-to-br from-white/[0.03] to-transparent border border-white/[0.06] hover:border-white/[0.15] hover:shadow-xl hover:shadow-black/20 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]"
+                  style={{
+                    animation: 'fade-up 0.4s ease-out forwards',
+                    animationDelay: `${index * 80}ms`,
+                    opacity: 0
+                  }}
                 >
                   {/* Hover glow */}
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

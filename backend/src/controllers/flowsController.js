@@ -274,28 +274,65 @@ export async function getNodeTypes(req, res) {
 
 /**
  * Obtener plantillas de flujos (globales)
+ * Filtra por plan del usuario y tipo de negocio
  */
 export async function getFlowTemplates(req, res) {
   try {
     const db = await connectDB(getFlowTemplatesDbName());
+    
+    // Obtener info del usuario
+    const userPlan = req.user?.plan || 'free';
+    const businessType = req.query.businessType || req.user?.businessType || 'general';
+    const category = req.query.category;
+    
+    // Buscar todas las plantillas
     const result = await db.find({
       selector: { isTemplate: true },
-      limit: 100,
+      limit: 200,
     });
     
-    // Agregar la opción "Flujo vacío" al final
+    // Filtrar por plan y tipo de negocio
+    let filtered = (result.docs || []).filter(template => {
+      // Verificar que el plan del usuario esté permitido
+      const allowedPlans = template.requiredPlan || ['free', 'basic', 'professional', 'enterprise'];
+      if (!allowedPlans.includes(userPlan)) return false;
+      
+      // Verificar tipo de negocio
+      const allowedTypes = template.businessTypes || ['general'];
+      if (!allowedTypes.includes(businessType) && !allowedTypes.includes('general')) return false;
+      
+      // Filtrar por categoría si se especifica
+      if (category && category !== 'all' && template.category !== category) return false;
+      
+      return true;
+    });
+    
+    // Agregar la opción "Flujo vacío" al final (disponible para todos)
     const emptyTemplate = {
       _id: 'empty',
-      name: 'Flujo vacío',
-      description: 'Empieza desde cero',
-      icon: '✨',
+      name: 'Flujo vacio',
+      description: 'Empieza desde cero con un lienzo en blanco',
+      icon: 'sparkles',
       color: 'zinc',
       nodes: [],
       edges: [],
       isTemplate: true,
+      category: null,
+      requiredPlan: ['free', 'basic', 'professional', 'enterprise'],
     };
     
-    res.json([...(result.docs || []), emptyTemplate]);
+    res.json({
+      templates: [...filtered, emptyTemplate],
+      categories: [
+        { id: 'all', label: 'Todas', icon: 'grid' },
+        { id: 'business', label: 'Negocio', icon: 'briefcase', description: 'Reservas, citas, pedidos' },
+        { id: 'support', label: 'Soporte', icon: 'chat', description: 'FAQ, atencion al cliente' },
+        { id: 'crm', label: 'CRM', icon: 'users', description: 'Clientes, seguimiento' },
+        { id: 'automation', label: 'Automatizacion', icon: 'bolt', description: 'Notificaciones, alertas' },
+      ],
+      userPlan,
+      businessType,
+    });
   } catch (err) {
     console.error("flowsController.getFlowTemplates:", err);
     res.status(500).json({ error: err.message });

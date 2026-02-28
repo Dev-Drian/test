@@ -47,17 +47,33 @@ const CORE_TOOLS = [
     type: 'function',
     function: {
       name: 'create_record',
-      description: 'OBLIGATORIO cuando el usuario quiera: agendar, reservar, crear, registrar, agregar cualquier cosa. Usa SIEMPRE esta función aunque el usuario NO proporcione todos los datos - el sistema pedirá los datos faltantes automáticamente.',
+      description: 'OBLIGATORIO cuando el usuario quiera: agendar, reservar, crear, registrar, agregar, hacer un pedido, ordenar, comprar, solicitar cualquier cosa (en español, inglés o cualquier idioma). Si el usuario dice "quiero hacer un pedido", "quiero pedir", "quiero comprar", "quiero ordenar" → SIEMPRE usar esta función, NUNCA query_records. Usa SIEMPRE esta función aunque el usuario NO proporcione todos los datos - el sistema pedirá los datos faltantes automáticamente. Funciona con: "quiero agendar", "I want to book", "registrar venta", "hacer pedido de 3 cosas", "create appointment", etc.',
       parameters: {
         type: 'object',
         properties: {
           record_type: {
             type: 'string',
-            description: 'Nombre EXACTO de la tabla (ej: "Citas", "Clientes"). Usa mayúsculas tal como aparece.',
+            description: 'Nombre EXACTO de la tabla (ej: "Citas", "Clientes", "Ventas", "Tareas"). Usa mayúsculas tal como aparece en la lista de tablas.',
           },
           data: {
             type: 'object',
-            description: 'Datos que el usuario YA proporcionó. Extrae TODO lo mencionado. Ejemplos: "adrian castro mañana a las 4" → {"cliente": "Adrian Castro", "fecha": "2026-02-26", "hora": "16:00"}. Si NO dio datos, usa {} vacío.',
+            description: `EXTRAE TODOS los datos que el usuario proporcionó en su mensaje. 
+            
+REGLAS DE EXTRACCIÓN:
+1. Lee el mensaje COMPLETO y extrae TODO lo mencionado
+2. Nombres de personas → campo "cliente" o "nombre"
+3. Fechas relativas: "hoy" → fecha actual, "mañana" → siguiente día
+4. Horas: "a las 4" → "16:00", "9am" → "09:00"
+5. Productos/servicios mencionados → campo correspondiente    
+6. Cantidades → campo "cantidad"
+7. Si dice "soy [nombre]" → extraer el nombre
+
+EJEMPLOS:
+- "Hola, soy Luis y quiero agendar una cita para mañana" → {"cliente": "Luis", "fecha": "2026-02-28"}
+- "Registrar venta de 5 camisetas para María" → {"cliente": "María", "producto": "camisetas", "cantidad": 5}
+- "I want to book an appointment for tomorrow at 3pm" → {"fecha": "2026-02-28", "hora": "15:00"}
+- "agregar tarea: llamar al doctor" → {"titulo": "llamar al doctor"}
+- "quiero una cita" (sin datos) → {} vacío está OK`,
             additionalProperties: true,
           },
         },
@@ -69,13 +85,13 @@ const CORE_TOOLS = [
     type: 'function', 
     function: {
       name: 'query_records',
-      description: 'Consulta registros existentes: ver citas, listar clientes, buscar productos, mostrar ventas. Usa esta herramienta cuando el usuario quiera ver, consultar, listar, buscar, o mostrar datos existentes.',
+      description: 'Consulta registros existentes: ver citas, listar clientes, buscar productos, mostrar ventas. Funciona en cualquier idioma: "ver clientes", "show me clients", "list appointments", "mostrar ventas". Usa esta herramienta cuando el usuario quiera ver, consultar, listar, buscar, o mostrar datos existentes.',
       parameters: {
         type: 'object',
         properties: {
           record_type: {
             type: 'string',
-            description: 'Tipo de registro a consultar. Usa el nombre EXACTO de la tabla (ej: "Clientes", "Ventas", "Citas").',
+            description: 'Tipo de registro a consultar. Usa el nombre EXACTO de la tabla (ej: "Clientes", "Ventas", "Citas", "Tareas", "Productos").',
           },
           filters: {
             type: 'object',
@@ -85,15 +101,17 @@ REGLAS:
 1. Cada criterio mencionado = un campo en filters
 2. Usa los nombres de campos de la tabla (cliente, estado, fecha, producto, etc.)
 3. NUNCA devuelvas {} si el usuario menciona criterios
+4. Funciona con español, inglés, portugués, etc.
 
 EJEMPLOS:
-- "ventas de Juan" → {"cliente": "Juan"}
+- "ventas de Juan" / "sales from Juan" → {"cliente": "Juan"}
 - "ventas de María García con estado pendiente" → {"cliente": "María García", "estado": "Pendiente"}
-- "citas de hoy" → {"fecha": "2026-02-26"}
+- "citas de hoy" / "appointments for today" → {"fecha": "2026-02-27"}
 - "clientes activos de Bogotá" → {"estado": "Activo", "ciudad": "Bogotá"}
-- "productos con precio mayor a 100" → {"precio": ">100"}
+- "show me all clients" → {} (consulta general, sin filtros)
+- "tareas pendientes" / "pending tasks" → {"estado": "Pendiente"}
 
-Si el usuario NO menciona ningún criterio específico → {} vacío.`,
+Si el usuario NO menciona ningún criterio específico (solo "ver clientes") → {} vacío está OK.`,
             additionalProperties: true,
           },
           limit: {
@@ -173,7 +191,7 @@ Si el usuario NO menciona ningún criterio específico → {} vacío.`,
     type: 'function',
     function: {
       name: 'general_conversation',
-      description: 'Responde a saludos, preguntas generales, o conversación casual. Usa esta herramienta cuando el mensaje NO sea una acción sobre datos: saludos, agradecimientos, preguntas sobre el negocio, información general.',
+      description: 'Responde a saludos, preguntas generales, o conversación casual en CUALQUIER idioma (español, inglés, portugués, spanglish). Usa esta herramienta cuando el mensaje NO sea una acción sobre datos: saludos (hola, hi, hello, oi), agradecimientos (gracias, thanks), preguntas sobre el negocio, información general. También para mensajes con emojis: "👋 hola", "hi there! 🎉".',
       parameters: {
         type: 'object',
         properties: {

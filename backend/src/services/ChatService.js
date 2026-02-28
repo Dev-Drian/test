@@ -202,11 +202,13 @@ export class ChatService {
     context.agent = agent;
     context.history = chat.messages || [];
     
-    // Preparar info de tablas
+    // Preparar info de tablas (mantener _id para compatibilidad con AgentCapabilities)
     const tablesInfo = tables.map(t => ({
+      _id: t._id,
       id: t._id,
       name: t.name,
       type: t.type,
+      headers: t.headers || [], // Full headers with key, type, options for QueryHandler
       fields: (t.headers || []).map(h => h.key || h.label),
       permissions: {
         canQuery: t.permissions?.allowQuery !== false,

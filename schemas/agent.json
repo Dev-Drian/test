@@ -66,12 +66,23 @@
     },
     "tables": {
       "type": "array",
-      "description": "Tablas vinculadas al agente con su tipo de acceso",
+      "description": "Tablas vinculadas al agente con permisos específicos",
       "items": {
         "type": "object",
         "properties": {
           "tableId": { "type": "string", "description": "ID de la tabla" },
-          "fullAccess": { "type": "boolean", "default": false, "description": "Si true, ve todos los datos. Si false, filtra por identidad del usuario." }
+          "tableName": { "type": "string", "description": "Nombre de la tabla (para mostrar)" },
+          "fullAccess": { "type": "boolean", "default": false, "description": "Si true, ve todos los datos. Si false, filtra por identidad del usuario." },
+          "permissions": {
+            "type": "object",
+            "description": "Permisos específicos del agente sobre esta tabla",
+            "properties": {
+              "query": { "type": "boolean", "default": true, "description": "Puede consultar/buscar datos" },
+              "create": { "type": "boolean", "default": true, "description": "Puede crear registros" },
+              "update": { "type": "boolean", "default": false, "description": "Puede modificar registros" },
+              "delete": { "type": "boolean", "default": false, "description": "Puede eliminar registros" }
+            }
+          }
         },
         "required": ["tableId"]
       }

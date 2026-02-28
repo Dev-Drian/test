@@ -148,216 +148,184 @@ export default function ActionNode({ id, data, selected, type }) {
   const notifyMessage = data?.message;
 
   return (
-    <div className={`min-w-[240px] rounded-xl overflow-hidden transition-all shadow-xl ${
-      selected 
-        ? 'ring-2 ring-purple-400 shadow-purple-500/30' 
-        : 'shadow-black/40'
-    }`} style={{ background: '#0c0c0f' }}>
-      {/* Handle de entrada */}
+    <div 
+      className={`min-w-[180px] max-w-[240px] rounded-2xl overflow-visible transition-all duration-300 ${
+        selected 
+          ? 'ring-2 ring-purple-400/60 shadow-2xl shadow-purple-500/20' 
+          : 'shadow-xl shadow-black/30 hover:shadow-2xl hover:shadow-purple-500/10'
+      }`} 
+      style={{ 
+        background: 'linear-gradient(145deg, #1a1a24, #141418)',
+        border: '1px solid rgba(139, 92, 246, 0.2)'
+      }}
+    >
+      {/* Handle de entrada - Estilo n8n */}
       <Handle 
         type="target" 
-        position={Position.Top} 
-        className="!w-4 !h-4 !rounded-full !border-2"
-        style={{ background: '#8b5cf6', borderColor: '#0c0c0f' }}
+        position={Position.Left} 
+        className="!w-3 !h-3 !rounded-full !border-2 !-left-1.5"
+        style={{ 
+          background: '#8b5cf6', 
+          borderColor: '#1a1a24',
+          boxShadow: '0 0 8px rgba(139, 92, 246, 0.5)'
+        }}
       />
       
-      {/* Header */}
-      <div className="px-4 py-3 flex items-center gap-3" style={{ background: 'rgba(139, 92, 246, 0.15)', borderBottom: '1px solid rgba(139, 92, 246, 0.2)' }}>
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ background: '#8b5cf6' }}>
+      {/* Header compacto estilo n8n */}
+      <div 
+        className="px-3 py-2.5 flex items-center gap-2.5" 
+        style={{ 
+          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(139, 92, 246, 0.05))',
+          borderBottom: '1px solid rgba(139, 92, 246, 0.15)' 
+        }}
+      >
+        <div 
+          className="w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-lg"
+          style={{ 
+            background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+            boxShadow: '0 4px 12px rgba(139, 92, 246, 0.4)'
+          }}
+        >
           {actionInfo.icon}
         </div>
-        <div className="flex-1">
-          <span className="text-sm font-semibold text-purple-400">{nodeLabel}</span>
-          <p className="text-[10px] text-purple-400/60">{actionInfo.label}</p>
+        <div className="flex-1 min-w-0">
+          <span className="text-[13px] font-semibold text-purple-300 block truncate">{nodeLabel}</span>
+          <span className="text-[10px] text-purple-500/70">{actionInfo.label}</span>
         </div>
       </div>
       
       {/* Content */}
-      <div className="p-4 space-y-3">
+      <div className="p-3 space-y-2">
         {/* Modo Vista (flujo guardado o plantilla) */}
         {isViewMode ? (
           <>
             {/* Tabla destino */}
             {(data?.targetTable || data?.tablePlaceholder) && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg"
+              <div 
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-[11px]"
                 style={{ 
-                  background: 'rgba(139, 92, 246, 0.1)', 
-                  border: '1px solid rgba(139, 92, 246, 0.2)',
+                  background: 'rgba(139, 92, 246, 0.08)', 
+                  border: '1px solid rgba(139, 92, 246, 0.15)',
                 }}
               >
-                <span className="text-purple-400"><ClipboardIcon size="sm" /></span>
-                <span className="text-sm text-purple-300">
-                  En <span className="font-semibold text-purple-400">{tableName}</span>
-                </span>
+                <span className="text-purple-400"><ClipboardIcon size="xs" /></span>
+                <span className="text-purple-300 truncate">{tableName}</span>
               </div>
             )}
             
             {/* Filtro para updates */}
             {data?.filter && Object.keys(data.filter).length > 0 && (
               <div className="space-y-1">
-                <label className="block text-[10px] uppercase tracking-wider" style={{ color: '#71717a' }}>
+                <label className="block text-[9px] uppercase tracking-wider text-slate-500 font-medium">
                   Donde
                 </label>
-                {Object.entries(data.filter).map(([key, val], idx) => (
+                {Object.entries(data.filter).slice(0, 2).map(([key, val], idx) => (
                   <div 
                     key={idx}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs"
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px]"
                     style={{ 
                       background: 'rgba(139, 92, 246, 0.05)', 
                       border: '1px solid rgba(139, 92, 246, 0.1)',
                     }}
                   >
                     <span className="text-purple-300">{getFieldDisplayName(key)}</span>
-                    <span className="text-zinc-600">=</span>
-                    <span className="text-amber-400">{String(val)}</span>
+                    <span className="text-slate-600">=</span>
+                    <span className="text-amber-400 truncate">{String(val)}</span>
                   </div>
                 ))}
-              </div>
-            )}
-            
-            {/* RecordId para updates de plantillas */}
-            {data?.recordId && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs"
-                style={{ 
-                  background: 'rgba(251, 191, 36, 0.1)', 
-                  border: '1px solid rgba(251, 191, 36, 0.2)',
-                }}
-              >
-                <span className="text-amber-300">🎯 Registro:</span>
-                <span className="text-amber-400 truncate">{data.recordId}</span>
               </div>
             )}
             
             {/* Campos a modificar/crear */}
             {formattedFields && formattedFields.length > 0 && (
               <div className="space-y-1">
-                <label className="block text-[10px] uppercase tracking-wider" style={{ color: '#71717a' }}>
-                  {data.actionType === 'create' ? 'Crear con' : 'Cambiar'}
+                <label className="block text-[9px] uppercase tracking-wider text-slate-500 font-medium">
+                  {data.actionType === 'create' ? 'Crear' : 'Cambiar'}
                 </label>
-                {formattedFields.slice(0, 4).map((field, idx) => (
+                {formattedFields.slice(0, 3).map((field, idx) => (
                   <div 
                     key={idx}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs"
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px]"
                     style={{ 
                       background: 'rgba(16, 185, 129, 0.05)', 
                       border: '1px solid rgba(16, 185, 129, 0.1)',
                     }}
                   >
-                    <span className="text-emerald-400">{getFieldDisplayName(field.field)}</span>
-                    <span className="text-zinc-600">→</span>
-                    <span className="text-amber-400 truncate max-w-[120px]" title={field.value}>
-                      {field.value}
-                    </span>
+                    <span className="text-emerald-400 truncate">{getFieldDisplayName(field.field)}</span>
+                    <span className="text-slate-600">→</span>
+                    <span className="text-amber-400 truncate max-w-[80px]">{field.value}</span>
                   </div>
                 ))}
-                {formattedFields.length > 4 && (
-                  <div className="text-[10px] text-zinc-500 pl-3">
-                    +{formattedFields.length - 4} campos más...
-                  </div>
+                {formattedFields.length > 3 && (
+                  <span className="text-[9px] text-slate-500 pl-2">
+                    +{formattedFields.length - 3} más
+                  </span>
                 )}
               </div>
             )}
             
-            {/* Canal de notificación (solo para notify) */}
-            {(type === 'notify' || effectiveActionType === 'notify') && notifyChannel && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs"
-                style={{ 
-                  background: 'rgba(251, 191, 36, 0.1)', 
-                  border: '1px solid rgba(251, 191, 36, 0.2)',
-                }}
-              >
-                <span className="text-amber-400">🔔</span>
-                <span className="text-amber-300">Canal: <span className="font-medium text-amber-400">{notifyChannel}</span></span>
-              </div>
-            )}
-            
-            {/* Mensaje de error/notificación */}
+            {/* Mensaje */}
             {(data?.message || notifyMessage) && (
-              <div className="px-3 py-2 rounded-lg text-xs"
+              <div 
+                className="px-2.5 py-1.5 rounded-xl text-[10px] line-clamp-2"
                 style={{ 
-                  background: effectiveActionType === 'error' ? 'rgba(239, 68, 68, 0.1)' : 
-                              effectiveActionType === 'notify' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(139, 92, 246, 0.1)', 
-                  border: effectiveActionType === 'error' ? '1px solid rgba(239, 68, 68, 0.2)' : 
-                          effectiveActionType === 'notify' ? '1px solid rgba(251, 191, 36, 0.2)' : '1px solid rgba(139, 92, 246, 0.2)',
-                  color: effectiveActionType === 'error' ? '#fca5a5' : 
-                         effectiveActionType === 'notify' ? '#fcd34d' : '#c4b5fd'
+                  background: effectiveActionType === 'error' ? 'rgba(239, 68, 68, 0.08)' : 'rgba(139, 92, 246, 0.08)', 
+                  border: effectiveActionType === 'error' ? '1px solid rgba(239, 68, 68, 0.15)' : '1px solid rgba(139, 92, 246, 0.15)',
+                  color: effectiveActionType === 'error' ? '#fca5a5' : '#c4b5fd'
                 }}
               >
-                <p className="whitespace-pre-line">{data?.message || notifyMessage}</p>
+                {(data?.message || notifyMessage).slice(0, 50)}...
               </div>
             )}
           </>
         ) : (
           /* Modo Edición (nuevo nodo) */
           <>
-            <div>
-              <label className="block text-[10px] uppercase tracking-wider mb-2" style={{ color: '#71717a' }}>
-                ¿Qué acción ejecutar?
-              </label>
-              <select 
-                className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all cursor-pointer appearance-none"
-                style={{ 
-                  background: '#18181b', 
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: 'white',
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2371717a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 0.5rem center',
-                  backgroundSize: '1.5em 1.5em',
-                  paddingRight: '2.5rem'
-                }}
-                value={data?.action || 'auto_create'}
-                onChange={(e) => updateNodeData('action', e.target.value)}
-              >
-                <option value="auto_create">+ Crear registro</option>
-                <option value="auto_assign">◎ Asignar automáticamente</option>
-                <option value="set_value">✎ Establecer valor</option>
-                <option value="decrement">− Restar cantidad</option>
-                <option value="increment">+ Sumar cantidad</option>
-                <option value="send_notification">⚬ Enviar notificación</option>
-                <option value="send_email">✉ Enviar email</option>
-                <option value="send_message">📨 Enviar mensaje</option>
-              </select>
-            </div>
+            <select 
+              className="w-full px-2.5 py-2 rounded-xl text-[11px] focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-all cursor-pointer"
+              style={{ 
+                background: 'rgba(255,255,255,0.03)', 
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: '#d1d5db'
+              }}
+              value={data?.action || 'auto_create'}
+              onChange={(e) => updateNodeData('action', e.target.value)}
+            >
+              <option value="auto_create">+ Crear</option>
+              <option value="auto_assign">◎ Asignar</option>
+              <option value="set_value">✎ Establecer</option>
+              <option value="decrement">− Restar</option>
+              <option value="increment">+ Sumar</option>
+              <option value="send_notification">⚬ Notificar</option>
+            </select>
             
             {(data?.action === 'set_value' || data?.action === 'decrement' || data?.action === 'increment') && (
-              <>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wider mb-2" style={{ color: '#71717a' }}>
-                    ¿Qué campo modificar?
-                  </label>
-                  <input 
-                    type="text" 
-                    placeholder="ej: stock, estado, puntos..."
-                    className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all placeholder-zinc-500"
-                    style={{ 
-                      background: '#18181b', 
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      color: 'white'
-                    }}
-                    value={data?.field || ''}
-                    onChange={(e) => updateNodeData('field', e.target.value)}
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wider mb-2" style={{ color: '#71717a' }}>
-                    {data?.action === 'set_value' ? 'Nuevo valor' : 'Cantidad'}
-                  </label>
-                  <input 
-                    type="text" 
-                    placeholder={data?.action === 'set_value' ? 'ej: confirmado, 100...' : 'ej: 1, 5, 10...'}
-                    className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all placeholder-zinc-500"
-                    style={{ 
-                      background: '#18181b', 
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      color: 'white'
-                    }}
-                    value={data?.value || ''}
-                    onChange={(e) => updateNodeData('value', e.target.value)}
-                  />
-                </div>
-              </>
+              <div className="space-y-1.5">
+                <input 
+                  type="text" 
+                  placeholder="Campo..."
+                  className="w-full px-2.5 py-1.5 rounded-lg text-[11px] focus:outline-none focus:ring-1 focus:ring-purple-500/50 placeholder-slate-600"
+                  style={{ 
+                    background: 'rgba(255,255,255,0.03)', 
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    color: 'white'
+                  }}
+                  value={data?.field || ''}
+                  onChange={(e) => updateNodeData('field', e.target.value)}
+                />
+                <input 
+                  type="text" 
+                  placeholder="Valor..."
+                  className="w-full px-2.5 py-1.5 rounded-lg text-[11px] focus:outline-none focus:ring-1 focus:ring-purple-500/50 placeholder-slate-600"
+                  style={{ 
+                    background: 'rgba(255,255,255,0.03)', 
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    color: 'white'
+                  }}
+                  value={data?.value || ''}
+                  onChange={(e) => updateNodeData('value', e.target.value)}
+                />
+              </div>
             )}
 
             {/* UI para send_message - diseño intuitivo con pasos guiados */}
@@ -609,12 +577,16 @@ export default function ActionNode({ id, data, selected, type }) {
         )}
       </div>
       
-      {/* Handle de salida */}
+      {/* Handle de salida - Estilo n8n */}
       <Handle 
         type="source" 
-        position={Position.Bottom} 
-        className="!w-4 !h-4 !rounded-full !border-2"
-        style={{ background: '#8b5cf6', borderColor: '#0c0c0f' }}
+        position={Position.Right} 
+        className="!w-3 !h-3 !rounded-full !border-2 !-right-1.5"
+        style={{ 
+          background: '#8b5cf6', 
+          borderColor: '#1a1a24',
+          boxShadow: '0 0 8px rgba(139, 92, 246, 0.5)'
+        }}
       />
     </div>
   );

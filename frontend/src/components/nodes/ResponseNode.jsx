@@ -1,5 +1,5 @@
 /**
- * ResponseNode - Nodo de respuesta al usuario
+ * ResponseNode - Nodo de respuesta al usuario (Estilo n8n)
  * Color: Rosa (#ec4899)
  * Compatible con plantillas (message) y flujos del sistema (response)
  */
@@ -29,86 +29,111 @@ export default function ResponseNode({ id, data, selected }) {
   const hasMessage = messageText.length > 0;
 
   return (
-    <div className={`min-w-[240px] rounded-xl overflow-hidden transition-all shadow-xl ${
-      selected 
-        ? 'ring-2 ring-pink-400 shadow-pink-500/30' 
-        : 'shadow-black/40'
-    }`} style={{ background: '#0c0c0f' }}>
-      {/* Handle de entrada */}
+    <div 
+      className={`min-w-[180px] max-w-[220px] rounded-2xl overflow-visible transition-all duration-300 ${
+        selected 
+          ? 'ring-2 ring-pink-400/60 shadow-2xl shadow-pink-500/20' 
+          : 'shadow-xl shadow-black/30 hover:shadow-2xl hover:shadow-pink-500/10'
+      }`} 
+      style={{ 
+        background: 'linear-gradient(145deg, #1a1a24, #141418)',
+        border: '1px solid rgba(236, 72, 153, 0.2)'
+      }}
+    >
+      {/* Handle de entrada - Estilo n8n */}
       <Handle 
         type="target" 
-        position={Position.Top} 
-        className="!w-4 !h-4 !rounded-full !border-2"
-        style={{ background: '#ec4899', borderColor: '#0c0c0f' }}
+        position={Position.Left} 
+        className="!w-3 !h-3 !rounded-full !border-2 !-left-1.5"
+        style={{ 
+          background: '#ec4899', 
+          borderColor: '#1a1a24',
+          boxShadow: '0 0 8px rgba(236, 72, 153, 0.5)'
+        }}
       />
       
-      {/* Header */}
-      <div className="px-4 py-3 flex items-center gap-3" style={{ background: 'rgba(236, 72, 153, 0.15)', borderBottom: '1px solid rgba(236, 72, 153, 0.2)' }}>
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-lg" style={{ background: '#ec4899' }}>
+      {/* Header compacto estilo n8n */}
+      <div 
+        className="px-3 py-2.5 flex items-center gap-2.5" 
+        style={{ 
+          background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.12), rgba(236, 72, 153, 0.05))',
+          borderBottom: '1px solid rgba(236, 72, 153, 0.15)' 
+        }}
+      >
+        <div 
+          className="w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-lg"
+          style={{ 
+            background: 'linear-gradient(135deg, #ec4899, #db2777)',
+            boxShadow: '0 4px 12px rgba(236, 72, 153, 0.4)'
+          }}
+        >
           <ChatIcon size="sm" />
         </div>
-        <div>
-          <span className="text-sm font-semibold text-pink-400">{nodeLabel}</span>
-          <p className="text-[10px] text-pink-400/60">Mensaje al usuario</p>
+        <div className="flex-1 min-w-0">
+          <span className="text-[13px] font-semibold text-pink-300 block truncate">{nodeLabel}</span>
+          <span className="text-[10px] text-pink-500/70">Mensaje</span>
         </div>
       </div>
       
       {/* Content */}
-      <div className="p-4 space-y-3">
+      <div className="p-3 space-y-2">
         {/* Si hay mensaje configurado (de plantilla), mostrarlo */}
         {hasMessage ? (
-          <div className="p-3 rounded-lg" style={{ background: 'rgba(236, 72, 153, 0.1)', border: '1px solid rgba(236, 72, 153, 0.2)' }}>
-            <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: '#71717a' }}>Mensaje</p>
-            <p className="text-sm text-pink-300 whitespace-pre-line leading-relaxed">{messageText.slice(0, 100)}{messageText.length > 100 ? '...' : ''}</p>
+          <div 
+            className="px-2.5 py-2 rounded-xl text-[11px] leading-relaxed"
+            style={{ 
+              background: 'rgba(236, 72, 153, 0.08)', 
+              border: '1px solid rgba(236, 72, 153, 0.15)',
+              color: '#f9a8d4'
+            }}
+          >
+            <p className="line-clamp-3">{messageText.slice(0, 80)}{messageText.length > 80 ? '...' : ''}</p>
           </div>
         ) : (
           /* Si no hay mensaje, mostrar editor */
           <>
-            <div>
-              <label className="block text-[10px] uppercase tracking-wider mb-2" style={{ color: '#71717a' }}>
-                Tipo de respuesta
-              </label>
-              <select 
-                className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all cursor-pointer appearance-none"
-                style={{ 
-                  background: '#18181b', 
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: 'white',
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2371717a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 0.5rem center',
-                  backgroundSize: '1.5em 1.5em',
-                  paddingRight: '2.5rem'
-                }}
-                value={data?.type || 'success'}
-                onChange={(e) => updateNodeData('type', e.target.value)}
-              >
-                <option value="success" style={{ background: '#18181b', color: 'white' }}>Mensaje de éxito</option>
-                <option value="error" style={{ background: '#18181b', color: 'white' }}>Mensaje de error</option>
-                <option value="info" style={{ background: '#18181b', color: 'white' }}>Información</option>
-              </select>
-            </div>
+            <select 
+              className="w-full px-2.5 py-1.5 rounded-lg text-[11px] focus:outline-none focus:ring-1 focus:ring-pink-500/50 transition-all cursor-pointer"
+              style={{ 
+                background: 'rgba(255,255,255,0.03)', 
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: '#d1d5db'
+              }}
+              value={data?.type || 'success'}
+              onChange={(e) => updateNodeData('type', e.target.value)}
+            >
+              <option value="success">✓ Éxito</option>
+              <option value="error">✗ Error</option>
+              <option value="info">ⓘ Info</option>
+            </select>
             
-            <div>
-              <label className="block text-[10px] uppercase tracking-wider mb-2" style={{ color: '#71717a' }}>
-                Mensaje
-              </label>
-              <textarea 
-                className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all resize-none"
-                style={{ 
-                  background: 'rgba(255,255,255,0.03)', 
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  color: 'white'
-                }}
-                placeholder="Escribe el mensaje..."
-                rows={2}
-                value={data?.message || ''}
-                onChange={(e) => updateNodeData('message', e.target.value)}
-              />
-            </div>
+            <textarea 
+              className="w-full px-2.5 py-1.5 rounded-lg text-[11px] focus:outline-none focus:ring-1 focus:ring-pink-500/50 transition-all resize-none placeholder-slate-600"
+              style={{ 
+                background: 'rgba(255,255,255,0.03)', 
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: 'white'
+              }}
+              placeholder="Mensaje..."
+              rows={2}
+              value={data?.message || ''}
+              onChange={(e) => updateNodeData('message', e.target.value)}
+            />
           </>
         )}
       </div>
+      
+      {/* Handle de salida - Estilo n8n */}
+      <Handle 
+        type="source" 
+        position={Position.Right} 
+        className="!w-3 !h-3 !rounded-full !border-2 !-right-1.5"
+        style={{ 
+          background: '#ec4899', 
+          borderColor: '#1a1a24',
+          boxShadow: '0 0 8px rgba(236, 72, 153, 0.5)'
+        }}
+      />
     </div>
   );
 }

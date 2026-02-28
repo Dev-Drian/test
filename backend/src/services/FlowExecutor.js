@@ -618,6 +618,26 @@ async function executeQuery(query, context, workspaceId) {
         const fieldVal = d[filterFieldName];
         return fieldVal && String(fieldVal).toLowerCase().trim() === searchLower;
       });
+      
+      // Fallback: búsqueda parcial si no hay match exacto
+      if (!doc) {
+        // Normalizar: quitar plurales simples en español
+        const searchNorm = searchLower.replace(/e?s$/, '');
+        doc = docs.find(d => {
+          const fieldVal = d[filterFieldName];
+          if (!fieldVal) return false;
+          const valLower = String(fieldVal).toLowerCase().trim();
+          const valNorm = valLower.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          const sNorm = searchNorm.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          // Check if the field value contains the search term or vice versa
+          return valLower.includes(searchLower) || valNorm.includes(sNorm)
+            || searchLower.includes(valLower);
+        });
+        if (doc) {
+          console.log(`[FlowExecutor] Partial match: "${filterValue}" -> "${doc[filterFieldName]}"`);
+        }
+      }
+      
       console.log(`[FlowExecutor] Case-insensitive search: "${filterValue}" -> ${doc ? 'FOUND' : 'NOT FOUND'} (checked ${docs.length} docs)`);
       
       // Si encontramos el registro Y el nombre es diferente (case), normalizar

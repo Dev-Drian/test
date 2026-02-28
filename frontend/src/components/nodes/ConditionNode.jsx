@@ -107,56 +107,74 @@ export default function ConditionNode({ id, data, selected }) {
   const isViewMode = data?.operator !== undefined;
 
   return (
-    <div className={`min-w-[240px] rounded-xl overflow-hidden transition-all shadow-xl ${
-      selected 
-        ? 'ring-2 ring-amber-400 shadow-amber-500/30' 
-        : 'shadow-black/40'
-    }`} style={{ background: '#0c0c0f' }}>
-      {/* Handle de entrada */}
+    <div 
+      className={`min-w-[180px] max-w-[220px] rounded-2xl overflow-visible transition-all duration-300 ${
+        selected 
+          ? 'ring-2 ring-amber-400/60 shadow-2xl shadow-amber-500/20' 
+          : 'shadow-xl shadow-black/30 hover:shadow-2xl hover:shadow-amber-500/10'
+      }`} 
+      style={{ 
+        background: 'linear-gradient(145deg, #1a1a24, #141418)',
+        border: '1px solid rgba(245, 158, 11, 0.2)'
+      }}
+    >
+      {/* Handle de entrada - Estilo n8n */}
       <Handle 
         type="target" 
-        position={Position.Top} 
-        className="!w-4 !h-4 !rounded-full !border-2"
-        style={{ background: '#f59e0b', borderColor: '#0c0c0f' }}
+        position={Position.Left} 
+        className="!w-3 !h-3 !rounded-full !border-2 !-left-1.5"
+        style={{ 
+          background: '#f59e0b', 
+          borderColor: '#1a1a24',
+          boxShadow: '0 0 8px rgba(245, 158, 11, 0.5)'
+        }}
       />
       
-      {/* Header */}
-      <div className="px-4 py-3 flex items-center gap-3" style={{ background: 'rgba(245, 158, 11, 0.15)', borderBottom: '1px solid rgba(245, 158, 11, 0.2)' }}>
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ background: '#f59e0b' }}>
+      {/* Header compacto estilo n8n */}
+      <div 
+        className="px-3 py-2.5 flex items-center gap-2.5" 
+        style={{ 
+          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.05))',
+          borderBottom: '1px solid rgba(245, 158, 11, 0.15)' 
+        }}
+      >
+        <div 
+          className="w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-lg"
+          style={{ 
+            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+            boxShadow: '0 4px 12px rgba(245, 158, 11, 0.4)'
+          }}
+        >
           <SplitIcon size="sm" />
         </div>
-        <div className="flex-1">
-          <span className="text-sm font-semibold text-amber-400">Decisión</span>
-          <p className="text-[10px] text-amber-400/60">¿Cumple la condición?</p>
+        <div className="flex-1 min-w-0">
+          <span className="text-[13px] font-semibold text-amber-300 block truncate">
+            {data?.label || 'Decisión'}
+          </span>
+          <span className="text-[10px] text-amber-500/70">Condición</span>
         </div>
       </div>
       
       {/* Content */}
-      <div className="p-4 space-y-3">
-        {/* Label si existe */}
-        {data?.label && (
-          <div className="text-sm font-medium text-white">
-            {data.label}
-          </div>
-        )}
-        
+      <div className="p-3 space-y-2">
         {/* Modo Vista (flujo guardado) */}
         {isViewMode ? (
-          <div className="px-3 py-3 rounded-lg space-y-2"
+          <div 
+            className="px-2.5 py-2 rounded-xl space-y-1"
             style={{ 
-              background: 'rgba(245, 158, 11, 0.1)', 
-              border: '1px solid rgba(245, 158, 11, 0.2)',
+              background: 'rgba(245, 158, 11, 0.08)', 
+              border: '1px solid rgba(245, 158, 11, 0.15)',
             }}
           >
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-amber-300 text-sm">Si</span>
-              <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 text-xs">
+            <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
+              <span className="text-amber-400">Si</span>
+              <span className="px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-300 truncate max-w-[60px]">
                 {getFieldDisplayName(data.field)}
               </span>
-              <span className="text-amber-300 text-xs">
+              <span className="text-amber-400/70">
                 {getOperatorDisplay(data.operator)}
               </span>
-              <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs">
+              <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 truncate max-w-[50px]">
                 {String(data.value)}
               </span>
             </div>
@@ -164,102 +182,100 @@ export default function ConditionNode({ id, data, selected }) {
         ) : (
           /* Modo Edición */
           <>
-            <div>
-              <label className="block text-[10px] uppercase tracking-wider mb-2" style={{ color: '#71717a' }}>
-                Tipo de condición
-              </label>
-              <select 
-                className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all cursor-pointer appearance-none"
-                style={{ 
-                  background: '#18181b', 
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: 'white',
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2371717a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 0.5rem center',
-                  backgroundSize: '1.5em 1.5em',
-                  paddingRight: '2.5rem'
-                }}
-                value={data?.condition || 'exists'}
-                onChange={(e) => updateNodeData('condition', e.target.value)}
-              >
-                <option value="exists">✓ Si existe</option>
-                <option value="not_exists">✗ Si NO existe</option>
-                <option value="equals">= Si es igual a</option>
-                <option value="greater">&gt; Si es mayor que</option>
-                <option value="less">&lt; Si es menor que</option>
-                <option value="available">▷ Si está disponible</option>
-              </select>
-            </div>
+            <select 
+              className="w-full px-2.5 py-1.5 rounded-lg text-[11px] focus:outline-none focus:ring-1 focus:ring-amber-500/50 transition-all cursor-pointer"
+              style={{ 
+                background: 'rgba(255,255,255,0.03)', 
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: '#d1d5db'
+              }}
+              value={data?.condition || 'exists'}
+              onChange={(e) => updateNodeData('condition', e.target.value)}
+            >
+              <option value="exists">✓ Si existe</option>
+              <option value="not_exists">✗ Si NO existe</option>
+              <option value="equals">= Es igual a</option>
+              <option value="greater">&gt; Mayor que</option>
+              <option value="less">&lt; Menor que</option>
+            </select>
             
-            <div>
-              <label className="block text-[10px] uppercase tracking-wider mb-2" style={{ color: '#71717a' }}>
-                Campo a evaluar
-              </label>
-              <input 
-                type="text" 
-                placeholder="ej: stock, estado, fecha..."
-                className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all placeholder-zinc-500"
-                style={{ 
-                  background: '#18181b', 
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: 'white'
-                }}
-                value={data?.field || ''}
-                onChange={(e) => updateNodeData('field', e.target.value)}
-              />
-            </div>
+            <input 
+              type="text" 
+              placeholder="Campo..."
+              className="w-full px-2.5 py-1.5 rounded-lg text-[11px] focus:outline-none focus:ring-1 focus:ring-amber-500/50 placeholder-slate-600"
+              style={{ 
+                background: 'rgba(255,255,255,0.03)', 
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: 'white'
+              }}
+              value={data?.field || ''}
+              onChange={(e) => updateNodeData('field', e.target.value)}
+            />
             
             {(data?.condition === 'equals' || data?.condition === 'greater' || data?.condition === 'less') && (
-              <div>
-                <label className="block text-[10px] uppercase tracking-wider mb-2" style={{ color: '#71717a' }}>
-                  Valor a comparar
-                </label>
-                <input 
-                  type="text" 
-                  placeholder="ej: 0, activo, VIP..."
-                  className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all placeholder-zinc-500"
-                  style={{ 
-                    background: '#18181b', 
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    color: 'white'
-                  }}
-                  value={data?.value || ''}
-                  onChange={(e) => updateNodeData('value', e.target.value)}
-                />
-              </div>
+              <input 
+                type="text" 
+                placeholder="Valor..."
+                className="w-full px-2.5 py-1.5 rounded-lg text-[11px] focus:outline-none focus:ring-1 focus:ring-amber-500/50 placeholder-slate-600"
+                style={{ 
+                  background: 'rgba(255,255,255,0.03)', 
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: 'white'
+                }}
+                value={data?.value || ''}
+                onChange={(e) => updateNodeData('value', e.target.value)}
+              />
             )}
           </>
         )}
       </div>
       
-      {/* Handles de salida - Sí / No */}
-      <div className="px-4 pb-4 flex justify-between items-center">
-        <div className="flex flex-col items-center">
-          <div className="px-3 py-1 rounded-full text-xs font-medium" style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' }}>
-            ✓ Sí
-          </div>
-          <Handle 
-            type="source" 
-            position={Position.Bottom} 
-            id="yes" 
-            className="!w-4 !h-4 !rounded-full !border-2 !relative !transform-none !left-0"
-            style={{ background: '#22c55e', borderColor: '#0c0c0f', marginTop: '8px' }}
-          />
+      {/* Salidas Sí / No */}
+      <div className="flex rounded-b-2xl overflow-hidden" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div 
+          className="flex-1 py-2 text-center"
+          style={{ background: 'rgba(34, 197, 94, 0.1)' }}
+        >
+          <span className="text-[10px] text-emerald-400 font-medium">✓ Sí</span>
         </div>
-        <div className="flex flex-col items-center">
-          <div className="px-3 py-1 rounded-full text-xs font-medium" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }}>
-            ✗ No
-          </div>
-          <Handle 
-            type="source" 
-            position={Position.Bottom} 
-            id="no" 
-            className="!w-4 !h-4 !rounded-full !border-2 !relative !transform-none !left-0"
-            style={{ background: '#ef4444', borderColor: '#0c0c0f', marginTop: '8px' }}
-          />
+        <div style={{ width: 1, background: 'rgba(255,255,255,0.06)' }} />
+        <div 
+          className="flex-1 py-2 text-center"
+          style={{ background: 'rgba(239, 68, 68, 0.1)' }}
+        >
+          <span className="text-[10px] text-red-400 font-medium">✗ No</span>
         </div>
       </div>
+      
+      {/* Handle Sí (abajo izquierda) */}
+      <Handle 
+        type="source" 
+        position={Position.Bottom}
+        id="true"
+        className="!w-3 !h-3 !rounded-full !border-2"
+        style={{ 
+          background: '#22c55e', 
+          borderColor: '#1a1a24',
+          left: '25%',
+          bottom: -6,
+          boxShadow: '0 0 8px rgba(34, 197, 94, 0.5)'
+        }}
+      />
+      
+      {/* Handle No (abajo derecha) */}
+      <Handle 
+        type="source" 
+        position={Position.Bottom}
+        id="false"
+        className="!w-3 !h-3 !rounded-full !border-2"
+        style={{ 
+          background: '#ef4444', 
+          borderColor: '#1a1a24',
+          left: '75%',
+          bottom: -6,
+          boxShadow: '0 0 8px rgba(239, 68, 68, 0.5)'
+        }}
+      />
     </div>
   );
 }

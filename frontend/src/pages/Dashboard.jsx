@@ -43,60 +43,257 @@ const MiniDonut = ({ percentage, color, size = 40 }) => {
   );
 };
 
-// Stat Card Component
-const StatCard = ({ icon, label, value, color, link, trend }) => (
+// Stat Card Component - Rediseñado con glassmorphism y gradientes
+const StatCard = ({ icon, label, value, color, link, trend, delay = 0 }) => (
   <Link
     to={link}
-    className="group p-5 rounded-xl transition-all duration-200 hover:bg-slate-700/50"
+    className="group relative p-6 rounded-2xl transition-all duration-500 hover:scale-[1.03] hover:-translate-y-2 overflow-hidden"
     style={{
-      background: 'rgba(51, 65, 85, 0.4)',
-      border: '1px solid rgba(100, 116, 139, 0.3)'
+      background: 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))',
+      backdropFilter: 'blur(20px)',
+      border: '1px solid rgba(255, 255, 255, 0.08)',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+      animation: 'fade-up 0.5s ease-out forwards',
+      animationDelay: `${delay}ms`,
+      opacity: 0
     }}
   >
-    <div className="flex items-center justify-between mb-3">
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${
-        color === 'blue' ? 'bg-indigo-500' :
-        color === 'green' ? 'bg-emerald-500' :
-        color === 'purple' ? 'bg-pink-500' :
-        'bg-amber-500'
+    {/* Glow effect on hover */}
+    <div className={`absolute -top-12 -right-12 w-32 h-32 rounded-full blur-3xl opacity-0 group-hover:opacity-40 transition-opacity duration-500 ${
+      color === 'blue' ? 'bg-indigo-500' :
+      color === 'green' ? 'bg-emerald-500' :
+      color === 'purple' ? 'bg-violet-500' :
+      'bg-amber-500'
+    }`} />
+    
+    <div className="relative flex items-start justify-between mb-4">
+      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 ${
+        color === 'blue' ? 'bg-gradient-to-br from-indigo-500 to-blue-600 shadow-lg shadow-indigo-500/30' :
+        color === 'green' ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30' :
+        color === 'purple' ? 'bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-500/30' :
+        'bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/30'
       }`}>
         {icon}
       </div>
       {trend && (
-        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-emerald-500/20 text-emerald-400">
+        <span className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-full font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
           {trend}
         </span>
       )}
     </div>
-    <p className="text-2xl font-semibold text-slate-100 mb-0.5">{value.toLocaleString()}</p>
-    <p className="text-sm text-slate-400">{label}</p>
+    <p className="relative text-4xl font-bold text-white mb-1 tracking-tight">{value.toLocaleString()}</p>
+    <p className="relative text-sm text-slate-400 font-medium">{label}</p>
+    
+    {/* Arrow indicator */}
+    <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+      <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+      </svg>
+    </div>
   </Link>
 );
 
-// Quick Action Card
-const QuickAction = ({ to, icon, label, desc, color }) => (
+// Quick Action Card - Rediseñado
+const QuickAction = ({ to, icon, label, desc, color, delay = 0 }) => (
   <Link 
     to={to} 
-    className="group p-5 rounded-xl transition-all duration-200 text-center hover:bg-slate-700/50"
+    className="group relative p-6 rounded-2xl transition-all duration-500 hover:scale-[1.05] overflow-hidden"
     style={{
-      background: 'rgba(51, 65, 85, 0.4)',
-      border: '1px solid rgba(100, 116, 139, 0.3)'
+      background: 'linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))',
+      border: '1px solid rgba(255, 255, 255, 0.06)',
+      animation: 'fade-up 0.5s ease-out forwards',
+      animationDelay: `${delay}ms`,
+      opacity: 0
     }}
   >
-    <div className={`w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center transition-transform duration-200 group-hover:scale-110 text-white ${
-      color === 'blue' ? 'bg-indigo-500' :
-      color === 'purple' ? 'bg-pink-500' :
-      color === 'green' ? 'bg-emerald-500' :
-      'bg-amber-500'
+    {/* Animated gradient border on hover */}
+    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl`}
+      style={{
+        background: color === 'blue' 
+          ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), transparent, rgba(59, 130, 246, 0.15))'
+          : color === 'purple'
+          ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.15), transparent, rgba(168, 85, 247, 0.15))'
+          : color === 'green'
+          ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), transparent, rgba(20, 184, 166, 0.15))'
+          : 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), transparent, rgba(249, 115, 22, 0.15))'
+      }}
+    />
+    
+    <div className={`relative w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:-rotate-6 text-white ${
+      color === 'blue' ? 'bg-gradient-to-br from-indigo-500 to-blue-600 shadow-xl shadow-indigo-500/25' :
+      color === 'purple' ? 'bg-gradient-to-br from-violet-500 to-purple-600 shadow-xl shadow-violet-500/25' :
+      color === 'green' ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-xl shadow-emerald-500/25' :
+      'bg-gradient-to-br from-amber-500 to-orange-600 shadow-xl shadow-amber-500/25'
     }`}>
       {icon}
     </div>
-    <h3 className="text-sm font-medium text-slate-200 group-hover:text-indigo-400 transition-colors mb-0.5">
+    <h3 className="relative text-base font-semibold text-slate-100 text-center group-hover:text-white transition-colors duration-300 mb-1">
       {label}
     </h3>
-    <p className="text-xs text-slate-500">{desc}</p>
+    <p className="relative text-sm text-slate-500 text-center group-hover:text-slate-400 transition-colors">{desc}</p>
   </Link>
 );
+
+// Gráfico de área SVG para tendencias
+const AreaChart = ({ data, color, height = 60 }) => {
+  if (!data || data.length === 0) return null;
+  
+  const max = Math.max(...data, 1);
+  const min = Math.min(...data, 0);
+  const range = max - min || 1;
+  const width = 200;
+  
+  // Crear puntos para el path
+  const points = data.map((value, i) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - ((value - min) / range) * (height - 10);
+    return `${x},${y}`;
+  }).join(' ');
+  
+  // Path para el área
+  const areaPath = `M0,${height} L${points} L${width},${height} Z`;
+  const linePath = `M${points}`;
+  
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id={`gradient-${color}`} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill={`url(#gradient-${color})`} />
+      <path d={linePath} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+};
+
+// Panel de métricas avanzadas
+const MetricsPanel = ({ stats, tables }) => {
+  // Generar datos simulados de tendencia basados en datos reales
+  const generateTrend = (base) => {
+    const trend = [];
+    for (let i = 6; i >= 0; i--) {
+      trend.push(Math.max(0, base - Math.floor(Math.random() * (base * 0.3)) + Math.floor(Math.random() * base * 0.1 * (6 - i))));
+    }
+    trend.push(base);
+    return trend;
+  };
+  
+  const recordsTrend = generateTrend(stats.totalRecords);
+  const fieldsTrend = generateTrend(stats.totalFields);
+  
+  const metrics = [
+    {
+      label: 'Registros totales',
+      value: stats.totalRecords,
+      trend: recordsTrend,
+      change: stats.totalRecords > 0 ? '+12%' : '0%',
+      color: '#8B5CF6',
+      icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375" /></svg>
+    },
+    {
+      label: 'Campos definidos',
+      value: stats.totalFields,
+      trend: fieldsTrend,
+      change: stats.totalFields > 0 ? '+5%' : '0%',
+      color: '#06B6D4',
+      icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" /></svg>
+    },
+    {
+      label: 'Tablas activas',
+      value: tables.length,
+      trend: generateTrend(tables.length),
+      change: tables.length > 0 ? '+8%' : '0%',
+      color: '#10B981',
+      icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3z" /><path strokeLinecap="round" strokeLinejoin="round" d="M4 11h16M9 4v16" /></svg>
+    },
+  ];
+  
+  // Distribución de registros por tabla
+  const distribution = stats.recordsByTable?.slice(0, 5) || [];
+  const totalForPie = distribution.reduce((sum, t) => sum + t.count, 0) || 1;
+  
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8 animate-fade-up" style={{ animationDelay: '300ms' }}>
+      {/* Métricas con tendencia */}
+      {metrics.map((metric, i) => (
+        <div 
+          key={i}
+          className="p-5 rounded-2xl relative overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
+            border: '1px solid rgba(255,255,255,0.06)',
+          }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div 
+              className="w-9 h-9 rounded-xl flex items-center justify-center"
+              style={{ background: `${metric.color}20`, color: metric.color }}
+            >
+              {metric.icon}
+            </div>
+            {metric.value > 0 && (
+              <span className="text-xs px-2 py-1 rounded-full font-medium text-emerald-400 bg-emerald-500/15 border border-emerald-500/20">
+                {metric.change}
+              </span>
+            )}
+          </div>
+          <p className="text-2xl font-bold text-white mb-1">{metric.value.toLocaleString()}</p>
+          <p className="text-xs text-slate-500 mb-3">{metric.label}</p>
+          <div className="h-12">
+            <AreaChart data={metric.trend} color={metric.color} height={48} />
+          </div>
+        </div>
+      ))}
+      
+      {/* Distribución por tabla */}
+      <div 
+        className="p-5 rounded-2xl"
+        style={{
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
+          border: '1px solid rgba(255,255,255,0.06)',
+        }}
+      >
+        <h4 className="text-sm font-medium text-slate-200 mb-4">Distribución de datos</h4>
+        {distribution.length > 0 ? (
+          <div className="space-y-3">
+            {distribution.map((item, i) => {
+              const percentage = Math.round((item.count / totalForPie) * 100);
+              const colors = ['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EC4899'];
+              return (
+                <div key={i}>
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-slate-400 truncate max-w-[120px]">{item.name}</span>
+                    <span className="text-slate-500">{item.count}</span>
+                  </div>
+                  <div className="h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${percentage}%`, background: colors[i % colors.length] }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-24 text-slate-500">
+            <svg className="w-8 h-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
+            </svg>
+            <span className="text-xs">Sin datos aún</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 
 // Guía paso a paso para nuevos usuarios
 const GettingStartedGuide = ({ tables, agents }) => {
@@ -448,17 +645,22 @@ export default function Dashboard() {
             )}
             
             {/* Stats principales */}
-            <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard icon={Icons.tables} label="Tablas" value={tables.length} color="blue" link="/tables" trend={tables.length > 0 ? "+12%" : ""} />
-              <StatCard icon={Icons.records} label="Registros" value={stats.totalRecords} color="green" link="/tables" trend={stats.totalRecords > 0 ? "+8%" : ""} />
-              <StatCard icon={Icons.fields} label="Campos" value={stats.totalFields} color="purple" link="/tables" />
-              <StatCard icon={Icons.agents} label="Asistentes" value={agents.length} color="amber" link="/agents" />
+            <section className="grid grid-cols-2 md:grid-cols-4 gap-4" data-tour="stats-cards">
+              <StatCard icon={Icons.tables} label="Tablas" value={tables.length} color="blue" link="/tables" trend={tables.length > 0 ? "+12%" : ""} delay={100} />
+              <StatCard icon={Icons.records} label="Registros" value={stats.totalRecords} color="green" link="/tables" trend={stats.totalRecords > 0 ? "+8%" : ""} delay={150} />
+              <StatCard icon={Icons.fields} label="Campos" value={stats.totalFields} color="purple" link="/tables" delay={200} />
+              <StatCard icon={Icons.agents} label="Asistentes" value={agents.length} color="amber" link="/agents" delay={250} />
             </section>
 
+            {/* Panel de métricas visuales */}
+            {(tables.length > 0 || stats.totalRecords > 0) && (
+              <MetricsPanel stats={stats} tables={tables} />
+            )}
+
             {/* Gráficos y visualizaciones */}
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-up" style={{ animationDelay: '300ms', animationFillMode: 'backwards' }}>
               {/* Registros por tabla */}
-              <div className="p-6 rounded-xl" style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
+              <div className="p-6 rounded-xl transition-all duration-300 hover:shadow-lg hover:-translate-y-1" style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h3 className="text-sm font-semibold text-slate-100">Registros por tabla</h3>
@@ -548,20 +750,20 @@ export default function Dashboard() {
             </section>
 
             {/* Acciones rápidas */}
-            <section>
+            <section className="animate-fade-up" style={{ animationDelay: '400ms', animationFillMode: 'backwards' }} data-tour="quick-actions">
               <h2 className="text-lg font-semibold text-slate-100 mb-4">¿Qué quieres hacer?</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <QuickAction to="/tables" icon={Icons.tables} label="Ver mis datos" desc="Tablas y registros" color="blue" />
-                <QuickAction to="/agents" icon={Icons.agents} label="Mi asistente" desc="Configuración de IA" color="purple" />
-                <QuickAction to="/chat" icon={Icons.chat} label="Chatear" desc="Hablar con tu asistente" color="green" />
-                <QuickAction to="/flows" icon={Icons.flows} label="Automatizar" desc="Tareas automáticas" color="amber" />
+                <QuickAction to="/tables" icon={Icons.tables} label="Ver mis datos" desc="Tablas y registros" color="blue" delay={450} />
+                <QuickAction to="/agents" icon={Icons.agents} label="Mi asistente" desc="Configuración de IA" color="purple" delay={500} />
+                <QuickAction to="/chat" icon={Icons.chat} label="Chatear" desc="Hablar con tu asistente" color="green" delay={550} />
+                <QuickAction to="/flows" icon={Icons.flows} label="Automatizar" desc="Tareas automáticas" color="amber" delay={600} />
               </div>
             </section>
 
             {/* Actividad reciente y Tablas */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-up" style={{ animationDelay: '650ms', animationFillMode: 'backwards' }}>
               {/* Actividad reciente */}
-              <div className="lg:col-span-1 p-6 rounded-xl" style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
+              <div className="lg:col-span-1 p-6 rounded-xl transition-all duration-300 hover:shadow-lg" style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-slate-100">Actividad reciente</h3>
                   {Icons.clock}

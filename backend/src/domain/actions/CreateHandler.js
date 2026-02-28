@@ -218,7 +218,10 @@ export class CreateHandler extends ActionHandler {
     const analysisHasFields = context.analysis?.create?.fields && 
       Object.keys(context.analysis.create.fields).length > 0;
     
-    if (isNewPendingCreate && !analysisHasFields) {
+    // Verificar si el fallback en _initPendingCreate ya extrajo campos suficientes
+    const fallbackExtractedAll = isNewPendingCreate && context.isComplete();
+    
+    if (isNewPendingCreate && !analysisHasFields && !fallbackExtractedAll) {
       // Mensaje de intención pura ("quiero registrar una venta") sin datos
       // No correr FieldCollector, ir directo a preguntar el primer campo
       return await this._askForNextField(context);
@@ -477,6 +480,17 @@ export class CreateHandler extends ActionHandler {
       context.mergeFields(context.analysis.create.fields);
     }
     
+    // ═══ FALLBACK: Extracción inteligente del mensaje ═══
+    // Si el LLM no extrajo campos pero el mensaje tiene datos, extraerlos aquí
+    const extractedFields = context.analysis?.create?.fields || {};
+    if (Object.keys(extractedFields).length === 0 && context.message?.length > 15) {
+      const fallbackFields = this._extractFieldsFromMessage(context.message, fieldsConfig);
+      if (Object.keys(fallbackFields).length > 0) {
+        console.log('[CreateHandler] FALLBACK extraction:', fallbackFields);
+        context.mergeFields(fallbackFields);
+      }
+    }
+    
     // IMPORTANTE: Guardar estado después de inicializar
     context.savePendingState();
     
@@ -487,6 +501,126 @@ export class CreateHandler extends ActionHandler {
     });
   }
   
+  /**
+   * Extrae campos del mensaje del usuario cuando el LLM no lo hizo.
+   * Usa patrones de NLP para detectar nombres, cantidades, fechas, etc.
+   * 
+   * @param {string} message - Mensaje del usuario
+   * @param {Array} fieldsConfig - Configuración de campos de la tabla
+   * @returns {object} Campos extraídos
+   * @private
+   */
+  _extractFieldsFromMessage(message, fieldsConfig) {
+    const extracted = {};
+    const msgLower = message.toLowerCase();
+    
+    // Patrones de extracción
+    const patterns = {
+      // Nombre de persona: "soy [nombre]", "me llamo [nombre]", "mi nombre es [nombre]"
+      nome: /(?:soy|me llamo|mi nombre es|i(?:'| a)?m|my name is)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)?)/i,
+      
+      // Cantidad: "10 licencias", "5 unidades", "cantidad 3", "3 productos"
+      cantidad: /(\d+)\s*(?:licencias?|unidades?|productos?|piezas?|items?|units?)?/i,
+      
+      // Producto: después de "de" o "registrar": "venta de software", "10 licencias de CRM"
+      producto: /(?:de|registrar|venta de|pedido de|compra de)\s+(\d+\s+)?([a-záéíóúñ\s]+?)(?:\s+(?:para|a|por)|\s*$)/i,
+      
+      // Fecha: "mañana", "hoy", "para el lunes", fechas formato
+      fecha: /(?:para|el|fecha)\s*(hoy|mañana|pasado mañana|lunes|martes|miércoles|jueves|viernes|sábado|domingo|\d{1,2}[-/]\d{1,2}(?:[-/]\d{2,4})?)/i,
+      
+      // Hora: "a las 3", "15:00", "3pm"
+      hora: /(?:a las?\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i,
+      
+      // Email
+      email: /[\w.-]+@[\w.-]+\.\w+/i,
+      
+      // Teléfono: 10 dígitos
+      telefono: /\b(\d{10})\b/,
+    };
+    
+    // Buscar campos en fieldsConfig que coincidan con patrones
+    for (const field of fieldsConfig) {
+      const key = field.key?.toLowerCase() || '';
+      const label = field.label?.toLowerCase() || '';
+      
+      // Cliente/Nombre
+      if ((key.includes('cliente') || key.includes('nombre') || label.includes('cliente') || label.includes('nombre')) && !extracted[field.key]) {
+        const match = message.match(patterns.nome);
+        if (match) {
+          extracted[field.key] = match[1].trim();
+        }
+      }
+      
+      // Cantidad
+      if ((key.includes('cantidad') || label.includes('cantidad')) && !extracted[field.key]) {
+        const match = message.match(patterns.cantidad);
+        if (match && parseInt(match[1]) > 0 && parseInt(match[1]) < 10000) {
+          extracted[field.key] = parseInt(match[1]);
+        }
+      }
+      
+      // Producto - buscar en el mensaje después de palabras clave
+      if ((key.includes('producto') || key.includes('articulo') || label.includes('producto')) && !extracted[field.key]) {
+        // Buscar productos conocidos en el mensaje
+        const productWords = ['software', 'crm', 'licencia', 'servidor', 'cloud', 'producto', 'servicio', 'consultor', 'plan', 'suscripcion', 'hosting', 'app', 'sistema'];
+        for (const word of productWords) {
+          if (msgLower.includes(word)) {
+            // Extraer el contexto alrededor de la palabra (hasta 3 palabras)
+            const productMatch = message.match(new RegExp(`((?:[A-Za-záéíóúñÁÉÍÓÚÑ]+\\s+)?${word}(?:\\s+[A-Za-záéíóúñÁÉÍÓÚÑ]+){0,2})`, 'i'));
+            if (productMatch) {
+              extracted[field.key] = productMatch[1].trim();
+              break;
+            }
+          }
+        }
+        
+        // Fallback: extraer lo que viene después de la cantidad
+        // e.g. "venta de 2 Servidor Cloud" → "Servidor Cloud"
+        if (!extracted[field.key]) {
+          const afterQuantity = message.match(/\b\d+\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-Za-záéíóúñÁÉÍÓÚÑ]+){0,3})/);
+          if (afterQuantity) {
+            // Filtrar palabras que son otros campos (como nombres de personas ya extraídos)
+            const candidate = afterQuantity[1].trim();
+            const alreadyExtracted = Object.values(extracted);
+            if (!alreadyExtracted.some(v => typeof v === 'string' && v.toLowerCase() === candidate.toLowerCase())) {
+              extracted[field.key] = candidate;
+            }
+          }
+        }
+      }
+      
+      // Email
+      if ((key.includes('email') || key.includes('correo') || field.type === 'email') && !extracted[field.key]) {
+        const match = message.match(patterns.email);
+        if (match) {
+          extracted[field.key] = match[0];
+        }
+      }
+      
+      // Teléfono
+      if ((key.includes('telefono') || key.includes('phone') || key.includes('celular') || field.type === 'phone') && !extracted[field.key]) {
+        const digits = message.replace(/\D/g, '');
+        if (digits.length >= 10) {
+          extracted[field.key] = digits.slice(0, 10);
+        }
+      }
+      
+      // Titulo/Tarea (para tablas de tareas)
+      if ((key.includes('titulo') || key.includes('tarea') || label.includes('tarea')) && !extracted[field.key]) {
+        const taskMatch = message.match(/(?:agregar|crear|añadir)\s+(?:una?\s+)?(?:tarea)[:\s]+(.+?)(?:,|$)/i)
+          || message.match(/(?:tarea)[:\s]+(.+?)(?:,|$)/i)
+          || message.match(/(?:agregar|crear|añadir)[:\s]+(.+?)(?:,|$)/i);
+        if (taskMatch) {
+          // Limpiar prefijos como "tarea:", "una tarea:"
+          let title = taskMatch[1].trim().replace(/^(?:una?\s+)?(?:tarea)[:\s]+/i, '').trim();
+          extracted[field.key] = title;
+        }
+      }
+    }
+    
+    return extracted;
+  }
+
   /**
    * Genera pregunta para el siguiente campo faltante
    * Si es la primera pregunta (ningún campo recolectado), pide TODOS los campos a la vez
@@ -529,10 +663,13 @@ export class CreateHandler extends ActionHandler {
     const nextField = sortedConfig.find(fc => context.missingFields.includes(fc.key));
     
     if (!nextField) {
-      // No debería pasar, pero por si acaso
+      // Todos los campos están completos, mostrar resumen y confirmar
+      const fieldsConfig = sortedConfig;
+      const progress = this._buildProgressSummary(context.collectedFields, fieldsConfig);
+      context.savePendingState();
       return {
         handled: true,
-        response: '¿Hay algo más que necesites proporcionar?',
+        response: progress + '\n¿Deseas confirmar el registro?',
       };
     }
     
@@ -797,13 +934,49 @@ NO uses emojis excesivos.`,
           };
         }
         
-        // Si no podemos identificar el campo, limpiar todo y preguntar de nuevo
+        // Si el error menciona que algo "no existe", ofrecer opciones disponibles
+        const errorMsg = beforeCreateResult.error || 'No se puede crear el registro';
+        let enhancedError = `❌ ${errorMsg}`;
+        
+        // Intentar sugerir opciones del campo que falló
+        if (errorMsg.includes('no existe') && context.pendingCreate) {
+          const fieldMatch = errorMsg.match(/(?:el|la)\s+(\w+)\s+"([^"]+)"/i);
+          if (fieldMatch) {
+            const fieldName = fieldMatch[1].toLowerCase(); // e.g. "producto"
+            // Buscar el campo de relación correspondiente en los headers de la tabla
+            const tableSchema = context.tables?.find(t => (t.id || t._id) === context.pendingCreate.tableId);
+            const relationHeader = (tableSchema?.headers || tableSchema?.fields || []).find(h => {
+              const hKey = (h.key || h.name || h)?.toString().toLowerCase();
+              return hKey === fieldName || hKey?.includes(fieldName);
+            });
+            // If relationHeader has a targetTable, offer to let user pick
+            if (relationHeader && typeof relationHeader === 'object') {
+              enhancedError += `\n\n💡 Puedes intentar con otro nombre o preguntarme qué opciones hay disponibles.`;
+            }
+          }
+        }
+        
+        // Limpiar solo el campo problemático, no todos
+        if (context.pendingCreate?.fields) {
+          const errorLower = errorMsg.toLowerCase();
+          const problemField = Object.keys(context.pendingCreate.fields).find(k => 
+            errorLower.includes(k.toLowerCase())
+          );
+          if (problemField) {
+            delete context.collectedFields?.[problemField];
+            delete context.pendingCreate.fields[problemField];
+            context.missingFields = [problemField];
+            context.savePendingState();
+            return { handled: true, response: `${enhancedError}\n\n¿Con qué ${problemField} deseas intentar?` };
+          }
+        }
+        
         context.clearCollectedFields();
         context.savePendingState();
         
         return {
           handled: true,
-          response: `❌ ${beforeCreateResult.error || 'No se puede crear el registro'}\n\n¿Deseas intentar con otros datos?`,
+          response: `${enhancedError}\n\n¿Deseas intentar con otros datos?`,
         };
       }
       

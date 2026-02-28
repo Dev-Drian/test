@@ -97,13 +97,19 @@ export default function Agents() {
       .finally(() => setLoading(false));
   }, [workspaceId]);
 
-  const toggleTable = (tableId) => {
+  const toggleTable = (tableId, tableName) => {
     setSelectedTables((prev) => {
       const exists = prev.find(t => t.tableId === tableId);
       if (exists) {
         return prev.filter(t => t.tableId !== tableId);
       }
-      return [...prev, { tableId, fullAccess: false }];
+      // Por defecto: query y create activos, update y delete desactivados
+      return [...prev, { 
+        tableId, 
+        tableName,
+        fullAccess: false,
+        permissions: { query: true, create: true, update: false, delete: false }
+      }];
     });
   };
 
@@ -113,8 +119,24 @@ export default function Agents() {
     );
   };
 
+  const togglePermission = (tableId, permission) => {
+    setSelectedTables((prev) =>
+      prev.map(t => {
+        if (t.tableId !== tableId) return t;
+        return {
+          ...t,
+          permissions: {
+            ...t.permissions,
+            [permission]: !t.permissions?.[permission]
+          }
+        };
+      })
+    );
+  };
+
   const isTableSelected = (tableId) => selectedTables.some(t => t.tableId === tableId);
   const hasFullAccess = (tableId) => selectedTables.find(t => t.tableId === tableId)?.fullAccess || false;
+  const getPermission = (tableId, perm) => selectedTables.find(t => t.tableId === tableId)?.permissions?.[perm] || false;
 
   const resetForm = () => {
     setName("");
@@ -129,10 +151,23 @@ export default function Agents() {
     setEditingAgent(agent);
     setName(agent.name || "");
     setDescription(agent.description || "");
-    // Convertir formato de tablas
-    const tablesConfig = (agent.tables || []).map(t => 
-      typeof t === 'object' ? t : { tableId: t, fullAccess: true }
-    );
+    // Convertir formato de tablas con permisos
+    const tablesConfig = (agent.tables || []).map(t => {
+      if (typeof t === 'object') {
+        return {
+          tableId: t.tableId,
+          tableName: t.tableName || tables.find(tb => tb._id === t.tableId)?.name || '',
+          fullAccess: t.fullAccess || false,
+          permissions: t.permissions || { query: true, create: true, update: false, delete: false }
+        };
+      }
+      return { 
+        tableId: t, 
+        tableName: tables.find(tb => tb._id === t)?.name || '',
+        fullAccess: true,
+        permissions: { query: true, create: true, update: true, delete: false }
+      };
+    });
     setSelectedTables(tablesConfig);
     setAiModel(agent.aiModel?.[0] || "gpt-4o-mini");
     setShowForm(true);
@@ -232,20 +267,23 @@ export default function Agents() {
   }
 
   return (
-    <div className="min-h-screen p-8" style={{ background: '#0f172a' }}>
+    <div className="min-h-screen p-8" data-tour="agents-welcome" style={{ background: 'linear-gradient(135deg, #0a0a0f 0%, #0f0f18 100%)' }}>
       <div className="max-w-5xl mx-auto animate-fade-in">
         
-        {/* Header */}
-        <header className="mb-8">
+        {/* Header - Rediseñado */}
+        <header className="mb-10">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-violet-500 flex items-center justify-center shadow-lg shadow-violet-500/20 text-white">
-                {Icons.agent}
+            <div className="flex items-center gap-5">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 blur-lg opacity-50" />
+                <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-xl text-white">
+                  {Icons.agent}
+                </div>
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-slate-100 tracking-tight">Asistente IA</h1>
-                <p className="text-sm text-slate-400 mt-0.5">
-                  Configura cómo tu asistente gestionará {workspaceName}
+                <h1 className="text-3xl font-bold text-white tracking-tight">Asistente IA</h1>
+                <p className="text-slate-400 mt-1">
+                  Configura cómo tu asistente gestionará <span className="text-violet-400 font-medium">{workspaceName}</span>
                 </p>
               </div>
             </div>
@@ -253,7 +291,12 @@ export default function Agents() {
             {!showForm && (
               <button 
                 onClick={() => setShowForm(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-violet-500 text-white text-sm font-medium hover:bg-violet-400 transition-colors shadow-lg shadow-violet-500/20"
+                data-tour="agents-create"
+                className="flex items-center gap-2 px-5 py-3 rounded-xl text-white text-sm font-semibold transition-all duration-300 hover:scale-105 active:scale-95"
+                style={{
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
+                  boxShadow: '0 8px 30px rgba(139, 92, 246, 0.4)'
+                }}
               >
                 {Icons.plus}
                 <span>Nuevo asistente</span>
@@ -390,55 +433,87 @@ export default function Agents() {
                     </Link>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {tables.map((t) => (
                       <div
                         key={t._id}
-                        className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
+                        className={`rounded-xl transition-all ${
                           isTableSelected(t._id)
                             ? "bg-violet-500/10"
                             : "hover:bg-slate-700/30"
                         }`}
                         style={{ border: isTableSelected(t._id) ? '1px solid rgba(139, 92, 246, 0.4)' : '1px solid rgba(100, 116, 139, 0.3)' }}
                       >
-                        {/* Checkbox para seleccionar tabla */}
-                        <button
-                          type="button"
-                          onClick={() => toggleTable(t._id)}
-                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
-                            isTableSelected(t._id) ? "bg-violet-500 border-violet-500" : "border-slate-600"
-                          }`}
-                        >
-                          {isTableSelected(t._id) && Icons.check}
-                        </button>
-                        
-                        {/* Nombre de la tabla */}
-                        <div className="flex-1 min-w-0">
-                          <span className={`text-sm font-medium ${isTableSelected(t._id) ? "text-violet-400" : "text-slate-400"}`}>
-                            {t.name}
-                          </span>
-                          <span className="text-xs text-slate-500 ml-2">{t.headers?.length || 0} campos</span>
-                        </div>
-                        
-                        {/* Toggle de acceso completo (solo si está seleccionada) */}
-                        {isTableSelected(t._id) && (
+                        {/* Fila principal */}
+                        <div className="flex items-center gap-3 p-3">
+                          {/* Checkbox para seleccionar tabla */}
                           <button
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); toggleFullAccess(t._id); }}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                              hasFullAccess(t._id)
-                                ? "bg-sky-500/20 text-sky-400 border border-sky-500/40"
-                                : "bg-amber-500/10 text-amber-400 border border-amber-500/30"
+                            onClick={() => toggleTable(t._id, t.name)}
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                              isTableSelected(t._id) ? "bg-violet-500 border-violet-500" : "border-slate-600"
                             }`}
                           >
-                            {hasFullAccess(t._id) ? <><LockOpenIcon size="xs" /> Todo</> : <><LockClosedIcon size="xs" /> Filtrado</>}
+                            {isTableSelected(t._id) && Icons.check}
                           </button>
+                          
+                          {/* Nombre de la tabla */}
+                          <div className="flex-1 min-w-0">
+                            <span className={`text-sm font-medium ${isTableSelected(t._id) ? "text-violet-400" : "text-slate-400"}`}>
+                              {t.name}
+                            </span>
+                            <span className="text-xs text-slate-500 ml-2">{t.headers?.length || 0} campos</span>
+                          </div>
+                          
+                          {/* Toggle de acceso completo (solo si está seleccionada) */}
+                          {isTableSelected(t._id) && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); toggleFullAccess(t._id); }}
+                              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                hasFullAccess(t._id)
+                                  ? "bg-sky-500/20 text-sky-400 border border-sky-500/40"
+                                  : "bg-amber-500/10 text-amber-400 border border-amber-500/30"
+                              }`}
+                            >
+                              {hasFullAccess(t._id) ? <><LockOpenIcon size="xs" /> Todo</> : <><LockClosedIcon size="xs" /> Filtrado</>}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Permisos (solo si está seleccionada) */}
+                        {isTableSelected(t._id) && (
+                          <div className="px-3 pb-3 pt-1 flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-slate-500 mr-1">Permisos:</span>
+                            {[
+                              { key: 'query', label: 'Consultar', color: 'emerald' },
+                              { key: 'create', label: 'Crear', color: 'blue' },
+                              { key: 'update', label: 'Editar', color: 'amber' },
+                              { key: 'delete', label: 'Eliminar', color: 'red' },
+                            ].map(perm => (
+                              <button
+                                key={perm.key}
+                                type="button"
+                                onClick={() => togglePermission(t._id, perm.key)}
+                                className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                                  getPermission(t._id, perm.key)
+                                    ? perm.color === 'emerald' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                                    : perm.color === 'blue' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40'
+                                    : perm.color === 'amber' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                                    : 'bg-red-500/20 text-red-400 border border-red-500/40'
+                                    : 'bg-slate-700/30 text-slate-500 border border-slate-600/30'
+                                }`}
+                              >
+                                {perm.label}
+                              </button>
+                            ))}
+                          </div>
                         )}
                       </div>
                     ))}
                     
                     {/* Leyenda */}
-                    <div className="flex gap-4 pt-2 text-xs text-slate-500">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 pt-2 text-xs text-slate-500">
                       <span className="flex items-center gap-1"><LockOpenIcon size="xs" /> Todo = ve todos los registros</span>
                       <span className="flex items-center gap-1"><LockClosedIcon size="xs" /> Filtrado = solo sus datos</span>
                     </div>
@@ -499,15 +574,21 @@ export default function Agents() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {agents.map((agent) => {
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-tour="agents-list">
+            {agents.map((agent, index) => {
               const modelInfo = AI_MODELS.find(m => m.value === (agent.aiModel?.[0] || 'gpt-4o-mini')) || AI_MODELS[0];
               
               return (
                 <div
                   key={agent._id}
-                  className="group p-5 rounded-xl transition-all hover:bg-slate-700/30"
-                  style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}
+                  className="group p-5 rounded-xl transition-all duration-300 hover:bg-slate-700/30 hover:scale-[1.02] hover:shadow-xl hover:shadow-violet-500/5"
+                  style={{ 
+                    background: 'rgba(51, 65, 85, 0.4)', 
+                    border: '1px solid rgba(100, 116, 139, 0.3)',
+                    animation: 'fade-up 0.4s ease-out forwards',
+                    animationDelay: `${index * 80}ms`,
+                    opacity: 0
+                  }}
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="w-12 h-12 rounded-xl bg-violet-500/15 flex items-center justify-center text-violet-400">

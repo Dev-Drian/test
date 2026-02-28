@@ -27,6 +27,7 @@ export { ActionFactory } from './domain/actions/ActionFactory.js';
 
 // Domain - Fields
 export { FieldCollector } from './domain/fields/FieldCollector.js';
+export { FieldValidator } from './domain/fields/FieldValidator.js';
 
 // Domain - Responses
 export { ResponseBuilder } from './domain/responses/ResponseBuilder.js';

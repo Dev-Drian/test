@@ -66,16 +66,49 @@
     },
     "headers": {
       "type": "array",
+      "description": "Definición de campos/columnas de la tabla",
       "items": {
         "type": "object",
         "properties": {
           "id": { "type": "string" },
-          "key": { "type": "string" },
-          "label": { "type": "string" },
+          "key": { "type": "string", "description": "Identificador único del campo" },
+          "label": { "type": "string", "description": "Nombre visible del campo" },
           "title": { "type": "string" },
-          "type": { "type": "string" },
-          "options": { "type": "array" },
-          "relatedTable": { "type": "string" }
+          "type": { 
+            "type": "string",
+            "enum": ["text", "number", "integer", "currency", "email", "phone", "date", "time", "select", "relation", "textarea", "url", "boolean"],
+            "description": "Tipo de dato del campo"
+          },
+          "options": { "type": "array", "description": "Opciones para campos tipo select" },
+          "relatedTable": { "type": "string", "description": "ID de tabla relacionada para campos tipo relation" },
+          "required": { "type": "boolean", "default": false, "description": "Si el campo es obligatorio" },
+          "validation": {
+            "type": "object",
+            "description": "Reglas de validación del campo",
+            "properties": {
+              "min": { "type": "number", "description": "Valor mínimo (para números) o longitud mínima (para texto)" },
+              "max": { "type": "number", "description": "Valor máximo (para números) o longitud máxima (para texto)" },
+              "pattern": { "type": "string", "description": "Expresión regular para validar el formato" },
+              "patternMessage": { "type": "string", "description": "Mensaje de error cuando no cumple el patrón" },
+              "digits": { "type": "integer", "description": "Número exacto de dígitos (para teléfonos)" },
+              "allowNegative": { "type": "boolean", "default": true, "description": "Permitir valores negativos (para números)" },
+              "customRules": {
+                "type": "array",
+                "description": "Reglas de validación personalizadas",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "rule": { "type": "string", "enum": ["notEmpty", "isPositive", "isNegative", "isInteger", "isDecimal", "minLength", "maxLength", "exactLength", "contains", "notContains", "startsWith", "endsWith", "matches"] },
+                    "value": { "type": ["string", "number"] },
+                    "message": { "type": "string", "description": "Mensaje de error personalizado" }
+                  }
+                }
+              }
+            }
+          },
+          "defaultValue": { "type": ["string", "number", "boolean", "null"], "description": "Valor por defecto" },
+          "placeholder": { "type": "string", "description": "Texto de ayuda en el input" },
+          "helpText": { "type": "string", "description": "Texto de ayuda adicional" }
         }
       }
     },

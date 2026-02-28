@@ -3,6 +3,7 @@ import { useContext, useState } from "react";
 import { WorkspaceContext } from "../context/WorkspaceContext";
 import { useAuth } from "../context/AuthContext";
 import WorkspaceSelector from "./WorkspaceSelector";
+import HelpButton from "./HelpButton";
 
 // Iconos SVG minimalistas
 const Icons = {
@@ -67,14 +68,14 @@ const Icons = {
 };
 
 const navItems = [
-  { to: "/", label: "Inicio", icon: Icons.home },
-  { to: "/workspaces", label: "Proyectos", icon: Icons.workspaces },
-  { to: "/agents", label: "Asistente IA", icon: Icons.agents },
-  { to: "/tables", label: "Mis datos", icon: Icons.tables },
-  { to: "/views", label: "Vistas", icon: Icons.views },
-  { to: "/flows", label: "Automatizar", icon: Icons.flows },
-  { to: "/chat", label: "Chat", icon: Icons.chat },
-  { to: "/guia", label: "Ayuda", icon: Icons.guide },
+  { to: "/", label: "Inicio", icon: Icons.home, tourId: "nav-home" },
+  { to: "/workspaces", label: "Proyectos", icon: Icons.workspaces, tourId: "nav-workspaces" },
+  { to: "/agents", label: "Asistente IA", icon: Icons.agents, tourId: "nav-agents" },
+  { to: "/tables", label: "Mis datos", icon: Icons.tables, tourId: "nav-tables" },
+  { to: "/views", label: "Vistas", icon: Icons.views, tourId: "nav-views" },
+  { to: "/flows", label: "Automatizar", icon: Icons.flows, tourId: "nav-flows" },
+  { to: "/chat", label: "Chat", icon: Icons.chat, tourId: "nav-chat" },
+  { to: "/guia", label: "Ayuda", icon: Icons.guide, tourId: "nav-guide" },
 ];
 
 export default function Layout() {
@@ -95,24 +96,27 @@ export default function Layout() {
   };
 
   return (
-    <div className="flex min-h-screen" style={{ background: '#0f172a' }}>
-      {/* Sidebar */}
+    <div className="flex min-h-screen" style={{ background: 'linear-gradient(135deg, #0a0a0f 0%, #0f0f18 100%)' }} data-tour="welcome">
+      {/* Sidebar - Rediseñado con glassmorphism */}
       <aside 
+        data-tour="sidebar"
         className={`${collapsed ? 'w-[72px]' : 'w-[260px]'} flex flex-col transition-all duration-300 ease-out`}
         style={{ 
-          background: '#1e293b',
-          borderRight: '1px solid rgba(100, 116, 139, 0.3)'
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
+          backdropFilter: 'blur(20px)',
+          borderRight: '1px solid rgba(255, 255, 255, 0.08)'
         }}
       >
         {/* Logo Header */}
-        <div className="h-16 px-4 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
+        <div className="h-16 px-4 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
           <div className={`flex items-center gap-3 ${collapsed ? 'justify-center w-full' : ''}`}>
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white bg-indigo-500">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg"
+              style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)', boxShadow: '0 4px 20px rgba(139, 92, 246, 0.4)' }}>
               {Icons.logo}
             </div>
             {!collapsed && (
               <div className="flex flex-col">
-                <span className="text-[15px] font-semibold text-slate-100">FlowAI</span>
+                <span className="text-[15px] font-bold text-white">FlowAI</span>
                 <span className="text-[10px] font-medium text-slate-500">Automation Platform</span>
               </div>
             )}
@@ -120,7 +124,7 @@ export default function Layout() {
           {!collapsed && (
             <button 
               onClick={() => setCollapsed(true)}
-              className="p-1.5 rounded-lg transition-all hover:bg-slate-600/40 text-slate-500"
+              className="p-1.5 rounded-lg transition-all hover:bg-white/10 text-slate-500 hover:text-white"
             >
               {Icons.chevronRight}
             </button>
@@ -129,7 +133,7 @@ export default function Layout() {
 
         {/* Workspace Selector */}
         {!collapsed && (
-          <div className="px-3 py-4" style={{ borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
+          <div className="px-3 py-4" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }} data-tour="workspace-selector">
             <WorkspaceSelector />
           </div>
         )}
@@ -137,18 +141,23 @@ export default function Layout() {
         {/* Navigation */}
         <nav className="flex-1 py-4 px-3 overflow-y-auto">
           <div className="space-y-1">
-            {navItems.map(({ to, label, icon }) => (
+            {navItems.map(({ to, label, icon, tourId }) => (
               <Link
                 key={to}
                 to={to}
-                className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 ${collapsed ? 'justify-center px-2.5' : ''} ${
+                data-tour={tourId}
+                className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-300 ${collapsed ? 'justify-center px-2.5' : ''} ${
                   isActive(to) 
-                    ? 'bg-slate-600/50 text-slate-100' 
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-600/30'
+                    ? 'text-white' 
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
+                style={isActive(to) ? {
+                  background: 'linear-gradient(90deg, rgba(139, 92, 246, 0.2) 0%, rgba(99, 102, 241, 0.1) 100%)',
+                  boxShadow: '0 0 20px rgba(139, 92, 246, 0.1)'
+                } : {}}
                 title={collapsed ? label : undefined}
               >
-                <span className={`transition-all duration-200 ${isActive(to) ? 'text-indigo-400' : ''}`}>
+                <span className={`transition-all duration-200 ${isActive(to) ? 'text-violet-400' : ''}`}>
                   {icon}
                 </span>
                 {!collapsed && <span>{label}</span>}
@@ -162,12 +171,12 @@ export default function Layout() {
           </div>
         </nav>
 
-        {/* Footer con workspace activo y usuario */}
-        <div className="p-3" style={{ borderTop: '1px solid rgba(100, 116, 139, 0.3)' }}>
+        {/* Footer con workspace activo y usuario - Rediseñado */}
+        <div className="p-3" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
           {collapsed ? (
             <button 
               onClick={() => setCollapsed(false)}
-              className="w-full p-2.5 rounded-xl transition-all flex items-center justify-center hover:bg-slate-600/40 text-slate-500"
+              className="w-full p-2.5 rounded-xl transition-all flex items-center justify-center hover:bg-white/10 text-slate-500 hover:text-white"
             >
               <svg className="w-5 h-5 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -176,21 +185,21 @@ export default function Layout() {
           ) : (
             <div className="space-y-2">
               {workspaceId ? (
-                <div className="flex items-center gap-3 px-3 py-3 rounded-xl"
+                <div className="flex items-center gap-3 px-3 py-3 rounded-xl transition-all"
                   style={{ 
-                    background: 'rgba(51, 65, 85, 0.4)',
-                    border: '1px solid rgba(100, 116, 139, 0.3)'
+                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)'
                   }}>
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-emerald-500/20">
-                    <svg className="w-4.5 h-4.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/30">
+                    <svg className="w-4.5 h-4.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <span className="block text-[10px] font-semibold uppercase tracking-wider text-emerald-400">
-                      Workspace activo
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                      Activo
                     </span>
-                    <span className="block text-sm font-medium text-slate-100 truncate mt-0.5">
+                    <span className="block text-sm font-semibold text-white truncate mt-0.5">
                       {workspaceName}
                     </span>
                   </div>
@@ -198,11 +207,11 @@ export default function Layout() {
               ) : (
                 <div className="flex items-center gap-3 px-3 py-3 rounded-xl"
                   style={{ 
-                    background: 'rgba(51, 65, 85, 0.3)',
-                    border: '1px solid rgba(100, 116, 139, 0.2)'
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.06)'
                   }}>
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-slate-700/50">
-                    <div className="w-2 h-2 rounded-full animate-pulse bg-indigo-400" />
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/5">
+                    <div className="w-2 h-2 rounded-full animate-pulse bg-violet-400" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500">
@@ -215,17 +224,18 @@ export default function Layout() {
                 </div>
               )}
               
-              {/* User info & logout */}
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl"
+              {/* User info & logout - Rediseñado */}
+              <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all"
                 style={{ 
-                  background: 'rgba(51, 65, 85, 0.3)',
-                  border: '1px solid rgba(100, 116, 139, 0.2)'
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)'
                 }}>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-indigo-500/20 text-indigo-400 text-sm font-semibold">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
+                  style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' }}>
                   {user?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="block text-xs font-medium text-slate-200 truncate">
+                  <span className="block text-xs font-semibold text-white truncate">
                     {user?.name || 'Usuario'}
                   </span>
                   <span className="block text-[10px] text-slate-500 truncate">
@@ -234,7 +244,7 @@ export default function Layout() {
                 </div>
                 <button 
                   onClick={handleLogout}
-                  className="p-1.5 rounded-lg hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-all"
+                  className="p-2 rounded-lg hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-all"
                   title="Cerrar sesión"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -251,6 +261,9 @@ export default function Layout() {
       <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
+      
+      {/* Botón de ayuda flotante */}
+      <HelpButton />
     </div>
   );
 }
