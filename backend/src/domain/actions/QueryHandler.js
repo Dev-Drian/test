@@ -35,11 +35,48 @@ export class QueryHandler extends ActionHandler {
     const tableId = analysis?.tableId;
     // Soportar tanto 'id' (de ChatService) como '_id' (de DB directa)
     const tableSchema = tableId ? tables?.find(t => (t.id || t._id) === tableId) : null;
+    const requestedType = context.llmExtracted?.record_type || analysis?.requestedType;
+    
+    // ════════════════════════════════════════════════════════════════════════
+    // VALIDACIÓN CRÍTICA: Detectar si el LLM eligió una tabla incorrecta
+    // Ejemplo: Usuario pregunta "empleados" pero LLM elige "Departamentos"
+    // porque Departamentos tiene un campo llamado "empleados"
+    // ════════════════════════════════════════════════════════════════════════
+    const messageLower = (message || '').toLowerCase();
+    
+    // Extraer qué entidad menciona el usuario en su mensaje
+    const userRequestedEntity = this._extractEntityFromMessage(messageLower, tables);
+    
+    if (userRequestedEntity && tableSchema) {
+      const userEntityNorm = this._normalizeForComparison(userRequestedEntity);
+      const tableNameNorm = this._normalizeForComparison(tableSchema.name);
+      
+      // Si el usuario pidió una entidad diferente a la tabla elegida por el LLM
+      if (!this._isSimilarTerm(userEntityNorm, tableNameNorm)) {
+        // Buscar si existe una tabla que coincida con lo que el usuario pidió
+        const correctTable = tables?.find(t => 
+          this._isSimilarTerm(userEntityNorm, this._normalizeForComparison(t.name))
+        );
+        
+        if (correctTable) {
+          // Redirigir a la tabla correcta
+          console.log('[QueryHandler] Corrigiendo tabla:', tableSchema.name, '->', correctTable.name);
+          context.analysis.tableId = correctTable.id || correctTable._id;
+          return await this.execute(context); // Re-ejecutar con tabla correcta
+        } else {
+          // La entidad que pidió el usuario no existe como tabla
+          const tableNames = tables?.map(t => t.name) || [];
+          return {
+            handled: true,
+            response: `No tengo una tabla de "${userRequestedEntity}". 📋 Las tablas disponibles son: ${tableNames.join(', ')}. ¿Te ayudo con alguna de estas?`,
+          };
+        }
+      }
+    }
     
     // Si no hay tableId, el LLM no pudo determinar la tabla → sugerir opciones
     if (!tableId || !tableSchema) {
       const tableNames = tables?.map(t => t.name) || [];
-      const requestedType = context.llmExtracted?.record_type || analysis?.requestedType;
       
       // Respuesta amigable según el contexto
       if (tableNames.length === 0) {
@@ -696,10 +733,22 @@ export class QueryHandler extends ActionHandler {
       /^(estado|status|situacion)$/i.test(f)
     );
     
+    // ═══ PATRÓN 0: "busca a/al [entidad] [Nombre Apellido]" ═══
+    // Matches: "busca al empleado Roberto Silva", "busca a María García"
+    if (!isAnalyticalQuestion && nameField) {
+      // Patrón: busca + (a/al) + (entidad opcional) + Nombre Apellido
+      const searchPattern = /busca(?:r)?\s+(?:a|al)\s+(?:(?:el|la|un|una)\s+)?(?:[a-záéíóúñ]+\s+)?([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)+)/i;
+      const searchMatch = message.match(searchPattern);
+      if (searchMatch) {
+        filters[nameField] = searchMatch[1].trim();
+        console.log('[QueryHandler] Extracted name from search pattern:', filters[nameField]);
+      }
+    }
+    
     // ═══ PATRÓN 1: "de [nombre]" ═══
     // Matches: "ventas de María García", "citas de Juan Pérez"
     // SKIP if analytical question (to avoid "de los proyectos" being extracted as a name)
-    if (!isAnalyticalQuestion) {
+    if (!isAnalyticalQuestion && !filters[nameField]) {
       const namePattern = /(?:de|del?)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*)/i;
       const nameMatch = message.match(namePattern);
       if (nameMatch && nameField) {
@@ -734,6 +783,29 @@ export class QueryHandler extends ActionHandler {
         // Capitalizar primera letra
         rawStatus = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1);
         filters[statusField] = rawStatus;
+      }
+    }
+    
+    // ═══ PATRÓN 4: Nombre propio directo en el mensaje ═══
+    // Matches: "Roberto Silva", "Ana Martínez" - cuando aparecen como nombres propios
+    // Solo si no tenemos filtro de nombre aún
+    if (!filters[nameField] && nameField && !isAnalyticalQuestion) {
+      // Buscar secuencia de 2+ palabras capitalizadas que parecen nombre de persona
+      const directNamePattern = /\b([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)?)\b/g;
+      const matches = [...message.matchAll(directNamePattern)];
+      
+      // Filtrar matches que no son palabras comunes o entidades
+      const commonPhrases = /^(El Proyecto|La Tabla|En Curso|Los Datos|Las Ventas|El Cliente|La Empresa|Mi Cuenta)$/i;
+      const tableName = tableSchema?.name || '';
+      
+      for (const match of matches) {
+        const candidate = match[1];
+        // Ignorar si es una frase común o el nombre de la tabla
+        if (!commonPhrases.test(candidate) && !tableName.toLowerCase().includes(candidate.toLowerCase())) {
+          filters[nameField] = candidate;
+          console.log('[QueryHandler] Extracted direct name:', candidate);
+          break;
+        }
       }
     }
     
@@ -1018,6 +1090,100 @@ export class QueryHandler extends ActionHandler {
       console.error('[QueryHandler] Smart analysis error:', error);
       return { handled: true, response: 'Error al realizar el análisis. Intenta de nuevo.' };
     }
+  }
+  
+  /**
+   * Normaliza un string para comparación (minúsculas, sin acentos, sin plurales)
+   * @private
+   */
+  _normalizeForComparison(str) {
+    if (!str) return '';
+    return str.toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Quita acentos
+      .replace(/s$/, ''); // Quita 's' final (singular/plural)
+  }
+  
+  /**
+   * Extrae la entidad que el usuario está solicitando del mensaje
+   * @private
+   */
+  _extractEntityFromMessage(message, tables) {
+    if (!message || !tables?.length) return null;
+    
+    const msgNorm = this._normalizeForComparison(message);
+    
+    // Palabras clave que indican consulta de datos
+    const queryPatterns = [
+      /cuantos?\s+(\w+)/,      // "cuántos empleados", "cuantas ventas"
+      /lista(?:r|me)?\s+(?:los?|las?)?\s*(\w+)/,  // "lista los empleados", "listame clientes"
+      /muestrame?\s+(?:los?|las?)?\s*(\w+)/,      // "muestrame empleados"
+      /ver\s+(?:los?|las?)?\s*(\w+)/,             // "ver los empleados"
+      /busca(?:r)?\s+(?:al?|los?|las?)?\s*(\w+)/, // "buscar al empleado", "busca clientes"
+      /(?:hay|tiene[ns]?)\s+(\w+)/,               // "hay empleados", "tienes clientes"
+      /(\w+)\s+(?:que\s+)?(?:hay|tiene|existen)/, // "empleados que hay"
+      /datos?\s+de\s+(?:los?|las?)?\s*(\w+)/,     // "datos de empleados"
+      /informacion\s+(?:de|sobre)\s+(?:los?|las?)?\s*(\w+)/, // "información sobre empleados"
+    ];
+    
+    for (const pattern of queryPatterns) {
+      const match = msgNorm.match(pattern);
+      if (match && match[1]) {
+        const extractedTerm = match[1];
+        
+        // Verificar si el término extraído coincide con alguna tabla
+        for (const table of tables) {
+          const tableNorm = this._normalizeForComparison(table.name);
+          if (this._isSimilarTerm(extractedTerm, tableNorm)) {
+            return table.name;
+          }
+        }
+        
+        // Si no coincide con ninguna tabla, devolver el término para reportar el error
+        return extractedTerm;
+      }
+    }
+    
+    // Búsqueda directa de nombres de tablas en el mensaje
+    for (const table of tables) {
+      const tableNorm = this._normalizeForComparison(table.name);
+      if (msgNorm.includes(tableNorm)) {
+        return table.name;
+      }
+    }
+    
+    return null;
+  }
+  
+  /**
+   * Verifica si dos términos son similares (considerando variaciones comunes)
+   * @private
+   */
+  _isSimilarTerm(term1, term2) {
+    if (!term1 || !term2) return false;
+    
+    // Coincidencia exacta
+    if (term1 === term2) return true;
+    
+    // Uno contiene al otro
+    if (term1.includes(term2) || term2.includes(term1)) return true;
+    
+    // Variaciones de singular/plural en español
+    const singulares = {
+      'clientes': 'cliente', 'cliente': 'cliente',
+      'empleados': 'empleado', 'empleado': 'empleado',
+      'proyectos': 'proyecto', 'proyecto': 'proyecto',
+      'departamentos': 'departamento', 'departamento': 'departamento',
+      'gastos': 'gasto', 'gasto': 'gasto',
+      'ventas': 'venta', 'venta': 'venta',
+      'productos': 'producto', 'producto': 'producto',
+      'kpis': 'kpi', 'kpi': 'kpi',
+    };
+    
+    const s1 = singulares[term1] || term1;
+    const s2 = singulares[term2] || term2;
+    
+    return s1 === s2;
   }
 }
 
