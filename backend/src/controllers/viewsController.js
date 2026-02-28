@@ -39,15 +39,18 @@ export async function getViewTypes(req, res) {
 /**
  * POST /api/views/analyze
  * Analiza una tabla y sugiere mapeo para un tipo de vista
- * Body: { workspaceId, tableId, viewType }
+ * Body: { workspaceId, tableId, viewType?, selectedFields? }
+ * 
+ * Nuevo flujo: Si no se envía viewType pero sí selectedFields,
+ * el sistema sugiere el mejor tipo de vista basado en los campos.
  */
 export async function analyzeMapping(req, res) {
   try {
-    const { workspaceId, tableId, viewType } = req.body;
+    const { workspaceId, tableId, viewType, selectedFields, relatedTables } = req.body;
     
-    if (!workspaceId || !tableId || !viewType) {
+    if (!workspaceId || !tableId) {
       return res.status(400).json({ 
-        error: 'Se requieren workspaceId, tableId y viewType' 
+        error: 'Se requieren workspaceId y tableId' 
       });
     }
     
@@ -57,16 +60,72 @@ export async function analyzeMapping(req, res) {
       mappingService.setApiKey(apiKey);
     }
     
-    const result = await mappingService.analyzeAndSuggestMapping(
-      workspaceId, 
-      tableId, 
-      viewType
-    );
+    let result;
+    
+    if (viewType) {
+      // Flujo con tipo de vista específico (puede incluir tablas relacionadas)
+      result = await mappingService.analyzeAndSuggestMapping(
+        workspaceId, 
+        tableId, 
+        viewType,
+        relatedTables || []
+      );
+    } else if (selectedFields && selectedFields.length > 0) {
+      // Flujo: analizar campos seleccionados y sugerir tipo de vista
+      result = await mappingService.analyzeFieldsAndSuggestView(
+        workspaceId, 
+        tableId, 
+        selectedFields
+      );
+    } else {
+      return res.status(400).json({ 
+        error: 'Se requiere viewType o selectedFields' 
+      });
+    }
     
     res.json(result);
     
   } catch (err) {
     log.error('analyzeMapping error:', err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+/**
+ * POST /api/views/validate
+ * Valida la configuración de una vista antes de crearla
+ * Body: { workspaceId, tableId, viewType, fieldMap, availableFields, viewName, relatedTables }
+ */
+export async function validateViewConfig(req, res) {
+  try {
+    const { workspaceId, tableId, viewType, fieldMap, availableFields, viewName, relatedTables } = req.body;
+    
+    if (!workspaceId || !tableId || !viewType || !fieldMap) {
+      return res.status(400).json({ 
+        error: 'Se requieren workspaceId, tableId, viewType y fieldMap' 
+      });
+    }
+    
+    // Configurar API key si viene en header
+    const apiKey = req.headers['x-openai-key'] || process.env.OPENAI_API_KEY;
+    if (apiKey) {
+      mappingService.setApiKey(apiKey);
+    }
+    
+    const result = await mappingService.validateViewConfiguration({
+      workspaceId,
+      tableId,
+      viewType,
+      fieldMap,
+      availableFields,
+      viewName,
+      relatedTables: relatedTables || []
+    });
+    
+    res.json(result);
+    
+  } catch (err) {
+    log.error('validateViewConfig error:', err);
     res.status(500).json({ error: err.message });
   }
 }
@@ -675,6 +734,7 @@ export async function manageOrder(req, res) {
 export default {
   getViewTypes,
   analyzeMapping,
+  validateViewConfig,
   listViews,
   getView,
   createView,

@@ -106,6 +106,7 @@ export const getPlanStats = () => api.get("/admin/plans/stats");
 // Views
 export const listViewTypes = () => api.get("/views/types");
 export const analyzeViewMapping = (data) => api.post("/views/analyze", data);
+export const validateViewConfig = (data) => api.post("/views/validate", data);
 export const listViews = (workspaceId, tableId) => 
   api.get("/views", { params: { workspaceId, tableId } });
 export const getView = (viewId, workspaceId) => 

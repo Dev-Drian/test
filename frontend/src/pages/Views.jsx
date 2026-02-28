@@ -14,7 +14,9 @@ import CalendarView from "../components/views/CalendarView";
 import KanbanView from "../components/views/KanbanView";
 import FloorPlanView from "../components/views/FloorPlanView";
 import POSView from "../components/views/POSView";
-import ViewConfigurator from "../components/views/ViewConfigurator";
+import CardsView from "../components/views/CardsView";
+import TableView from "../components/views/TableView";
+import ViewCreatorInline from "../components/views/ViewCreatorInline";
 
 // Iconos SVG
 const Icons = {
@@ -56,7 +58,7 @@ export default function Views() {
   const [error, setError] = useState(null);
   
   // Configurator state
-  const [showConfigurator, setShowConfigurator] = useState(false);
+  const [showCreator, setShowCreator] = useState(false);
   
   // View display state
   const [selectedView, setSelectedView] = useState(null);
@@ -117,7 +119,7 @@ export default function Views() {
         ...viewConfig,
       });
       setViews((prev) => [...prev, res.data]);
-      setShowConfigurator(false);
+      setShowCreator(false);
       toast.success(`Vista "${viewConfig.name}" creada correctamente`);
       handleSelectView(res.data);
     } catch (err) {
@@ -179,6 +181,24 @@ export default function Views() {
             onRefresh={() => loadViewData(selectedView)}
           />
         );
+      case 'cards':
+        return (
+          <CardsView 
+            view={selectedView}
+            data={viewData.data}
+            meta={viewData.meta}
+            onRefresh={() => loadViewData(selectedView)}
+          />
+        );
+      case 'table':
+        return (
+          <TableView 
+            view={selectedView}
+            data={viewData.data}
+            meta={viewData.meta}
+            onRefresh={() => loadViewData(selectedView)}
+          />
+        );
       case 'floorplan':
         return (
           <FloorPlanView 
@@ -199,10 +219,17 @@ export default function Views() {
             onRefresh={() => loadViewData(selectedView)}
           />
         );
+      case 'timeline':
+        // TODO: Implementar TimelineView
+        return (
+          <div className="flex items-center justify-center h-64 text-slate-400">
+            <p>Vista Timeline próximamente disponible</p>
+          </div>
+        );
       default:
         return (
           <div className="flex items-center justify-center h-64 text-slate-400">
-            <p>Vista tipo "{selectedView.type}" próximamente disponible</p>
+            <p>Vista tipo "{selectedView.type}" no reconocida</p>
           </div>
         );
     }
@@ -285,7 +312,7 @@ export default function Views() {
           )}
         </div>
         
-        <ConfirmModal />
+        {ConfirmModal}
       </div>
     );
   }
@@ -307,7 +334,7 @@ export default function Views() {
           </div>
         </div>
         <button
-          onClick={() => setShowConfigurator(true)}
+          onClick={() => setShowCreator(true)}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium transition-colors"
         >
           {Icons.plus}
@@ -340,7 +367,7 @@ export default function Views() {
                 Crea una vista para visualizar tus datos de forma personalizada
               </p>
               <button
-                onClick={() => setShowConfigurator(true)}
+                onClick={() => setShowCreator(true)}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 text-sm transition-colors"
               >
                 {Icons.plus}
@@ -401,18 +428,20 @@ export default function Views() {
         )}
       </div>
       
-      {/* Configurator Modal */}
-      {showConfigurator && (
-        <ViewConfigurator
-          workspaceId={workspaceId}
-          tables={tables}
-          viewTypes={viewTypes}
-          onClose={() => setShowConfigurator(false)}
-          onCreate={handleCreateView}
-        />
+      {/* Inline Creator */}
+      {showCreator && (
+        <div className="fixed inset-0 z-50 bg-slate-900">
+          <ViewCreatorInline
+            workspaceId={workspaceId}
+            tables={tables}
+            viewTypes={viewTypes}
+            onCancel={() => setShowCreator(false)}
+            onCreate={handleCreateView}
+          />
+        </div>
       )}
       
-      <ConfirmModal />
+      {ConfirmModal}
     </div>
   );
 }

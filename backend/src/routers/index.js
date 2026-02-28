@@ -89,6 +89,7 @@ router.put("/notifications/config", requireAuth, notifications.updateConfig);
 // ============ VIEWS ============
 router.get("/views/types", requireAuth, views.getViewTypes);
 router.post("/views/analyze", requireAuth, views.analyzeMapping);
+router.post("/views/validate", requireAuth, views.validateViewConfig);
 router.get("/views", requireAuth, views.listViews);
 router.get("/views/:viewId", requireAuth, views.getView);
 router.get("/views/:viewId/data", requireAuth, views.getViewData);

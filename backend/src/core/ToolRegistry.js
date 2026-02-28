@@ -209,6 +209,87 @@ Si el usuario NO menciona ningún criterio específico (solo "ver clientes") →
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'setup_workspace',
+      description: `Configura el workspace con tablas y vistas prediseñadas. Usa esta herramienta cuando el usuario quiera:
+- Configurar un sistema completo (POS, CRM, citas, etc.)
+- "Quiero un sistema para mi restaurante"
+- "Ayúdame a configurar mi negocio"
+- "Necesito tablas para una clínica"
+- "Configura un sistema de ventas"
+
+NO uses para crear una sola tabla o campo - solo para configuraciones completas de negocio.`,
+      parameters: {
+        type: 'object',
+        properties: {
+          business_type: {
+            type: 'string',
+            description: 'Tipo de negocio detectado: restaurante, clinica, ventas, reservas, tareas, o null si no está claro.',
+          },
+          user_request: {
+            type: 'string',
+            description: 'Lo que el usuario pidió textualmente.',
+          },
+          action: {
+            type: 'string',
+            enum: ['generate_plan', 'confirm', 'modify', 'cancel'],
+            description: 'generate_plan=primera vez, confirm=usuario dijo sí, modify=usuario quiere cambiar algo, cancel=usuario canceló.',
+          },
+          modification: {
+            type: 'string',
+            description: 'Si action=modify, qué quiere modificar el usuario.',
+          },
+        },
+        required: ['user_request', 'action'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_flow',
+      description: `Crea automatizaciones (flujos) en el sistema. Usa esta herramienta cuando el usuario quiera:
+- Crear un flujo de automatización
+- "Quiero que cuando se cree un usuario se envíe un email"
+- "Notificar por correo cuando haya un nuevo pedido"
+- "Crear una automatización para..."
+- "Cuando se cree un registro en X, hacer Y"
+- "Enviar notificación al Gmail cuando..."
+
+Detecta la tabla mencionada y propone el flujo apropiado.`,
+      parameters: {
+        type: 'object',
+        properties: {
+          user_request: {
+            type: 'string',
+            description: 'Lo que el usuario pidió textualmente.',
+          },
+          trigger_table: {
+            type: 'string',
+            description: 'Nombre de la tabla que dispara el flujo (usuarios, clientes, pedidos, etc.) o null si no está claro.',
+          },
+          trigger_event: {
+            type: 'string',
+            enum: ['afterCreate', 'afterUpdate', 'beforeCreate', 'schedule'],
+            description: 'Evento que dispara el flujo.',
+          },
+          action_type: {
+            type: 'string',
+            enum: ['sendEmail', 'createRecord', 'updateRecord', 'notify', 'webhook'],
+            description: 'Tipo de acción a realizar.',
+          },
+          action: {
+            type: 'string',
+            enum: ['analyze', 'propose', 'confirm', 'cancel'],
+            description: 'analyze=primera vez para analizar tablas, propose=mostrar propuesta, confirm=crear el flujo, cancel=cancelar.',
+          },
+        },
+        required: ['user_request', 'action'],
+      },
+    },
+  },
 ];
 
 /**
@@ -363,6 +444,8 @@ class ToolRegistry {
       'update_record': 'UpdateHandler',
       'analyze_data': 'QueryHandler', // Análisis usa QueryHandler
       'general_conversation': 'FallbackHandler',
+      'setup_workspace': 'SetupHandler', // Configuración asistida
+      'create_flow': 'FlowHandler', // Crear automatizaciones
     };
     
     return mapping[toolName] || 'FallbackHandler';

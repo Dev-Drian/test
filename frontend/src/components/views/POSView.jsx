@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import api from '../../api/axios';
+import { api } from '../../api/client';
 
 const STATUS_COLORS = {
   libre: 'bg-green-100 border-green-400 text-green-800',

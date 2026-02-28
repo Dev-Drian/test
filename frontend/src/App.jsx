@@ -196,20 +196,6 @@ function AppContent() {
 
   return (
     <WorkspaceContext.Provider value={workspaceContext}>
-      <Routes>
-        <Route path="/login" element={<LoginRoute />} />
-        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          <Route index element={<Dashboard />} />
-          <Route path="workspaces" element={<Workspaces />} />
-          <Route path="agents" element={<Agents />} />
-          <Route path="tables" element={<Tables />} />
-          <Route path="flows" element={<FlowEditor />} />
-          <Route path="views" element={<Views />} />
-          <Route path="chat" element={<Chat />} />
-          <Route path="guia" element={<Guia />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
       <TourProvider>
         <Routes>
           <Route path="/login" element={<LoginRoute />} />
@@ -218,6 +204,7 @@ function AppContent() {
             <Route path="workspaces" element={<Workspaces />} />
             <Route path="agents" element={<Agents />} />
             <Route path="tables" element={<Tables />} />
+            <Route path="views" element={<Views />} />
             <Route path="flows" element={<Flows />} />
             <Route path="flows/editor" element={<FlowEditor />} />
             <Route path="flows/editor/:flowId" element={<FlowEditor />} />

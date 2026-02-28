@@ -272,14 +272,111 @@ export class ViewMappingService {
   }
   
   /**
+   * Detecta posibles relaciones entre la tabla principal y otras tablas del workspace
+   * @param {object} mainTable - Tabla principal
+   * @param {object[]} allTables - Todas las tablas del workspace
+   * @param {string[]} alreadyRelatedIds - IDs de tablas ya relacionadas
+   * @returns {Array<{tableId, tableName, localField, foreignField, confidence, reason}>}
+   */
+  _detectPossibleRelations(mainTable, allTables, alreadyRelatedIds = []) {
+    const suggestions = [];
+    const mainHeaders = mainTable.headers || [];
+    
+    // Patrones comunes para campos de referencia
+    const refPatterns = [
+      // clienteId, cliente_id, id_cliente, clienteid
+      { pattern: /^(.+?)[-_]?id$/i, type: 'suffix' },
+      { pattern: /^id[-_]?(.+?)$/i, type: 'prefix' },
+      // fk_cliente, ref_cliente
+      { pattern: /^(?:fk|ref)[-_](.+?)$/i, type: 'fk' },
+    ];
+    
+    // Para cada campo de la tabla principal
+    for (const header of mainHeaders) {
+      const fieldKey = (header.key || header.label || '').toLowerCase();
+      
+      // Si ya es un campo tipo relation, sugerir la tabla
+      if (header.type === 'relation' && header.relation?.tableName) {
+        const relatedTable = allTables.find(t => 
+          t.name.toLowerCase() === header.relation.tableName.toLowerCase() &&
+          t._id !== mainTable._id &&
+          !alreadyRelatedIds.includes(t._id)
+        );
+        if (relatedTable) {
+          suggestions.push({
+            tableId: relatedTable._id,
+            tableName: relatedTable.name,
+            localField: header.key || header.label,
+            foreignField: '_id',
+            confidence: 0.95,
+            reason: `El campo "${header.label || header.key}" ya está definido como relación a "${relatedTable.name}"`,
+          });
+        }
+        continue;
+      }
+      
+      // Buscar patrones de referencia
+      for (const { pattern, type } of refPatterns) {
+        const match = fieldKey.match(pattern);
+        if (!match) continue;
+        
+        const possibleTableName = match[1].toLowerCase();
+        
+        // Buscar tabla que coincida con el nombre extraído
+        for (const candidateTable of allTables) {
+          if (candidateTable._id === mainTable._id) continue;
+          if (alreadyRelatedIds.includes(candidateTable._id)) continue;
+          
+          const candidateName = candidateTable.name.toLowerCase();
+          // Comparar nombres (singular/plural, con/sin acentos)
+          const normalizedCandidate = candidateName
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/s$/, ''); // Quitar 's' final para singular
+          const normalizedPossible = possibleTableName
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/s$/, '');
+          
+          if (normalizedCandidate === normalizedPossible || 
+              normalizedCandidate.includes(normalizedPossible) ||
+              normalizedPossible.includes(normalizedCandidate)) {
+            
+            // Buscar campo _id o id en la tabla candidata
+            const candidateHeaders = candidateTable.headers || [];
+            let foreignField = '_id';
+            if (candidateHeaders.some(h => (h.key || h.label)?.toLowerCase() === 'id')) {
+              foreignField = 'id';
+            }
+            
+            // Evitar duplicados
+            if (!suggestions.some(s => s.tableId === candidateTable._id && s.localField === (header.key || header.label))) {
+              suggestions.push({
+                tableId: candidateTable._id,
+                tableName: candidateTable.name,
+                localField: header.key || header.label,
+                foreignField,
+                confidence: 0.8,
+                reason: `El campo "${header.label || header.key}" parece referenciar a "${candidateTable.name}"`,
+              });
+            }
+          }
+        }
+      }
+    }
+    
+    // Ordenar por confianza descendente
+    return suggestions.sort((a, b) => b.confidence - a.confidence);
+  }
+  
+  /**
    * Analiza una tabla y sugiere mapeo para un tipo de vista
    * @param {string} workspaceId 
    * @param {string} tableId 
    * @param {string} viewType - calendar | kanban | timeline | cards | table
+   * @param {Array} relatedTables - [{tableId, localField, foreignField, alias}]
    * @returns {Promise<{status: string, fieldMap: object, suggestions: string[], confidence: number}>}
    */
-  async analyzeAndSuggestMapping(workspaceId, tableId, viewType) {
-    // 1. Obtener info de la tabla
+  async analyzeAndSuggestMapping(workspaceId, tableId, viewType, relatedTables = []) {
+    // 1. Obtener info de la tabla principal
     const table = await this.tableRepo.findById(tableId, workspaceId);
     if (!table) {
       return {
@@ -289,13 +386,45 @@ export class ViewMappingService {
       };
     }
     
-    const headers = table.headers || [];
+    let headers = table.headers || [];
     if (headers.length === 0) {
       return {
         status: 'error',
         message: 'La tabla no tiene campos definidos. Agrega campos primero.',
         fieldMap: null,
       };
+    }
+    
+    // 1a. Obtener todas las tablas del workspace para detectar posibles relaciones
+    const allTables = await this.tableRepo.findAll(workspaceId);
+    const alreadyRelatedIds = relatedTables.map(r => r.tableId);
+    const suggestedRelations = this._detectPossibleRelations(table, allTables, alreadyRelatedIds);
+    
+    // 1b. Si hay tablas relacionadas, obtener sus headers y combinarlos
+    const relatedTablesInfo = [];
+    if (relatedTables && relatedTables.length > 0) {
+      for (const rel of relatedTables) {
+        const relatedTable = await this.tableRepo.findById(rel.tableId, workspaceId);
+        if (relatedTable && relatedTable.headers) {
+          const alias = rel.alias || relatedTable.name;
+          relatedTablesInfo.push({
+            ...rel,
+            table: relatedTable,
+            alias
+          });
+          // Agregar headers con prefijo del alias
+          const prefixedHeaders = relatedTable.headers.map(h => ({
+            key: `${alias}.${h.key || h.label}`,
+            label: `${alias}.${h.label || h.key}`,
+            type: h.type,
+            originalKey: h.key || h.label,
+            fromRelatedTable: true,
+            relatedTableId: rel.tableId,
+            alias
+          }));
+          headers = [...headers, ...prefixedHeaders];
+        }
+      }
     }
     
     // 2. Validar tipo de vista
@@ -324,18 +453,21 @@ export class ViewMappingService {
         fieldMap: autoMapping.fieldMap,
         confidence: autoMapping.confidence,
         suggestions: [],
+        suggestedRelations, // Sugerencias de tablas para relacionar
         mappingMetadata: {
           createdBy: 'auto',
           autoMapped: true,
+          relatedTables: relatedTablesInfo.map(r => ({ tableId: r.tableId, alias: r.alias })),
         },
         tableName: table.name,
         tableHeaders: headers.map(h => h.key || h.label),
+        relatedTablesInfo,
       };
     }
     
     // 6. Usar LLM para mapeo inteligente
     try {
-      const llmResult = await this._llmMapping(table, headers, viewType, viewConfig);
+      const llmResult = await this._llmMapping(table, headers, viewType, viewConfig, relatedTablesInfo);
       
       // Combinar auto-mapeo con LLM (preferir LLM donde hubo dudas)
       const combinedMap = { ...autoMapping.fieldMap };
@@ -356,12 +488,15 @@ export class ViewMappingService {
         confidence: llmResult.confidence || 0.8,
         missing: stillMissing,
         suggestions: llmResult.suggestions || [],
+        suggestedRelations, // Sugerencias de tablas para relacionar
         mappingMetadata: {
           createdBy: 'llm',
           llmModel: 'gpt-4o-mini',
+          relatedTables: relatedTablesInfo.map(r => ({ tableId: r.tableId, alias: r.alias })),
         },
         tableName: table.name,
         tableHeaders: headers.map(h => h.key || h.label),
+        relatedTablesInfo,
       };
       
     } catch (error) {
@@ -376,12 +511,15 @@ export class ViewMappingService {
         suggestions: missingRequired.map(field => 
           `Falta campo para "${field}": ${viewConfig.fieldDescriptions[field]}`
         ),
+        suggestedRelations, // Sugerencias de tablas para relacionar
         mappingMetadata: {
           createdBy: 'auto',
           llmFailed: true,
+          relatedTables: relatedTablesInfo.map(r => ({ tableId: r.tableId, alias: r.alias })),
         },
         tableName: table.name,
         tableHeaders: headers.map(h => h.key || h.label),
+        relatedTablesInfo,
       };
     }
   }
@@ -419,6 +557,360 @@ export class ViewMappingService {
       fieldMap: result.fieldMap,
       confidence: result.confidence,
     };
+  }
+  
+  /**
+   * Analiza campos seleccionados y sugiere el mejor tipo de vista
+   * @param {string} workspaceId 
+   * @param {string} tableId 
+   * @param {string[]} selectedFields - Campos seleccionados por el usuario
+   * @returns {Promise<{status: string, suggestedViewType: string, fieldMap: object, missingFields: object[], suggestions: string[]}>}
+   */
+  async analyzeFieldsAndSuggestView(workspaceId, tableId, selectedFields) {
+    // 1. Obtener info de la tabla
+    const table = await this.tableRepo.findById(tableId, workspaceId);
+    if (!table) {
+      return {
+        status: 'error',
+        message: 'Tabla no encontrada',
+      };
+    }
+    
+    const headers = table.headers || [];
+    if (headers.length === 0) {
+      return {
+        status: 'error',
+        message: 'La tabla no tiene campos definidos',
+      };
+    }
+    
+    // Filtrar solo los headers de los campos seleccionados
+    const selectedHeaders = headers.filter(h => 
+      selectedFields.includes(h.key) || selectedFields.includes(h.label)
+    );
+    
+    if (selectedHeaders.length === 0) {
+      return {
+        status: 'error',
+        message: 'Ninguno de los campos seleccionados existe en la tabla',
+      };
+    }
+    
+    // 2. Analizar qué tipo de vista encaja mejor usando LLM
+    try {
+      const result = await this._llmSuggestViewType(table, selectedHeaders, headers);
+      
+      // 3. Si tenemos un tipo sugerido, hacer el mapeo completo
+      if (result.suggestedViewType && VIEW_TYPES[result.suggestedViewType]) {
+        const viewConfig = VIEW_TYPES[result.suggestedViewType];
+        const autoMapping = this._autoMapFields(selectedHeaders, result.suggestedViewType);
+        
+        // Combinar mapeo automático con el del LLM
+        const combinedMap = { ...autoMapping.fieldMap, ...result.fieldMap };
+        
+        // Identificar campos requeridos faltantes
+        const missingFields = viewConfig.requiredFields
+          .filter(field => !combinedMap[field])
+          .map(field => ({
+            name: field,
+            description: viewConfig.fieldDescriptions[field],
+            required: true,
+          }));
+        
+        // Identificar campos opcionales sugeridos
+        const optionalMissing = viewConfig.optionalFields
+          .filter(field => !combinedMap[field])
+          .slice(0, 2) // Máximo 2 opcionales
+          .map(field => ({
+            name: field,
+            description: viewConfig.fieldDescriptions[field],
+            required: false,
+          }));
+        
+        const allMissing = [...missingFields, ...optionalMissing];
+        
+        return {
+          status: missingFields.length === 0 ? 'complete' : 'incomplete',
+          suggestedViewType: result.suggestedViewType,
+          suggestedName: result.suggestedName || `${viewConfig.name} de ${table.name}`,
+          fieldMap: combinedMap,
+          confidence: result.confidence || 0.8,
+          missingFields: allMissing,
+          suggestions: result.suggestions || [],
+          mappingMetadata: {
+            createdBy: 'llm',
+            selectedFields,
+          },
+          tableName: table.name,
+          tableHeaders: headers.map(h => h.key || h.label),
+        };
+      }
+      
+      // Fallback: sugerir tipo "table" que acepta cualquier estructura
+      return {
+        status: 'incomplete',
+        suggestedViewType: 'table',
+        suggestedName: `Tabla de ${table.name}`,
+        fieldMap: {},
+        confidence: 0.5,
+        missingFields: [],
+        suggestions: ['Los campos seleccionados no coinciden claramente con ningún tipo de vista específico. Se sugiere usar vista de Tabla.'],
+        mappingMetadata: {
+          createdBy: 'fallback',
+          selectedFields,
+        },
+        tableName: table.name,
+        tableHeaders: headers.map(h => h.key || h.label),
+      };
+      
+    } catch (error) {
+      log.error('analyzeFieldsAndSuggestView error:', error);
+      
+      // Fallback en caso de error
+      return {
+        status: 'incomplete',
+        suggestedViewType: 'table',
+        suggestedName: `Tabla de ${table.name}`,
+        fieldMap: {},
+        confidence: 0.3,
+        missingFields: [],
+        suggestions: ['No se pudo analizar los campos. Se sugiere configurar manualmente.'],
+        mappingMetadata: {
+          createdBy: 'error-fallback',
+          error: error.message,
+        },
+        tableName: table.name,
+        tableHeaders: headers.map(h => h.key || h.label),
+      };
+    }
+  }
+
+  /**
+   * Valida la configuración de una vista antes de crearla
+   * Verifica que el mapeo de campos sea correcto y coherente
+   * @param {Object} config - Configuración a validar
+   * @returns {Object} Resultado de validación
+   */
+  async validateViewConfiguration(config) {
+    const { workspaceId, tableId, viewType, fieldMap, availableFields, viewName } = config;
+
+    try {
+      // Obtener información del tipo de vista
+      const viewTypeConfig = VIEW_TYPES[viewType];
+      if (!viewTypeConfig) {
+        return {
+          isValid: false,
+          errors: [`Tipo de vista "${viewType}" no reconocido`],
+          warnings: [],
+          suggestions: [],
+        };
+      }
+
+      const errors = [];
+      const warnings = [];
+      const suggestions = [];
+      const verifiedMapping = {};
+
+      // Verificar campos requeridos
+      const requiredFields = viewTypeConfig.requiredFields || [];
+      for (const reqField of requiredFields) {
+        const mappedValue = fieldMap[reqField];
+        if (!mappedValue) {
+          errors.push(`Campo requerido "${reqField}" no está mapeado`);
+          verifiedMapping[reqField] = { mappedTo: null, isValid: false, isRequired: true };
+        } else if (!availableFields.includes(mappedValue)) {
+          errors.push(`El campo "${mappedValue}" mapeado a "${reqField}" no existe en la tabla`);
+          verifiedMapping[reqField] = { mappedTo: mappedValue, isValid: false, isRequired: true };
+        } else {
+          verifiedMapping[reqField] = { mappedTo: mappedValue, isValid: true, isRequired: true };
+        }
+      }
+
+      // Verificar campos opcionales
+      const optionalFields = viewTypeConfig.optionalFields || [];
+      for (const optField of optionalFields) {
+        const mappedValue = fieldMap[optField];
+        if (mappedValue) {
+          if (!availableFields.includes(mappedValue)) {
+            warnings.push(`El campo opcional "${mappedValue}" mapeado a "${optField}" no existe en la tabla`);
+            verifiedMapping[optField] = { mappedTo: mappedValue, isValid: false, isRequired: false };
+          } else {
+            verifiedMapping[optField] = { mappedTo: mappedValue, isValid: true, isRequired: false };
+          }
+        } else {
+          // Campo opcional sin mapear - solo advertencia si es útil
+          verifiedMapping[optField] = { mappedTo: null, isValid: true, isRequired: false };
+        }
+      }
+
+      // Verificar campos duplicados
+      const mappedFields = Object.values(fieldMap).filter(Boolean);
+      const duplicates = mappedFields.filter((field, index) => mappedFields.indexOf(field) !== index);
+      if (duplicates.length > 0) {
+        warnings.push(`Los siguientes campos están mapeados múltiples veces: ${[...new Set(duplicates)].join(', ')}`);
+      }
+
+      // Verificar nombre de vista
+      if (!viewName || viewName.trim().length < 2) {
+        errors.push('El nombre de la vista debe tener al menos 2 caracteres');
+      }
+
+      // Usar LLM para validación semántica si está disponible
+      let llmValidation = null;
+      if (this.openai && errors.length === 0) {
+        try {
+          llmValidation = await this._llmValidateMapping(viewType, fieldMap, availableFields, viewName);
+          if (llmValidation.warnings) {
+            warnings.push(...llmValidation.warnings);
+          }
+          if (llmValidation.suggestions) {
+            suggestions.push(...llmValidation.suggestions);
+          }
+        } catch (llmError) {
+          log.warn('LLM validation failed, continuing with basic validation:', llmError.message);
+        }
+      }
+
+      const isValid = errors.length === 0;
+
+      return {
+        isValid,
+        errors,
+        warnings,
+        suggestions,
+        verifiedMapping,
+        metadata: {
+          viewType,
+          viewName,
+          requiredFieldsCount: requiredFields.length,
+          optionalFieldsCount: optionalFields.length,
+          mappedFieldsCount: mappedFields.length,
+          llmValidated: !!llmValidation,
+        },
+      };
+
+    } catch (error) {
+      log.error('validateViewConfiguration error:', error);
+      return {
+        isValid: false,
+        errors: [`Error al validar: ${error.message}`],
+        warnings: [],
+        suggestions: [],
+      };
+    }
+  }
+
+  /**
+   * Validación semántica con LLM
+   * @private
+   */
+  async _llmValidateMapping(viewType, fieldMap, availableFields, viewName) {
+    const prompt = `Eres un validador de configuración de vistas para una aplicación de gestión de datos.
+
+TIPO DE VISTA: ${viewType}
+NOMBRE DE VISTA: ${viewName}
+
+MAPEO DE CAMPOS:
+${JSON.stringify(fieldMap, null, 2)}
+
+CAMPOS DISPONIBLES EN LA TABLA:
+${availableFields.join(', ')}
+
+Analiza si el mapeo tiene sentido semánticamente. Por ejemplo:
+- Si es una vista calendario, ¿los campos de fecha realmente parecen ser fechas?
+- Si es un kanban, ¿el campo de estado tiene sentido como categoría?
+- ¿El nombre de la vista describe bien su propósito?
+
+Responde en JSON con este formato exacto:
+{
+  "semanticallyValid": true/false,
+  "warnings": ["lista de advertencias si hay"],
+  "suggestions": ["lista de sugerencias para mejorar"]
+}
+
+Solo incluye advertencias o sugerencias si son realmente útiles. No repitas información obvia.`;
+
+    const response = await this.openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.3,
+      response_format: { type: 'json_object' },
+    });
+
+    return JSON.parse(response.choices[0].message.content);
+  }
+  
+  /**
+   * Usa LLM para sugerir el mejor tipo de vista basado en campos
+   * @private
+   */
+  async _llmSuggestViewType(table, selectedHeaders, allHeaders) {
+    const selectedInfo = selectedHeaders.map(h => ({
+      key: h.key || h.label,
+      label: h.label || h.key,
+      type: h.type || 'text',
+    }));
+    
+    const viewTypesInfo = Object.entries(VIEW_TYPES).map(([key, config]) => ({
+      type: key,
+      name: config.name,
+      description: config.description,
+      requiredFields: config.requiredFields,
+      optionalFields: config.optionalFields,
+    }));
+    
+    const prompt = `Eres un experto en diseño de interfaces de usuario y visualización de datos.
+
+TABLA: "${table.name}"
+
+CAMPOS SELECCIONADOS POR EL USUARIO:
+${JSON.stringify(selectedInfo, null, 2)}
+
+TIPOS DE VISTA DISPONIBLES:
+${JSON.stringify(viewTypesInfo, null, 2)}
+
+TAREA: Determina qué tipo de vista es el MÁS ADECUADO para los campos seleccionados.
+
+REGLAS:
+1. Considera la SEMÁNTICA de los nombres de campos, no solo los tipos
+2. Si hay campos de fecha/hora, considera "calendar"
+3. Si hay campos de estado/etapa, considera "kanban"  
+4. Si hay campos como "numero", "mesa", "capacidad", considera "floorplan" o "pos"
+5. Si los campos son genéricos, sugiere "cards" o "table"
+6. El fieldMap debe mapear SOLO los campos seleccionados que coincidan CLARAMENTE
+7. Sugiere un nombre descriptivo para la vista
+8. Sugiere SOLO si hay campos IMPORTANTES que faltan para esa vista
+9. Máximo 2 sugerencias específicas y útiles
+
+Responde SOLO en JSON:
+{
+  "suggestedViewType": "calendar|kanban|timeline|cards|table|floorplan|pos",
+  "suggestedName": "Nombre sugerido para la vista",
+  "fieldMap": {
+    "campo_vista": "campo_tabla_seleccionado"
+  },
+  "confidence": 0.0-1.0,
+  "suggestions": ["sugerencia específica si falta algo importante"]
+}`;
+
+    const response = await this.aiProvider.complete({
+      messages: [{ role: 'user', content: prompt }],
+      model: 'gpt-4o-mini',
+      temperature: 0.1,
+      maxTokens: 600,
+    });
+    
+    try {
+      const content = response.content.trim();
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      log.warn('Failed to parse LLM suggestViewType response:', e);
+    }
+    
+    return { suggestedViewType: 'table', confidence: 0.3, fieldMap: {}, suggestions: [] };
   }
   
   /**
@@ -491,11 +983,13 @@ export class ViewMappingService {
    * Mapeo usando LLM para casos complejos
    * @private
    */
-  async _llmMapping(table, headers, viewType, viewConfig) {
+  async _llmMapping(table, headers, viewType, viewConfig, relatedTablesInfo = []) {
     const headerInfo = headers.map(h => ({
       key: h.key || h.label,
       label: h.label || h.key,
       type: h.type || 'text',
+      fromRelatedTable: h.fromRelatedTable || false,
+      alias: h.alias || null,
     }));
     
     // Contexto adicional según tipo de vista
@@ -520,9 +1014,19 @@ CONTEXTO ESPECÍFICO PARA KANBAN:
 - "title" es el nombre visible en cada tarjeta`;
     }
     
+    // Añadir contexto sobre tablas relacionadas
+    let relatedTablesContext = '';
+    if (relatedTablesInfo && relatedTablesInfo.length > 0) {
+      relatedTablesContext = `
+TABLAS RELACIONADAS (los campos con prefijo son de tablas relacionadas):
+${relatedTablesInfo.map(r => `- ${r.alias}: Tabla "${r.table.name}" (relacionada por ${r.localField} → ${r.foreignField})`).join('\n')}
+
+Campos prefijados como "Alias.campo" provienen de tablas relacionadas y pueden usarse para enriquecer la vista.`;
+    }
+    
     const prompt = `Eres un experto en mapeo de datos para visualizaciones.
 
-TABLA: "${table.name}"
+TABLA PRINCIPAL: "${table.name}"
 CAMPOS DISPONIBLES:
 ${JSON.stringify(headerInfo, null, 2)}
 
@@ -533,11 +1037,20 @@ CAMPOS OPCIONALES: ${viewConfig.optionalFields.join(', ')}
 DESCRIPCIÓN DE CAMPOS DE LA VISTA:
 ${Object.entries(viewConfig.fieldDescriptions).map(([k, v]) => `- ${k}: ${v}`).join('\n')}
 ${additionalContext}
+${relatedTablesContext}
 
-Tu tarea:
-1. Mapea los campos de la tabla a los campos de la vista
-2. Si un campo no tiene equivalente claro, déjalo null
-3. Sugiere mejoras si la tabla es incompleta
+REGLAS IMPORTANTES:
+1. Mapea SOLO campos que tengan una coincidencia CLARA y OBVIA
+2. Si no estás seguro (menos del 80% de confianza), pon null
+3. NO inventes mapeos forzados - es mejor null que un mapeo incorrecto
+4. Puedes usar campos de tablas relacionadas (prefijados con alias) si son apropiados
+5. Las sugerencias deben ser MUY ESPECÍFICAS y ÚTILES:
+   - ✅ BIEN: "Agrega un campo 'precio' de tipo número para los productos"
+   - ✅ BIEN: "El campo 'numero' debería llamarse 'numero_mesa' para mejor claridad"
+   - ❌ MAL: "Considera agregar más campos" (muy vago)
+   - ❌ MAL: "Podrías mejorar la estructura" (no específico)
+6. Máximo 2 sugerencias, solo si son REALMENTE necesarias
+7. Si la tabla ya tiene todo lo necesario, suggestions debe ser un array vacío []
 
 Responde SOLO en JSON con este formato:
 {
@@ -545,7 +1058,7 @@ Responde SOLO en JSON con este formato:
     "campo_vista": "campo_tabla_o_null"
   },
   "confidence": 0.0-1.0,
-  "suggestions": ["sugerencia 1", "sugerencia 2"]
+  "suggestions": []
 }`;
 
     const response = await this.aiProvider.complete({
