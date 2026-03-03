@@ -7,7 +7,9 @@ import {
   analyzeViewMapping,
   createView,
   deleteView,
-  getViewData 
+  getViewData,
+  updateView,
+  duplicateView as duplicateViewApi,
 } from "../api/client";
 import { useToast, useConfirm } from "../components/Toast";
 import CalendarView from "../components/views/CalendarView";
@@ -16,6 +18,7 @@ import FloorPlanView from "../components/views/FloorPlanView";
 import POSView from "../components/views/POSView";
 import CardsView from "../components/views/CardsView";
 import TableView from "../components/views/TableView";
+import TimelineView from "../components/views/TimelineView";
 import ViewCreatorInline from "../components/views/ViewCreatorInline";
 
 // Iconos SVG
@@ -33,6 +36,9 @@ const Icons = {
   refresh: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>,
   warning: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>,
   empty: <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>,
+  edit: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>,
+  duplicate: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>,
+  download: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>,
 };
 
 const VIEW_ICONS = {
@@ -64,6 +70,11 @@ export default function Views() {
   const [selectedView, setSelectedView] = useState(null);
   const [viewData, setViewData] = useState(null);
   const [loadingViewData, setLoadingViewData] = useState(false);
+  
+  // Edit state
+  const [editingView, setEditingView] = useState(null);
+  const [editName, setEditName] = useState('');
+  const [editColor, setEditColor] = useState('');
   
   // Cargar datos iniciales
   useEffect(() => {
@@ -152,6 +163,87 @@ export default function Views() {
     }
   };
   
+  // Duplicar vista
+  const handleDuplicateView = async (view) => {
+    try {
+      const res = await duplicateViewApi(view._id, { workspaceId });
+      setViews((prev) => [...prev, res.data]);
+      toast.success(`Vista "${res.data.name}" creada`);
+    } catch (err) {
+      toast.error("Error al duplicar vista");
+    }
+  };
+  
+  // Exportar a CSV
+  const handleExportCSV = () => {
+    if (!viewData?.data || viewData.data.length === 0) {
+      toast.error("No hay datos para exportar");
+      return;
+    }
+    
+    const data = viewData.data;
+    
+    // Obtener todas las keys (excluyendo las internas)
+    const keys = Object.keys(data[0]).filter(k => !k.startsWith('_'));
+    
+    // Header
+    const csvLines = [keys.join(',')];
+    
+    // Rows
+    data.forEach(row => {
+      const values = keys.map(k => {
+        const val = row[k];
+        if (val === null || val === undefined) return '';
+        if (typeof val === 'string' && (val.includes(',') || val.includes('"') || val.includes('\n'))) {
+          return `"${val.replace(/"/g, '""')}"`;
+        }
+        return String(val);
+      });
+      csvLines.push(values.join(','));
+    });
+    
+    const csvContent = csvLines.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${selectedView?.name || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast.success("CSV descargado");
+  };
+  
+  // Editar vista
+  const handleStartEdit = (view) => {
+    setEditingView(view);
+    setEditName(view.name);
+    setEditColor(view.color || '#4F46E5');
+  };
+  
+  const handleSaveEdit = async () => {
+    if (!editingView || !editName.trim()) return;
+    
+    try {
+      const res = await updateView(editingView._id, {
+        workspaceId,
+        name: editName.trim(),
+        color: editColor,
+      });
+      
+      setViews((prev) => prev.map(v => v._id === editingView._id ? res.data : v));
+      if (selectedView?._id === editingView._id) {
+        setSelectedView(res.data);
+      }
+      setEditingView(null);
+      toast.success("Vista actualizada");
+    } catch (err) {
+      toast.error("Error al actualizar vista");
+    }
+  };
+  
   // Volver a lista de vistas
   const handleBackToList = () => {
     setSelectedView(null);
@@ -179,6 +271,7 @@ export default function Views() {
             data={viewData.data}
             meta={viewData.meta}
             onRefresh={() => loadViewData(selectedView)}
+            workspaceId={workspaceId}
           />
         );
       case 'cards':
@@ -220,11 +313,13 @@ export default function Views() {
           />
         );
       case 'timeline':
-        // TODO: Implementar TimelineView
         return (
-          <div className="flex items-center justify-center h-64 text-slate-400">
-            <p>Vista Timeline próximamente disponible</p>
-          </div>
+          <TimelineView 
+            view={selectedView}
+            data={viewData.data}
+            meta={viewData.meta}
+            onRefresh={() => loadViewData(selectedView)}
+          />
         );
       default:
         return (
@@ -284,6 +379,29 @@ export default function Views() {
               Actualizar
             </button>
             <button
+              onClick={handleExportCSV}
+              disabled={!viewData?.data?.length}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 text-sm transition-colors disabled:opacity-50"
+              title="Exportar CSV"
+            >
+              {Icons.download}
+              CSV
+            </button>
+            <button
+              onClick={() => handleStartEdit(selectedView)}
+              className="p-2 rounded-lg hover:bg-slate-600/50 text-slate-400 hover:text-slate-200 transition-colors"
+              title="Editar vista"
+            >
+              {Icons.edit}
+            </button>
+            <button
+              onClick={() => handleDuplicateView(selectedView)}
+              className="p-2 rounded-lg hover:bg-slate-600/50 text-slate-400 hover:text-slate-200 transition-colors"
+              title="Duplicar vista"
+            >
+              {Icons.duplicate}
+            </button>
+            <button
               onClick={() => handleDeleteView(selectedView)}
               className="p-2 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
               title="Eliminar vista"
@@ -311,6 +429,66 @@ export default function Views() {
             renderViewContent()
           )}
         </div>
+        
+        {/* Edit Modal */}
+        {editingView && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setEditingView(null)}>
+            <div 
+              className="bg-slate-800 rounded-xl shadow-xl max-w-md w-full mx-4 p-6"
+              onClick={e => e.stopPropagation()}
+            >
+              <h2 className="text-lg font-semibold text-slate-100 mb-4">Editar Vista</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1">Nombre</label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-slate-600/50 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
+                    placeholder="Nombre de la vista"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1">Color</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={editColor}
+                      onChange={(e) => setEditColor(e.target.value)}
+                      className="w-12 h-10 rounded-lg cursor-pointer border-0 bg-transparent"
+                    />
+                    <input
+                      type="text"
+                      value={editColor}
+                      onChange={(e) => setEditColor(e.target.value)}
+                      className="flex-1 px-4 py-2 rounded-lg bg-slate-700/50 border border-slate-600/50 text-slate-200 font-mono text-sm focus:outline-none focus:border-indigo-500/50"
+                      placeholder="#4F46E5"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setEditingView(null)}
+                  className="px-4 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 text-sm transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={!editName.trim()}
+                  className="px-4 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
+                >
+                  Guardar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         
         {ConfirmModal}
       </div>
@@ -411,17 +589,29 @@ export default function Views() {
                   </span>
                 </div>
                 
-                {/* Delete button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteView(view);
-                  }}
-                  className="absolute top-4 right-4 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-all"
-                  title="Eliminar vista"
-                >
-                  {Icons.trash}
-                </button>
+                {/* Action buttons */}
+                <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDuplicateView(view);
+                    }}
+                    className="p-1.5 rounded-lg hover:bg-slate-600/50 text-slate-500 hover:text-slate-200"
+                    title="Duplicar vista"
+                  >
+                    {Icons.duplicate}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteView(view);
+                    }}
+                    className="p-1.5 rounded-lg hover:bg-red-500/20 text-slate-500 hover:text-red-400"
+                    title="Eliminar vista"
+                  >
+                    {Icons.trash}
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -438,6 +628,66 @@ export default function Views() {
             onCancel={() => setShowCreator(false)}
             onCreate={handleCreateView}
           />
+        </div>
+      )}
+      
+      {/* Edit Modal */}
+      {editingView && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setEditingView(null)}>
+          <div 
+            className="bg-slate-800 rounded-xl shadow-xl max-w-md w-full mx-4 p-6"
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-semibold text-slate-100 mb-4">Editar Vista</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Nombre</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-slate-600/50 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
+                  placeholder="Nombre de la vista"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Color</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={editColor}
+                    onChange={(e) => setEditColor(e.target.value)}
+                    className="w-12 h-10 rounded-lg cursor-pointer border-0 bg-transparent"
+                  />
+                  <input
+                    type="text"
+                    value={editColor}
+                    onChange={(e) => setEditColor(e.target.value)}
+                    className="flex-1 px-4 py-2 rounded-lg bg-slate-700/50 border border-slate-600/50 text-slate-200 font-mono text-sm focus:outline-none focus:border-indigo-500/50"
+                    placeholder="#4F46E5"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setEditingView(null)}
+                className="px-4 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 text-sm transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={!editName.trim()}
+                className="px-4 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
         </div>
       )}
       

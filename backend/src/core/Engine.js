@@ -10,6 +10,7 @@ import { getToolRegistry } from './ToolRegistry.js';
 import { getAgentPromptBuilder } from './AgentPromptBuilder.js';
 import { getOpenAIProvider } from '../integrations/ai/OpenAIProvider.js';
 import { getIntentClassifier } from '../services/IntentClassifier.js';
+import { getConfirmationManager } from './ConfirmationManager.js';
 import logger from '../config/logger.js';
 
 const log = logger.child('Engine');
@@ -728,7 +729,54 @@ export class ChatEngine {
       });
     }
     
+    // === CONTEXTO DE CONFIRMACIONES PENDIENTES ===
+    const confirmationManager = getConfirmationManager();
+    const pendingConfirmation = confirmationManager.get(context.chatId);
+    
+    if (pendingConfirmation) {
+      const { action, tableName, data } = pendingConfirmation;
+      
+      if (action === 'create_flow') {
+        // Hay una propuesta de flujo esperando confirmación
+        const flowName = data?.template?.name || data?.customFlow?.name || 'flujo';
+        messages.push({
+          role: 'system',
+          content: `[SISTEMA] HAY UNA PROPUESTA DE FLUJO PENDIENTE DE CONFIRMACIÓN:
+- Flujo propuesto: "${flowName}"
+- Acción esperada: El usuario debe confirmar o cancelar
+
+Si el usuario dice "sí", "si", "ok", "dale", "créalo", "confirmo" o similar → usa create_flow con action: "confirm"
+Si el usuario dice "no", "cancelar", "no quiero" o similar → usa create_flow con action: "cancel"
+
+NO analices de nuevo. Ya hay un flujo propuesto esperando respuesta.`,
+        });
+      } else if (action === 'create_table') {
+        // Hay una propuesta de tabla esperando confirmación
+        const tableName2 = data?.tableName || 'tabla';
+        messages.push({
+          role: 'system',
+          content: `[SISTEMA] HAY UNA PROPUESTA DE TABLA PENDIENTE:
+- Tabla propuesta: "${tableName2}"
+- Acción esperada: El usuario debe confirmar o cancelar
+
+Si el usuario confirma → usa create_table con action: "confirm"
+Si el usuario cancela → usa create_table con action: "cancel"`,
+        });
+      } else if (action === 'setup_workspace') {
+        // Hay un setup de workspace pendiente
+        messages.push({
+          role: 'system',
+          content: `[SISTEMA] HAY UN SETUP DE WORKSPACE PENDIENTE:
+- Acción esperada: El usuario debe confirmar o cancelar
+
+Si el usuario confirma → usa setup_workspace con action: "confirm"
+Si el usuario cancela → usa setup_workspace con action: "cancel"`,
+        });
+      }
+    }
+    
     // Si hay pendingCreate activo, agregar contexto explícito para el LLM
+    if (context.pendingCreate) {
     if (context.pendingCreate) {
       const tableName = context.pendingCreate.tableName || 'registro';
       const collectedFields = context.collectedFields || context.pendingCreate.fields || {};

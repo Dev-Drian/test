@@ -16,7 +16,7 @@ import {
 import { RobotIcon, SendIcon, PlusIcon, TrashIcon, EditIcon, ChatIcon, SparklesIcon } from "../components/Icons";
 
 /**
- * Renderiza Markdown básico en React
+ * Renderiza Markdown básico en React (soporta bold, enlaces internos)
  */
 function renderMarkdown(text) {
   if (!text) return null;
@@ -31,15 +31,72 @@ function renderMarkdown(text) {
         let key = 0;
         
         while (remaining.length > 0) {
+          // Buscar enlaces markdown [texto](url) o **bold**
+          const linkMatch = remaining.match(/\[([^\]]+)\]\(([^)]+)\)/);
           const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
           
-          if (boldMatch) {
-            const beforeBold = remaining.slice(0, boldMatch.index);
-            if (beforeBold) {
-              parts.push(<span key={key++}>{beforeBold}</span>);
+          // Determinar cuál viene primero
+          let firstMatch = null;
+          let matchType = null;
+          
+          if (linkMatch && boldMatch) {
+            if (linkMatch.index < boldMatch.index) {
+              firstMatch = linkMatch;
+              matchType = 'link';
+            } else {
+              firstMatch = boldMatch;
+              matchType = 'bold';
             }
-            parts.push(<strong key={key++} className="font-semibold text-slate-100">{boldMatch[1]}</strong>);
-            remaining = remaining.slice(boldMatch.index + boldMatch[0].length);
+          } else if (linkMatch) {
+            firstMatch = linkMatch;
+            matchType = 'link';
+          } else if (boldMatch) {
+            firstMatch = boldMatch;
+            matchType = 'bold';
+          }
+          
+          if (firstMatch) {
+            const beforeMatch = remaining.slice(0, firstMatch.index);
+            if (beforeMatch) {
+              parts.push(<span key={key++}>{beforeMatch}</span>);
+            }
+            
+            if (matchType === 'link') {
+              const linkText = firstMatch[1];
+              const linkUrl = firstMatch[2];
+              // Si es un enlace interno (empieza con /), usar Link de react-router
+              if (linkUrl.startsWith('/')) {
+                parts.push(
+                  <a 
+                    key={key++} 
+                    href={linkUrl}
+                    className="text-violet-400 hover:text-violet-300 underline underline-offset-2 transition-colors cursor-pointer"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.location.href = linkUrl;
+                    }}
+                  >
+                    {linkText}
+                  </a>
+                );
+              } else {
+                parts.push(
+                  <a 
+                    key={key++} 
+                    href={linkUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-violet-400 hover:text-violet-300 underline underline-offset-2 transition-colors"
+                  >
+                    {linkText}
+                  </a>
+                );
+              }
+            } else {
+              parts.push(<strong key={key++} className="font-semibold text-slate-100">{firstMatch[1]}</strong>);
+            }
+            
+            remaining = remaining.slice(firstMatch.index + firstMatch[0].length);
           } else {
             parts.push(<span key={key++}>{remaining}</span>);
             break;

@@ -145,7 +145,7 @@ export class SetupHandler extends ActionHandler {
     const results = await this.setupAssistant.executePlan(plan, context.workspaceId);
     
     // Limpiar confirmación
-    this.confirmationManager.confirm(context.chatId);
+    this.confirmationManager.clear(context.chatId);
     
     // Formatear resultados
     const message_response = this.setupAssistant.formatResultsMessage(results);
@@ -191,7 +191,7 @@ export class SetupHandler extends ActionHandler {
     const pending = this.confirmationManager.get(context.chatId);
     
     if (pending && pending.action === 'setup_workspace') {
-      this.confirmationManager.cancel(context.chatId);
+      this.confirmationManager.clear(context.chatId);
     }
     
     return {

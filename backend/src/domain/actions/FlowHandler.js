@@ -4,11 +4,16 @@
  * Maneja la herramienta create_flow para ayudar a los usuarios
  * a crear automatizaciones conversacionalmente.
  * 
+ * ACTUALIZADO: Ahora usa SmartFlowAssistant que:
+ * - Lee plantillas globales de la BD
+ * - Usa GPT-4o para recomendar la mejor plantilla
+ * - Si no hay plantilla adecuada, genera flujo personalizado
+ * 
  * @module domain/actions/FlowHandler
  */
 
 import { ActionHandler } from './ActionHandler.js';
-import { getFlowAssistant } from '../../services/FlowAssistant.js';
+import { getSmartFlowAssistant } from '../../services/SmartFlowAssistant.js';
 import { getConfirmationManager, CONFIRM_STATUS } from '../../core/ConfirmationManager.js';
 import logger from '../../config/logger.js';
 
@@ -17,7 +22,7 @@ const log = logger.child('FlowHandler');
 export class FlowHandler extends ActionHandler {
   constructor(dependencies = {}) {
     super(dependencies);
-    this.flowAssistant = getFlowAssistant();
+    this.smartAssistant = getSmartFlowAssistant();
     this.confirmationManager = getConfirmationManager();
   }
 
@@ -67,31 +72,21 @@ export class FlowHandler extends ActionHandler {
   }
 
   /**
-   * Analiza las tablas y propone un flujo
+   * Analiza las tablas y propone un flujo usando SmartFlowAssistant
    * @private
    */
   async _analyzeAndPropose(context, args) {
     const userRequest = args.user_request || context.message;
     
-    // Obtener tablas del workspace
-    const tables = await this.flowAssistant.listTables(context.workspaceId);
-    
-    if (tables.length === 0) {
-      return {
-        handled: true,
-        response: `No tienes tablas creadas todavía. 
+    // Obtener info del usuario/workspace para filtrar plantillas
+    const userPlan = context.agent?.plan || 'free';
+    const businessType = context.businessInfo?.type || 'general';
 
-Para crear un flujo de automatización, primero necesitas tener tablas con datos.
-
-¿Quieres que te ayude a **configurar tu sistema** primero? Solo dime qué tipo de negocio tienes (restaurante, clínica, ventas, etc.) y creo las tablas necesarias.`,
-      };
-    }
-
-    // Generar propuesta de flujo
-    const proposal = await this.flowAssistant.generateFlowProposal(
+    // Usar SmartFlowAssistant para analizar y proponer
+    const proposal = await this.smartAssistant.analyzeAndPropose(
       userRequest,
-      tables,
-      context.workspaceId
+      context.workspaceId,
+      { userPlan, businessType }
     );
 
     if (!proposal.success) {
@@ -101,19 +96,22 @@ Para crear un flujo de automatización, primero necesitas tener tablas con datos
       };
     }
 
+    // Determinar tabla a usar
+    const tableName = proposal.type === 'template' 
+      ? proposal.suggestedTable || proposal.recommendation?.suggestedTable
+      : proposal.customFlow?.mainTable;
+
     // Guardar propuesta en confirmación pendiente
     this.confirmationManager.createPending(context.chatId, {
       action: 'create_flow',
-      tableName: proposal.table.name,
+      tableName: tableName,
       data: proposal,
+      userRequest: userRequest, // Guardar para personalización
     });
-
-    // Formatear mensaje de propuesta
-    const message = this.flowAssistant.formatProposalMessage(proposal);
 
     return {
       handled: true,
-      response: message,
+      response: proposal.message,
       data: { proposal },
     };
   }
@@ -146,17 +144,35 @@ Para crear un flujo de automatización, primero necesitas tener tablas con datos
     }
 
     const proposal = pending.data;
+    const userRequest = pending.userRequest || '';
 
-    // Crear el flujo
-    const result = await this.flowAssistant.createFlow(proposal, context.workspaceId);
+    // Buscar el ID de la tabla sugerida
+    let tableId = null;
+    if (proposal.tables && proposal.suggestedTable) {
+      const table = proposal.tables.find(t => 
+        t.name.toLowerCase() === proposal.suggestedTable?.toLowerCase()
+      );
+      tableId = table?._id;
+    }
+
+    // Crear el flujo usando SmartFlowAssistant
+    const result = await this.smartAssistant.createFlow(
+      proposal, 
+      context.workspaceId,
+      tableId,
+      userRequest
+    );
     
     // Limpiar confirmación
-    this.confirmationManager.confirm(context.chatId);
+    this.confirmationManager.clear(context.chatId);
 
     return {
       handled: true,
       response: result.message,
-      data: result.success ? { flow: result.flow } : null,
+      data: result.success ? { 
+        flow: result.flow,
+        flowCreated: result.flowCreated, // Para que el frontend pueda detectarlo
+      } : null,
     };
   }
 
@@ -168,7 +184,7 @@ Para crear un flujo de automatización, primero necesitas tener tablas con datos
     const pending = this.confirmationManager.get(context.chatId);
     
     if (pending && pending.action === 'create_flow') {
-      this.confirmationManager.cancel(context.chatId);
+      this.confirmationManager.clear(context.chatId);
     }
 
     return {

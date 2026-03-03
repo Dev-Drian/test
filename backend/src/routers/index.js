@@ -98,5 +98,7 @@ router.put("/views/:viewId", requireAuth, views.updateView);
 router.delete("/views/:viewId", requireAuth, views.deleteView);
 router.post("/views/:viewId/refresh-mapping", requireAuth, views.refreshMapping);
 router.post("/views/:viewId/order", requireAuth, views.manageOrder);
+router.put("/views/:viewId/item/:itemId", requireAuth, views.updateItemStatus);
+router.post("/views/:viewId/duplicate", requireAuth, views.duplicateView);
 
 export default router;

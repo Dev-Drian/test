@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { updateViewItemStatus } from '../../api/client';
 
 const DEFAULT_COLUMNS = ['Pendiente', 'En Progreso', 'Completado'];
 const COLUMN_COLORS = {
@@ -14,10 +15,11 @@ const getColumnColor = (columnName) => {
   return COLUMN_COLORS[normalized] || COLUMN_COLORS['default'];
 };
 
-export default function KanbanView({ view, data, meta, onRefresh }) {
+export default function KanbanView({ view, data, meta, onRefresh, workspaceId }) {
   const [selectedCard, setSelectedCard] = useState(null);
   const [draggedCard, setDraggedCard] = useState(null);
   const [dragOverColumn, setDragOverColumn] = useState(null);
+  const [updating, setUpdating] = useState(null);
   
   // Procesar columnas y tarjetas
   const { columns, cardsByColumn } = useMemo(() => {
@@ -87,13 +89,35 @@ export default function KanbanView({ view, data, meta, onRefresh }) {
     setDragOverColumn(null);
   };
   
-  const handleDrop = (column, e) => {
+  const handleDrop = async (column, e) => {
     e.preventDefault();
     setDragOverColumn(null);
     
-    if (draggedCard) {
-      // TODO: Implementar actualización en backend
-      console.log(`Moving card ${draggedCard._id} to column ${column}`);
+    if (draggedCard && draggedCard.status !== column) {
+      const itemId = draggedCard._id || draggedCard._raw?._id;
+      if (!itemId || !workspaceId) {
+        console.error('Missing itemId or workspaceId for update');
+        setDraggedCard(null);
+        return;
+      }
+      
+      setUpdating(itemId);
+      
+      try {
+        await updateViewItemStatus(view._id, itemId, {
+          workspaceId,
+          fieldName: 'status',
+          newValue: column,
+        });
+        
+        // Refresh data to reflect changes
+        onRefresh?.();
+      } catch (err) {
+        console.error('Error updating item status:', err);
+        alert('Error al mover la tarjeta');
+      } finally {
+        setUpdating(null);
+      }
     }
     
     setDraggedCard(null);
@@ -154,13 +178,18 @@ export default function KanbanView({ view, data, meta, onRefresh }) {
                     cards.map((card, idx) => (
                       <div
                         key={card._id || idx}
-                        draggable
+                        draggable={!updating}
                         onDragStart={(e) => handleDragStart(card, e)}
                         onClick={() => setSelectedCard(card)}
-                        className={`p-3 rounded-lg bg-slate-700/50 border border-slate-600/50 cursor-pointer transition-all hover:border-slate-500/50 hover:shadow-lg ${
+                        className={`relative p-3 rounded-lg bg-slate-700/50 border border-slate-600/50 cursor-pointer transition-all hover:border-slate-500/50 hover:shadow-lg ${
                           draggedCard?._id === card._id ? 'opacity-50' : ''
-                        }`}
+                        } ${updating === (card._id || card._raw?._id) ? 'opacity-70 pointer-events-none' : ''}`}
                       >
+                        {updating === (card._id || card._raw?._id) && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-slate-800/50 rounded-lg">
+                            <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        )}
                         <h4 className="font-medium text-slate-200 mb-1">
                           {card.displayTitle}
                         </h4>

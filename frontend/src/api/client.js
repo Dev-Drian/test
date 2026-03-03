@@ -119,3 +119,9 @@ export const deleteView = (viewId, workspaceId) =>
   api.delete(`/views/${viewId}`, { params: { workspaceId } });
 export const refreshViewMapping = (viewId, data) => 
   api.post(`/views/${viewId}/refresh-mapping`, data);
+export const updateViewItemStatus = (viewId, itemId, data) =>
+  api.put(`/views/${viewId}/item/${itemId}`, data);
+export const duplicateView = (viewId, data) =>
+  api.post(`/views/${viewId}/duplicate`, data);
+
+export default api;

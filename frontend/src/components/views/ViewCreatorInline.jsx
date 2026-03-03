@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { analyzeViewMapping, validateViewConfig } from '../../api/client';
 
 const Icons = {
@@ -17,7 +18,219 @@ const Icons = {
   table: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625" /></svg>,
   floorplan: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z" /></svg>,
   pos: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" /></svg>,
+  chevronDown: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>,
 };
+
+// Dropdown profesional con Portal para evitar overflow
+function FieldSelector({ value, onChange, groups, placeholder, isRequired, hasValue }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const buttonRef = useRef(null);
+  const dropdownRef = useRef(null);
+  const inputRef = useRef(null);
+  const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
+
+  // Calcular posición del dropdown
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const dropdownHeight = 320;
+      
+      setPosition({
+        top: spaceBelow < dropdownHeight ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  }, [isOpen]);
+
+  // Cerrar al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(e.target) &&
+        buttonRef.current && !buttonRef.current.contains(e.target)
+      ) {
+        setIsOpen(false);
+        setSearch('');
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
+
+  // Cerrar con Escape
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+        setSearch('');
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen]);
+
+  // Encontrar opción seleccionada
+  const selectedOption = useMemo(() => {
+    if (!value) return null;
+    for (const group of groups || []) {
+      const found = group.options.find(opt => opt.value === value);
+      if (found) return { ...found, groupLabel: group.label, groupIcon: group.icon };
+    }
+    return null;
+  }, [value, groups]);
+
+  // Filtrar por búsqueda
+  const filteredGroups = useMemo(() => {
+    if (!search.trim()) return groups;
+    const term = search.toLowerCase();
+    return groups?.map(group => ({
+      ...group,
+      options: group.options.filter(opt => opt.label.toLowerCase().includes(term))
+    })).filter(group => group.options.length > 0);
+  }, [groups, search]);
+
+  const handleSelect = (optValue) => {
+    onChange(optValue);
+    setIsOpen(false);
+    setSearch('');
+  };
+
+  const borderClass = isRequired && !hasValue
+    ? 'border-red-500/50 ring-2 ring-red-500/20'
+    : hasValue 
+      ? 'border-emerald-500/50 ring-2 ring-emerald-500/20'
+      : 'border-slate-600/50 hover:border-slate-500';
+
+  return (
+    <>
+      {/* Trigger Button */}
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => {
+          setIsOpen(!isOpen);
+          setTimeout(() => inputRef.current?.focus(), 50);
+        }}
+        className={`w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl bg-slate-800/80 border text-sm transition-all ${borderClass}`}
+      >
+        <span className={selectedOption ? 'text-slate-100 font-medium' : 'text-slate-500'}>
+          {selectedOption ? (
+            <span className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                <span>{selectedOption.groupIcon}</span>
+                {selectedOption.groupLabel}
+              </span>
+              <span>{selectedOption.label}</span>
+            </span>
+          ) : placeholder}
+        </span>
+        <span className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''} text-slate-400`}>
+          {Icons.chevronDown}
+        </span>
+      </button>
+
+      {/* Dropdown Portal */}
+      {isOpen && createPortal(
+        <div
+          ref={dropdownRef}
+          className="fixed z-[9999]"
+          style={{ top: position.top, left: position.left, width: position.width }}
+        >
+          <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden">
+            {/* Search */}
+            <div className="p-3 border-b border-slate-700/50 bg-slate-800/50">
+              <div className="relative">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar campo..."
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-slate-800 border border-slate-600/50 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                />
+              </div>
+            </div>
+
+            {/* Options */}
+            <div className="max-h-64 overflow-y-auto">
+              {/* Sin selección */}
+              <button
+                type="button"
+                onClick={() => handleSelect('')}
+                className={`w-full text-left px-4 py-3 text-sm transition-colors flex items-center gap-3 ${
+                  !value 
+                    ? 'bg-slate-800 text-slate-200' 
+                    : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+                }`}
+              >
+                <span className="w-5 h-5 rounded-full border-2 border-dashed border-slate-600 flex items-center justify-center">
+                  {!value && <span className="w-2 h-2 rounded-full bg-slate-400"></span>}
+                </span>
+                <span className="italic">{placeholder}</span>
+              </button>
+
+              {/* Grupos */}
+              {filteredGroups?.map((group, idx) => (
+                <div key={idx}>
+                  <div className="px-4 py-2 text-xs font-semibold text-slate-500 bg-slate-850 sticky top-0 flex items-center gap-2 border-t border-slate-700/30">
+                    <span className="text-base">{group.icon}</span>
+                    <span className="uppercase tracking-wider">{group.label}</span>
+                    <span className="ml-auto text-slate-600">{group.options.length}</span>
+                  </div>
+                  {group.options.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => handleSelect(opt.value)}
+                      className={`w-full text-left px-4 py-3 text-sm transition-all flex items-center gap-3 ${
+                        value === opt.value 
+                          ? 'bg-indigo-500/20 text-indigo-200 border-l-2 border-indigo-500' 
+                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-slate-100 border-l-2 border-transparent'
+                      }`}
+                    >
+                      <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                        value === opt.value 
+                          ? 'border-indigo-500 bg-indigo-500' 
+                          : 'border-slate-600'
+                      }`}>
+                        {value === opt.value && (
+                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          </svg>
+                        )}
+                      </span>
+                      <span className="font-medium">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              ))}
+
+              {filteredGroups?.length === 0 && (
+                <div className="px-4 py-8 text-sm text-slate-500 text-center">
+                  <svg className="w-8 h-8 mx-auto mb-2 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                  </svg>
+                  No se encontraron campos
+                </div>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
 
 const VIEW_ICONS = {
   calendar: Icons.calendar,
@@ -964,100 +1177,195 @@ export default function ViewCreatorInline({
         );
 
       case STEPS.CONFIGURE_MAPPING:
+        const requiredFields = selectedViewType?.requiredFields || [];
+        const optionalFields = selectedViewType?.optionalFields || [];
+        
         return (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center gap-4 pb-4 border-b border-slate-700/50">
               <button
                 onClick={() => setStep(STEPS.COMPATIBILITY_RESULT)}
-                className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 hover:text-slate-200"
+                className="p-2.5 rounded-xl hover:bg-slate-700/50 text-slate-400 hover:text-slate-200 transition-colors"
               >
                 {Icons.back}
               </button>
-              <div>
-                <h3 className="text-lg font-semibold text-slate-100">Configurar Vista</h3>
-                <p className="text-sm text-slate-400">
-                  {selectedViewType?.name} • {allAvailableFields.length} campos disponibles
+              <div className="flex-1">
+                <h3 className="text-xl font-semibold text-slate-100">Configurar Vista</h3>
+                <p className="text-sm text-slate-400 mt-0.5">
+                  Mapea los campos de tu tabla a la vista <span className="text-indigo-400 font-medium">{selectedViewType?.name}</span>
                 </p>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700">
+                <span className="text-xs text-slate-500">Campos:</span>
+                <span className="text-sm font-medium text-slate-200">{allAvailableFields.length}</span>
               </div>
             </div>
 
-            {/* Nombre */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+            {/* Nombre de la vista */}
+            <div className="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/50">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-3">
+                <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                </svg>
                 Nombre de la vista
               </label>
               <input
                 type="text"
                 value={viewName}
                 onChange={(e) => setViewName(e.target.value)}
-                placeholder="Ej: Calendario de Citas"
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-700/50 border border-slate-600/50 text-slate-200 placeholder-slate-500 focus:border-indigo-500/50 focus:outline-none"
+                placeholder="Ej: Calendario de Citas, Kanban de Proyectos..."
+                className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-600/50 text-slate-200 placeholder-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-all"
               />
             </div>
 
             {/* Mapeo de campos */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Mapeo de campos
-              </label>
-              <div className="space-y-2 max-h-80 overflow-y-auto p-4 rounded-xl bg-slate-800/30 border border-slate-700/50">
-                {[...(selectedViewType?.requiredFields || []), ...(selectedViewType?.optionalFields || [])].map(viewField => {
-                  const isRequired = (selectedViewType?.requiredFields || []).includes(viewField);
-                  const currentValue = fieldMap[viewField];
-                  
-                  return (
-                    <div key={viewField} className="flex items-center gap-3">
-                      <div className="w-32 shrink-0">
-                        <span className={`text-sm ${isRequired ? 'text-slate-200' : 'text-slate-400'}`}>
-                          {viewField}
-                          {isRequired && <span className="text-red-400 ml-1">*</span>}
-                        </span>
-                      </div>
-                      <span className="text-slate-600">→</span>
-                      <select
-                        value={currentValue || ''}
-                        onChange={(e) => handleFieldMapChange(viewField, e.target.value)}
-                        className={`flex-1 px-3 py-2 rounded-lg bg-slate-600/50 border text-sm focus:outline-none ${
-                          isRequired && !currentValue
-                            ? 'border-red-500/50 text-red-400'
-                            : currentValue 
-                              ? 'border-emerald-500/50 text-slate-200'
-                              : 'border-slate-500/50 text-slate-200'
-                        }`}
-                      >
-                        <option value="">-- Seleccionar --</option>
-                        {/* Campos de tabla principal */}
-                        <optgroup label={`📋 ${selectedTable?.name}`}>
-                          {allAvailableFields.filter(f => f.isMain).map(f => (
-                            <option key={f.fullKey} value={f.fullKey}>{f.key}</option>
-                          ))}
-                        </optgroup>
-                        {/* Campos de tablas relacionadas */}
-                        {relatedTables.map(rel => (
-                          <optgroup key={rel.tableId} label={`🔗 ${rel.alias || rel.table.name}`}>
-                            {allAvailableFields.filter(f => f.tableId === rel.tableId).map(f => (
-                              <option key={f.fullKey} value={f.fullKey}>{f.key}</option>
-                            ))}
-                          </optgroup>
-                        ))}
-                      </select>
-                    </div>
-                  );
-                })}
+            <div className="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/50">
+              <div className="flex items-center justify-between mb-4">
+                <label className="flex items-center gap-2 text-sm font-medium text-slate-300">
+                  <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                  </svg>
+                  Mapeo de campos
+                </label>
+                <div className="flex items-center gap-4 text-xs">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                    <span className="text-slate-400">Requerido</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-slate-500"></span>
+                    <span className="text-slate-400">Opcional</span>
+                  </span>
+                </div>
               </div>
+              
+              {/* Campos requeridos */}
+              {requiredFields.length > 0 && (
+                <div className="mb-4">
+                  <div className="text-xs font-semibold text-red-400/80 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                    Campos requeridos
+                  </div>
+                  <div className="space-y-3">
+                    {requiredFields.map(viewField => {
+                      const currentValue = fieldMap[viewField];
+                      const selectGroups = [
+                        {
+                          label: selectedTable?.name,
+                          icon: '📋',
+                          options: allAvailableFields.filter(f => f.isMain).map(f => ({
+                            value: f.fullKey,
+                            label: f.key
+                          }))
+                        },
+                        ...relatedTables.map(rel => ({
+                          label: rel.alias || rel.table.name,
+                          icon: '🔗',
+                          options: allAvailableFields.filter(f => f.tableId === rel.tableId).map(f => ({
+                            value: f.fullKey,
+                            label: f.key
+                          }))
+                        }))
+                      ];
+                      
+                      return (
+                        <div key={viewField} className="grid grid-cols-[140px_auto_1fr] items-center gap-4 p-3 rounded-xl bg-slate-900/30 border border-slate-700/30">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-red-500 shrink-0"></span>
+                            <span className="text-sm font-medium text-slate-200 truncate" title={viewField}>
+                              {viewField}
+                            </span>
+                          </div>
+                          <svg className="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
+                          </svg>
+                          <FieldSelector
+                            value={currentValue || ''}
+                            onChange={(val) => handleFieldMapChange(viewField, val)}
+                            groups={selectGroups}
+                            placeholder="Seleccionar campo..."
+                            isRequired={true}
+                            hasValue={!!currentValue}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              
+              {/* Campos opcionales */}
+              {optionalFields.length > 0 && (
+                <div>
+                  <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                    Campos opcionales
+                  </div>
+                  <div className="space-y-3">
+                    {optionalFields.map(viewField => {
+                      const currentValue = fieldMap[viewField];
+                      const selectGroups = [
+                        {
+                          label: selectedTable?.name,
+                          icon: '📋',
+                          options: allAvailableFields.filter(f => f.isMain).map(f => ({
+                            value: f.fullKey,
+                            label: f.key
+                          }))
+                        },
+                        ...relatedTables.map(rel => ({
+                          label: rel.alias || rel.table.name,
+                          icon: '🔗',
+                          options: allAvailableFields.filter(f => f.tableId === rel.tableId).map(f => ({
+                            value: f.fullKey,
+                            label: f.key
+                          }))
+                        }))
+                      ];
+                      
+                      return (
+                        <div key={viewField} className="grid grid-cols-[140px_auto_1fr] items-center gap-4 p-3 rounded-xl bg-slate-900/20 border border-slate-700/20 hover:border-slate-700/40 transition-colors">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-slate-600 shrink-0"></span>
+                            <span className="text-sm text-slate-400 truncate" title={viewField}>
+                              {viewField}
+                            </span>
+                          </div>
+                          <svg className="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
+                          </svg>
+                          <FieldSelector
+                            value={currentValue || ''}
+                            onChange={(val) => handleFieldMapChange(viewField, val)}
+                            groups={selectGroups}
+                            placeholder="Seleccionar campo..."
+                            isRequired={false}
+                            hasValue={!!currentValue}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {error && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-3">
+                <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
                 {error}
               </div>
             )}
 
+            {/* Footer */}
             <div className="flex justify-end pt-2">
               <button
                 onClick={handleValidate}
                 disabled={!canValidate()}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-medium transition-colors"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-medium transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 disabled:shadow-none"
               >
                 {Icons.sparkles}
                 Validar Configuración

@@ -282,16 +282,16 @@ export default function FlowTemplatesGallery({ onSelect, onClose, businessType: 
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto" style={{ background: 'rgba(0,0,0,0.9)' }}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" style={{ background: 'rgba(0,0,0,0.92)' }}>
       <div 
-        className="w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl animate-fade-up"
+        className="w-full max-w-5xl max-h-[85vh] flex flex-col rounded-2xl sm:rounded-3xl shadow-2xl animate-fade-up"
         style={{ 
-          background: 'linear-gradient(180deg, rgba(15, 15, 20, 0.98) 0%, rgba(10, 10, 15, 0.99) 100%)',
-          border: '1px solid rgba(255,255,255,0.08)'
+          background: 'linear-gradient(180deg, rgba(18, 18, 24, 0.99) 0%, rgba(12, 12, 18, 1) 100%)',
+          border: '1px solid rgba(255,255,255,0.1)'
         }}
       >
         {/* Header */}
-        <div className="px-8 py-6 flex items-start justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="px-5 sm:px-8 py-4 sm:py-5 flex items-start justify-between shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div>
             <h2 className="text-2xl font-bold text-white mb-2">Galeria de Plantillas</h2>
             <p className="text-zinc-400">
@@ -312,7 +312,7 @@ export default function FlowTemplatesGallery({ onSelect, onClose, businessType: 
         </div>
 
         {/* Categories */}
-        <div className="px-8 py-4 flex items-center gap-2 overflow-x-auto" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+        <div className="px-5 sm:px-8 py-3 flex items-center gap-2 overflow-x-auto shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
           {displayCategories.map((cat) => (
             <button
               key={cat.id}
@@ -331,7 +331,7 @@ export default function FlowTemplatesGallery({ onSelect, onClose, businessType: 
         </div>
 
         {/* Templates Grid */}
-        <div className="p-8 max-h-[60vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 flex-1 min-h-0 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
@@ -347,7 +347,7 @@ export default function FlowTemplatesGallery({ onSelect, onClose, businessType: 
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {sortedTemplates.map((template) => {
                 const styles = categoryStyles[template.category] || categoryStyles.default;
                 const isHovered = hoveredTemplate === template._id;
@@ -359,7 +359,7 @@ export default function FlowTemplatesGallery({ onSelect, onClose, businessType: 
                     onClick={() => onSelect(isEmpty ? null : template)}
                     onMouseEnter={() => setHoveredTemplate(template._id)}
                     onMouseLeave={() => setHoveredTemplate(null)}
-                    className={`group relative p-6 rounded-2xl text-left transition-all duration-300 border ${
+                    className={`group relative p-4 sm:p-5 rounded-xl sm:rounded-2xl text-left transition-all duration-300 border ${
                       isEmpty 
                         ? 'border-dashed border-zinc-700 hover:border-zinc-500'
                         : styles.border
@@ -371,51 +371,42 @@ export default function FlowTemplatesGallery({ onSelect, onClose, businessType: 
                     }}
                   >
                     {/* Badges Container */}
-                    {!isEmpty && (
-                      <div className="absolute top-4 right-4 flex items-center gap-2">
-                        {/* Plan Badge (si es premium) */}
-                        {template.requiredPlan && !template.requiredPlan.includes('free') && (
-                          <div className="px-2 py-1 rounded-lg text-xs font-medium bg-amber-500/20 text-amber-300 flex items-center gap-1">
-                            {Icons.lock}
-                            <span>Premium</span>
-                          </div>
-                        )}
-                        {/* Category Badge */}
-                        {template.category && (
-                          <div className={`px-2 py-1 rounded-lg text-xs font-medium ${styles.badge}`}>
-                            {displayCategories.find(c => c.id === template.category)?.label || template.category}
-                          </div>
-                        )}
+                    {!isEmpty && (template.requiredPlan && !template.requiredPlan.includes('free')) && (
+                      <div className="absolute top-3 right-3 flex items-center gap-1">
+                        <div className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-amber-500/20 text-amber-300 flex items-center gap-1">
+                          {Icons.lock}
+                          <span>Pro</span>
+                        </div>
                       </div>
                     )}
 
                     {/* Icon */}
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-transform ${
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-3 transition-transform ${
                       isHovered ? 'scale-110' : ''
                     } ${isEmpty ? 'bg-zinc-800/50 text-zinc-400' : styles.icon}`}>
                       {getIcon(template.icon || 'bolt')}
                     </div>
 
                     {/* Content */}
-                    <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-violet-300 transition-colors">
+                    <h3 className="text-sm sm:text-base font-semibold text-white mb-1 group-hover:text-violet-300 transition-colors line-clamp-1">
                       {template.name}
                     </h3>
-                    <p className="text-sm text-zinc-400 mb-4 line-clamp-2">
+                    <p className="text-xs sm:text-sm text-zinc-400 mb-3 line-clamp-2">
                       {template.description}
                     </p>
 
-                    {/* Preview */}
+                    {/* Preview con bloques numerados */}
                     {!isEmpty && template.nodes?.length > 0 && (
-                      <div className="pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div className="pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                         <FlowPreview nodes={template.nodes} edges={template.edges} />
-                        <p className="text-xs text-zinc-600 text-center mt-1">
-                          {template.nodes.length} bloques preconstruidos
+                        <p className="text-[10px] text-zinc-600 text-center mt-1">
+                          {template.nodes.length} bloques
                         </p>
                       </div>
                     )}
 
                     {/* Arrow indicator */}
-                    <div className={`absolute bottom-6 right-6 transition-all ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}`}>
+                    <div className={`absolute bottom-3 right-3 transition-all ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}`}>
                       <span className="text-violet-400">{Icons.arrow}</span>
                     </div>
                   </button>
@@ -426,7 +417,7 @@ export default function FlowTemplatesGallery({ onSelect, onClose, businessType: 
         </div>
 
         {/* Footer */}
-        <div className="px-8 py-4 flex items-center justify-between" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.3)' }}>
+        <div className="px-5 sm:px-8 py-3 flex items-center justify-between shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.3)' }}>
           <p className="text-sm text-zinc-500">
             {sortedTemplates.length} plantilla{sortedTemplates.length !== 1 ? 's' : ''} disponible{sortedTemplates.length !== 1 ? 's' : ''}
           </p>

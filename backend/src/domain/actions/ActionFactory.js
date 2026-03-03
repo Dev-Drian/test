@@ -12,6 +12,7 @@ import { AvailabilityHandler } from './AvailabilityHandler.js';
 import { FallbackHandler } from './FallbackHandler.js';
 import { SetupHandler } from './SetupHandler.js';
 import { FlowHandler } from './FlowHandler.js';
+import { TableHandler } from './TableHandler.js';
 
 export class ActionFactory {
   static handlers = new Map();
@@ -28,6 +29,7 @@ export class ActionFactory {
     this.register('availability', AvailabilityHandler, dependencies);
     this.register('setup', SetupHandler, dependencies);
     this.register('flow', FlowHandler, dependencies);
+    this.register('table', TableHandler, dependencies);
     this.register('fallback', FallbackHandler, dependencies);
   }
   
@@ -66,7 +68,7 @@ export class ActionFactory {
    * @returns {ActionHandler[]}
    */
   static createAll() {
-    const order = ['setup', 'flow', 'update', 'availability', 'create', 'query', 'fallback'];
+    const order = ['setup', 'flow', 'table', 'update', 'availability', 'create', 'query', 'fallback'];
     const handlers = [];
     
     for (const actionType of order) {

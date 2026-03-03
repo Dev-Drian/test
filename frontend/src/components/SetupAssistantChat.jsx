@@ -11,11 +11,9 @@ import { sendChatMessage, listAgents, getOrCreateChat } from '../api/client';
 
 // Iconos
 const Icons = {
-  sparkles: (
-    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-      <path d="M12 3L13.4 8.6L19 10L13.4 11.4L12 17L10.6 11.4L5 10L10.6 8.6L12 3Z" fill="currentColor" />
-      <path d="M19 15L19.7 17.3L22 18L19.7 18.7L19 21L18.3 18.7L16 18L18.3 17.3L19 15Z" fill="currentColor" opacity="0.7" />
-      <path d="M5 1L5.5 2.5L7 3L5.5 3.5L5 5L4.5 3.5L3 3L4.5 2.5L5 1Z" fill="currentColor" opacity="0.5" />
+  robot: (
+    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
     </svg>
   ),
   close: (
@@ -25,7 +23,7 @@ const Icons = {
   ),
   send: (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
     </svg>
   ),
   minimize: (
@@ -33,15 +31,24 @@ const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
     </svg>
   ),
+  expand: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+    </svg>
+  ),
 };
 
-// Ejemplos de preguntas
+// Ejemplos de preguntas - Organizados por capacidad
 const EXAMPLE_QUESTIONS = [
-  { text: "Quiero un sistema para mi restaurante", icon: "🍽️" },
-  { text: "Necesito gestionar citas para mi clínica", icon: "🏥" },
-  { text: "Cuando se cree un usuario, enviar email", icon: "⚡" },
-  { text: "Notificar por correo al crear pedido", icon: "📧" },
-  { text: "Crear un CRM de ventas", icon: "💼" },
+  // Crear tablas
+  { text: "Crear tabla de clientes", icon: "📊", color: "from-blue-500/20 to-cyan-500/20", category: "table" },
+  { text: "Necesito una tabla de productos", icon: "📦", color: "from-purple-500/20 to-indigo-500/20", category: "table" },
+  // Automatizaciones
+  { text: "Cuando se cree un cliente, enviar email", icon: "⚡", color: "from-amber-500/20 to-yellow-500/20", category: "flow" },
+  { text: "Notificar al crear un pedido nuevo", icon: "🔔", color: "from-rose-500/20 to-pink-500/20", category: "flow" },
+  // Sistemas completos
+  { text: "Sistema para mi restaurante", icon: "🍽️", color: "from-orange-500/20 to-red-500/20", category: "setup" },
+  { text: "CRM para gestionar ventas", icon: "💼", color: "from-emerald-500/20 to-teal-500/20", category: "setup" },
 ];
 
 /**
@@ -179,18 +186,25 @@ export default function SetupAssistantChat() {
       setMessages([{
         id: 'welcome',
         role: 'assistant',
-        content: `¡Hola! 👋 Soy tu asistente de configuración.
+        content: `¡Hola! 👋 Soy tu **Asistente IA con GPT-4o**.
 
-Puedo ayudarte con:
+Puedo hacer muchas cosas por ti:
 
-**📋 Configurar tu sistema:**
-• Restaurante, Clínica, CRM, Reservas, Tareas
+**📊 Crear Tablas:**
+• "Crear tabla de clientes"
+• "Necesito una tabla de productos"
 
-**⚡ Crear automatizaciones:**
-• "Cuando se cree un usuario, enviar email de bienvenida"
-• "Notificar por correo cada nuevo pedido"
+**⚡ Crear Automatizaciones:**
+• "Cuando se cree un cliente, enviar email"
+• "Notificar al crear pedido nuevo"
 
-¿Qué necesitas?`,
+**🏢 Configurar Sistemas Completos:**
+• "Sistema para mi restaurante"
+• "CRM para gestionar ventas"
+
+_Te mostraré un resumen antes de crear cualquier cosa._
+
+¿Por dónde empezamos?`,
         timestamp: new Date().toISOString(),
       }]);
     }
@@ -270,51 +284,39 @@ Puedo ayudarte con:
 
   return (
     <>
-      {/* Botón flotante */}
+      {/* Botón flotante - Arriba del botón de ayuda */}
       {!isOpen && (
         <button
           onClick={handleOpen}
-          className="fixed bottom-6 left-6 z-50 group"
-          title="Asistente de configuración"
+          className="fixed bottom-24 right-6 z-50 group"
+          title="Asistente IA"
         >
           <div 
-            className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-300 group-hover:scale-110"
+            className="w-12 h-12 rounded-xl flex items-center justify-center shadow-xl transition-all duration-300 group-hover:scale-110 group-hover:shadow-2xl"
             style={{ 
-              background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #4f46e5 100%)',
-              boxShadow: '0 4px 20px rgba(139, 92, 246, 0.4), 0 0 40px rgba(139, 92, 246, 0.2)',
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              boxShadow: '0 4px 20px rgba(16, 185, 129, 0.35)',
             }}
           >
-            <span className="text-white">{Icons.sparkles}</span>
+            <span className="text-white">{Icons.robot}</span>
           </div>
           
           {/* Tooltip */}
-          <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-            <div 
-              className="px-3 py-2 rounded-lg whitespace-nowrap text-sm font-medium"
-              style={{ 
-                background: 'rgba(30, 30, 40, 0.95)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-              }}
-            >
-              <span className="text-white">Asistente de configuración</span>
+          <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            <div className="px-3 py-2 rounded-lg whitespace-nowrap text-sm font-medium bg-slate-900 border border-slate-700 shadow-xl">
+              <span className="text-white">Asistente IA</span>
             </div>
           </div>
-          
-          {/* Pulse animation */}
-          <div 
-            className="absolute inset-0 rounded-2xl animate-ping opacity-30"
-            style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}
-          />
         </button>
       )}
 
       {/* Chat modal */}
       {isOpen && (
         <div 
-          className={`fixed z-50 transition-all duration-300 ${
+          className={`fixed z-50 transition-all duration-300 ease-out ${
             isMinimized 
-              ? 'bottom-6 left-6 w-72' 
-              : 'bottom-6 left-6 w-96 h-[600px] max-h-[80vh]'
+              ? 'bottom-24 right-6 w-80' 
+              : 'bottom-6 right-6 w-[420px] h-[600px] max-h-[85vh]'
           }`}
         >
           <div 
@@ -322,9 +324,9 @@ Puedo ayudarte con:
               isMinimized ? 'h-14' : 'h-full'
             }`}
             style={{ 
-              background: 'linear-gradient(180deg, rgba(25, 25, 35, 0.98) 0%, rgba(15, 15, 25, 0.98) 100%)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              backdropFilter: 'blur(20px)',
+              background: 'linear-gradient(180deg, #0f172a 0%, #020617 100%)',
+              border: '1px solid rgba(148, 163, 184, 0.1)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
             }}
           >
             {/* Header */}
@@ -332,21 +334,24 @@ Puedo ayudarte con:
               className="flex items-center justify-between px-4 py-3 cursor-pointer select-none"
               onClick={() => isMinimized && setIsMinimized(false)}
               style={{ 
-                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(99, 102, 241, 0.1))',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.05))',
+                borderBottom: '1px solid rgba(148, 163, 184, 0.1)',
               }}
             >
               <div className="flex items-center gap-3">
                 <div 
-                  className="w-8 h-8 rounded-xl flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
                 >
-                  <span className="text-white scale-75">{Icons.sparkles}</span>
+                  <span className="text-white scale-90">{Icons.robot}</span>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-white">Asistente de Configuración</h3>
+                  <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                    Asistente IA
+                    <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-gradient-to-r from-violet-500/30 to-purple-500/30 text-violet-300 border border-violet-500/30">GPT-4o</span>
+                  </h3>
                   {!isMinimized && (
-                    <p className="text-xs text-slate-400">Te ayudo a configurar tu sistema</p>
+                    <p className="text-xs text-slate-400">Tablas • Automatizaciones • Sistemas</p>
                   )}
                 </div>
               </div>
@@ -363,7 +368,7 @@ Puedo ayudarte con:
                 )}
                 <button
                   onClick={(e) => { e.stopPropagation(); handleClose(); }}
-                  className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                  className="p-2 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
                   title="Cerrar"
                 >
                   {Icons.close}
@@ -381,15 +386,17 @@ Puedo ayudarte con:
                       key={msg.id}
                       className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
+                      {msg.role === 'assistant' && (
+                        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center mr-2 shrink-0 mt-1">
+                          <span className="text-emerald-400 scale-75">{Icons.robot}</span>
+                        </div>
+                      )}
                       <div
-                        className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
+                        className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                           msg.role === 'user'
-                            ? 'bg-gradient-to-br from-violet-600 to-indigo-600 text-white'
-                            : 'bg-white/5 text-slate-300'
+                            ? 'bg-gradient-to-br from-emerald-600 to-teal-600 text-white rounded-br-md'
+                            : 'bg-slate-800/80 text-slate-200 rounded-bl-md border border-slate-700/50'
                         }`}
-                        style={msg.role === 'assistant' ? {
-                          border: '1px solid rgba(255, 255, 255, 0.05)',
-                        } : {}}
                       >
                         <div className="text-sm leading-relaxed">
                           {msg.role === 'assistant' ? renderMarkdown(msg.content) : msg.content}
@@ -401,17 +408,17 @@ Puedo ayudarte con:
                   {/* Indicador de escribiendo */}
                   {sending && (
                     <div className="flex justify-start">
-                      <div 
-                        className="rounded-2xl px-4 py-3 bg-white/5"
-                        style={{ border: '1px solid rgba(255, 255, 255, 0.05)' }}
-                      >
+                      <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center mr-2 shrink-0">
+                        <span className="text-emerald-400 scale-75">{Icons.robot}</span>
+                      </div>
+                      <div className="rounded-2xl rounded-bl-md px-4 py-3 bg-slate-800/80 border border-slate-700/50">
                         <div className="flex items-center gap-2">
                           <div className="flex gap-1">
-                            <div className="w-2 h-2 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                            <div className="w-2 h-2 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                            <div className="w-2 h-2 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '300ms' }} />
                           </div>
-                          <span className="text-xs text-slate-400">Pensando...</span>
+                          <span className="text-xs text-slate-400">Procesando...</span>
                         </div>
                       </div>
                     </div>
@@ -422,17 +429,17 @@ Puedo ayudarte con:
 
                 {/* Ejemplos rápidos (solo si hay pocos mensajes) */}
                 {messages.length <= 1 && !sending && (
-                  <div className="px-4 pb-2">
-                    <p className="text-xs text-slate-500 mb-2">Ejemplos:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {EXAMPLE_QUESTIONS.slice(0, 3).map((example, idx) => (
+                  <div className="px-4 pb-3 border-t border-slate-700/50 pt-3">
+                    <p className="text-xs text-slate-500 mb-2 font-medium">¿Qué puedo hacer?</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {EXAMPLE_QUESTIONS.map((example, idx) => (
                         <button
                           key={idx}
                           onClick={() => handleExampleClick(example.text)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors border border-white/5 hover:border-white/10"
+                          className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-left text-xs bg-gradient-to-r ${example.color} hover:opacity-80 text-slate-200 transition-all border border-slate-700/30 hover:border-slate-600/50`}
                         >
-                          <span>{example.icon}</span>
-                          <span className="truncate max-w-[120px]">{example.text.split(' ').slice(0, 3).join(' ')}...</span>
+                          <span className="text-base shrink-0">{example.icon}</span>
+                          <span className="truncate leading-tight">{example.text}</span>
                         </button>
                       ))}
                     </div>
@@ -440,42 +447,33 @@ Puedo ayudarte con:
                 )}
 
                 {/* Input */}
-                <div 
-                  className="p-3"
-                  style={{ 
-                    background: 'rgba(0, 0, 0, 0.2)',
-                    borderTop: '1px solid rgba(255, 255, 255, 0.05)',
-                  }}
-                >
-                  <div 
-                    className="flex items-end gap-2 rounded-xl p-2"
-                    style={{ 
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
-                    }}
-                  >
+                <div className="p-3 bg-slate-900/80 border-t border-slate-700/50">
+                  <div className="flex items-end gap-2 rounded-xl p-2 bg-slate-800/50 border border-slate-700/50 focus-within:border-emerald-500/50 transition-colors">
                     <textarea
                       ref={inputRef}
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      placeholder="Escribe tu mensaje..."
+                      placeholder="Crear tabla, automatización, o sistema..."
                       rows={1}
-                      className="flex-1 bg-transparent text-white text-sm placeholder-slate-500 resize-none outline-none max-h-24"
+                      className="flex-1 bg-transparent text-white text-sm placeholder-slate-500 resize-none outline-none max-h-24 min-h-[36px] py-2 px-2"
                       style={{ scrollbarWidth: 'thin' }}
                     />
                     <button
                       onClick={() => handleSend()}
                       disabled={!input.trim() || sending}
-                      className={`p-2 rounded-lg transition-all ${
+                      className={`p-2.5 rounded-lg transition-all shrink-0 ${
                         input.trim() && !sending
-                          ? 'bg-violet-600 hover:bg-violet-500 text-white'
-                          : 'bg-white/5 text-slate-600 cursor-not-allowed'
+                          ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                          : 'bg-slate-700/50 text-slate-600 cursor-not-allowed'
                       }`}
                     >
                       {Icons.send}
                     </button>
                   </div>
+                  <p className="text-[10px] text-slate-600 text-center mt-2">
+                    Presiona Enter para enviar
+                  </p>
                 </div>
               </>
             )}

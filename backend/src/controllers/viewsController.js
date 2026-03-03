@@ -731,6 +731,114 @@ export async function manageOrder(req, res) {
   }
 }
 
+/**
+ * PUT /api/views/:viewId/item/:itemId
+ * Actualiza un campo de un item (usado para Kanban drag-drop)
+ * Body: { workspaceId, fieldName, newValue }
+ */
+export async function updateItemStatus(req, res) {
+  try {
+    const { viewId, itemId } = req.params;
+    const { workspaceId, fieldName, newValue } = req.body;
+    
+    if (!workspaceId) {
+      return res.status(400).json({ error: 'workspaceId is required' });
+    }
+    
+    if (!fieldName || newValue === undefined) {
+      return res.status(400).json({ error: 'fieldName and newValue are required' });
+    }
+    
+    // Obtener vista
+    const view = await viewRepo.findById(viewId, workspaceId);
+    if (!view) {
+      return res.status(404).json({ error: 'Vista no encontrada' });
+    }
+    
+    // Determinar tabla ID
+    const tableId = view.tables?.primary || view.tableId;
+    
+    // Obtener el mapeo inverso para encontrar el campo real
+    const fieldMap = view.fieldMap || {};
+    let realFieldName = fieldName;
+    
+    // Buscar el campo real en el fieldMap
+    for (const [key, mappedField] of Object.entries(fieldMap)) {
+      if (key === fieldName) {
+        realFieldName = mappedField;
+        break;
+      }
+    }
+    
+    // Actualizar item en la tabla
+    const updated = await tableDataRepo.update(
+      itemId, 
+      { [realFieldName]: newValue, updatedAt: new Date().toISOString() }, 
+      workspaceId, 
+      tableId
+    );
+    
+    log.info('Item status updated:', { viewId, itemId, fieldName, newValue });
+    
+    res.json({ success: true, item: updated });
+    
+  } catch (err) {
+    log.error('updateItemStatus error:', err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+/**
+ * POST /api/views/:viewId/duplicate
+ * Duplica una vista existente
+ * Body: { workspaceId, newName? }
+ */
+export async function duplicateView(req, res) {
+  try {
+    const { viewId } = req.params;
+    const { workspaceId, newName } = req.body;
+    
+    if (!workspaceId) {
+      return res.status(400).json({ error: 'workspaceId is required' });
+    }
+    
+    // Obtener vista original
+    const original = await viewRepo.findById(viewId, workspaceId);
+    if (!original) {
+      return res.status(404).json({ error: 'Vista no encontrada' });
+    }
+    
+    // Crear copia
+    const duplicated = await viewRepo.create({
+      _id: uuidv4(),
+      name: newName || `${original.name} (copia)`,
+      type: original.type,
+      tableId: original.tableId,
+      tables: original.tables,
+      fieldMap: { ...original.fieldMap },
+      computedFields: { ...original.computedFields },
+      viewConfig: { ...original.viewConfig },
+      icon: original.icon,
+      color: original.color,
+      enabled: true,
+      filters: original.filters ? [...original.filters] : [],
+      mappingMetadata: {
+        ...original.mappingMetadata,
+        duplicatedFrom: viewId,
+        duplicatedAt: new Date().toISOString(),
+      },
+    }, workspaceId);
+    
+    log.info('View duplicated:', { originalId: viewId, newId: duplicated._id });
+    
+    res.status(201).json(duplicated);
+    
+  } catch (err) {
+    log.error('duplicateView error:', err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
 export default {
   getViewTypes,
   analyzeMapping,
@@ -743,4 +851,6 @@ export default {
   getViewData,
   refreshMapping,
   manageOrder,
+  updateItemStatus,
+  duplicateView,
 };

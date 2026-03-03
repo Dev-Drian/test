@@ -290,6 +290,52 @@ Detecta la tabla mencionada y propone el flujo apropiado.`,
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'create_table',
+      description: `Crea una nueva tabla en el workspace. Usa esta herramienta cuando el usuario quiera:
+- "Crear una tabla de clientes"
+- "Necesito una tabla para productos"
+- "Quiero agregar una tabla de ventas"
+- "Crea una tabla llamada X con campos Y, Z"
+
+NO uses para crear sistemas completos (usa setup_workspace para eso).
+Úsala solo para crear UNA tabla individual.`,
+      parameters: {
+        type: 'object',
+        properties: {
+          table_name: {
+            type: 'string',
+            description: 'Nombre de la tabla a crear (ej: "Clientes", "Productos", "Ventas")',
+          },
+          fields: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string', description: 'Nombre del campo' },
+                type: { type: 'string', enum: ['text', 'number', 'email', 'phone', 'date', 'select', 'url', 'textarea'], description: 'Tipo de campo' },
+                required: { type: 'boolean', description: 'Si el campo es obligatorio' },
+                options: { type: 'array', items: { type: 'string' }, description: 'Opciones para campos tipo select' },
+              },
+            },
+            description: 'Campos de la tabla. Si no se especifican, el asistente sugerirá campos apropiados.',
+          },
+          user_request: {
+            type: 'string',
+            description: 'Lo que el usuario pidió textualmente.',
+          },
+          action: {
+            type: 'string',
+            enum: ['generate_plan', 'confirm', 'cancel'],
+            description: 'generate_plan=primera vez, confirm=crear la tabla, cancel=cancelar.',
+          },
+        },
+        required: ['user_request', 'action'],
+      },
+    },
+  },
 ];
 
 /**
@@ -362,11 +408,12 @@ class ToolRegistry {
     
     let tools = Array.from(this.tools.values());
     
-    // Si NO hay tablas, solo permitir general_conversation
-    // Esto evita que el LLM intente crear/consultar registros sin tablas
+    // Si NO hay tablas, permitir herramientas de configuración
+    // Esto permite crear tablas/sistemas aunque no haya tablas aún
     if (tables.length === 0) {
-      log.debug('No tables configured, limiting to general_conversation only');
-      return tools.filter(t => t.function.name === 'general_conversation');
+      log.debug('No tables configured, limiting to configuration tools');
+      const allowedWithoutTables = ['general_conversation', 'setup_workspace', 'create_flow', 'create_table'];
+      return tools.filter(t => allowedWithoutTables.includes(t.function.name));
     }
     
     // Inyectar nombres de tablas reales en las descripciones de record_type
@@ -392,14 +439,24 @@ class ToolRegistry {
       log.debug('Injected table names into tools', { tableNames });
     }
     
+    // Herramientas de configuración que SIEMPRE deben estar disponibles
+    // Estas son "meta-tools" que no dependen de datos sino que configuran el sistema
+    const alwaysEnabledTools = ['setup_workspace', 'create_flow', 'create_table', 'general_conversation'];
+    
     // Filtrar por enabled si se especifica
     if (enabled.length > 0) {
-      tools = tools.filter(t => enabled.includes(t.function.name));
+      tools = tools.filter(t => 
+        enabled.includes(t.function.name) || 
+        alwaysEnabledTools.includes(t.function.name)
+      );
     }
     
-    // Excluir disabled
+    // Excluir disabled (pero nunca excluir las always enabled)
     if (disabled.length > 0) {
-      tools = tools.filter(t => !disabled.includes(t.function.name));
+      tools = tools.filter(t => 
+        !disabled.includes(t.function.name) || 
+        alwaysEnabledTools.includes(t.function.name)
+      );
     }
     
     return tools;
@@ -446,6 +503,7 @@ class ToolRegistry {
       'general_conversation': 'FallbackHandler',
       'setup_workspace': 'SetupHandler', // Configuración asistida
       'create_flow': 'FlowHandler', // Crear automatizaciones
+      'create_table': 'TableHandler', // Crear tablas individuales
     };
     
     return mapping[toolName] || 'FallbackHandler';

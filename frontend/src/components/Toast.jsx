@@ -239,6 +239,7 @@ export const useConfirm = () => {
     type: 'danger',
     isLoading: false,
     onConfirm: null,
+    onCancel: null,
   });
 
   const confirm = useCallback(({ title, message, confirmText, cancelText, type = 'danger' }) => {
@@ -255,12 +256,12 @@ export const useConfirm = () => {
           setModalState(prev => ({ ...prev, isOpen: false }));
           resolve(true);
         },
+        onCancel: () => {
+          setModalState(prev => ({ ...prev, isOpen: false }));
+          resolve(false);
+        },
       });
     });
-  }, []);
-
-  const cancel = useCallback(() => {
-    setModalState(prev => ({ ...prev, isOpen: false }));
   }, []);
 
   const ConfirmModalComponent = (
@@ -273,7 +274,7 @@ export const useConfirm = () => {
       type={modalState.type}
       isLoading={modalState.isLoading}
       onConfirm={modalState.onConfirm}
-      onCancel={cancel}
+      onCancel={modalState.onCancel}
     />
   );
 

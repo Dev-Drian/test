@@ -2247,9 +2247,9 @@ export default function FlowEditor() {
 
       {/* Modal de Plantillas de Flujos */}
       {showTemplates && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.8)' }}>
-          <div className="w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl" style={{ background: '#0c0c0f', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
+          <div className="w-full max-w-3xl max-h-[85vh] flex flex-col rounded-2xl shadow-2xl" style={{ background: '#0c0c0f', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="px-6 py-4 flex items-center justify-between shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <div>
                 <h2 className="text-lg font-semibold text-white">Crear nuevo flujo</h2>
                 <p className="text-sm text-zinc-500">Elige una plantilla o empieza desde cero</p>
@@ -2263,8 +2263,8 @@ export default function FlowEditor() {
               </button>
             </div>
             
-            <div className="p-6">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="p-6 overflow-y-auto flex-1 min-h-0">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {flowTemplates.map((template) => (
                   <button
                     key={template._id}
