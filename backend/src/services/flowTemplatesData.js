@@ -339,7 +339,7 @@ export const FLOW_TEMPLATES_DATA = [
     keywords: ['bienvenida', 'bienvenido', 'registre', 'registro', 'registrar', 'nuevo', 'usuario', 'cliente', 'email', 'correo', 'enviar', 'automatico'],
     nodes: [
       { id: 'trigger-1', type: 'trigger', position: { x: 250, y: 50 }, data: { label: 'Nuevo registro', trigger: 'afterCreate', tablePlaceholder: 'clientes' } },
-      { id: 'action-1', type: 'action', position: { x: 250, y: 200 }, data: { label: 'Enviar email', actionType: 'sendEmail', to: '{{record.email}}', subject: 'Bienvenido!', body: 'Hola {{record.nombre}},\\n\\nGracias por registrarte.' } },
+      { id: 'action-1', type: 'action', position: { x: 250, y: 200 }, data: { label: 'Enviar email', actionType: 'sendEmail', to: '{{record.email}}', subject: '¡Bienvenido/a!', body: 'Hola {{record.nombre}},\\n\\n¡Bienvenido/a! Gracias por registrarte.\\n\\n**Tus datos registrados:**\\n• Nombre: {{record.nombre}}\\n• Email: {{record.email}}\\n• Teléfono: {{record.telefono}}\\n\\n¿Tienes alguna pregunta? Estamos para ayudarte.' } },
     ],
     edges: [{ id: 'e1', source: 'trigger-1', target: 'action-1' }],
   },

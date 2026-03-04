@@ -93,28 +93,33 @@ export default function ResponseNode({ id, data, selected }) {
           /* Si no hay mensaje, mostrar editor */
           <>
             <select 
-              className="w-full px-2.5 py-1.5 rounded-lg text-[11px] focus:outline-none focus:ring-1 focus:ring-pink-500/50 transition-all cursor-pointer"
+              className="w-full px-3 py-2 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all cursor-pointer appearance-none"
               style={{ 
-                background: 'rgba(255,255,255,0.03)', 
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: '#d1d5db'
+                background: '#1e1e2a', 
+                border: '1px solid rgba(236, 72, 153, 0.3)',
+                color: '#f9a8d4',
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23ec4899'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 8px center',
+                backgroundSize: '16px',
+                paddingRight: '32px'
               }}
               value={data?.type || 'success'}
               onChange={(e) => updateNodeData('type', e.target.value)}
             >
-              <option value="success">✓ Éxito</option>
-              <option value="error">✗ Error</option>
-              <option value="info">ⓘ Info</option>
+              <option value="success" style={{ background: '#1e1e2a', color: '#4ade80', padding: '8px' }}>✓ Éxito</option>
+              <option value="error" style={{ background: '#1e1e2a', color: '#f87171', padding: '8px' }}>✗ Error</option>
+              <option value="info" style={{ background: '#1e1e2a', color: '#60a5fa', padding: '8px' }}>ⓘ Info</option>
             </select>
             
             <textarea 
-              className="w-full px-2.5 py-1.5 rounded-lg text-[11px] focus:outline-none focus:ring-1 focus:ring-pink-500/50 transition-all resize-none placeholder-slate-600"
+              className="w-full px-3 py-2 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all resize-none placeholder-slate-500"
               style={{ 
-                background: 'rgba(255,255,255,0.03)', 
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: 'white'
+                background: '#1e1e2a', 
+                border: '1px solid rgba(236, 72, 153, 0.3)',
+                color: '#f1f5f9'
               }}
-              placeholder="Mensaje..."
+              placeholder="Escribe tu mensaje..."
               rows={2}
               value={data?.message || ''}
               onChange={(e) => updateNodeData('message', e.target.value)}

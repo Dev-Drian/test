@@ -9,6 +9,7 @@ import { api } from '../api/client';
 import { useToast } from '../components/Toast';
 import FlowTemplatesGallery from '../components/FlowTemplatesGallery';
 import FlowWizard from '../components/FlowWizard';
+import { EVENTS } from '../utils/events';
 
 // Iconos
 const Icons = {
@@ -78,6 +79,23 @@ export default function Flows() {
     if (!workspaceId) return;
     loadFlows();
   }, [workspaceId]);
+
+  // Escuchar evento de flujo creado desde el chat
+  useEffect(() => {
+    const handleFlowCreated = (event) => {
+      const flowData = event.detail;
+      console.log('[Flows] Flow created event received!', flowData);
+      loadFlows();
+      toast.success(`Flujo "${flowData?.name || 'Nuevo flujo'}" creado desde el asistente`);
+    };
+
+    window.addEventListener(EVENTS.FLOW_CREATED, handleFlowCreated);
+    console.log('[Flows] Listening for flow created events');
+    
+    return () => {
+      window.removeEventListener(EVENTS.FLOW_CREATED, handleFlowCreated);
+    };
+  }, [workspaceId]); // Se re-suscribe si cambia el workspace
 
   const loadFlows = async () => {
     try {

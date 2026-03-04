@@ -20,103 +20,147 @@ const log = logger.child('ViewMappingService');
 export const VIEW_TYPES = {
   calendar: {
     name: 'Calendario',
-    description: 'Vista de calendario para citas, eventos, reservas',
+    description: 'Organiza citas, eventos y reservas en un calendario visual interactivo',
     icon: '📅',
     requiredFields: ['start', 'title'],
     optionalFields: ['end', 'description', 'color', 'location'],
     fieldDescriptions: {
-      start: 'Fecha/hora de inicio del evento',
-      end: 'Fecha/hora de fin del evento (o duración)',
-      title: 'Título o nombre del evento (persona, servicio, etc.)',
-      description: 'Descripción o notas adicionales',
-      color: 'Campo para colorear eventos por categoría',
-      location: 'Ubicación o lugar del evento',
+      start: 'Fecha y hora de inicio',
+      end: 'Fecha y hora de fin (opcional)',
+      title: 'Nombre del evento o cliente',
+      description: 'Notas adicionales',
+      color: 'Campo para colorear por categoría',
+      location: 'Ubicación del evento',
     },
-    suggestedTableTypes: ['calendar', 'appointments', 'reservations'],
+    // Patrones para autodetectar campos por nombre de columna
+    fieldAutoDetect: {
+      start: ['fecha', 'date', 'inicio', 'start', 'fecha_inicio', 'start_date', 'cuando'],
+      end: ['fecha_fin', 'end', 'fin', 'end_date', 'termina', 'hasta'],
+      title: ['titulo', 'title', 'nombre', 'name', 'evento', 'event', 'cliente', 'asunto', 'subject'],
+      description: ['descripcion', 'description', 'notas', 'notes', 'detalle', 'detalles'],
+      color: ['color', 'categoria', 'category', 'tipo', 'type'],
+      location: ['ubicacion', 'location', 'lugar', 'direccion', 'address'],
+    },
+    suggestedTableTypes: ['calendar', 'appointments', 'reservations', 'citas', 'eventos'],
   },
   
   kanban: {
-    name: 'Tablero Kanban',
-    description: 'Vista de columnas para seguimiento de estados/etapas',
+    name: 'Kanban',
+    description: 'Gestiona tareas y proyectos con columnas arrastrables por estado',
     icon: '📋',
     requiredFields: ['title', 'status'],
     optionalFields: ['description', 'assignee', 'priority', 'dueDate'],
     fieldDescriptions: {
-      title: 'Título o nombre del elemento',
-      status: 'Estado actual (define las columnas)',
-      description: 'Descripción o detalles',
-      assignee: 'Persona asignada',
+      title: 'Nombre de la tarea o elemento',
+      status: 'Estado que define la columna',
+      description: 'Detalles de la tarea',
+      assignee: 'Persona responsable',
       priority: 'Nivel de prioridad',
       dueDate: 'Fecha límite',
     },
-    suggestedTableTypes: ['tasks', 'orders', 'leads', 'projects'],
+    // Patrones para autodetectar campos por nombre de columna
+    fieldAutoDetect: {
+      title: ['titulo', 'title', 'nombre', 'name', 'tarea', 'task', 'asunto', 'subject'],
+      status: ['estado', 'status', 'etapa', 'stage', 'fase', 'phase', 'columna'],
+      description: ['descripcion', 'description', 'notas', 'notes', 'detalle', 'detalles'],
+      assignee: ['responsable', 'assignee', 'asignado', 'assigned', 'encargado', 'owner', 'propietario'],
+      priority: ['prioridad', 'priority', 'urgencia', 'urgency', 'importancia'],
+      dueDate: ['fecha_limite', 'due_date', 'vencimiento', 'deadline', 'fecha_entrega', 'entrega'],
+    },
+    suggestedTableTypes: ['tasks', 'orders', 'leads', 'projects', 'tareas', 'pedidos'],
   },
   
   timeline: {
     name: 'Línea de Tiempo',
-    description: 'Vista cronológica de eventos o historial',
+    description: 'Visualiza eventos de forma cronológica como historial o actividad',
     icon: '📈',
     requiredFields: ['date', 'title'],
     optionalFields: ['description', 'type', 'icon'],
     fieldDescriptions: {
       date: 'Fecha del evento',
-      title: 'Título o descripción corta',
+      title: 'Título del evento',
       description: 'Descripción detallada',
-      type: 'Tipo o categoría del evento',
+      type: 'Tipo o categoría',
       icon: 'Icono representativo',
     },
-    suggestedTableTypes: ['history', 'logs', 'activities'],
+    // Patrones para autodetectar campos por nombre de columna
+    fieldAutoDetect: {
+      date: ['fecha', 'date', 'createdAt', 'created_at', 'timestamp', 'cuando'],
+      title: ['titulo', 'title', 'nombre', 'name', 'evento', 'event', 'accion', 'action'],
+      description: ['descripcion', 'description', 'notas', 'notes', 'detalle', 'mensaje', 'message'],
+      type: ['tipo', 'type', 'categoria', 'category', 'clase', 'class'],
+      icon: ['icono', 'icon', 'emoji'],
+    },
+    suggestedTableTypes: ['history', 'logs', 'activities', 'historial', 'seguimientos'],
   },
   
   cards: {
-    name: 'Tarjetas',
-    description: 'Vista de tarjetas/cards para visualizar elementos',
-    icon: '🃏',
+    name: 'Galería',
+    description: 'Muestra registros como tarjetas visuales con imagen y detalles',
+    icon: '🎴',
     requiredFields: ['title'],
     optionalFields: ['subtitle', 'description', 'image', 'badge', 'footer'],
     fieldDescriptions: {
-      title: 'Título principal de la tarjeta',
-      subtitle: 'Subtítulo o información secundaria',
-      description: 'Descripción o contenido',
+      title: 'Título de la tarjeta',
+      subtitle: 'Información secundaria',
+      description: 'Contenido o descripción',
       image: 'URL de imagen',
-      badge: 'Etiqueta o badge',
-      footer: 'Información del pie',
+      badge: 'Etiqueta destacada',
+      footer: 'Información adicional',
     },
-    suggestedTableTypes: ['products', 'contacts', 'services'],
+    // Patrones para autodetectar campos por nombre de columna
+    fieldAutoDetect: {
+      title: ['titulo', 'title', 'nombre', 'name', 'producto', 'product', 'cliente'],
+      subtitle: ['subtitulo', 'subtitle', 'email', 'telefono', 'phone', 'cargo', 'role', 'categoria'],
+      description: ['descripcion', 'description', 'notas', 'notes', 'detalle', 'bio'],
+      image: ['imagen', 'image', 'foto', 'photo', 'avatar', 'picture', 'url_imagen'],
+      badge: ['etiqueta', 'badge', 'tag', 'estado', 'status', 'tipo', 'type'],
+      footer: ['footer', 'fecha', 'date', 'precio', 'price', 'info'],
+    },
+    suggestedTableTypes: ['products', 'contacts', 'services', 'productos', 'clientes'],
   },
   
   table: {
-    name: 'Tabla Avanzada',
-    description: 'Vista de tabla con filtros y ordenamiento avanzado',
+    name: 'Tabla Dinámica',
+    description: 'Vista tabular con filtros avanzados, búsqueda y agrupación',
     icon: '📊',
     requiredFields: [],
     optionalFields: ['columns', 'sortBy', 'groupBy'],
     fieldDescriptions: {
-      columns: 'Columnas a mostrar',
-      sortBy: 'Campo para ordenar por defecto',
-      groupBy: 'Campo para agrupar filas',
+      columns: 'Columnas visibles',
+      sortBy: 'Ordenar por defecto',
+      groupBy: 'Agrupar registros',
     },
     suggestedTableTypes: ['*'],
   },
   
   floorplan: {
-    name: 'Plano / Mesas',
-    description: 'Vista de mesas o espacios con estado en tiempo real (restaurantes, salones)',
+    name: 'Gestión de Mesas',
+    description: 'Panel de control de mesas y reservas en tiempo real para restaurantes',
     icon: '🍽️',
     requiredFields: ['identifier', 'capacity'],
-    optionalFields: ['zone', 'status', 'description'],
+    optionalFields: ['zone', 'status', 'datetime', 'notes'],
     fieldDescriptions: {
-      identifier: 'Número o nombre de la mesa/espacio',
-      capacity: 'Capacidad (número de personas)',
-      zone: 'Zona o área (terraza, interior, VIP)',
-      status: 'Estado actual (libre, ocupada, reservada)',
-      description: 'Notas o descripción adicional',
+      identifier: 'Número o nombre de la mesa',
+      capacity: 'Capacidad de personas',
+      zone: 'Zona (Terraza, Interior, VIP)',
+      status: 'Estado actual',
+      datetime: 'Fecha y hora de reserva',
+      notes: 'Notas adicionales',
     },
-    suggestedTableTypes: ['tables', 'rooms', 'spaces'],
-    // FloorPlan puede usar multi-tabla para calcular estados desde Reservas
+    // Patrones para autodetectar campos por nombre de columna (orden importa: primero los más específicos)
+    fieldAutoDetect: {
+      identifier: ['numero', 'numero_mesa', 'mesa', 'table_number', 'table', 'num', 'id_mesa'],
+      capacity: ['capacidad', 'capacity', 'personas', 'seats', 'asientos', 'plazas'],
+      zone: ['zona', 'zone', 'area', 'seccion', 'section', 'ubicacion'],
+      status: ['estado', 'status', 'disponibilidad'],
+      datetime: ['fecha_hora', 'datetime', 'fecha', 'date', 'hora', 'time', 'horario', 'reserva'],
+      notes: ['notas', 'notes', 'descripcion', 'description', 'observaciones', 'comentarios'],
+    },
+    suggestedTableTypes: ['tables', 'rooms', 'spaces', 'mesas', 'espacios'],
     supportsMultiTable: true,
     multiTableConfig: {
-      description: 'Combina tabla de mesas con tabla de reservas para calcular estado automático',
+      description: 'Conecta con reservas para calcular estados automáticamente',
       secondaryTable: {
         purpose: 'reservations',
         suggestedNames: ['reservas', 'reservaciones', 'bookings'],
@@ -128,25 +172,32 @@ export const VIEW_TYPES = {
         },
       },
       computedStatuses: {
-        available: { label: 'Libre', color: '#10B981' },
+        available: { label: 'Disponible', color: '#10B981' },
         reserved: { label: 'Reservada', color: '#F59E0B' },
         occupied: { label: 'Ocupada', color: '#EF4444' },
-        blocked: { label: 'No disponible', color: '#6B7280' },
+        blocked: { label: 'Bloqueada', color: '#6B7280' },
       },
     },
   },
   
   pos: {
-    name: 'Punto de Venta',
-    description: 'Vista de mesas con pedidos y productos (restaurantes, bares, cafeterías)',
-    icon: '🛒',
+    name: 'Punto de Venta (POS)',
+    description: 'Sistema completo de pedidos y comandas para restaurantes y bares',
+    icon: '💳',
     requiredFields: ['identifier'],
     optionalFields: ['capacity', 'zone', 'status'],
     fieldDescriptions: {
-      identifier: 'Número o nombre de la mesa (ej: "Mesa 1", "T5", "Terraza 3")',
+      identifier: 'Número o nombre de la mesa',
       capacity: 'Capacidad de personas',
-      zone: 'Zona o área (Interior, Terraza, Bar)',
-      status: 'Estado de la mesa (libre, ocupada, reservada)',
+      zone: 'Zona del local',
+      status: 'Estado de la mesa',
+    },
+    // Patrones para autodetectar campos por nombre de columna
+    fieldAutoDetect: {
+      identifier: ['numero', 'mesa', 'table', 'nombre', 'name', 'id', 'code', 'codigo'],
+      capacity: ['capacidad', 'capacity', 'personas', 'seats', 'asientos', 'plazas'],
+      zone: ['zona', 'zone', 'area', 'seccion', 'section', 'ubicacion'],
+      status: ['estado', 'status', 'disponibilidad'],
     },
     suggestedTableTypes: ['tables', 'mesas'],
     supportsMultiTable: true,
@@ -268,6 +319,8 @@ export class ViewMappingService {
       icon: config.icon,
       requiredFields: config.requiredFields,
       optionalFields: config.optionalFields,
+      fieldDescriptions: config.fieldDescriptions,
+      fieldAutoDetect: config.fieldAutoDetect,
     }));
   }
   
@@ -1210,6 +1263,28 @@ Responde SOLO en JSON con este formato:
    */
   async transformData(records, fieldMap, computedFields = {}, options = {}) {
     let processedRecords = records;
+    
+    // Si no hay fieldMap o está vacío, devolver registros sin transformar
+    // Esto es útil para vistas tipo "table" donde queremos todos los campos originales
+    if (!fieldMap || Object.keys(fieldMap).length === 0) {
+      return processedRecords.map(record => ({
+        ...record,
+        _raw: record,
+      }));
+    }
+    
+    // Detectar si es un fieldMap de "configuración" vs "mapeo de datos"
+    // Los campos de config como columns, sortBy, groupBy no son para mapeo
+    const configOnlyFields = ['columns', 'sortBy', 'groupBy', 'pageSize'];
+    const hasDataFields = Object.keys(fieldMap).some(key => !configOnlyFields.includes(key));
+    
+    // Si solo tiene campos de configuración, devolver datos sin transformar
+    if (!hasDataFields) {
+      return processedRecords.map(record => ({
+        ...record,
+        _raw: record,
+      }));
+    }
     
     // Resolver relaciones si se proporcionan headers
     if (options.workspaceId && options.headers) {

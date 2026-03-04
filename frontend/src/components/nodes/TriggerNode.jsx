@@ -131,21 +131,26 @@ export default function TriggerNode({ id, data, selected }) {
         ) : (
           /* Modo edición: Selector de Trigger */
           <select 
-            className="w-full px-2.5 py-2 rounded-xl text-[11px] focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-all cursor-pointer"
+            className="w-full px-3 py-2 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all cursor-pointer appearance-none"
             style={{ 
-              background: 'rgba(255,255,255,0.03)', 
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: '#d1d5db'
+              background: '#1e1e2a', 
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              color: '#6ee7b7',
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2310b981'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 8px center',
+              backgroundSize: '16px',
+              paddingRight: '32px'
             }}
             value={data?.trigger || 'create'}
             onChange={(e) => updateNodeData('trigger', e.target.value)}
           >
-            <option value="create">Al CREAR</option>
-            <option value="update">Al ACTUALIZAR</option>
-            <option value="delete">Al ELIMINAR</option>
-            <option value="beforeCreate">ANTES de crear</option>
-            <option value="query">Al CONSULTAR</option>
-            <option value="availability">DISPONIBILIDAD</option>
+            <option value="create" style={{ background: '#1e1e2a', color: '#4ade80' }}>Al CREAR</option>
+            <option value="update" style={{ background: '#1e1e2a', color: '#60a5fa' }}>Al ACTUALIZAR</option>
+            <option value="delete" style={{ background: '#1e1e2a', color: '#f87171' }}>Al ELIMINAR</option>
+            <option value="beforeCreate" style={{ background: '#1e1e2a', color: '#fcd34d' }}>ANTES de crear</option>
+            <option value="query" style={{ background: '#1e1e2a', color: '#a78bfa' }}>Al CONSULTAR</option>
+            <option value="availability" style={{ background: '#1e1e2a', color: '#2dd4bf' }}>DISPONIBILIDAD</option>
           </select>
         )}
         

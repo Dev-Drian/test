@@ -78,9 +78,16 @@ export default function ViewConfigurator({ workspaceId, tables, viewTypes, onClo
       setAnalysisResult(res.data);
       setFieldMap(res.data.fieldMap || {});
       
-      // Generar nombre sugerido
+      // Generar nombre sugerido evitando duplicación
       if (!viewName) {
-        setViewName(`${selectedType.name} de ${selectedTable.name}`);
+        const viewTypeName = selectedType.name.toLowerCase();
+        const tableName = selectedTable.name.toLowerCase();
+        
+        if (viewTypeName.includes(tableName) || tableName.includes(viewTypeName.split(' ')[0])) {
+          setViewName(selectedType.name);
+        } else {
+          setViewName(`${selectedType.name} de ${selectedTable.name}`);
+        }
       }
       
       // Si el análisis es completo, ir a configurar

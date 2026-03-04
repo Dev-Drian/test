@@ -93,6 +93,23 @@ class SmartFlowAssistant {
   _findByKeywords(userRequest, templates) {
     const request = userRequest.toLowerCase();
     
+    // DETECTAR SOLICITUDES COMPLEJAS que requieren flujo custom
+    // Si tiene múltiples acciones conectadas con "y", "además", "también"
+    const hasMultipleActions = (
+      (request.includes(' y ') && (request.includes('crear') || request.includes('enviar') || request.includes('notificar'))) ||
+      request.includes('además') ||
+      request.includes('también') ||
+      (request.match(/cuando.*,.*y/i)) || // "cuando X, Y y Z"
+      (request.includes('cree') && request.includes('notifi')) || // crear + notificar
+      (request.includes('email') && request.includes('crear')) // email + crear registro
+    );
+    
+    // Si es complejo, forzar flujo custom
+    if (hasMultipleActions) {
+      log.info('Complex request detected, forcing custom flow', { request: request.substring(0, 80) });
+      return null; // Esto hará que se genere un flujo custom
+    }
+    
     // Encontrar TODOS los templates que coinciden y sus scores
     const matches = [];
     
@@ -138,8 +155,8 @@ class SmartFlowAssistant {
       alternatives: matches.slice(1, 3).map(m => ({ name: m.templateName, score: m.score })),
     });
     
-    // Requiere al menos 2 keywords para devolver con alta confianza
-    if (best.score >= 2) {
+    // Requiere al menos 3 keywords para alta confianza (más estricto)
+    if (best.score >= 3) {
       return {
         templateId: best.templateId,
         confidence: best.confidence,
@@ -148,13 +165,19 @@ class SmartFlowAssistant {
       };
     }
     
-    // Con 1 keyword, devolver con confianza media
-    return {
-      templateId: best.templateId,
-      confidence: 60,
-      reason: `Coincidencia parcial: ${best.matchedKeywords.join(', ')}`,
-      needsCustomFlow: false,
-    };
+    // Con 2 keywords, solo si la cobertura es buena
+    if (best.score === 2 && best.coverage >= 0.3) {
+      return {
+        templateId: best.templateId,
+        confidence: 65,
+        reason: `Coincidencia parcial: ${best.matchedKeywords.join(', ')}`,
+        needsCustomFlow: false,
+      };
+    }
+    
+    // Con menos coincidencias, mejor generar custom
+    log.info('Low keyword match, suggesting custom flow', { score: best.score, coverage: best.coverage });
+    return null;
   }
 
   /**
@@ -250,66 +273,312 @@ RESPONDE JSON:
    * @returns {Promise<object>}
    */
   async generateCustomFlow(userRequest, tables) {
-    const tableDetails = tables.map(t => ({
+    const lowerRequest = userRequest.toLowerCase();
+    
+    // Detectar TODAS las tablas mencionadas
+    const mentionedTables = tables.filter(t => {
+      const tableLower = t.name.toLowerCase();
+      const singular = tableLower.replace(/s$/, '');
+      return lowerRequest.includes(tableLower) || lowerRequest.includes(singular);
+    });
+    
+    // Si no se menciona ninguna tabla, usar la primera
+    const mainTable = mentionedTables[0] || tables[0];
+    const secondaryTable = mentionedTables[1] || tables.find(t => t._id !== mainTable._id);
+    
+    // Detectar condiciones mencionadas
+    const hasCondition = lowerRequest.includes('prioridad') || 
+                        lowerRequest.includes('estado') ||
+                        lowerRequest.includes('cuando') && lowerRequest.includes('sea') ||
+                        lowerRequest.includes('si ');
+    
+    // Detectar acciones múltiples
+    const wantsEmail = lowerRequest.includes('email') || lowerRequest.includes('notifi') || lowerRequest.includes('correo');
+    const wantsCreateRecord = lowerRequest.includes('crear') || lowerRequest.includes('cree') || lowerRequest.includes('agreg');
+    const wantsWebhook = lowerRequest.includes('webhook') || lowerRequest.includes('api');
+    
+    // Construir descripción de tablas para el prompt
+    const tableInfo = tables.slice(0, 5).map(t => ({
       name: t.name,
       id: t._id,
-      fields: (t.headers || []).map(h => h.key || h.label),
+      fields: (t.headers || []).map(h => ({ key: h.key || h.label, label: h.label || h.key, type: h.type })),
     }));
 
-    // Detectar tabla mencionada
-    const lowerRequest = userRequest.toLowerCase();
-    let suggestedTable = tables[0]; // Default a primera tabla
-    for (const table of tables) {
-      const tableLower = table.name.toLowerCase();
-      if (lowerRequest.includes(tableLower) || 
-          lowerRequest.includes(tableLower.replace(/s$/, '')) || // singular
-          tableLower.includes(lowerRequest.split(' ').find(w => w.length > 4) || '')) {
-        suggestedTable = table;
-        break;
-      }
-    }
+    const prompt = `Genera un flujo de automatización COMPLETO para: "${userRequest}"
 
-    const prompt = `Genera un flujo de automatización para: "${userRequest}"
+TABLAS DISPONIBLES:
+${tableInfo.map(t => `- ${t.name} (ID: ${t.id})\n  Campos: ${t.fields.map(f => f.key).join(', ')}`).join('\n')}
 
-TABLA PRINCIPAL DETECTADA: ${suggestedTable.name} (ID: ${suggestedTable._id})
-CAMPOS: ${(suggestedTable.headers || []).map(h => h.key || h.label).join(', ')}
+INSTRUCCIONES CRÍTICAS:
+1. Usa IDs únicos para cada nodo (trigger-1, condition-1, action-1, action-2, etc.)
+2. Si el usuario menciona una CONDICIÓN (prioridad, estado, etc.), agrega un nodo "condition"
+3. Si menciona MÚLTIPLES acciones (email Y crear registro), agrega MÚLTIPLES nodos "action"
+4. Conecta todos los nodos con edges correctos
+5. Usa los nombres EXACTOS de las tablas y campos
 
-OTRAS TABLAS:
-${JSON.stringify(tableDetails.filter(t => t.id !== suggestedTable._id), null, 2)}
+TIPOS DE NODOS DISPONIBLES:
+- trigger: {type: "trigger", data: {trigger: "afterCreate"|"afterUpdate", triggerTable: "ID_TABLA", triggerTableName: "NOMBRE"}}
+- condition: {type: "condition", data: {label: "...", field: "record.CAMPO", operator: "equals"|"contains", value: "VALOR"}}
+- action (email): {type: "action", data: {actionType: "sendEmail", to: "{{record.email}}", subject: "...", body: "..."}}
+- action (crear): {type: "action", data: {actionType: "createRecord", targetTable: "ID_TABLA", fields: [{key: "campo", value: "{{record.X}}"}]}}
 
-GENERA UN FLUJO SIMPLE con estos nodes:
-1. trigger: dispara cuando se crea/actualiza en la tabla
-2. action: la acción a realizar (sendEmail, createRecord, etc.)
+EJEMPLO DE FLUJO COMPLEJO:
+{
+  "name": "Notificación y seguimiento de tareas urgentes",
+  "description": "Cuando se crea tarea con prioridad alta, notifica y crea seguimiento",
+  "mainTable": "ID_TAREAS",
+  "trigger": "afterCreate",
+  "nodes": [
+    {"id": "trigger-1", "type": "trigger", "position": {"x": 250, "y": 50}, "data": {"label": "Nueva tarea", "trigger": "afterCreate", "triggerTable": "ID_TAREAS"}},
+    {"id": "condition-1", "type": "condition", "position": {"x": 250, "y": 180}, "data": {"label": "¿Prioridad alta?", "field": "record.prioridad", "operator": "equals", "value": "alta"}},
+    {"id": "action-1", "type": "action", "position": {"x": 250, "y": 310}, "data": {"label": "Notificar equipo", "actionType": "sendEmail", "to": "equipo@empresa.com", "subject": "Tarea urgente", "body": "Nueva tarea: {{record.titulo}}"}},
+    {"id": "action-2", "type": "action", "position": {"x": 250, "y": 440}, "data": {"label": "Crear seguimiento", "actionType": "createRecord", "targetTable": "ID_SEGUIMIENTOS", "fields": [{"key": "titulo", "value": "Seguimiento: {{record.titulo}}"}, {"key": "fecha", "value": "{{today + 2 days}}"}]}}
+  ],
+  "edges": [
+    {"id": "e1", "source": "trigger-1", "target": "condition-1"},
+    {"id": "e2", "source": "condition-1", "target": "action-1", "sourceHandle": "true"},
+    {"id": "e3", "source": "action-1", "target": "action-2"}
+  ]
+}
 
-RESPONDE SOLO EN JSON (sin markdown):
-{"name": "Nombre", "description": "Desc", "mainTable": "${suggestedTable._id}", "mainTableName": "${suggestedTable.name}", "trigger": "afterCreate", "actionType": "sendEmail", "nodes": [...], "edges": [...]}`;
+RESPONDE SOLO EN JSON VÁLIDO (sin markdown, sin \`\`\`):`;
 
     try {
       const response = await this.aiProvider.chat({
-        systemPrompt: 'Genera flujos de automatización en JSON válido. Sin bloques de código markdown.',
+        systemPrompt: 'Eres un experto en automatizaciones. Genera flujos JSON completos y funcionales. NUNCA uses markdown ni bloques de código. Responde SOLO el JSON.',
         messages: [{ role: 'user', content: prompt }],
-        model: 'gpt-4o-mini',
-        temperature: 0.3,
+        model: 'gpt-4o', // Usar modelo más capaz para flujos complejos
+        temperature: 0.2,
       });
 
-      log.debug('LLM response for custom flow', { response: response?.substring(0, 300) });
+      log.debug('LLM response for custom flow', { response: response?.substring(0, 500) });
 
       const cleanResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       const jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const flow = JSON.parse(jsonMatch[0]);
-        log.info('Custom flow generated', { name: flow.name, trigger: flow.trigger });
+        log.info('Custom flow generated', { 
+          name: flow.name, 
+          nodeCount: flow.nodes?.length,
+          edgeCount: flow.edges?.length,
+        });
         return flow;
       }
       
-      // Generar flujo básico por defecto si el parsing falla
+      // Generar flujo por defecto si el parsing falla
       log.warn('Could not parse custom flow, generating default');
-      return this._generateDefaultFlow(userRequest, suggestedTable);
+      return this._generateAdvancedDefaultFlow(userRequest, mainTable, secondaryTable, tables);
     } catch (error) {
       log.error('Error generating custom flow', { error: error.message });
-      // Generar flujo básico por defecto
-      return this._generateDefaultFlow(userRequest, tables[0]);
+      return this._generateAdvancedDefaultFlow(userRequest, mainTable, secondaryTable, tables);
     }
+  }
+
+  /**
+   * Genera un flujo avanzado por defecto para solicitudes complejas
+   * @private
+   */
+  _generateAdvancedDefaultFlow(userRequest, mainTable, secondaryTable, allTables) {
+    const lowerRequest = userRequest.toLowerCase();
+    const nodes = [];
+    const edges = [];
+    let yPos = 50;
+    
+    // Detectar trigger
+    const trigger = lowerRequest.includes('actualiz') ? 'afterUpdate' : 'afterCreate';
+    const triggerLabel = trigger === 'afterCreate' ? 'Nuevo registro' : 'Registro actualizado';
+    
+    // Nodo 1: Trigger
+    nodes.push({
+      id: 'trigger-1',
+      type: 'trigger',
+      position: { x: 250, y: yPos },
+      data: {
+        label: triggerLabel,
+        trigger: trigger,
+        triggerTable: mainTable._id,
+        triggerTableName: mainTable.name,
+      },
+    });
+    yPos += 130;
+    
+    // Detectar si hay condición
+    const conditionField = this._detectConditionField(lowerRequest, mainTable);
+    if (conditionField) {
+      nodes.push({
+        id: 'condition-1',
+        type: 'condition',
+        position: { x: 250, y: yPos },
+        data: {
+          label: `¿${conditionField.label}?`,
+          field: `record.${conditionField.key}`,
+          operator: 'equals',
+          value: conditionField.value,
+        },
+      });
+      edges.push({ id: 'e1', source: 'trigger-1', target: 'condition-1' });
+      yPos += 130;
+    }
+    
+    // Detectar acciones
+    const wantsEmail = lowerRequest.includes('email') || lowerRequest.includes('notifi') || lowerRequest.includes('correo');
+    const wantsCreate = (lowerRequest.includes('cree') || lowerRequest.includes('crear')) && secondaryTable;
+    
+    const lastNodeId = conditionField ? 'condition-1' : 'trigger-1';
+    let actionCount = 0;
+    
+    // Acción: Email
+    if (wantsEmail) {
+      actionCount++;
+      const emailField = (mainTable.headers || []).find(h => 
+        (h.key || h.label || '').toLowerCase().includes('email') ||
+        h.type === 'email'
+      );
+      
+      nodes.push({
+        id: `action-${actionCount}`,
+        type: 'action',
+        position: { x: 250, y: yPos },
+        data: {
+          label: 'Enviar notificación',
+          actionType: 'sendEmail',
+          to: emailField ? `{{record.${emailField.key || emailField.label}}}` : 'equipo@empresa.com',
+          subject: `Notificación: ${mainTable.name}`,
+          body: `Se ha procesado un registro en ${mainTable.name}.\n\nDetalles: {{record}}`,
+        },
+      });
+      
+      if (conditionField) {
+        edges.push({ id: `e${edges.length + 1}`, source: lastNodeId, target: `action-${actionCount}`, sourceHandle: 'true' });
+      } else {
+        edges.push({ id: `e${edges.length + 1}`, source: lastNodeId, target: `action-${actionCount}` });
+      }
+      yPos += 130;
+    }
+    
+    // Acción: Crear registro en otra tabla
+    if (wantsCreate && secondaryTable) {
+      actionCount++;
+      const prevActionId = actionCount > 1 ? `action-${actionCount - 1}` : (conditionField ? 'condition-1' : 'trigger-1');
+      
+      // Campos básicos para el nuevo registro
+      const newFields = [];
+      const secondaryHeaders = secondaryTable.headers || [];
+      
+      // Buscar campo título/nombre
+      const titleField = secondaryHeaders.find(h => 
+        ['titulo', 'nombre', 'name', 'descripcion'].includes((h.key || h.label || '').toLowerCase())
+      );
+      if (titleField) {
+        const mainTitleField = (mainTable.headers || []).find(h =>
+          ['titulo', 'nombre', 'name'].includes((h.key || h.label || '').toLowerCase())
+        );
+        newFields.push({
+          key: titleField.key || titleField.label,
+          value: mainTitleField ? `Seguimiento: {{record.${mainTitleField.key || mainTitleField.label}}}` : 'Seguimiento automático',
+        });
+      }
+      
+      // Buscar campo fecha
+      const dateField = secondaryHeaders.find(h => 
+        (h.key || h.label || '').toLowerCase().includes('fecha') ||
+        h.type === 'date'
+      );
+      if (dateField) {
+        // Calcular fecha +2 días
+        const futureDate = new Date();
+        futureDate.setDate(futureDate.getDate() + 2);
+        newFields.push({
+          key: dateField.key || dateField.label,
+          value: futureDate.toISOString().split('T')[0],
+        });
+      }
+      
+      nodes.push({
+        id: `action-${actionCount}`,
+        type: 'action',
+        position: { x: 250, y: yPos },
+        data: {
+          label: `Crear ${secondaryTable.name}`,
+          actionType: 'createRecord',
+          targetTable: secondaryTable._id,
+          targetTableName: secondaryTable.name,
+          fields: newFields,
+        },
+      });
+      
+      if (prevActionId.includes('action')) {
+        edges.push({ id: `e${edges.length + 1}`, source: prevActionId, target: `action-${actionCount}` });
+      } else if (conditionField) {
+        edges.push({ id: `e${edges.length + 1}`, source: prevActionId, target: `action-${actionCount}`, sourceHandle: 'true' });
+      } else {
+        edges.push({ id: `e${edges.length + 1}`, source: prevActionId, target: `action-${actionCount}` });
+      }
+    }
+    
+    // Si no se detectaron acciones, agregar una por defecto
+    if (actionCount === 0) {
+      nodes.push({
+        id: 'action-1',
+        type: 'action',
+        position: { x: 250, y: yPos },
+        data: {
+          label: 'Acción automática',
+          actionType: 'sendEmail',
+          to: '{{record.email}}',
+          subject: 'Notificación automática',
+          body: 'Se ha procesado tu registro.',
+        },
+      });
+      edges.push({ id: 'e2', source: lastNodeId, target: 'action-1' });
+    }
+    
+    return {
+      name: `Automatización para ${mainTable.name}`,
+      description: userRequest.substring(0, 100),
+      mainTable: mainTable._id,
+      mainTableName: mainTable.name,
+      trigger,
+      nodes,
+      edges,
+    };
+  }
+  
+  /**
+   * Detecta condiciones mencionadas en el request
+   * @private
+   */
+  _detectConditionField(request, table) {
+    const headers = table.headers || [];
+    
+    // Buscar "prioridad alta", "estado completado", etc.
+    for (const header of headers) {
+      const key = (header.key || header.label || '').toLowerCase();
+      
+      if (key.includes('prioridad') && request.includes('prioridad')) {
+        const value = request.includes('alta') ? 'alta' : 
+                     request.includes('urgente') ? 'urgente' :
+                     request.includes('baja') ? 'baja' : 'alta';
+        return { key: header.key || header.label, label: `Prioridad ${value}`, value };
+      }
+      
+      if (key.includes('estado') && request.includes('estado')) {
+        const value = request.includes('completad') ? 'Completado' :
+                     request.includes('pendiente') ? 'Pendiente' :
+                     request.includes('activ') ? 'Activo' : 'Completado';
+        return { key: header.key || header.label, label: `Estado ${value}`, value };
+      }
+    }
+    
+    // Buscar patrones genéricos
+    if (request.includes('prioridad alta')) {
+      return { key: 'prioridad', label: 'Prioridad alta', value: 'alta' };
+    }
+    if (request.includes('prioridad urgente')) {
+      return { key: 'prioridad', label: 'Prioridad urgente', value: 'urgente' };
+    }
+    
+    return null;
   }
 
   /**
@@ -547,7 +816,7 @@ Para crear automatizaciones, primero necesitas tener tablas con datos.
    * @private
    */
   _personalizeNodes(nodes, tableHeaders, tableName, userRequest) {
-    const request = userRequest.toLowerCase();
+    const request = (userRequest || '').toLowerCase();
     
     log.info('Personalizing nodes', { 
       userRequest, 
@@ -556,12 +825,24 @@ Para crear automatizaciones, primero necesitas tener tablas con datos.
       headers: tableHeaders.map(h => h.key || h.label)
     });
     
-    // Detectar si el usuario quiere ciertos elementos
-    const wantsBienvenida = request.includes('bienvenid') || request.includes('bienvenido');
-    const wantsDatosCliente = request.includes('datos') && (request.includes('cliente') || request.includes('usuario'));
-    const wantsNombre = request.includes('nombre');
+    // Detectar si el usuario quiere ciertos elementos (más flexible)
+    const wantsBienvenida = request.includes('bienvenid') || 
+                           request.includes('welcome') ||
+                           request.includes('nuevo cliente') ||
+                           request.includes('nuevo usuario') ||
+                           request.includes('se registr');
+    const wantsDatosCliente = (request.includes('dato') && (request.includes('cliente') || request.includes('usuario'))) ||
+                             request.includes('sus datos') ||
+                             request.includes('con sus') ||
+                             request.includes('información');
+    const wantsNombre = request.includes('nombre') || request.includes('personaliz');
     
-    log.info('Personalization flags', { wantsBienvenida, wantsDatosCliente, wantsNombre });
+    // Flag para siempre incluir datos en emails de bienvenida/nuevo registro
+    const isWelcomeFlow = wantsBienvenida || wantsDatosCliente || 
+                         request.includes('email') || 
+                         request.includes('correo');
+    
+    log.info('Personalization flags', { wantsBienvenida, wantsDatosCliente, wantsNombre, isWelcomeFlow });
     
     // Encontrar campos comunes en los headers
     const emailField = tableHeaders.find(h => 
@@ -599,8 +880,9 @@ Para crear automatizaciones, primero necesitas tener tablas con datos.
           node.data.subject = '¡Bienvenido/a!';
         }
         
-        // Personalizar el body con los datos del cliente
-        if (wantsDatosCliente || wantsBienvenida || wantsNombre) {
+        // Personalizar el body con los datos del cliente (siempre para emails de bienvenida/registro)
+        // Si hay headers de tabla, incluir los datos
+        if ((isWelcomeFlow || wantsDatosCliente || wantsBienvenida || wantsNombre) && tableHeaders.length > 0) {
           let body = '';
           
           if (nombreField) {
@@ -611,19 +893,27 @@ Para crear automatizaciones, primero necesitas tener tablas con datos.
             body += `¡Hola!\n\n¡Bienvenido/a! Gracias por registrarte.\n\n`;
           }
           
-          // Agregar datos del cliente
+          // Agregar datos del cliente (máximo 6 campos relevantes)
           body += `**Tus datos registrados:**\n`;
-          tableHeaders.slice(0, 6).forEach(header => {
+          const relevantHeaders = tableHeaders.filter(h => {
+            const key = (h.key || h.label || '').toLowerCase();
+            // Excluir campos internos y de auditoría
+            return !key.startsWith('_') && 
+                   !key.includes('createdat') && 
+                   !key.includes('updatedat') &&
+                   !key.includes('estado');
+          });
+          
+          relevantHeaders.slice(0, 6).forEach(header => {
             const key = header.key || header.label;
             const label = header.label || header.key;
-            if (key && !key.startsWith('_')) {
-              body += `• ${label}: {{record.${key}}}\n`;
-            }
+            body += `• ${label}: {{record.${key}}}\n`;
           });
           
           body += `\n¿Tienes alguna pregunta? Estamos para ayudarte.`;
           
           node.data.body = body;
+          log.info('Personalized email body', { bodyLength: body.length, fieldsIncluded: relevantHeaders.length });
         }
       }
       

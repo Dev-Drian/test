@@ -14,9 +14,10 @@ import {
   Panel,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { api } from '../api/client';
+import { EVENTS } from '../utils/events';
 
 // Nodos personalizados
 import TriggerNode from '../components/nodes/TriggerNode';
@@ -356,6 +357,8 @@ const TipCard = ({ icon, title, text }) => (
 
 export default function FlowEditor() {
   const { workspaceId, workspaceName } = useWorkspace();
+  const [searchParams] = useSearchParams();
+  const urlFlowId = searchParams.get('flowId');
   const [flows, setFlows] = useState([]);
   const [selectedFlow, setSelectedFlow] = useState(null);
   const [tables, setTables] = useState([]);
@@ -438,26 +441,36 @@ export default function FlowEditor() {
       // Solo en el editor de flujos
       if (!selectedFlow) return;
       
+      // Ignorar si el usuario está escribiendo en un input, textarea o elemento editable
+      const activeElement = document.activeElement;
+      const isEditing = activeElement && (
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.tagName === 'SELECT' ||
+        activeElement.isContentEditable ||
+        activeElement.closest('[contenteditable="true"]')
+      );
+      
       // Ctrl+S o Cmd+S para guardar
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         handleSaveFlow();
       }
       
-      // Ctrl+Z o Cmd+Z para deshacer
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      // Ctrl+Z o Cmd+Z para deshacer (solo si no está editando)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && !isEditing) {
         e.preventDefault();
         handleUndo();
       }
       
-      // Ctrl+Shift+Z o Ctrl+Y para rehacer
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+      // Ctrl+Shift+Z o Ctrl+Y para rehacer (solo si no está editando)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey)) && !isEditing) {
         e.preventDefault();
         handleRedo();
       }
       
-      // Delete o Backspace para eliminar nodo seleccionado
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNode) {
+      // Delete o Backspace para eliminar nodo seleccionado (solo si NO está editando)
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNode && !isEditing) {
         e.preventDefault();
         handleDeleteNode(selectedNode.id);
       }
@@ -511,6 +524,49 @@ export default function FlowEditor() {
     };
     
     loadData();
+  }, [workspaceId]);
+
+  // Seleccionar flujo de la URL si existe
+  useEffect(() => {
+    if (!urlFlowId || flows.length === 0 || selectedFlow?._id === urlFlowId) return;
+    
+    const flowFromUrl = flows.find(f => f._id === urlFlowId);
+    if (flowFromUrl) {
+      console.log('[FlowEditor] Selecting flow from URL:', flowFromUrl.name);
+      handleSelectFlow(flowFromUrl);
+    }
+  }, [urlFlowId, flows]);
+
+  // Escuchar evento de flujo creado desde el chat
+  useEffect(() => {
+    const handleFlowCreated = async (event) => {
+      const flowData = event.detail;
+      console.log('[FlowEditor] Flow created event received!', flowData);
+      
+      // Recargar lista de flujos
+      try {
+        const res = await api.get('/flow/list', { params: { workspaceId } });
+        setFlows(res.data || []);
+        
+        // Si el flujo creado está en la lista, seleccionarlo
+        if (flowData?.id) {
+          const newFlow = (res.data || []).find(f => f._id === flowData.id);
+          if (newFlow) {
+            handleSelectFlow(newFlow);
+            addToast(`Flujo "${newFlow.name}" creado desde el asistente`, 'success');
+          }
+        }
+      } catch (err) {
+        console.error('[FlowEditor] Error reloading flows:', err);
+      }
+    };
+
+    window.addEventListener(EVENTS.FLOW_CREATED, handleFlowCreated);
+    console.log('[FlowEditor] Listening for flow created events');
+    
+    return () => {
+      window.removeEventListener(EVENTS.FLOW_CREATED, handleFlowCreated);
+    };
   }, [workspaceId]);
 
   // Actualizar nodos cuando cambian las tablas

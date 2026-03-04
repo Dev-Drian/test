@@ -8,6 +8,7 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
 import { WorkspaceContext } from '../context/WorkspaceContext';
 import { sendChatMessage, listAgents, getOrCreateChat } from '../api/client';
+import { emitEvent, EVENTS } from '../utils/events';
 
 // Iconos
 const Icons = {
@@ -242,9 +243,25 @@ _Te mostraré un resumen antes de crear cualquier cosa._
 
       const data = response.data;
       
+      // Debug: Mostrar toda la respuesta
+      console.log('[SetupAssistant] Full response data:', JSON.stringify(data, null, 2));
+      
       // Actualizar chatId si es nuevo
       if (data.chatId && !chatId) {
         setChatId(data.chatId);
+      }
+
+      // Emitir evento si se creó un flujo
+      if (data.flowCreated) {
+        console.log('[SetupAssistant] ✅ Flow created detected! Emitting event:', data.flowCreated);
+        emitEvent(EVENTS.FLOW_CREATED, data.flowCreated);
+      } else {
+        console.log('[SetupAssistant] ❌ No flowCreated in response. Keys:', Object.keys(data));
+      }
+
+      // Emitir evento si se creó una tabla
+      if (data.tableCreated) {
+        emitEvent(EVENTS.TABLE_CREATED, data.tableCreated);
       }
 
       const assistantMessage = {

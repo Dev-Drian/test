@@ -19,6 +19,12 @@ const Icons = {
   floorplan: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z" /></svg>,
   pos: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" /></svg>,
   chevronDown: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>,
+  // Iconos adicionales profesionales
+  clipboard: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" /></svg>,
+  linkSmall: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>,
+  lightbulb: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" /></svg>,
+  pointer: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zM12 2.25V4.5m5.834.166l-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243l-1.59-1.59" /></svg>,
+  info: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>,
 };
 
 // Dropdown profesional con Portal para evitar overflow
@@ -183,7 +189,7 @@ function FieldSelector({ value, onChange, groups, placeholder, isRequired, hasVa
               {filteredGroups?.map((group, idx) => (
                 <div key={idx}>
                   <div className="px-4 py-2 text-xs font-semibold text-slate-500 bg-slate-850 sticky top-0 flex items-center gap-2 border-t border-slate-700/30">
-                    <span className="text-base">{group.icon}</span>
+                    <span className="text-slate-400">{group.icon}</span>
                     <span className="uppercase tracking-wider">{group.label}</span>
                     <span className="ml-auto text-slate-600">{group.options.length}</span>
                   </div>
@@ -297,6 +303,44 @@ export default function ViewCreatorInline({
     foreignField: '',
     alias: '',
   });
+
+  // Preselección automática de campos basada en nombres de columna
+  useEffect(() => {
+    if (!selectedTable || !selectedViewType) return;
+    
+    const autoDetect = selectedViewType.fieldAutoDetect;
+    if (!autoDetect) return;
+    
+    const headers = selectedTable.headers || [];
+    const newFieldMap = { ...fieldMap };
+    let hasChanges = false;
+    
+    // Para cada campo del tipo de vista con patrones de autodetección
+    Object.entries(autoDetect).forEach(([viewField, patterns]) => {
+      // Solo preseleccionar si no hay valor ya asignado
+      if (newFieldMap[viewField]) return;
+      
+      // Buscar una columna que coincida con algún patrón
+      for (const header of headers) {
+        const headerKey = (header.key || header.label || '').toLowerCase();
+        const headerLabel = (header.label || header.key || '').toLowerCase();
+        
+        for (const pattern of patterns) {
+          if (headerKey === pattern || headerLabel === pattern || 
+              headerKey.includes(pattern) || headerLabel.includes(pattern)) {
+            newFieldMap[viewField] = header.key || header.label;
+            hasChanges = true;
+            break;
+          }
+        }
+        if (newFieldMap[viewField]) break;
+      }
+    });
+    
+    if (hasChanges) {
+      setFieldMap(newFieldMap);
+    }
+  }, [selectedTable, selectedViewType]);
 
   // Obtener todos los campos disponibles (tabla principal + relacionadas)
   const allAvailableFields = useMemo(() => {
@@ -454,7 +498,16 @@ export default function ViewCreatorInline({
       if (response.data.suggestedName) {
         setViewName(response.data.suggestedName);
       } else {
-        setViewName(`${selectedViewType.name} de ${selectedTable.name}`);
+        // Evitar duplicación como "Gestión de Mesas de Mesas"
+        const viewTypeName = selectedViewType.name.toLowerCase();
+        const tableName = selectedTable.name.toLowerCase();
+        
+        if (viewTypeName.includes(tableName) || tableName.includes(viewTypeName.split(' ')[0])) {
+          // Si ya contiene el nombre, usar solo el tipo de vista
+          setViewName(selectedViewType.name);
+        } else {
+          setViewName(`${selectedViewType.name} de ${selectedTable.name}`);
+        }
       }
 
       setStep(STEPS.COMPATIBILITY_RESULT);
@@ -591,135 +644,220 @@ export default function ViewCreatorInline({
     switch (step) {
       case STEPS.SELECT_OPTIONS:
         return (
-          <div className="space-y-6">
-            {/* Selección de Tabla Principal */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-3">
-                1. Selecciona la tabla principal
-              </label>
+          <div className="max-w-6xl mx-auto space-y-10">
+            {/* Sección 1: Selección de Tabla Principal */}
+            <section>
+              <div className="flex items-start gap-4 mb-6">
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+                  <span className="text-indigo-400 font-bold">1</span>
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-white">
+                    Origen de datos
+                  </h2>
+                  <p className="text-sm text-slate-400 mt-1">
+                    Selecciona la tabla con la información que deseas visualizar
+                  </p>
+                </div>
+              </div>
+
               {tables.length === 0 ? (
-                <div className="text-center py-8 bg-slate-800/30 rounded-xl border border-slate-700/50">
-                  <p className="text-slate-400">No hay tablas en este workspace</p>
+                <div className="text-center py-16 bg-slate-800/20 rounded-2xl border border-slate-700/30">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-800 flex items-center justify-center">
+                    <svg className="w-8 h-8 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-medium text-slate-300 mb-2">No hay tablas disponibles</h3>
+                  <p className="text-sm text-slate-500 max-w-sm mx-auto">
+                    Primero necesitas crear una tabla con datos para poder generar visualizaciones
+                  </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {tables.map(table => (
-                    <button
-                      key={table._id}
-                      onClick={() => {
-                        setSelectedTable(table);
-                        setRelatedTables([]);
-                      }}
-                      className={`flex items-center gap-3 p-4 rounded-xl border transition-all text-left ${
-                        selectedTable?._id === table._id
-                          ? 'border-indigo-500 bg-indigo-500/20'
-                          : 'border-slate-700/50 hover:border-slate-600'
-                      }`}
-                    >
-                      <div 
-                        className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-sm font-medium"
-                        style={{ backgroundColor: table.color || '#4F46E5' }}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {tables.map(table => {
+                    const isSelected = selectedTable?._id === table._id;
+                    const columnCount = table.headers?.length || 0;
+                    
+                    return (
+                      <button
+                        key={table._id}
+                        onClick={() => {
+                          setSelectedTable(table);
+                          setRelatedTables([]);
+                        }}
+                        className={`group relative flex items-center gap-4 p-5 rounded-2xl border-2 transition-all duration-200 text-left ${
+                          isSelected
+                            ? 'border-indigo-500 bg-indigo-500/10 shadow-lg shadow-indigo-500/10'
+                            : 'border-slate-700/50 hover:border-slate-600 hover:bg-slate-800/30'
+                        }`}
                       >
-                        {table.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className={`font-medium truncate ${
-                          selectedTable?._id === table._id ? 'text-indigo-300' : 'text-slate-200'
+                        {/* Indicador de selección */}
+                        <div className={`absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                          isSelected 
+                            ? 'bg-indigo-500 text-white scale-100' 
+                            : 'bg-slate-700/50 scale-90 opacity-0 group-hover:opacity-100'
                         }`}>
-                          {table.name}
-                        </h4>
-                        <p className="text-xs text-slate-500">
-                          {table.headers?.length || 0} campos
-                        </p>
-                      </div>
-                      {selectedTable?._id === table._id && (
-                        <span className="text-indigo-400">{Icons.check}</span>
-                      )}
-                    </button>
-                  ))}
+                          {isSelected ? (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
+                          ) : (
+                            <div className="w-2 h-2 rounded-full bg-slate-500"></div>
+                          )}
+                        </div>
+
+                        {/* Icono de tabla */}
+                        <div 
+                          className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-bold shadow-lg transition-transform ${
+                            isSelected ? 'scale-110' : 'group-hover:scale-105'
+                          }`}
+                          style={{ 
+                            backgroundColor: table.color || '#6366F1',
+                            boxShadow: isSelected ? `0 8px 24px -4px ${table.color || '#6366F1'}40` : 'none'
+                          }}
+                        >
+                          {table.name.charAt(0).toUpperCase()}
+                        </div>
+
+                        {/* Info de tabla */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className={`font-semibold truncate transition-colors ${
+                            isSelected ? 'text-indigo-300' : 'text-white group-hover:text-indigo-200'
+                          }`}>
+                            {table.name}
+                          </h3>
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className="flex items-center gap-1.5 text-xs text-slate-500">
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                              </svg>
+                              {columnCount} {columnCount === 1 ? 'columna' : 'columnas'}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
-            </div>
 
-            {/* Tablas Relacionadas (opcional) */}
+            {/* Tablas Relacionadas (opcional) - diseño mejorado */}
             {selectedTable && (
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <label className="block text-sm font-medium text-slate-300">
-                    2. Relacionar con otras tablas 
-                    <span className="text-slate-500 font-normal ml-1">(opcional)</span>
-                  </label>
+              <div className="mt-8 p-6 rounded-2xl bg-gradient-to-br from-slate-800/40 to-slate-800/20 border border-slate-700/40">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                        Combinar con otras tablas
+                        <span className="px-2 py-0.5 rounded-md text-[10px] bg-slate-700/80 text-slate-400 font-medium uppercase tracking-wider">Opcional</span>
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Enriquece tu vista con datos de otras tablas relacionadas
+                      </p>
+                    </div>
+                  </div>
                   {availableTablesForRelation.length > 0 && !showAddRelation && (
                     <button
                       onClick={() => setShowAddRelation(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-indigo-500/50 text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 text-sm rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20 hover:border-cyan-400/50 transition-all duration-200"
                     >
-                      {Icons.link}
-                      Añadir relación
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                      </svg>
+                      Añadir conexión
                     </button>
                   )}
                 </div>
 
-                {/* Relaciones existentes */}
+                {/* Conexiones existentes */}
                 {relatedTables.length > 0 && (
-                  <div className="space-y-2 mb-3">
+                  <div className="space-y-3 mb-4">
                     {relatedTables.map(rel => (
                       <div 
                         key={rel.tableId}
-                        className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30"
+                        className="flex items-center gap-4 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20"
                       >
-                        <div 
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-medium"
-                          style={{ backgroundColor: rel.table.color || '#10B981' }}
-                        >
-                          {rel.table.name.charAt(0).toUpperCase()}
+                        <div className="flex items-center gap-3">
+                          <div 
+                            className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-sm font-bold shadow-lg"
+                            style={{ backgroundColor: selectedTable.color || '#6366F1' }}
+                          >
+                            {selectedTable.name.charAt(0)}
+                          </div>
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500/20">
+                            <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                            </svg>
+                          </div>
+                          <div 
+                            className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-sm font-bold shadow-lg"
+                            style={{ backgroundColor: rel.table.color || '#10B981' }}
+                          >
+                            {rel.table.name.charAt(0)}
+                          </div>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-emerald-300">{rel.alias || rel.table.name}</span>
-                            {rel.alias && rel.alias !== rel.table.name && (
-                              <span className="text-xs text-slate-500">({rel.table.name})</span>
-                            )}
+                            <span className="font-semibold text-emerald-300">{rel.alias || rel.table.name}</span>
+                            <span className="px-2 py-0.5 text-[10px] rounded-md bg-emerald-500/20 text-emerald-400 font-medium">
+                              Conectada
+                            </span>
                           </div>
-                          <p className="text-xs text-emerald-400/70">
+                          <p className="text-xs text-slate-500 mt-1 font-mono">
                             {selectedTable.name}.{rel.localField} → {rel.table.name}.{rel.foreignField}
                           </p>
                         </div>
                         <button
                           onClick={() => handleRemoveRelation(rel.tableId)}
-                          className="p-1.5 rounded hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
+                          className="p-2 rounded-lg hover:bg-red-500/10 text-slate-400 hover:text-red-400 transition-colors"
+                          title="Quitar conexión"
                         >
-                          {Icons.x}
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                          </svg>
                         </button>
                       </div>
                     ))}
                   </div>
                 )}
 
-                {/* Formulario para agregar relación */}
+                {/* Formulario para agregar relación - mejorado */}
                 {showAddRelation && (
-                  <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 space-y-4">
+                  <div className="p-5 rounded-xl bg-slate-800/60 border border-slate-600/30 space-y-5">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium text-slate-200">Añadir tabla relacionada</h4>
+                      <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                        <svg className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        Nueva conexión de datos
+                      </h4>
                       <button
                         onClick={() => {
                           setShowAddRelation(false);
                           setNewRelation({ tableId: '', localField: '', foreignField: '', alias: '' });
                         }}
-                        className="text-slate-400 hover:text-slate-200"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors"
                       >
-                        {Icons.x}
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Seleccionar tabla a relacionar */}
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">Tabla a relacionar</label>
+                      <div className="space-y-2">
+                        <label className="block text-xs font-medium text-slate-300">Tabla a relacionar</label>
                         <select
                           value={newRelation.tableId}
                           onChange={(e) => setNewRelation(prev => ({ ...prev, tableId: e.target.value, foreignField: '' }))}
-                          className="w-full px-3 py-2 rounded-lg bg-slate-700/50 border border-slate-600/50 text-slate-200 text-sm focus:outline-none focus:border-indigo-500/50"
+                          className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600/50 text-white text-sm focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all"
                         >
                           <option value="">Seleccionar tabla...</option>
                           {availableTablesForRelation.map(t => (
@@ -729,28 +867,28 @@ export default function ViewCreatorInline({
                       </div>
 
                       {/* Alias (opcional) */}
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">
-                          Alias <span className="text-slate-500">(ej: "Cliente", "Vendedor")</span>
+                      <div className="space-y-2">
+                        <label className="block text-xs font-medium text-slate-300">
+                          Alias <span className="text-slate-500 font-normal">(opcional)</span>
                         </label>
                         <input
                           type="text"
                           value={newRelation.alias}
                           onChange={(e) => setNewRelation(prev => ({ ...prev, alias: e.target.value }))}
-                          placeholder="Nombre para mostrar"
-                          className="w-full px-3 py-2 rounded-lg bg-slate-700/50 border border-slate-600/50 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
+                          placeholder='Ej: "Cliente", "Vendedor"'
+                          className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600/50 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all"
                         />
                       </div>
 
                       {/* Campo local (de la tabla principal) */}
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">
-                          Campo en "{selectedTable.name}" que referencia
+                      <div className="space-y-2">
+                        <label className="block text-xs font-medium text-slate-300">
+                          Campo en <span className="text-indigo-400">{selectedTable.name}</span>
                         </label>
                         <select
                           value={newRelation.localField}
                           onChange={(e) => setNewRelation(prev => ({ ...prev, localField: e.target.value }))}
-                          className="w-full px-3 py-2 rounded-lg bg-slate-700/50 border border-slate-600/50 text-slate-200 text-sm focus:outline-none focus:border-indigo-500/50"
+                          className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600/50 text-white text-sm focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all"
                         >
                           <option value="">Seleccionar campo...</option>
                           {(selectedTable.headers || []).map(h => (
@@ -762,15 +900,15 @@ export default function ViewCreatorInline({
                       </div>
 
                       {/* Campo foráneo (de la tabla relacionada) */}
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">
-                          Campo en tabla relacionada para unir
+                      <div className="space-y-2">
+                        <label className="block text-xs font-medium text-slate-300">
+                          Campo en tabla relacionada
                         </label>
                         <select
                           value={newRelation.foreignField}
                           onChange={(e) => setNewRelation(prev => ({ ...prev, foreignField: e.target.value }))}
                           disabled={!newRelation.tableId}
-                          className="w-full px-3 py-2 rounded-lg bg-slate-700/50 border border-slate-600/50 text-slate-200 text-sm focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
+                          className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600/50 text-white text-sm focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                           <option value="">Seleccionar campo...</option>
                           {newRelation.tableId && (tables.find(t => t._id === newRelation.tableId)?.headers || []).map(h => (
@@ -782,139 +920,289 @@ export default function ViewCreatorInline({
                       </div>
                     </div>
 
-                    {/* Ejemplo visual de la relación */}
+                    {/* Vista previa de la relación */}
                     {newRelation.tableId && newRelation.localField && newRelation.foreignField && (
-                      <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
-                        <p className="text-sm text-indigo-300">
-                          <span className="font-medium">{selectedTable.name}</span>
-                          <span className="text-indigo-400">.{newRelation.localField}</span>
-                          <span className="text-slate-500 mx-2">→</span>
-                          <span className="font-medium">{tables.find(t => t._id === newRelation.tableId)?.name}</span>
-                          <span className="text-indigo-400">.{newRelation.foreignField}</span>
-                        </p>
-                        <p className="text-xs text-indigo-400/70 mt-1">
-                          Los registros se unirán cuando estos campos coincidan
+                      <div className="p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/20">
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="font-medium text-cyan-300">{selectedTable.name}</span>
+                          <span className="text-cyan-400 font-mono">.{newRelation.localField}</span>
+                          <svg className="w-5 h-5 text-cyan-500/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                          </svg>
+                          <span className="font-medium text-cyan-300">{tables.find(t => t._id === newRelation.tableId)?.name}</span>
+                          <span className="text-cyan-400 font-mono">.{newRelation.foreignField}</span>
+                        </div>
+                        <p className="text-xs text-cyan-400/60 mt-2">
+                          Los registros se vincularán cuando estos campos coincidan
                         </p>
                       </div>
                     )}
 
-                    <div className="flex justify-end">
+                    <div className="flex justify-end pt-2">
                       <button
                         onClick={handleAddRelation}
                         disabled={!newRelation.tableId || !newRelation.localField || !newRelation.foreignField}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-600 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 disabled:bg-slate-600 disabled:cursor-not-allowed text-white text-sm font-semibold transition-all shadow-lg shadow-cyan-500/20 disabled:shadow-none"
                       >
-                        {Icons.plus}
-                        Agregar Relación
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        Conectar tablas
                       </button>
                     </div>
                   </div>
                 )}
 
-                {/* Mensaje informativo si no hay relaciones */}
+                {/* Mensaje informativo si no hay conexiones */}
                 {relatedTables.length === 0 && !showAddRelation && (
-                  <div className="p-4 rounded-xl bg-slate-800/30 border border-slate-700/30 text-center">
-                    <p className="text-sm text-slate-400">
-                      Puedes relacionar otras tablas para mostrar más información.
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Ejemplo: En Tareas, añadir datos del Cliente o del Vendedor asignado.
+                  <div className="flex items-center justify-center gap-3 py-4 px-4 rounded-xl bg-slate-800/30">
+                    <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+                    </svg>
+                    <p className="text-sm text-slate-500">
+                      Ejemplo: En <span className="text-slate-400">"Pedidos"</span> puedes añadir datos de <span className="text-slate-400">"Clientes"</span> o <span className="text-slate-400">"Productos"</span>
                     </p>
                   </div>
                 )}
               </div>
             )}
+            </section>
 
-            {/* Selección de Tipo de Vista */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-3">
-                {selectedTable ? '3.' : '2.'} Selecciona el tipo de vista
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {viewTypes.map(vt => (
-                  <button
-                    key={vt.type}
-                    onClick={() => setSelectedViewType(vt)}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
-                      selectedViewType?.type === vt.type
-                        ? 'border-indigo-500 bg-indigo-500/20'
-                        : 'border-slate-700/50 hover:border-slate-600'
-                    }`}
-                  >
-                    <div 
-                      className="w-12 h-12 rounded-xl flex items-center justify-center text-white"
-                      style={{ backgroundColor: VIEW_COLORS[vt.type] || '#4F46E5' }}
-                    >
-                      {VIEW_ICONS[vt.type] || Icons.table}
-                    </div>
-                    <span className={`text-sm font-medium ${
-                      selectedViewType?.type === vt.type ? 'text-indigo-300' : 'text-slate-300'
-                    }`}>
-                      {vt.name}
-                    </span>
-                  </button>
-                ))}
+            {/* Sección 2: Selección de Tipo de Vista */}
+            <section>
+              <div className="flex items-start gap-4 mb-6">
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+                  <span className="text-purple-400 font-bold">2</span>
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-white">
+                    Tipo de visualización
+                  </h2>
+                  <p className="text-sm text-slate-400 mt-1">
+                    Elige el formato que mejor se adapta a tus datos
+                  </p>
+                </div>
               </div>
-            </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {viewTypes.map(vt => {
+                  const isSelected = selectedViewType?.type === vt.type;
+                  const viewInfo = {
+                    calendar: { 
+                      desc: 'Eventos y citas en calendario mensual',
+                      icon: '📅',
+                      useCases: ['Citas', 'Eventos', 'Reservas', 'Deadlines']
+                    },
+                    kanban: { 
+                      desc: 'Tablero de columnas por estado',
+                      icon: '📊',
+                      useCases: ['Proyectos', 'Tareas', 'Pipeline', 'Flujos']
+                    },
+                    timeline: { 
+                      desc: 'Línea temporal con rangos de fechas',
+                      icon: '📈',
+                      useCases: ['Planificación', 'Sprints', 'Proyectos']
+                    },
+                    cards: { 
+                      desc: 'Tarjetas visuales con imágenes',
+                      icon: '🃏',
+                      useCases: ['Productos', 'Perfiles', 'Catálogos']
+                    },
+                    table: { 
+                      desc: 'Datos en filas y columnas',
+                      icon: '📋',
+                      useCases: ['Listas', 'Inventarios', 'Registros']
+                    },
+                    floorplan: { 
+                      desc: 'Distribución espacial interactiva',
+                      icon: '🏪',
+                      useCases: ['Mesas', 'Asientos', 'Espacios']
+                    },
+                    pos: { 
+                      desc: 'Sistema de punto de venta',
+                      icon: '💳',
+                      useCases: ['Ventas', 'Pedidos', 'Cobros']
+                    },
+                  };
+                  const info = viewInfo[vt.type] || { desc: vt.description, useCases: [] };
+                  
+                  return (
+                    <button
+                      key={vt.type}
+                      onClick={() => setSelectedViewType(vt)}
+                      className={`group relative flex flex-col p-5 rounded-2xl border-2 transition-all duration-200 text-left overflow-hidden ${
+                        isSelected
+                          ? 'border-purple-500 bg-purple-500/10 shadow-xl shadow-purple-500/10'
+                          : 'border-slate-700/50 hover:border-slate-600 hover:bg-slate-800/30'
+                      }`}
+                    >
+                      {/* Indicador de selección */}
+                      <div className={`absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                        isSelected 
+                          ? 'bg-purple-500 text-white scale-100' 
+                          : 'bg-slate-700/50 scale-90 opacity-0 group-hover:opacity-100'
+                      }`}>
+                        {isSelected ? (
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          </svg>
+                        ) : (
+                          <div className="w-2 h-2 rounded-full bg-slate-500"></div>
+                        )}
+                      </div>
 
-            {/* Vista previa de campos disponibles */}
+                      {/* Icono */}
+                      <div 
+                        className={`w-14 h-14 rounded-xl flex items-center justify-center text-white mb-4 shadow-lg transition-transform ${
+                          isSelected ? 'scale-110' : 'group-hover:scale-105'
+                        }`}
+                        style={{ 
+                          backgroundColor: VIEW_COLORS[vt.type] || '#6366F1',
+                          boxShadow: isSelected ? `0 8px 24px -4px ${VIEW_COLORS[vt.type] || '#6366F1'}50` : 'none'
+                        }}
+                      >
+                        {VIEW_ICONS[vt.type] || Icons.table}
+                      </div>
+
+                      {/* Nombre */}
+                      <h3 className={`text-base font-semibold mb-1 transition-colors ${
+                        isSelected ? 'text-purple-300' : 'text-white group-hover:text-purple-200'
+                      }`}>
+                        {vt.name}
+                      </h3>
+
+                      {/* Descripción */}
+                      <p className="text-xs text-slate-400 mb-3 line-clamp-2">
+                        {info.desc}
+                      </p>
+
+                      {/* Casos de uso */}
+                      {info.useCases.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-auto">
+                          {info.useCases.slice(0, 3).map((useCase, i) => (
+                            <span 
+                              key={i}
+                              className={`px-2 py-0.5 text-[10px] rounded-md font-medium ${
+                                isSelected 
+                                  ? 'bg-purple-500/20 text-purple-300'
+                                  : 'bg-slate-700/50 text-slate-400'
+                              }`}
+                            >
+                              {useCase}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* Vista previa de columnas disponibles - mejorada */}
             {selectedTable && (
-              <div className="p-4 rounded-xl bg-slate-800/30 border border-slate-700/50">
-                <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">
-                  Campos disponibles ({allAvailableFields.length})
-                </p>
-                <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                  {allAvailableFields.map((f, i) => (
+              <section className="mt-8 p-5 rounded-2xl bg-slate-800/20 border border-slate-700/30">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-slate-700/50 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-white">Campos disponibles</h3>
+                    <p className="text-xs text-slate-500">{allAvailableFields.length} columnas de datos detectadas</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {allAvailableFields.slice(0, 12).map((f, i) => (
                     <span 
                       key={i}
-                      className={`px-2 py-1 text-xs rounded-md ${
+                      className={`px-3 py-1.5 text-xs rounded-lg font-medium ${
                         f.isMain 
-                          ? 'bg-slate-700/50 text-slate-300' 
-                          : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          ? 'bg-slate-700/50 text-slate-300 border border-slate-600/30' 
+                          : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
                       }`}
                     >
                       {f.label}
                     </span>
                   ))}
+                  {allAvailableFields.length > 12 && (
+                    <span className="px-3 py-1.5 text-xs rounded-lg bg-slate-700/30 text-slate-500 border border-slate-700/30">
+                      +{allAvailableFields.length - 12} más
+                    </span>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* Botón de Continuar - mejorado */}
+            <div className="flex justify-end pt-6">
+              <button
+                onClick={handleAnalyze}
+                disabled={!canAnalyze}
+                className={`group flex items-center gap-3 px-8 py-4 rounded-2xl font-semibold text-base transition-all duration-300 ${
+                  canAnalyze 
+                    ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-xl shadow-purple-500/25 hover:shadow-2xl hover:shadow-purple-500/30 hover:scale-[1.02]' 
+                    : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
+                }`}
+              >
+                <span>Continuar</span>
+                <svg className={`w-5 h-5 transition-transform ${canAnalyze ? 'group-hover:translate-x-1' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Indicador de selección */}
+            {(!selectedTable || !selectedViewType) && (
+              <div className="mt-6 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
+                <div className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                  </svg>
+                  <div>
+                    <p className="text-sm text-amber-200 font-medium">Completa la selección</p>
+                    <p className="text-xs text-amber-300/60 mt-1">
+                      {!selectedTable && !selectedViewType && 'Selecciona una tabla y un tipo de visualización para continuar'}
+                      {selectedTable && !selectedViewType && 'Ahora elige cómo quieres visualizar los datos'}
+                      {!selectedTable && selectedViewType && 'Selecciona la tabla con los datos que quieres mostrar'}
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
 
             {error && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-                {error}
+              <div className="mt-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-start gap-3">
+                <svg className="w-5 h-5 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                <div>
+                  <p className="text-red-400 font-medium">Algo no salió bien</p>
+                  <p className="text-sm text-red-400/70 mt-0.5">{error}</p>
+                </div>
               </div>
             )}
-
-            {/* Botón analizar */}
-            <div className="flex justify-end">
-              <button
-                onClick={handleAnalyze}
-                disabled={!canAnalyze}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-medium transition-colors"
-              >
-                {Icons.sparkles}
-                Analizar Compatibilidad
-              </button>
-            </div>
           </div>
         );
 
       case STEPS.ANALYZING:
         return (
-          <div className="flex flex-col items-center justify-center py-16 gap-4">
+          <div className="flex flex-col items-center justify-center py-20 gap-6">
             <div className="relative">
-              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-500"></div>
-              <div className="absolute inset-0 flex items-center justify-center text-indigo-400">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-2 border-indigo-500 border-t-transparent"></div>
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white animate-pulse">
                 {Icons.sparkles}
               </div>
             </div>
             <div className="text-center">
-              <p className="text-slate-200 font-medium">
-                Analizando compatibilidad...
+              <p className="text-lg text-slate-200 font-medium">
+                Preparando tu vista...
               </p>
-              <p className="text-sm text-slate-400 mt-1">
-                Verificando campos de {1 + relatedTables.length} tabla{relatedTables.length > 0 ? 's' : ''} para "{selectedViewType?.name}"
+              <p className="text-sm text-slate-400 mt-2 max-w-xs">
+                Estamos verificando que {selectedTable?.name} tenga los datos necesarios para <span className="text-indigo-400">{selectedViewType?.name}</span>
               </p>
             </div>
           </div>
@@ -928,76 +1216,92 @@ export default function ViewCreatorInline({
         const optionalMissing = missingFields.filter(f => !f.required);
 
         return (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
+          <div className="space-y-5">
+            {/* Header con navegación */}
+            <div className="flex items-center gap-3 pb-4 border-b border-slate-700/30">
               <button
                 onClick={() => {
                   setAnalysisResult(null);
                   setStep(STEPS.SELECT_OPTIONS);
                 }}
-                className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 hover:text-slate-200"
+                className="p-2 rounded-xl hover:bg-slate-700/50 text-slate-400 hover:text-slate-200 transition-colors"
               >
                 {Icons.back}
               </button>
-              <div>
-                <h3 className="text-lg font-semibold text-slate-100">Resultado del Análisis</h3>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-slate-100">Verificación completada</h3>
                 <p className="text-sm text-slate-400">
                   {selectedViewType?.name} • {selectedTable?.name}
-                  {relatedTables.length > 0 && ` + ${relatedTables.length} relacionada${relatedTables.length > 1 ? 's' : ''}`}
+                  {relatedTables.length > 0 && ` + ${relatedTables.length} tabla${relatedTables.length > 1 ? 's' : ''}`}
                 </p>
               </div>
             </div>
 
-            {/* Estado de compatibilidad */}
-            <div className={`flex items-start gap-4 p-5 rounded-xl ${
+            {/* Estado principal - más visual y amigable */}
+            <div className={`p-6 rounded-2xl ${
               compatibility === COMPATIBILITY.FULL 
-                ? 'bg-emerald-500/10 border border-emerald-500/30' 
+                ? 'bg-gradient-to-br from-emerald-500/10 to-green-500/10 border border-emerald-500/30' 
                 : compatibility === COMPATIBILITY.PARTIAL
-                  ? 'bg-amber-500/10 border border-amber-500/30'
-                  : 'bg-red-500/10 border border-red-500/30'
+                  ? 'bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/30'
+                  : 'bg-gradient-to-br from-red-500/10 to-rose-500/10 border border-red-500/30'
             }`}>
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-                compatibility === COMPATIBILITY.FULL 
-                  ? 'bg-emerald-500/20 text-emerald-400' 
-                  : compatibility === COMPATIBILITY.PARTIAL
-                    ? 'bg-amber-500/20 text-amber-400'
-                    : 'bg-red-500/20 text-red-400'
-              }`}>
-                {compatibility === COMPATIBILITY.FULL ? Icons.check : Icons.warning}
-              </div>
-              <div className="flex-1">
-                {compatibility === COMPATIBILITY.FULL ? (
-                  <>
-                    <h4 className="text-emerald-300 font-semibold text-lg">¡Totalmente Compatible!</h4>
-                    <p className="text-emerald-400/80 mt-1">
-                      Tienes todos los campos necesarios para crear la vista.
-                    </p>
-                  </>
-                ) : compatibility === COMPATIBILITY.PARTIAL ? (
-                  <>
-                    <h4 className="text-amber-300 font-semibold text-lg">Parcialmente Compatible</h4>
-                    <p className="text-amber-400/80 mt-1">
-                      Puedes crear la vista, pero faltan algunos campos.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <h4 className="text-red-300 font-semibold text-lg">No Compatible</h4>
-                    <p className="text-red-400/80 mt-1">
-                      Faltan campos requeridos. Considera añadir otra tabla relacionada o cambiar el tipo de vista.
-                    </p>
-                  </>
-                )}
+              <div className="flex items-start gap-4">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${
+                  compatibility === COMPATIBILITY.FULL 
+                    ? 'bg-emerald-500/20 text-emerald-400' 
+                    : compatibility === COMPATIBILITY.PARTIAL
+                      ? 'bg-amber-500/20 text-amber-400'
+                      : 'bg-red-500/20 text-red-400'
+                }`}>
+                  {compatibility === COMPATIBILITY.FULL ? (
+                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                  )}
+                </div>
+                <div className="flex-1">
+                  {compatibility === COMPATIBILITY.FULL ? (
+                    <>
+                      <h4 className="text-emerald-300 font-semibold text-xl">¡Perfecto!</h4>
+                      <p className="text-emerald-400/80 mt-1">
+                        Tu tabla tiene todos los datos necesarios para crear esta vista. Puedes continuar.
+                      </p>
+                    </>
+                  ) : compatibility === COMPATIBILITY.PARTIAL ? (
+                    <>
+                      <h4 className="text-amber-300 font-semibold text-xl">Casi listo</h4>
+                      <p className="text-amber-400/80 mt-1">
+                        Puedes crear la vista, pero algunas funciones estarán limitadas porque faltan datos.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <h4 className="text-red-300 font-semibold text-xl">Faltan datos importantes</h4>
+                      <p className="text-red-400/80 mt-1">
+                        Tu tabla no tiene los datos necesarios para este tipo de vista. Prueba con otro formato o añade columnas a tu tabla.
+                      </p>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Tablas utilizadas */}
+            {/* Tablas siendo usadas */}
             {relatedTables.length > 0 && (
               <div className="p-4 rounded-xl bg-slate-800/30 border border-slate-700/50">
-                <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">Tablas en esta vista</p>
+                <div className="flex items-center gap-2 mb-2">
+                  <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 6.878V6a2.25 2.25 0 012.25-2.25h7.5A2.25 2.25 0 0118 6v.878m-12 0c.235-.083.487-.128.75-.128h10.5c.263 0 .515.045.75.128m-12 0A2.25 2.25 0 004.5 9v.878m13.5-3A2.25 2.25 0 0119.5 9v.878m0 0a2.246 2.246 0 00-.75-.128H5.25c-.263 0-.515.045-.75.128m15 0A2.25 2.25 0 0121 12v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6c0-.98.626-1.813 1.5-2.122" />
+                  </svg>
+                  <p className="text-xs text-slate-500 uppercase tracking-wider">Tablas combinadas</p>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   <span className="px-3 py-1.5 text-sm rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                    {selectedTable?.name} (principal)
+                    {selectedTable?.name} <span className="text-indigo-400/60 text-xs">(principal)</span>
                   </span>
                   {relatedTables.map(rel => (
                     <span key={rel.tableId} className="px-3 py-1.5 text-sm rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
@@ -1008,19 +1312,27 @@ export default function ViewCreatorInline({
               </div>
             )}
 
-            {/* Campos faltantes */}
+            {/* Datos que faltan - con lenguaje simplificado */}
             {missingFields.length > 0 && (
               <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
-                <p className="text-sm font-medium text-slate-300 mb-3">Campos que faltan</p>
+                <div className="flex items-center gap-2 mb-3">
+                  <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                  </svg>
+                  <p className="text-sm font-medium text-slate-300">¿Qué datos necesitarías añadir?</p>
+                </div>
                 {requiredMissing.length > 0 && (
                   <div className="mb-3">
-                    <p className="text-xs text-red-400 mb-2">Requeridos:</p>
+                    <p className="text-xs text-red-400/80 mb-2 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                      Necesarios para que funcione
+                    </p>
                     <div className="space-y-2">
                       {requiredMissing.map((field, i) => (
-                        <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-red-500/10 border border-red-500/20">
+                        <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
                           <span className="text-red-400 font-medium">{field.name}</span>
                           {field.description && (
-                            <span className="text-xs text-red-400/60">- {field.description}</span>
+                            <span className="text-xs text-red-400/60 flex-1">{field.description}</span>
                           )}
                         </div>
                       ))}
@@ -1029,10 +1341,13 @@ export default function ViewCreatorInline({
                 )}
                 {optionalMissing.length > 0 && (
                   <div>
-                    <p className="text-xs text-slate-500 mb-2">Opcionales:</p>
+                    <p className="text-xs text-slate-500 mb-2 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                      Opcionales (mejorarían la vista)
+                    </p>
                     <div className="flex flex-wrap gap-2">
                       {optionalMissing.map((field, i) => (
-                        <span key={i} className="px-2 py-1 text-xs rounded-md bg-slate-700/50 text-slate-400">
+                        <span key={i} className="px-2.5 py-1 text-xs rounded-md bg-slate-700/50 text-slate-400">
                           {field.name}
                         </span>
                       ))}
@@ -1042,13 +1357,19 @@ export default function ViewCreatorInline({
               </div>
             )}
 
-            {/* Vistas alternativas */}
+            {/* Vistas alternativas sugeridas */}
             {compatibility === COMPATIBILITY.INCOMPATIBLE && suggestedViews.length > 0 && (
-              <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
-                <p className="text-sm font-medium text-slate-300 mb-3">
-                  Tipos de vista recomendados:
+              <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/30">
+                <div className="flex items-center gap-2 mb-3">
+                  <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                  </svg>
+                  <p className="text-sm font-medium text-indigo-300">Prueba estos formatos en su lugar</p>
+                </div>
+                <p className="text-xs text-indigo-400/70 mb-3">
+                  Estos tipos de vista funcionan mejor con los datos que tienes
                 </p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3">
                   {suggestedViews.map((suggestedType, i) => {
                     const vt = viewTypes.find(v => v.type === suggestedType);
                     if (!vt) return null;
@@ -1056,15 +1377,18 @@ export default function ViewCreatorInline({
                       <button
                         key={i}
                         onClick={() => handleChangeViewType(suggestedType)}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-600/50 bg-slate-800/50 hover:bg-slate-700/50 hover:border-slate-500 transition-all group"
                       >
                         <div 
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-white"
+                          className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform"
                           style={{ backgroundColor: VIEW_COLORS[suggestedType] }}
                         >
                           {VIEW_ICONS[suggestedType]}
                         </div>
-                        <span className="text-emerald-300 font-medium">{vt.name}</span>
+                        <span className="text-slate-200 font-medium">{vt.name}</span>
+                        <svg className="w-4 h-4 text-slate-500 group-hover:text-slate-300 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                        </svg>
                       </button>
                     );
                   })}
@@ -1072,17 +1396,24 @@ export default function ViewCreatorInline({
               </div>
             )}
 
-            {/* Mapeo sugerido */}
+            {/* Cómo se van a conectar los datos - lenguaje simplificado */}
             {(compatibility === COMPATIBILITY.FULL || compatibility === COMPATIBILITY.PARTIAL) && analysisResult?.fieldMap && (
               <div className="p-4 rounded-xl bg-slate-800/30 border border-slate-700/50">
-                <p className="text-xs text-slate-500 uppercase tracking-wider mb-3">Mapeo sugerido</p>
+                <div className="flex items-center gap-2 mb-3">
+                  <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                  </svg>
+                  <p className="text-xs text-slate-500 uppercase tracking-wider">Así se mostrarán tus datos</p>
+                </div>
                 <div className="space-y-2">
                   {Object.entries(analysisResult.fieldMap).map(([viewField, tableField]) => (
-                    <div key={viewField} className="flex items-center gap-3 text-sm">
-                      <span className="w-28 text-slate-400">{viewField}</span>
-                      <span className="text-slate-600">→</span>
-                      <span className={tableField ? 'text-emerald-400' : 'text-red-400'}>
-                        {tableField || '(sin mapear)'}
+                    <div key={viewField} className="flex items-center gap-3 text-sm p-2 rounded-lg hover:bg-slate-800/30">
+                      <span className="w-28 text-slate-300 font-medium capitalize">{viewField.replace(/([A-Z])/g, ' $1').trim()}</span>
+                      <svg className="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
+                      </svg>
+                      <span className={`${tableField ? 'text-emerald-400' : 'text-slate-500 italic'}`}>
+                        {tableField || 'No asignado'}
                       </span>
                     </div>
                   ))}
@@ -1090,30 +1421,29 @@ export default function ViewCreatorInline({
               </div>
             )}
 
-            {/* Sugerencias de tablas para relacionar */}
+            {/* Sugerencias de tablas para conectar */}
             {analysisResult?.suggestedRelations?.length > 0 && (
-              <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/30">
-                <div className="flex items-center gap-2 mb-3">
-                  {Icons.link}
-                  <p className="text-sm font-medium text-cyan-300">
-                    Tablas sugeridas para relacionar
-                  </p>
+              <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <svg className="w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+                  </svg>
+                  <p className="text-sm font-medium text-cyan-300">Tablas que podrías combinar</p>
                 </div>
                 <p className="text-xs text-cyan-400/70 mb-3">
-                  Detectamos campos que podrían enriquecer tu vista con información de otras tablas
+                  Encontramos datos relacionados que pueden mejorar tu vista
                 </p>
                 <div className="space-y-2">
                   {analysisResult.suggestedRelations.map((suggestion, i) => {
-                    // Verificar si ya está relacionada
                     const alreadyAdded = relatedTables.some(r => r.tableId === suggestion.tableId);
                     
                     return (
                       <div 
                         key={i}
-                        className={`flex items-center justify-between gap-3 p-3 rounded-lg ${
+                        className={`flex items-center justify-between gap-3 p-3 rounded-lg transition-colors ${
                           alreadyAdded 
                             ? 'bg-emerald-500/20 border border-emerald-500/30'
-                            : 'bg-slate-800/50 border border-slate-700/50'
+                            : 'bg-slate-800/50 border border-slate-700/50 hover:border-slate-600'
                         }`}
                       >
                         <div className="flex-1 min-w-0">
@@ -1122,25 +1452,27 @@ export default function ViewCreatorInline({
                               {suggestion.tableName}
                             </span>
                             {alreadyAdded && (
-                              <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-500/30 text-emerald-300">
-                                Añadida
+                              <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-500/30 text-emerald-300 flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                </svg>
+                                Conectada
                               </span>
                             )}
                           </div>
                           <p className="text-xs text-slate-400 mt-0.5">
                             {suggestion.reason}
                           </p>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            {selectedTable?.name}.{suggestion.localField} → {suggestion.tableName}.{suggestion.foreignField}
-                          </p>
                         </div>
                         {!alreadyAdded && (
                           <button
                             onClick={() => handleAddSuggestedRelation(suggestion)}
-                            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-medium transition-colors"
+                            className="shrink-0 flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-medium transition-colors"
                           >
-                            {Icons.plus}
-                            Añadir
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                            Conectar
                           </button>
                         )}
                       </div>
@@ -1150,26 +1482,30 @@ export default function ViewCreatorInline({
               </div>
             )}
 
-            {/* Acciones */}
-            <div className="flex justify-between pt-2">
+            {/* Botones de acción */}
+            <div className="flex items-center justify-between pt-4 border-t border-slate-700/30">
               <button
                 onClick={() => {
                   setAnalysisResult(null);
                   setStep(STEPS.SELECT_OPTIONS);
                 }}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-600 hover:bg-slate-700/50 text-slate-300 transition-colors"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 transition-colors"
               >
-                {Icons.back}
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                </svg>
                 Cambiar selección
               </button>
               
               {(compatibility === COMPATIBILITY.FULL || compatibility === COMPATIBILITY.PARTIAL) && (
                 <button
                   onClick={handleContinueToMapping}
-                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-medium transition-colors"
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-medium transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40"
                 >
-                  Continuar a Configurar
-                  {Icons.arrowRight}
+                  Personalizar vista
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                  </svg>
                 </button>
               )}
             </div>
@@ -1179,6 +1515,54 @@ export default function ViewCreatorInline({
       case STEPS.CONFIGURE_MAPPING:
         const requiredFields = selectedViewType?.requiredFields || [];
         const optionalFields = selectedViewType?.optionalFields || [];
+        
+        // Descripciones amigables para campos comunes (preguntas orientativas)
+        const fieldDescriptions = {
+          // Generales
+          title: '¿Cuál es el nombre o título principal?',
+          name: '¿Cuál es el nombre?',
+          description: '¿Dónde está la descripción?',
+          notes: '¿Dónde están las notas o comentarios adicionales?',
+          
+          // Identificadores (FloorPlan/POS)
+          identifier: '¿Cuál columna identifica cada elemento? (número, nombre, código)',
+          capacity: '¿Cuál es la capacidad? (personas, plazas)',
+          zone: '¿A qué zona o área pertenece?',
+          
+          // Estados
+          status: '¿Qué columna indica el estado?',
+          statusField: '¿Qué columna indica el estado?',
+          
+          // Fechas (Calendar/Timeline)
+          date: '¿Cuál columna tiene la fecha?',
+          datetime: '¿Dónde está la fecha y hora?',
+          start: '¿Cuándo empieza? (fecha de inicio)',
+          end: '¿Cuándo termina? (fecha de fin)',
+          startDate: '¿Cuándo empieza?',
+          endDate: '¿Cuándo termina?',
+          dueDate: '¿Cuál es la fecha límite?',
+          
+          // Asignaciones (Kanban)
+          assignee: '¿Quién es el responsable?',
+          priority: '¿Cuál es la prioridad o urgencia?',
+          
+          // Visuales (Cards)
+          subtitle: '¿Hay información secundaria? (email, cargo, etc.)',
+          image: '¿Qué columna tiene la imagen o foto?',
+          badge: '¿Qué etiqueta destacar?',
+          footer: '¿Qué mostrar al pie de cada tarjeta?',
+          
+          // Ubicación
+          location: '¿Dónde se encuentra? (ubicación/dirección)',
+          
+          // Otros
+          price: '¿Dónde está el precio?',
+          category: '¿Cómo se organizan las categorías?',
+          tags: '¿Qué etiquetas tiene?',
+          color: '¿Qué campo define el color?',
+          type: '¿Qué tipo o categoría tiene?',
+          icon: '¿Qué icono usar?',
+        };
         
         return (
           <div className="space-y-6">
@@ -1191,47 +1575,60 @@ export default function ViewCreatorInline({
                 {Icons.back}
               </button>
               <div className="flex-1">
-                <h3 className="text-xl font-semibold text-slate-100">Configurar Vista</h3>
+                <h3 className="text-xl font-semibold text-slate-100">Personaliza tu vista</h3>
                 <p className="text-sm text-slate-400 mt-0.5">
-                  Mapea los campos de tu tabla a la vista <span className="text-indigo-400 font-medium">{selectedViewType?.name}</span>
+                  Indica qué datos de tu tabla usar para cada parte de la vista
                 </p>
               </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700">
-                <span className="text-xs text-slate-500">Campos:</span>
-                <span className="text-sm font-medium text-slate-200">{allAvailableFields.length}</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/20 border border-indigo-500/30">
+                <div 
+                  className="w-6 h-6 rounded-lg flex items-center justify-center text-white text-xs"
+                  style={{ backgroundColor: VIEW_COLORS[selectedViewType?.type] }}
+                >
+                  {VIEW_ICONS[selectedViewType?.type]}
+                </div>
+                <span className="text-sm font-medium text-indigo-300">{selectedViewType?.name}</span>
               </div>
             </div>
 
-            {/* Nombre de la vista */}
-            <div className="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/50">
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-3">
-                <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            {/* Nombre de la vista - con mejor explicación */}
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-800/30 border border-slate-700/50">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-200 mb-2">
+                <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
                 </svg>
-                Nombre de la vista
+                ¿Cómo quieres llamar esta vista?
               </label>
+              <p className="text-xs text-slate-500 mb-3 ml-7">
+                Usa un nombre descriptivo que te ayude a identificarla rápido
+              </p>
               <input
                 type="text"
                 value={viewName}
                 onChange={(e) => setViewName(e.target.value)}
-                placeholder="Ej: Calendario de Citas, Kanban de Proyectos..."
+                placeholder="Ej: Calendario de Citas, Estado de Proyectos, Catálogo de Productos..."
                 className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-600/50 text-slate-200 placeholder-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-all"
               />
             </div>
 
-            {/* Mapeo de campos */}
-            <div className="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/50">
+            {/* Asignación de datos - con mejor explicación */}
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-800/30 border border-slate-700/50">
               <div className="flex items-center justify-between mb-4">
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-300">
-                  <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
-                  </svg>
-                  Mapeo de campos
-                </label>
-                <div className="flex items-center gap-4 text-xs">
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-slate-200">
+                    <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                    </svg>
+                    ¿Qué datos mostrar en cada parte?
+                  </label>
+                  <p className="text-xs text-slate-500 mt-1 ml-7">
+                    Conecta las columnas de tu tabla con cada elemento de la vista
+                  </p>
+                </div>
+                <div className="hidden sm:flex items-center gap-4 text-xs">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                    <span className="text-slate-400">Requerido</span>
+                    <span className="text-slate-400">Necesario</span>
                   </span>
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-slate-500"></span>
@@ -1240,12 +1637,12 @@ export default function ViewCreatorInline({
                 </div>
               </div>
               
-              {/* Campos requeridos */}
+              {/* Campos necesarios */}
               {requiredFields.length > 0 && (
-                <div className="mb-4">
-                  <div className="text-xs font-semibold text-red-400/80 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                    Campos requeridos
+                <div className="mb-5">
+                  <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                    Información necesaria ({requiredFields.length})
                   </div>
                   <div className="space-y-3">
                     {requiredFields.map(viewField => {
@@ -1253,7 +1650,7 @@ export default function ViewCreatorInline({
                       const selectGroups = [
                         {
                           label: selectedTable?.name,
-                          icon: '📋',
+                          icon: Icons.clipboard,
                           options: allAvailableFields.filter(f => f.isMain).map(f => ({
                             value: f.fullKey,
                             label: f.key
@@ -1261,7 +1658,7 @@ export default function ViewCreatorInline({
                         },
                         ...relatedTables.map(rel => ({
                           label: rel.alias || rel.table.name,
-                          icon: '🔗',
+                          icon: Icons.linkSmall,
                           options: allAvailableFields.filter(f => f.tableId === rel.tableId).map(f => ({
                             value: f.fullKey,
                             label: f.key
@@ -1269,22 +1666,41 @@ export default function ViewCreatorInline({
                         }))
                       ];
                       
+                      const friendlyLabel = fieldDescriptions[viewField] || viewField;
+                      // Descripción corta del backend o formateada del nombre técnico
+                      const backendDescription = selectedViewType?.fieldDescriptions?.[viewField];
+                      const fieldHint = backendDescription || viewField.replace(/([A-Z])/g, ' $1').toLowerCase();
+                      
                       return (
-                        <div key={viewField} className="grid grid-cols-[140px_auto_1fr] items-center gap-4 p-3 rounded-xl bg-slate-900/30 border border-slate-700/30">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-red-500 shrink-0"></span>
-                            <span className="text-sm font-medium text-slate-200 truncate" title={viewField}>
-                              {viewField}
-                            </span>
+                        <div key={viewField} className="p-4 rounded-xl bg-slate-900/30 border border-slate-700/30 hover:border-slate-600/50 transition-colors">
+                          <div className="flex items-start justify-between gap-4 mb-3">
+                            <div className="flex items-start gap-2">
+                              <span className="w-2 h-2 rounded-full bg-red-500 shrink-0 mt-1.5"></span>
+                              <div>
+                                <span className="text-sm font-medium text-slate-200">
+                                  {friendlyLabel}
+                                </span>
+                                {backendDescription && (
+                                  <p className="text-xs text-slate-500 mt-0.5">
+                                    {backendDescription}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            {currentValue && (
+                              <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-500/20 text-emerald-400 flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                </svg>
+                                Asignado
+                              </span>
+                            )}
                           </div>
-                          <svg className="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
-                          </svg>
                           <FieldSelector
                             value={currentValue || ''}
                             onChange={(val) => handleFieldMapChange(viewField, val)}
                             groups={selectGroups}
-                            placeholder="Seleccionar campo..."
+                            placeholder="Selecciona una columna..."
                             isRequired={true}
                             hasValue={!!currentValue}
                           />
@@ -1299,8 +1715,9 @@ export default function ViewCreatorInline({
               {optionalFields.length > 0 && (
                 <div>
                   <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
-                    Campos opcionales
+                    <span className="w-2 h-2 rounded-full bg-slate-500"></span>
+                    Mejoras opcionales ({optionalFields.length})
+                    <span className="font-normal text-slate-600 normal-case">- Añade más detalles si quieres</span>
                   </div>
                   <div className="space-y-3">
                     {optionalFields.map(viewField => {
@@ -1308,7 +1725,7 @@ export default function ViewCreatorInline({
                       const selectGroups = [
                         {
                           label: selectedTable?.name,
-                          icon: '📋',
+                          icon: Icons.clipboard,
                           options: allAvailableFields.filter(f => f.isMain).map(f => ({
                             value: f.fullKey,
                             label: f.key
@@ -1316,7 +1733,7 @@ export default function ViewCreatorInline({
                         },
                         ...relatedTables.map(rel => ({
                           label: rel.alias || rel.table.name,
-                          icon: '🔗',
+                          icon: Icons.linkSmall,
                           options: allAvailableFields.filter(f => f.tableId === rel.tableId).map(f => ({
                             value: f.fullKey,
                             label: f.key
@@ -1324,22 +1741,28 @@ export default function ViewCreatorInline({
                         }))
                       ];
                       
+                      const friendlyLabel = fieldDescriptions[viewField] || viewField;
+                      
                       return (
-                        <div key={viewField} className="grid grid-cols-[140px_auto_1fr] items-center gap-4 p-3 rounded-xl bg-slate-900/20 border border-slate-700/20 hover:border-slate-700/40 transition-colors">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-slate-600 shrink-0"></span>
-                            <span className="text-sm text-slate-400 truncate" title={viewField}>
-                              {viewField}
-                            </span>
+                        <div key={viewField} className="p-3 rounded-xl bg-slate-900/20 border border-slate-700/20 hover:border-slate-700/40 transition-colors">
+                          <div className="flex items-start justify-between gap-4 mb-2">
+                            <div className="flex items-start gap-2">
+                              <span className="w-2 h-2 rounded-full bg-slate-600 shrink-0 mt-1.5"></span>
+                              <span className="text-sm text-slate-400">
+                                {friendlyLabel}
+                              </span>
+                            </div>
+                            {currentValue && (
+                              <span className="px-2 py-0.5 text-xs rounded-full bg-slate-700/50 text-slate-400">
+                                Asignado
+                              </span>
+                            )}
                           </div>
-                          <svg className="w-5 h-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
-                          </svg>
                           <FieldSelector
                             value={currentValue || ''}
                             onChange={(val) => handleFieldMapChange(viewField, val)}
                             groups={selectGroups}
-                            placeholder="Seleccionar campo..."
+                            placeholder="Sin asignar (opcional)"
                             isRequired={false}
                             hasValue={!!currentValue}
                           />
@@ -1352,23 +1775,45 @@ export default function ViewCreatorInline({
             </div>
 
             {error && (
-              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-3">
-                <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-start gap-3">
+                <svg className="w-5 h-5 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                 </svg>
-                {error}
+                <div>
+                  <p className="text-red-400 font-medium">Algo no está bien</p>
+                  <p className="text-sm text-red-400/70 mt-0.5">{error}</p>
+                </div>
               </div>
             )}
 
-            {/* Footer */}
-            <div className="flex justify-end pt-2">
+            {/* Pie con indicador de progreso */}
+            <div className="flex items-center justify-between pt-4 border-t border-slate-700/30">
+              <div className="flex items-center gap-2 text-sm">
+                {canValidate() ? (
+                  <span className="flex items-center gap-2 text-emerald-400">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Todo listo para crear
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2 text-amber-400">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                    </svg>
+                    {!viewName.trim() ? 'Falta el nombre de la vista' : 'Completa los campos necesarios'}
+                  </span>
+                )}
+              </div>
               <button
                 onClick={handleValidate}
                 disabled={!canValidate()}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-medium transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 disabled:shadow-none"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 disabled:from-slate-700 disabled:to-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-medium transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 disabled:shadow-none"
               >
-                {Icons.sparkles}
-                Validar Configuración
+                Verificar y crear
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
               </button>
             </div>
           </div>
@@ -1376,15 +1821,20 @@ export default function ViewCreatorInline({
 
       case STEPS.VALIDATING:
         return (
-          <div className="flex flex-col items-center justify-center py-16 gap-4">
+          <div className="flex flex-col items-center justify-center py-20 gap-6">
             <div className="relative">
-              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-500"></div>
-              <div className="absolute inset-0 flex items-center justify-center text-indigo-400">
-                {Icons.sparkles}
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-2 border-amber-500 border-t-transparent"></div>
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                </svg>
               </div>
             </div>
             <div className="text-center">
-              <p className="text-slate-200 font-medium">Validando configuración...</p>
+              <p className="text-lg text-slate-200 font-medium">Verificando configuración...</p>
+              <p className="text-sm text-slate-400 mt-2">Solo tomará un momento</p>
             </div>
           </div>
         );
@@ -1395,67 +1845,118 @@ export default function ViewCreatorInline({
         const hasErrors = validationResult?.errors?.length > 0;
         
         return (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
+          <div className="space-y-5">
+            <div className="flex items-center gap-3 pb-4 border-b border-slate-700/30">
               <button
                 onClick={handleBackToConfig}
-                className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 hover:text-slate-200"
+                className="p-2 rounded-xl hover:bg-slate-700/50 text-slate-400 hover:text-slate-200 transition-colors"
               >
                 {Icons.back}
               </button>
               <div>
-                <h3 className="text-lg font-semibold text-slate-100">Resultado de Validación</h3>
+                <h3 className="text-lg font-semibold text-slate-100">¡Casi terminamos!</h3>
+                <p className="text-sm text-slate-400">Revisa el resumen antes de crear</p>
               </div>
             </div>
 
-            {/* Estado */}
-            <div className={`flex items-center gap-3 p-4 rounded-xl ${
+            {/* Estado visual principal */}
+            <div className={`p-6 rounded-2xl ${
               isValid && !hasWarnings
-                ? 'bg-emerald-500/10 border border-emerald-500/30' 
+                ? 'bg-gradient-to-br from-emerald-500/10 to-green-500/10 border border-emerald-500/30' 
                 : isValid && hasWarnings
-                  ? 'bg-amber-500/10 border border-amber-500/30'
-                  : 'bg-red-500/10 border border-red-500/30'
+                  ? 'bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/30'
+                  : 'bg-gradient-to-br from-red-500/10 to-rose-500/10 border border-red-500/30'
             }`}>
-              {isValid && !hasWarnings ? (
-                <>
-                  <span className="text-emerald-400">{Icons.check}</span>
-                  <span className="text-emerald-300 font-medium">¡Configuración válida!</span>
-                </>
-              ) : isValid && hasWarnings ? (
-                <>
-                  <span className="text-amber-400">{Icons.warning}</span>
-                  <span className="text-amber-300 font-medium">Válida con advertencias</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-red-400">{Icons.warning}</span>
-                  <span className="text-red-300 font-medium">Configuración inválida</span>
-                </>
-              )}
+              <div className="flex items-center gap-4">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+                  isValid && !hasWarnings
+                    ? 'bg-emerald-500/20 text-emerald-400' 
+                    : isValid && hasWarnings
+                      ? 'bg-amber-500/20 text-amber-400'
+                      : 'bg-red-500/20 text-red-400'
+                }`}>
+                  {isValid && !hasWarnings ? (
+                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  {isValid && !hasWarnings ? (
+                    <>
+                      <h4 className="text-emerald-300 font-semibold text-lg">¡Todo perfecto!</h4>
+                      <p className="text-emerald-400/80">Tu vista está lista para crearse</p>
+                    </>
+                  ) : isValid && hasWarnings ? (
+                    <>
+                      <h4 className="text-amber-300 font-semibold text-lg">Listo con algunas notas</h4>
+                      <p className="text-amber-400/80">Puedes crear la vista, revisa las sugerencias abajo</p>
+                    </>
+                  ) : (
+                    <>
+                      <h4 className="text-red-300 font-semibold text-lg">Hay errores</h4>
+                      <p className="text-red-400/80">Vuelve atrás para corregirlos</p>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {/* Resumen */}
-            <div className="p-4 rounded-xl bg-slate-800/30 border border-slate-700/50">
-              <p className="text-xs text-slate-500 uppercase tracking-wider mb-3">Resumen</p>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Vista:</span>
-                  <span className="text-slate-200 font-medium">{viewName}</span>
+            {/* Resumen visual */}
+            <div className="p-5 rounded-xl bg-slate-800/30 border border-slate-700/50">
+              <p className="text-xs text-slate-500 uppercase tracking-wider mb-4">Resumen de tu vista</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Nombre</p>
+                    <p className="text-sm font-medium text-slate-200">{viewName}</p>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Tipo:</span>
-                  <span className="text-slate-200 font-medium">{selectedViewType?.name}</span>
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white"
+                    style={{ backgroundColor: VIEW_COLORS[selectedViewType?.type] }}
+                  >
+                    {VIEW_ICONS[selectedViewType?.type]}
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Tipo</p>
+                    <p className="text-sm font-medium text-slate-200">{selectedViewType?.name}</p>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Tabla principal:</span>
-                  <span className="text-slate-200 font-medium">{selectedTable?.name}</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Tabla principal</p>
+                    <p className="text-sm font-medium text-slate-200">{selectedTable?.name}</p>
+                  </div>
                 </div>
                 {relatedTables.length > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Tablas relacionadas:</span>
-                    <span className="text-emerald-300 font-medium">
-                      {relatedTables.map(r => r.alias || r.table.name).join(', ')}
-                    </span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Tablas conectadas</p>
+                      <p className="text-sm font-medium text-emerald-300">
+                        {relatedTables.map(r => r.alias || r.table.name).join(', ')}
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1464,11 +1965,16 @@ export default function ViewCreatorInline({
             {/* Errores */}
             {hasErrors && (
               <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30">
-                <p className="text-xs text-red-500 uppercase tracking-wider mb-2">Errores</p>
-                <ul className="space-y-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                  </svg>
+                  <p className="text-sm font-medium text-red-400">Problemas encontrados</p>
+                </div>
+                <ul className="space-y-1 text-sm">
                   {validationResult.errors.map((err, i) => (
-                    <li key={i} className="text-sm text-red-300 flex gap-2">
-                      <span className="text-red-500">✗</span>
+                    <li key={i} className="text-red-300 flex items-start gap-2">
+                      <span className="text-red-500 mt-0.5">•</span>
                       {err}
                     </li>
                   ))}
@@ -1479,11 +1985,16 @@ export default function ViewCreatorInline({
             {/* Advertencias */}
             {hasWarnings && (
               <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
-                <p className="text-xs text-amber-500 uppercase tracking-wider mb-2">Advertencias</p>
-                <ul className="space-y-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                  </svg>
+                  <p className="text-sm font-medium text-amber-400">Sugerencias para mejorar</p>
+                </div>
+                <ul className="space-y-1 text-sm">
                   {validationResult.warnings.map((warn, i) => (
-                    <li key={i} className="text-sm text-amber-300 flex gap-2">
-                      <span className="text-amber-500">⚠</span>
+                    <li key={i} className="text-amber-300 flex items-start gap-2">
+                      <span className="text-amber-500 mt-0.5">•</span>
                       {warn}
                     </li>
                   ))}
@@ -1492,35 +2003,39 @@ export default function ViewCreatorInline({
             )}
 
             {error && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-                {error}
+              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30">
+                <p className="text-red-400 text-sm">{error}</p>
               </div>
             )}
 
-            {/* Botones */}
-            <div className="flex justify-between pt-2">
+            {/* Botones finales */}
+            <div className="flex items-center justify-between pt-4 border-t border-slate-700/30">
               <button
                 onClick={handleBackToConfig}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-600 hover:bg-slate-700/50 text-slate-300 transition-colors"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 transition-colors"
               >
-                {Icons.back}
-                Volver a Ajustar
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                </svg>
+                Volver a ajustar
               </button>
               
               <button
                 onClick={handleCreate}
                 disabled={!isValid || creating}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-medium transition-colors"
+                className="flex items-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-medium transition-all shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 disabled:shadow-none"
               >
                 {creating ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                     Creando...
                   </>
                 ) : (
                   <>
-                    {Icons.check}
-                    Crear Vista
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Crear mi vista
                   </>
                 )}
               </button>
@@ -1530,14 +2045,23 @@ export default function ViewCreatorInline({
 
       case STEPS.CREATING:
         return (
-          <div className="flex flex-col items-center justify-center py-16 gap-4">
+          <div className="flex flex-col items-center justify-center py-20 gap-6">
             <div className="relative">
-              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-emerald-500"></div>
-              <div className="absolute inset-0 flex items-center justify-center text-emerald-400">
-                {Icons.check}
+              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-2 border-emerald-500 border-t-transparent"></div>
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center text-white animate-pulse">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
               </div>
             </div>
-            <p className="text-slate-200 font-medium">Creando vista...</p>
+            <div className="text-center">
+              <p className="text-xl text-slate-200 font-medium">Creando tu vista...</p>
+              <p className="text-sm text-slate-400 mt-2">
+                Preparando <span className="text-emerald-400">{viewName}</span>
+              </p>
+            </div>
           </div>
         );
 
@@ -1553,67 +2077,115 @@ export default function ViewCreatorInline({
     return 3;
   };
 
+  // Iconos del stepper
+  const stepperIcons = {
+    data: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" /></svg>,
+    analyze: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" /></svg>,
+    config: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" /></svg>,
+    done: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" /></svg>,
+  };
+
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white">
-            {Icons.sparkles}
+    <div className="h-full flex flex-col bg-slate-900">
+      {/* Header minimalista */}
+      <div className="flex items-center justify-between px-8 py-6 border-b border-slate-800">
+        <div className="flex items-center gap-5">
+          <div className="relative">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-xl shadow-purple-500/20">
+              {Icons.sparkles}
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center">
+              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+            </div>
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-slate-100">Crear Nueva Vista</h1>
-            <p className="text-sm text-slate-400">
-              {step === STEPS.SELECT_OPTIONS && 'Selecciona tablas y tipo de vista'}
-              {step === STEPS.ANALYZING && 'Analizando...'}
-              {step === STEPS.COMPATIBILITY_RESULT && 'Resultado del análisis'}
-              {step === STEPS.CONFIGURE_MAPPING && 'Configura el mapeo'}
-              {step === STEPS.VALIDATING && 'Validando...'}
-              {step === STEPS.READY_TO_CREATE && 'Listo para crear'}
-              {step === STEPS.CREATING && 'Creando...'}
+            <h1 className="text-2xl font-bold text-white tracking-tight">Nueva Vista</h1>
+            <p className="text-sm text-slate-400 mt-0.5">
+              {step === STEPS.SELECT_OPTIONS && 'Configura tu nueva visualización de datos'}
+              {step === STEPS.ANALYZING && 'Analizando compatibilidad...'}
+              {step === STEPS.COMPATIBILITY_RESULT && 'Revisión de compatibilidad'}
+              {step === STEPS.CONFIGURE_MAPPING && 'Configura los campos'}
+              {step === STEPS.VALIDATING && 'Validando configuración...'}
+              {step === STEPS.READY_TO_CREATE && 'Todo listo para crear'}
+              {step === STEPS.CREATING && 'Creando tu vista...'}
             </p>
           </div>
         </div>
         <button
           onClick={onCancel}
-          className="px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 transition-colors"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent hover:border-slate-700 transition-all duration-200"
         >
-          Cancelar
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          <span className="font-medium">Cancelar</span>
         </button>
       </div>
 
-      {/* Progress */}
-      <div className="px-6 py-3 bg-slate-800/30 border-b border-slate-700/30">
-        <div className="flex items-center gap-2">
+      {/* Stepper profesional */}
+      <div className="px-8 py-5 bg-slate-800/40 border-b border-slate-800/80">
+        <div className="flex items-center justify-center max-w-3xl mx-auto">
           {[
-            { label: 'Seleccionar', step: 0 },
-            { label: 'Analizar', step: 1 },
-            { label: 'Configurar', step: 2 },
-            { label: 'Crear', step: 3 },
+            { label: 'Datos', desc: 'Elige origen', icon: stepperIcons.data, step: 0 },
+            { label: 'Análisis', desc: 'Verificar', icon: stepperIcons.analyze, step: 1 },
+            { label: 'Configurar', desc: 'Personalizar', icon: stepperIcons.config, step: 2 },
+            { label: 'Finalizar', desc: 'Crear vista', icon: stepperIcons.done, step: 3 },
           ].map((s, idx) => {
             const currentProgress = getCurrentProgressStep();
             const isActive = currentProgress === s.step;
             const isPast = currentProgress > s.step;
 
             return (
-              <div key={s.step} className="flex items-center">
-                {idx > 0 && (
-                  <div className={`w-8 h-0.5 mx-1 ${isPast || isActive ? 'bg-indigo-500' : 'bg-slate-600'}`} />
-                )}
-                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                  isActive
-                    ? 'bg-indigo-500 text-white' 
-                    : isPast 
-                      ? 'bg-indigo-500/20 text-indigo-400' 
-                      : 'bg-slate-700/50 text-slate-500'
-                }`}>
-                  <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
-                    isPast ? 'bg-indigo-500 text-white' : ''
+              <div key={s.step} className="flex items-center flex-1">
+                <div className="flex flex-col items-center relative group">
+                  {/* Círculo con icono */}
+                  <div className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                    isActive
+                      ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/40 ring-4 ring-indigo-500/20' 
+                      : isPast 
+                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
+                        : 'bg-slate-700/80 text-slate-400 border border-slate-600/50'
                   }`}>
-                    {isPast ? '✓' : idx + 1}
-                  </span>
-                  {s.label}
+                    {isPast ? (
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      </svg>
+                    ) : s.icon}
+                    
+                    {/* Indicador activo animado */}
+                    {isActive && (
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 animate-pulse opacity-30"></div>
+                    )}
+                  </div>
+                  
+                  {/* Labels */}
+                  <div className="mt-3 text-center">
+                    <span className={`block text-sm font-semibold transition-colors ${
+                      isActive ? 'text-white' : isPast ? 'text-emerald-400' : 'text-slate-500'
+                    }`}>
+                      {s.label}
+                    </span>
+                    <span className={`text-xs transition-colors ${
+                      isActive ? 'text-indigo-300' : isPast ? 'text-emerald-400/60' : 'text-slate-600'
+                    }`}>
+                      {s.desc}
+                    </span>
+                  </div>
                 </div>
+                
+                {/* Conector */}
+                {idx < 3 && (
+                  <div className="flex-1 mx-4 relative">
+                    <div className="h-0.5 bg-slate-700/80 rounded-full"></div>
+                    <div 
+                      className={`absolute top-0 left-0 h-0.5 rounded-full transition-all duration-500 ${
+                        isPast ? 'bg-emerald-500 w-full' : isActive ? 'bg-gradient-to-r from-indigo-500 to-transparent w-1/2' : 'w-0'
+                      }`}
+                    ></div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1621,7 +2193,7 @@ export default function ViewCreatorInline({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-8">
         {renderContent()}
       </div>
     </div>

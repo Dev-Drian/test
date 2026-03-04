@@ -137,7 +137,7 @@ export default function Layout() {
         return;
       }
       try {
-        const response = await api.get(`/workspaces/${workspaceId}/views`);
+        const response = await api.get('/views', { params: { workspaceId } });
         setWorkspaceViews(response.data || []);
       } catch (error) {
         console.error('Error loading views:', error);

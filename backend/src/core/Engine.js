@@ -250,6 +250,7 @@ export class ChatEngine {
         handler: handlerName,
         tool,
         mode: 'llm-first',
+        data: result.data, // Propagar datos del handler (flowCreated, tableCreated, etc.)
       };
     }
     
@@ -683,6 +684,7 @@ export class ChatEngine {
         tool,
         mode: 'llm-first',
         flowChange: true,
+        data: result.data, // Propagar datos del handler (flowCreated, tableCreated, etc.)
       };
     }
     
@@ -776,7 +778,6 @@ Si el usuario cancela → usa setup_workspace con action: "cancel"`,
     }
     
     // Si hay pendingCreate activo, agregar contexto explícito para el LLM
-    if (context.pendingCreate) {
     if (context.pendingCreate) {
       const tableName = context.pendingCreate.tableName || 'registro';
       const collectedFields = context.collectedFields || context.pendingCreate.fields || {};

@@ -771,11 +771,12 @@ export async function updateItemStatus(req, res) {
     }
     
     // Actualizar item en la tabla
+    // Firma: update(workspaceId, tableId, recordId, data)
     const updated = await tableDataRepo.update(
-      itemId, 
-      { [realFieldName]: newValue, updatedAt: new Date().toISOString() }, 
       workspaceId, 
-      tableId
+      tableId,
+      itemId,
+      { [realFieldName]: newValue, updatedAt: new Date().toISOString() }
     );
     
     log.info('Item status updated:', { viewId, itemId, fieldName, newValue });

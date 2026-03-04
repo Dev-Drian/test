@@ -15,6 +15,7 @@ import seedFlowTemplates from './flow-templates.js';
 import seedPlans from './plans.js';
 import seedUsers from './users.js';
 import seedAllWorkspaces from './workspaces-by-plan.js';
+import { seed as seedMesasData } from './mesas-data.js';
 import { getDbPrefix } from '../config/db.js';
 
 const COUCHDB_URL = process.env.COUCHDB_URL || 'http://admin:password@127.0.0.1:5984';
@@ -126,6 +127,11 @@ async function main() {
       console.log('\n📦 Ejecutando seed: CRM Premium');
       console.log('─'.repeat(60));
       await seedPremiumCRM();
+      
+      // 4.1 Seed datos de Mesas (para FloorPlanView)
+      console.log('\n🪑 Ejecutando seed: Datos de Mesas');
+      console.log('─'.repeat(60));
+      await seedMesasData();
     }
     
     // 5. Seed de Workspaces por Plan (Free, Starter, Enterprise)

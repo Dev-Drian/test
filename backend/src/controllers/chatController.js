@@ -111,11 +111,32 @@ export async function sendMessage(req, res) {
       apiKey: token || process.env.OPENAI_API_KEY,
     });
     
-    res.json({
+    // Extraer datos especiales para el frontend
+    const responseData = {
       chatId: result.chatId,
       response: result.response,
       action: result.action,
+    };
+    
+    // Debug: Log completo del result
+    log.debug('Chat result data', { 
+      hasData: !!result.data,
+      dataKeys: result.data ? Object.keys(result.data) : [],
+      hasFlowCreated: !!result.data?.flowCreated,
     });
+    
+    // Incluir flowCreated si existe (para que el frontend actualice la lista de flujos)
+    if (result.data?.flowCreated) {
+      responseData.flowCreated = result.data.flowCreated;
+      log.info('Including flowCreated in response', { flowCreated: result.data.flowCreated });
+    }
+    
+    // Incluir tableCreated si existe
+    if (result.data?.tableCreated) {
+      responseData.tableCreated = result.data.tableCreated;
+    }
+    
+    res.json(responseData);
     
   } catch (err) {
     log.error('sendMessage error', { error: err.message });

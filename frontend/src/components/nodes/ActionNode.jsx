@@ -282,33 +282,38 @@ export default function ActionNode({ id, data, selected, type }) {
           /* Modo Edición (nuevo nodo) */
           <>
             <select 
-              className="w-full px-2.5 py-2 rounded-xl text-[11px] focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-all cursor-pointer"
+              className="w-full px-3 py-2 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all cursor-pointer appearance-none"
               style={{ 
-                background: 'rgba(255,255,255,0.03)', 
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: '#d1d5db'
+                background: '#1e1e2a', 
+                border: '1px solid rgba(139, 92, 246, 0.3)',
+                color: '#c4b5fd',
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238b5cf6'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 8px center',
+                backgroundSize: '16px',
+                paddingRight: '32px'
               }}
               value={data?.action || 'auto_create'}
               onChange={(e) => updateNodeData('action', e.target.value)}
             >
-              <option value="auto_create">+ Crear</option>
-              <option value="auto_assign">◎ Asignar</option>
-              <option value="set_value">✎ Establecer</option>
-              <option value="decrement">− Restar</option>
-              <option value="increment">+ Sumar</option>
-              <option value="send_notification">⚬ Notificar</option>
+              <option value="auto_create" style={{ background: '#1e1e2a', color: '#4ade80' }}>+ Crear</option>
+              <option value="auto_assign" style={{ background: '#1e1e2a', color: '#60a5fa' }}>◎ Asignar</option>
+              <option value="set_value" style={{ background: '#1e1e2a', color: '#fcd34d' }}>✎ Establecer</option>
+              <option value="decrement" style={{ background: '#1e1e2a', color: '#f87171' }}>− Restar</option>
+              <option value="increment" style={{ background: '#1e1e2a', color: '#34d399' }}>+ Sumar</option>
+              <option value="send_notification" style={{ background: '#1e1e2a', color: '#a78bfa' }}>⚬ Notificar</option>
             </select>
             
             {(data?.action === 'set_value' || data?.action === 'decrement' || data?.action === 'increment') && (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <input 
                   type="text" 
                   placeholder="Campo..."
-                  className="w-full px-2.5 py-1.5 rounded-lg text-[11px] focus:outline-none focus:ring-1 focus:ring-purple-500/50 placeholder-slate-600"
+                  className="w-full px-3 py-2 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/50 placeholder-slate-500"
                   style={{ 
-                    background: 'rgba(255,255,255,0.03)', 
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    color: 'white'
+                    background: '#1e1e2a', 
+                    border: '1px solid rgba(139, 92, 246, 0.3)',
+                    color: '#f1f5f9'
                   }}
                   value={data?.field || ''}
                   onChange={(e) => updateNodeData('field', e.target.value)}
@@ -316,11 +321,11 @@ export default function ActionNode({ id, data, selected, type }) {
                 <input 
                   type="text" 
                   placeholder="Valor..."
-                  className="w-full px-2.5 py-1.5 rounded-lg text-[11px] focus:outline-none focus:ring-1 focus:ring-purple-500/50 placeholder-slate-600"
+                  className="w-full px-3 py-2 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/50 placeholder-slate-500"
                   style={{ 
-                    background: 'rgba(255,255,255,0.03)', 
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    color: 'white'
+                    background: '#1e1e2a', 
+                    border: '1px solid rgba(139, 92, 246, 0.3)',
+                    color: '#f1f5f9'
                   }}
                   value={data?.value || ''}
                   onChange={(e) => updateNodeData('value', e.target.value)}

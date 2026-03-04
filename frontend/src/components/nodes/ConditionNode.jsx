@@ -183,30 +183,35 @@ export default function ConditionNode({ id, data, selected }) {
           /* Modo Edición */
           <>
             <select 
-              className="w-full px-2.5 py-1.5 rounded-lg text-[11px] focus:outline-none focus:ring-1 focus:ring-amber-500/50 transition-all cursor-pointer"
+              className="w-full px-3 py-2 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all cursor-pointer appearance-none"
               style={{ 
-                background: 'rgba(255,255,255,0.03)', 
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: '#d1d5db'
+                background: '#1e1e2a', 
+                border: '1px solid rgba(251, 191, 36, 0.3)',
+                color: '#fcd34d',
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23fbbf24'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 8px center',
+                backgroundSize: '16px',
+                paddingRight: '32px'
               }}
               value={data?.condition || 'exists'}
               onChange={(e) => updateNodeData('condition', e.target.value)}
             >
-              <option value="exists">✓ Si existe</option>
-              <option value="not_exists">✗ Si NO existe</option>
-              <option value="equals">= Es igual a</option>
-              <option value="greater">&gt; Mayor que</option>
-              <option value="less">&lt; Menor que</option>
+              <option value="exists" style={{ background: '#1e1e2a', color: '#4ade80' }}>✓ Si existe</option>
+              <option value="not_exists" style={{ background: '#1e1e2a', color: '#f87171' }}>✗ Si NO existe</option>
+              <option value="equals" style={{ background: '#1e1e2a', color: '#60a5fa' }}>= Es igual a</option>
+              <option value="greater" style={{ background: '#1e1e2a', color: '#a78bfa' }}>&gt; Mayor que</option>
+              <option value="less" style={{ background: '#1e1e2a', color: '#f472b6' }}>&lt; Menor que</option>
             </select>
             
             <input 
               type="text" 
               placeholder="Campo..."
-              className="w-full px-2.5 py-1.5 rounded-lg text-[11px] focus:outline-none focus:ring-1 focus:ring-amber-500/50 placeholder-slate-600"
+              className="w-full px-3 py-2 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/50 placeholder-slate-500"
               style={{ 
-                background: 'rgba(255,255,255,0.03)', 
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: 'white'
+                background: '#1e1e2a', 
+                border: '1px solid rgba(251, 191, 36, 0.3)',
+                color: '#f1f5f9'
               }}
               value={data?.field || ''}
               onChange={(e) => updateNodeData('field', e.target.value)}
@@ -216,11 +221,11 @@ export default function ConditionNode({ id, data, selected }) {
               <input 
                 type="text" 
                 placeholder="Valor..."
-                className="w-full px-2.5 py-1.5 rounded-lg text-[11px] focus:outline-none focus:ring-1 focus:ring-amber-500/50 placeholder-slate-600"
+                className="w-full px-3 py-2 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/50 placeholder-slate-500"
                 style={{ 
-                  background: 'rgba(255,255,255,0.03)', 
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  color: 'white'
+                  background: '#1e1e2a', 
+                  border: '1px solid rgba(251, 191, 36, 0.3)',
+                  color: '#f1f5f9'
                 }}
                 value={data?.value || ''}
                 onChange={(e) => updateNodeData('value', e.target.value)}
