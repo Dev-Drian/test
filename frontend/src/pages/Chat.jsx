@@ -1,19 +1,23 @@
 /**
  * Chat - Interfaz de chat profesional estilo ChatGPT
  */
-import { useContext, useEffect, useState, useRef } from "react";
+import { useContext, useEffect, useState, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { WorkspaceContext } from "../context/WorkspaceContext";
 import { useToast, useConfirm } from "../components/Toast";
 import { 
-  listAgents, 
+  listAgents,
+  listTables,
   getOrCreateChat, 
   sendChatMessage, 
   listChats, 
   deleteChat,
-  renameChat 
+  renameChat,
+  importFileViaChat,
+  previewImportViaChat,
 } from "../api/client";
 import { RobotIcon, SendIcon, PlusIcon, TrashIcon, EditIcon, ChatIcon, SparklesIcon } from "../components/Icons";
+import { useSocketEvent } from "../hooks/useSocket";
 
 /**
  * Renderiza Markdown básico en React (soporta bold, enlaces internos)
@@ -114,6 +118,132 @@ function renderMarkdown(text) {
   );
 }
 
+/**
+ * ImportPreviewCard - Tarjeta de bot mostrando mapeo propuesto + confirm/cancel
+ */
+function ImportPreviewCard({ message, onConfirm, onCancel, confirming, agentName }) {
+  const { preview } = message;
+  if (!preview) return null;
+
+  const { mapping = {}, csvColumns = [], tableHeaders = [], tableName, totalRows, preview: sampleRows = [] } = preview;
+  const mappedCount = Object.keys(mapping).length;
+  const unmappedCols = csvColumns.filter(c => !mapping[c]);
+
+  return (
+    <div className="py-5" style={{ borderTop: '1px solid rgba(100, 116, 139, 0.15)' }}>
+      <div className="flex gap-4">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20 shrink-0">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold mb-3 uppercase tracking-wide text-emerald-400">{agentName}</p>
+          
+          {/* Header */}
+          <div className="p-4 rounded-xl mb-3" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+            <p className="text-sm text-slate-200 font-medium mb-1">
+              📊 Analicé <strong>{message.file?.name}</strong> — {totalRows} filas detectadas
+            </p>
+            <p className="text-xs text-slate-400">
+              Tabla destino: <span className="text-emerald-400 font-semibold">{tableName}</span>
+              {' · '}{mappedCount}/{csvColumns.length} columnas mapeadas correctamente
+            </p>
+          </div>
+
+          {/* Mapping table */}
+          <div className="mb-3 rounded-xl overflow-hidden" style={{ border: '1px solid rgba(100, 116, 139, 0.2)' }}>
+            <table className="w-full text-xs">
+              <thead>
+                <tr style={{ background: 'rgba(51,65,85,0.5)' }}>
+                  <th className="px-3 py-2 text-left text-slate-400 font-medium">Columna archivo</th>
+                  <th className="px-3 py-2 text-left text-slate-400 font-medium">→ Campo en sistema</th>
+                  <th className="px-3 py-2 text-left text-slate-400 font-medium">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {csvColumns.map(col => {
+                  const mapped = mapping[col];
+                  const header = tableHeaders.find(h => h.key === mapped);
+                  return (
+                    <tr key={col} style={{ borderTop: '1px solid rgba(100,116,139,0.1)' }}>
+                      <td className="px-3 py-1.5 text-slate-300 font-mono">{col}</td>
+                      <td className="px-3 py-1.5 text-slate-300">{header?.label || mapped || '—'}</td>
+                      <td className="px-3 py-1.5">
+                        {mapped
+                          ? <span className="text-emerald-400 text-[10px]">✓ mapeado</span>
+                          : <span className="text-amber-400 text-[10px]">⚠ ignorado</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Preview rows */}
+          {sampleRows.length > 0 && (
+            <div className="mb-3">
+              <p className="text-xs text-slate-500 mb-1.5">Vista previa de las primeras {sampleRows.length} filas:</p>
+              <div className="rounded-xl overflow-x-auto" style={{ border: '1px solid rgba(100, 116, 139, 0.2)' }}>
+                <table className="text-xs whitespace-nowrap">
+                  <thead>
+                    <tr style={{ background: 'rgba(51,65,85,0.5)' }}>
+                      {Object.keys(sampleRows[0]).map(k => (
+                        <th key={k} className="px-3 py-1.5 text-left text-slate-400 font-medium">{k}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sampleRows.map((row, i) => (
+                      <tr key={i} style={{ borderTop: '1px solid rgba(100,116,139,0.1)' }}>
+                        {Object.values(row).map((v, j) => (
+                          <td key={j} className="px-3 py-1.5 text-slate-300 max-w-32 truncate">{String(v ?? '')}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {unmappedCols.length > 0 && (
+            <p className="text-xs text-amber-400 mb-3">
+              ⚠ {unmappedCols.length} columna(s) sin mapear serán ignoradas: {unmappedCols.join(', ')}
+            </p>
+          )}
+
+          {message.type === 'import_done' ? (
+            <div className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">
+              {renderMarkdown(message.content)}
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 mt-2">
+              <button
+                onClick={onConfirm}
+                disabled={confirming}
+                className="px-4 py-2 rounded-xl text-white text-sm font-semibold transition-all hover:scale-[1.03] disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 4px 15px rgba(16,185,129,0.3)' }}
+              >
+                {confirming ? '⏳ Importando...' : `✅ Confirmar (${totalRows} registros)`}
+              </button>
+              <button
+                onClick={onCancel}
+                disabled={confirming}
+                className="px-4 py-2 rounded-xl text-slate-400 text-sm font-medium hover:text-slate-200 hover:bg-slate-700/50 transition-all disabled:opacity-50"
+                style={{ border: '1px solid rgba(100, 116, 139, 0.3)' }}
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Chat() {
   const { workspaceId, workspaceName } = useContext(WorkspaceContext);
   const { toast } = useToast();
@@ -134,6 +264,155 @@ export default function Chat() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  // WebSocket: recibir mensajes del agente en tiempo real
+  useSocketEvent('chat:message', ({ chatId: incomingChatId, message }) => {
+    if (incomingChatId === chatId && message?.content) {
+      setMessages(prev => {
+        // Evitar duplicados si el mensaje ya llegó por HTTP
+        const alreadyExists = prev.some(m => m.id === message.id);
+        if (alreadyExists) return prev;
+        return [...prev, { role: 'assistant', content: message.content, id: message.id || `ws_${Date.now()}`, ts: Date.now() }];
+      });
+    }
+  });
+
+  // File import state
+  const [attachedFile, setAttachedFile] = useState(null); // { name, content, encoding, size }
+  const [importTables, setImportTables] = useState([]);
+  const [importTableId, setImportTableId] = useState('');
+  const [tableSearch, setTableSearch] = useState('');
+  const [pendingImport, setPendingImport] = useState(null); // { msgId } when confirming
+
+  // Load tables for import selector
+  const loadImportTables = useCallback(async () => {
+    if (importTables.length > 0 || !workspaceId) return;
+    try {
+      const res = await listTables(workspaceId);
+      const t = res.data || [];
+      setImportTables(t);
+      if (t.length > 0) setImportTableId(t[0]._id);
+    } catch (e) { console.error(e); }
+  }, [workspaceId, importTables.length]);
+
+  const handleFileSelect = useCallback((e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const ext = file.name.split('.').pop().toLowerCase();
+    const isExcel = ext === 'xlsx' || ext === 'xls';
+    const encoding = isExcel ? 'base64' : 'utf8';
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      let content;
+      if (isExcel) {
+        const bytes = new Uint8Array(ev.target.result);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+        content = btoa(binary);
+      } else {
+        content = ev.target.result;
+      }
+      setAttachedFile({ name: file.name, content, encoding, size: file.size });
+      loadImportTables();
+    };
+    if (isExcel) reader.readAsArrayBuffer(file);
+    else reader.readAsText(file, 'UTF-8');
+    e.target.value = '';
+  }, [loadImportTables]);
+
+  // Triggered when user sends a message with a file attached → runs preview
+  const handleImportPreview = async () => {
+    if (!attachedFile || !importTableId || sending) return;
+
+    let currentChatId = chatId;
+    if (!currentChatId) {
+      try {
+        const res = await getOrCreateChat(workspaceId, selectedAgentId);
+        const newChat = res.data.chat || res.data;
+        currentChatId = newChat._id;
+        setChatId(currentChatId);
+        setNewChatId(currentChatId);
+        setChatList(prev => [{ _id: currentChatId, title: `Importar ${attachedFile.name}`, messageCount: 0 }, ...prev]);
+      } catch (e) { return; }
+    }
+
+    const fileToImport = attachedFile;
+    setAttachedFile(null);
+
+    setMessages(prev => [...prev, {
+      role: 'user',
+      content: `📎 Importar archivo: **${fileToImport.name}**`,
+      id: `user_import_${Date.now()}`,
+      ts: Date.now(),
+    }]);
+    setSending(true);
+
+    try {
+      const res = await previewImportViaChat({
+        workspaceId,
+        tableId: importTableId,
+        file: fileToImport,
+      });
+      const botMsgId = `import_preview_${Date.now()}`;
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        type: 'import_preview',
+        id: botMsgId,
+        ts: Date.now(),
+        preview: res.data,
+        tableId: importTableId,
+        file: fileToImport,
+      }]);
+    } catch (err) {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: '❌ No pude analizar el archivo: ' + (err.response?.data?.error || err.message),
+        id: `err_${Date.now()}`,
+        ts: Date.now(),
+      }]);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // Confirm import after preview card
+  const handleConfirmImport = async (msg) => {
+    if (pendingImport || sending) return;
+    setPendingImport({ msgId: msg.id });
+    setSending(true);
+
+    try {
+      const res = await importFileViaChat({
+        workspaceId,
+        agentId: selectedAgentId,
+        chatId,
+        tableId: msg.tableId,
+        file: msg.file,
+      });
+      const reply = res.data?.response || 'Importación completada.';
+      setMessages(prev => prev.map(m =>
+        m.id === msg.id
+          ? { ...m, type: 'import_done', content: reply }
+          : m
+      ));
+    } catch (err) {
+      const errMsg = '❌ Error al importar: ' + (err.response?.data?.error || err.message);
+      setMessages(prev => prev.map(m =>
+        m.id === msg.id ? { ...m, type: undefined, content: errMsg } : m
+      ));
+    } finally {
+      setSending(false);
+      setPendingImport(null);
+    }
+  };
+
+  // Cancel preview — remove the preview card
+  const handleCancelImport = (msgId) => {
+    setMessages(prev => prev.map(m =>
+      m.id === msgId ? { ...m, type: undefined, content: '❌ Importación cancelada.' } : m
+    ));
+  };
 
   // Cargar agentes
   useEffect(() => {
@@ -269,6 +548,13 @@ export default function Chat() {
 
   const handleSend = async (e) => {
     e.preventDefault();
+    
+    // If file attached → run preview flow instead of normal send
+    if (attachedFile) {
+      await handleImportPreview();
+      return;
+    }
+    
     const text = input.trim();
     if (!text || !workspaceId || sending) return;
 
@@ -637,7 +923,22 @@ export default function Chat() {
             {/* Área de mensajes */}
             <div className="flex-1 overflow-y-auto" data-tour="chat-messages">
               <div className="max-w-3xl mx-auto py-6 px-4">
-                {messages.map((m, idx) => (
+                {messages.map((m, idx) => {
+                  // Import preview / done card
+                  if (m.type === 'import_preview' || m.type === 'import_done') {
+                    return (
+                      <ImportPreviewCard
+                        key={m._id || m.id || `msg-${idx}`}
+                        message={m}
+                        onConfirm={() => handleConfirmImport(m)}
+                        onCancel={() => handleCancelImport(m.id)}
+                        confirming={!!(pendingImport?.msgId === m.id)}
+                        agentName={selectedAgentName}
+                      />
+                    );
+                  }
+                  // Normal message
+                  return (
                   <div 
                     key={m._id || m.id || `msg-${idx}`} 
                     className={`py-5 animate-slide-in-message ${m.role === "user" ? "message-user" : "message-assistant"}`}
@@ -677,7 +978,8 @@ export default function Chat() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
                 
                 {/* Indicador de escritura */}
                 {sending && (
@@ -710,7 +1012,56 @@ export default function Chat() {
               background: 'linear-gradient(to top, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.95))',
               backdropFilter: 'blur(12px)'
             }}>
+              {/* File attachment strip — minimal, sends on ↵ */}
+              {attachedFile && (
+                <div className="max-w-3xl mx-auto px-4 pt-3">
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl flex-wrap" style={{ background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.2)' }}>
+                    <span className="text-sky-400 text-sm">📎</span>
+                    <span className="text-sky-300 text-sm font-medium truncate max-w-40">{attachedFile.name}</span>
+                    <span className="text-slate-500 text-xs">({(attachedFile.size / 1024).toFixed(0)} KB)</span>
+                    <span className="text-slate-400 text-xs mx-1">→</span>
+
+                    {/* Searchable table select */}
+                    <div className="relative flex-1 min-w-32 max-w-xs">
+                      <input
+                        type="text"
+                        placeholder="Buscar tabla..."
+                        value={tableSearch || (importTables.find(t => t._id === importTableId)?.name || '')}
+                        onChange={e => {
+                          setTableSearch(e.target.value);
+                          const match = importTables.find(t => t.name.toLowerCase().includes(e.target.value.toLowerCase()));
+                          if (match) setImportTableId(match._id);
+                        }}
+                        onFocus={() => setTableSearch('')}
+                        onBlur={() => setTableSearch('')}
+                        className="w-full text-xs bg-slate-700/70 text-slate-200 rounded-lg px-2.5 py-1.5 border border-slate-600 focus:border-sky-500 outline-none"
+                        list="import-tables-list"
+                      />
+                      <datalist id="import-tables-list">
+                        {importTables.map(t => <option key={t._id} value={t.name} />)}
+                      </datalist>
+                    </div>
+
+                    <span className="text-slate-500 text-xs hidden sm:inline">↵ Enviar para analizar</span>
+                    <button
+                      onClick={() => { setAttachedFile(null); setTableSearch(''); }}
+                      className="p-1 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-700 transition-all shrink-0"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <form onSubmit={handleSend} className="max-w-3xl mx-auto p-4">
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
                 <div className="relative rounded-2xl transition-all duration-300 focus-within:shadow-lg focus-within:shadow-indigo-500/10 focus-within:border-indigo-500/30"
                   style={{ 
                     background: 'rgba(51, 65, 85, 0.4)',
@@ -718,17 +1069,27 @@ export default function Chat() {
                   }}>
                   <textarea
                     ref={textareaRef}
-                    placeholder="Escribe un mensaje..."
+                    placeholder={attachedFile ? `Presiona enviar para analizar ${attachedFile.name}...` : "Escribe un mensaje... (o 📎 para adjuntar CSV/Excel)"}
                     value={input}
                     onChange={handleTextareaChange}
                     onKeyDown={handleKeyDown}
                     rows={1}
-                    className="w-full px-5 py-4 pr-16 bg-transparent text-slate-100 text-sm placeholder-slate-500 resize-none focus:outline-none max-h-48"
+                    className="w-full px-5 py-4 pr-24 bg-transparent text-slate-100 text-sm placeholder-slate-500 resize-none focus:outline-none max-h-48"
                     disabled={sending}
                   />
+                  {/* Paperclip button */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={sending}
+                    className="absolute right-14 bottom-3 p-2.5 rounded-xl text-slate-500 hover:text-sky-400 hover:bg-sky-500/10 disabled:opacity-30 transition-all duration-200"
+                    title="Adjuntar CSV o Excel para importar"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" /></svg>
+                  </button>
                   <button
                     type="submit"
-                    disabled={sending || !input.trim()}
+                    disabled={sending || (!input.trim() && !attachedFile)}
                     className="absolute right-3 bottom-3 p-2.5 rounded-xl text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 hover:scale-105 active:scale-95 bg-gradient-to-r from-indigo-500 to-violet-600 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40"
                   >
                     <SendIcon size="sm" />

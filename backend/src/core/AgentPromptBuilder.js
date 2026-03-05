@@ -114,6 +114,7 @@ class AgentPromptBuilder {
       customInstructions = '',
       tablesInfo = [],
       dateContext = {},
+      businessSnapshot = null,
     } = config;
     
     const verticalTemplate = VERTICAL_TEMPLATES[vertical] || VERTICAL_TEMPLATES.general;
@@ -126,6 +127,7 @@ class AgentPromptBuilder {
       this._buildCapabilities(capabilities, tablesInfo),
       this._buildRestrictions([...verticalTemplate.restrictions, ...restrictions]),
       this._buildBusinessContext(businessHours, dateContext),
+      businessSnapshot ? this._buildBusinessSnapshot(businessSnapshot) : '',
       this._buildExamples([...verticalTemplate.examples, ...customExamples]),
       this._buildSpecialSituations(),
       customInstructions ? `\nINSTRUCCIONES ADICIONALES:\n${customInstructions}` : '',
@@ -354,6 +356,15 @@ Mantén respuestas concisas (2-3 oraciones cuando sea posible).`;
     }
     
     return lines.join('\n');
+  }
+
+  /**
+   * Inyecta el snapshot del negocio en el prompt
+   * @private
+   */
+  _buildBusinessSnapshot(snapshot) {
+    if (!snapshot) return '';
+    return snapshot; // Viene pre-formateado de BusinessSnapshot.js
   }
   
   /**

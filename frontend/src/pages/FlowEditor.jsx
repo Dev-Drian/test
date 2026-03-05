@@ -1753,10 +1753,11 @@ export default function FlowEditor() {
                             <option value="notification">Enviar notificación</option>
                             <option value="decrement">Restar cantidad</option>
                             <option value="increment">Sumar cantidad</option>
+                            <option value="generate_payment_link">💳 Generar link de pago</option>
                           </select>
                         </div>
                         
-                        {selectedNode.data?.actionType && selectedNode.data.actionType !== 'notification' && (
+                        {selectedNode.data?.actionType && selectedNode.data.actionType !== 'notification' && selectedNode.data.actionType !== 'generate_payment_link' && (
                           <div>
                             <label className="block text-xs text-zinc-500 mb-1.5">Tabla destino</label>
                             <select
@@ -1981,6 +1982,131 @@ export default function FlowEditor() {
                               />
                             </div>
                           </>
+                        )}
+
+                        {/* ── 💳 Link de pago ─────────────────────────────── */}
+                        {selectedNode.data?.actionType === 'generate_payment_link' && (
+                          <div className="space-y-3">
+                            {/* Banner informativo */}
+                            <div className="p-3 rounded-lg" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                              <p className="text-[11px] text-emerald-400 font-medium mb-1">💳 Generar Link de Pago</p>
+                              <p className="text-[10px] text-zinc-400 leading-relaxed">
+                                Genera un link de MercadoPago y lo guarda en el registro. El siguiente nodo puede usar <code className="bg-zinc-800 px-1 rounded text-emerald-300">{"{{paymentLink}}"}</code> para enviarlo al cliente.
+                              </p>
+                            </div>
+
+                            {/* Origen del monto */}
+                            <div>
+                              <label className="block text-xs text-zinc-500 mb-1.5">Origen del monto</label>
+                              <div className="flex gap-2">
+                                {[{ v: 'field', label: 'Campo del registro' }, { v: 'fixed', label: 'Valor fijo' }].map(opt => (
+                                  <button
+                                    key={opt.v}
+                                    onClick={() => updateSelectedNodeData('payment', { ...(selectedNode.data?.payment || {}), amountSource: opt.v })}
+                                    className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${(selectedNode.data?.payment?.amountSource || 'field') === opt.v ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'text-zinc-500 border border-zinc-700 hover:border-zinc-500'}`}
+                                  >
+                                    {opt.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Campo del monto */}
+                            {(selectedNode.data?.payment?.amountSource || 'field') === 'field' ? (
+                              <div>
+                                <label className="block text-xs text-zinc-500 mb-1.5">Campo con el monto</label>
+                                <input
+                                  type="text"
+                                  value={selectedNode.data?.payment?.amountField || ''}
+                                  onChange={(e) => updateSelectedNodeData('payment', { ...(selectedNode.data?.payment || {}), amountField: e.target.value })}
+                                  className="w-full px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                  style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                                  placeholder="precio, total, monto..."
+                                />
+                              </div>
+                            ) : (
+                              <div>
+                                <label className="block text-xs text-zinc-500 mb-1.5">Monto fijo</label>
+                                <input
+                                  type="number"
+                                  value={selectedNode.data?.payment?.amountFixed || ''}
+                                  onChange={(e) => updateSelectedNodeData('payment', { ...(selectedNode.data?.payment || {}), amountFixed: Number(e.target.value) })}
+                                  className="w-full px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                  style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                                  placeholder="50000"
+                                />
+                              </div>
+                            )}
+
+                            {/* Descripción */}
+                            <div>
+                              <label className="block text-xs text-zinc-500 mb-1.5">Descripción del cobro</label>
+                              <input
+                                type="text"
+                                value={selectedNode.data?.payment?.description || ''}
+                                onChange={(e) => updateSelectedNodeData('payment', { ...(selectedNode.data?.payment || {}), description: e.target.value })}
+                                className="w-full px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                                placeholder="Ej: Pago de {{servicio}} — {{nombre}}"
+                              />
+                              <p className="text-[10px] text-zinc-600 mt-1">Admite {'{{'+'variable'+'}}'} del registro</p>
+                            </div>
+
+                            {/* Moneda */}
+                            <div>
+                              <label className="block text-xs text-zinc-500 mb-1.5">Moneda</label>
+                              <select
+                                value={selectedNode.data?.payment?.currency || 'COP'}
+                                onChange={(e) => updateSelectedNodeData('payment', { ...(selectedNode.data?.payment || {}), currency: e.target.value })}
+                                className="w-full px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer"
+                                style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                              >
+                                <option value="COP">🇨🇴 COP — Peso colombiano</option>
+                                <option value="MXN">🇲🇽 MXN — Peso mexicano</option>
+                                <option value="ARS">🇦🇷 ARS — Peso argentino</option>
+                                <option value="CLP">🇨🇱 CLP — Peso chileno</option>
+                                <option value="USD">🇺🇸 USD — Dólar</option>
+                                <option value="BRL">🇧🇷 BRL — Real</option>
+                              </select>
+                            </div>
+
+                            {/* Campos destino */}
+                            <div className="p-2.5 rounded-lg space-y-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                              <p className="text-[10px] text-zinc-500 font-medium">Guardar en el registro</p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-zinc-600 w-20 shrink-0">Link → campo</span>
+                                <input
+                                  type="text"
+                                  value={selectedNode.data?.payment?.saveLinkToField || 'paymentLink'}
+                                  onChange={(e) => updateSelectedNodeData('payment', { ...(selectedNode.data?.payment || {}), saveLinkToField: e.target.value })}
+                                  className="flex-1 px-2 py-1.5 rounded text-white text-xs"
+                                  style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                                  placeholder="paymentLink"
+                                />
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-zinc-600 w-20 shrink-0">Estado → campo</span>
+                                <input
+                                  type="text"
+                                  value={selectedNode.data?.payment?.saveStatusToField || 'paymentStatus'}
+                                  onChange={(e) => updateSelectedNodeData('payment', { ...(selectedNode.data?.payment || {}), saveStatusToField: e.target.value })}
+                                  className="flex-1 px-2 py-1.5 rounded text-white text-xs"
+                                  style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
+                                  placeholder="paymentStatus"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Variables disponibles después del nodo */}
+                            <div className="p-2 rounded-lg" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
+                              <p className="text-[10px] text-emerald-500 font-medium mb-1.5">Variables disponibles en nodos siguientes:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {['{{paymentLink}}', '{{paymentId}}', '{{paymentStatus}}'].map(v => (
+                                  <code key={v} className="text-[9px] bg-emerald-500/15 px-1.5 py-0.5 rounded text-emerald-300">{v}</code>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
                         )}
                       </>
                     )}

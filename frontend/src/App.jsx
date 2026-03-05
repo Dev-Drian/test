@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { WorkspaceContext } from "./context/WorkspaceContext";
+import { useWorkspace } from "./context/WorkspaceContext";
+import { SocketProvider } from "./context/SocketContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { TourProvider } from "./context/TourContext";
 import { ToastProvider } from "./components/Toast";
@@ -16,6 +18,8 @@ import Views from "./pages/Views";
 import Flows from "./pages/Flows";
 import Integrations from "./pages/Integrations";
 import Login from "./pages/Login";
+import Landing from "./pages/Landing";
+import Admin from "./pages/Admin";
 import OnboardingWizard from "./components/OnboardingWizard";
 import { listWorkspaces } from "./api/client";
 
@@ -24,6 +28,7 @@ export { WorkspaceContext };
 // Componente para rutas protegidas con onboarding
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading, user } = useAuth();
+  const location = useLocation();
   const [checkingWorkspaces, setCheckingWorkspaces] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   
@@ -93,9 +98,9 @@ function ProtectedRoute({ children }) {
     );
   }
   
-  // Si no está autenticado, redirigir a login
+  // Si no está autenticado: mostrar Landing en "/", login en el resto
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return location.pathname === "/" ? <Landing /> : <Navigate to="/login" replace />;
   }
   
   // Mientras verifica workspaces, mostrar loader
@@ -145,6 +150,12 @@ function LoginRoute() {
   }
   
   return <Login />;
+}
+
+// Puente: lee workspaceId del contexto y lo pasa al SocketProvider
+function SocketBridge({ children }) {
+  const { workspaceId } = useWorkspace();
+  return <SocketProvider workspaceId={workspaceId}>{children}</SocketProvider>;
 }
 
 function App() {
@@ -216,6 +227,27 @@ function AppContent() {
           </Route>
         </Routes>
       </TourProvider>
+      <SocketBridge>
+        <TourProvider>
+          <Routes>
+            <Route path="/login" element={<LoginRoute />} />
+            <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+              <Route index element={<Dashboard />} />
+              <Route path="workspaces" element={<Workspaces />} />
+              <Route path="agents" element={<Agents />} />
+              <Route path="tables" element={<Tables />} />
+              <Route path="views" element={<Views />} />
+              <Route path="flows" element={<Flows />} />
+              <Route path="flows/editor" element={<FlowEditor />} />
+              <Route path="flows/editor/:flowId" element={<FlowEditor />} />
+              <Route path="chat" element={<Chat />} />
+              <Route path="guia" element={<Guia />} />
+              <Route path="admin" element={<Admin />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        </TourProvider>
+      </SocketBridge>
     </WorkspaceContext.Provider>
   );
 }

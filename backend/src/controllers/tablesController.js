@@ -5,6 +5,11 @@ import {
   getTableDataDbName,
   getProjectDbName,
 } from "../config/db.js";
+import { ExportService } from "../services/ExportService.js";
+import { ImportService } from "../services/ImportService.js";
+
+const exportService = new ExportService();
+const importService = new ImportService();
 
 export async function createTable(req, res) {
   try {
@@ -267,6 +272,77 @@ export async function deleteTableRow(req, res) {
     if (err.statusCode === 404) {
       return res.status(404).json({ error: 'Registro no encontrado' });
     }
+    res.status(500).json({ error: err.message });
+  }
+}
+
+/**
+ * GET /table/:workspaceId/:tableId/export?format=csv|json
+ * Exporta todos los registros de una tabla
+ */
+export async function exportTable(req, res) {
+  try {
+    const { workspaceId, tableId } = req.params;
+    const { format = 'csv', limit } = req.query;
+
+    const result = await exportService.export(workspaceId, tableId, {
+      format,
+      limit: limit ? Number(limit) : 10000,
+    });
+
+    res.setHeader('Content-Type', result.mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    res.send(result.data);
+  } catch (err) {
+    console.error('[exportTable]', err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+/**
+ * POST /table/:workspaceId/:tableId/import/preview
+ * Parsea el CSV y devuelve el mapeo automático + primeras 5 filas.
+ * Body: { csv: "..." }  o multipart con campo "file"
+ */
+export async function importPreview(req, res) {
+  try {
+    const { workspaceId, tableId } = req.params;
+    const csvText = req.body.csv || req.body.content || '';
+
+    if (!csvText.trim()) {
+      return res.status(400).json({ error: 'CSV vacío' });
+    }
+
+    const preview = await importService.preview(workspaceId, tableId, csvText);
+    res.json(preview);
+  } catch (err) {
+    console.error('[importPreview]', err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+/**
+ * POST /table/:workspaceId/:tableId/import
+ * Importa todos los registros del CSV.
+ * Body: { csv: "...", mapping: { csvCol: tableKey }, skipErrors: true }
+ */
+export async function importTable(req, res) {
+  try {
+    const { workspaceId, tableId } = req.params;
+    const { csv, mapping, skipErrors = true, validate = false } = req.body;
+
+    if (!csv?.trim()) {
+      return res.status(400).json({ error: 'CSV vacío' });
+    }
+
+    const result = await importService.import(workspaceId, tableId, csv, mapping || null, {
+      skipErrors,
+      validate,
+    });
+
+    res.json(result);
+  } catch (err) {
+    console.error('[importTable]', err);
     res.status(500).json({ error: err.message });
   }
 }

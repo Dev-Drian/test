@@ -112,6 +112,11 @@ export class ChatEngine {
       agentConfig.businessHours = this._formatBusinessHours(context.businessInfo.horarios);
     }
     
+    // Inyectar snapshot del negocio si está disponible
+    if (context.businessSnapshot) {
+      agentConfig.businessSnapshot = context.businessSnapshot;
+    }
+    
     const systemPrompt = this.promptBuilder.build(agentConfig);
     
     // 3. Obtener tools habilitadas para este tenant (con nombres de tablas inyectados)

@@ -115,6 +115,7 @@ function getActionDisplay(actionType) {
     // Integraciones Google
     'google_calendar_event': { icon: <CalendarIcon size="sm" />, label: 'Google Calendar', color: 'red' },
     'google_sheets_row': { icon: <TableIcon size="sm" />, label: 'Google Sheets', color: 'green' },
+    'generate_payment_link': { icon: <span>💳</span>, label: 'Generar link de pago', color: 'emerald' },
   };
   return actions[actionType] || { icon: <BoltIcon size="sm" />, label: actionType || 'Acción', color: 'purple' };
 }
@@ -278,6 +279,27 @@ export default function ActionNode({ id, data, selected, type }) {
                 }}
               >
                 {(data?.message || notifyMessage).slice(0, 50)}...
+              </div>
+            )}
+
+            {/* Payment Link preview */}
+            {effectiveActionType === 'generate_payment_link' && (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px]"
+                  style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                  <span className="text-emerald-400">💰</span>
+                  <span className="text-emerald-300 truncate">
+                    {data?.payment?.amountSource === 'fixed'
+                      ? `${data.payment.amountFixed?.toLocaleString()} ${data.payment.currency || 'COP'}`
+                      : `campo: ${data?.payment?.amountField || 'precio'}`}
+                  </span>
+                </div>
+                {data?.payment?.description && (
+                  <div className="px-2.5 py-1 rounded-lg text-[10px] text-zinc-400 truncate"
+                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    {data.payment.description.slice(0, 40)}
+                  </div>
+                )}
               </div>
             )}
           </>

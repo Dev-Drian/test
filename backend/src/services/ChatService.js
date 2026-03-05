@@ -199,6 +199,15 @@ export class ChatService {
     }));
     context.tablesData = tablesDataWithContent;
     context.setMetadata('tables', tables);
+
+    // Inyectar snapshot del negocio al contexto del bot
+    try {
+      const { getBusinessSnapshot } = await import('./BusinessSnapshot.js');
+      const snapshotText = await getBusinessSnapshot().get(workspaceId);
+      if (snapshotText) context.businessSnapshot = snapshotText;
+    } catch (e) {
+      log.warn('Could not load business snapshot', { error: e.message });
+    }
     
     // Actualizar token y agente en cada llamada
     context.token = apiKey || process.env.OPENAI_API_KEY || '';

@@ -9,6 +9,9 @@ import * as auth from "../controllers/authController.js";
 import * as plans from "../controllers/plansController.js";
 import * as views from "../controllers/viewsController.js";
 import * as google from "../controllers/googleController.js";
+import * as inbound from "../controllers/inboundController.js";
+import * as admin from "../controllers/adminController.js";
+import * as payment from "../controllers/paymentController.js";
 import { requireAuth, optionalAuth, requireWorkspaceMember } from "../middleware/index.js";
 import { validateWorkspace } from "../middleware/index.js";
 import { checkCanCreateWorkspace, checkCanCreateTable, checkCanCreateAgent, checkCanCreateFlow } from "../middleware/limits.js";
@@ -21,6 +24,8 @@ router.post("/auth/login", auth.login);
 router.get("/auth/me", requireAuth, auth.getProfile);
 router.put("/auth/me", requireAuth, auth.updateProfile);
 router.post("/auth/change-password", requireAuth, auth.changePassword);
+router.post("/auth/forgot-password", auth.forgotPassword);
+router.post("/auth/reset-password", auth.resetPassword);
 router.get("/auth/workspaces", requireAuth, auth.getUserWorkspaces);
 
 // ============ PLANES Y LÍMITES ============
@@ -59,6 +64,9 @@ router.get("/table/:workspaceId/:tableId/data", requireAuth, validateWorkspace, 
 router.post("/table/:workspaceId/:tableId/row", requireAuth, validateWorkspace, tables.addTableRow);
 router.put("/table/:workspaceId/:tableId/row/:rowId", requireAuth, validateWorkspace, tables.updateTableRow);
 router.delete("/table/:workspaceId/:tableId/row/:rowId", requireAuth, validateWorkspace, tables.deleteTableRow);
+router.get("/table/:workspaceId/:tableId/export", requireAuth, validateWorkspace, tables.exportTable);
+router.post("/table/:workspaceId/:tableId/import/preview", requireAuth, validateWorkspace, tables.importPreview);
+router.post("/table/:workspaceId/:tableId/import", requireAuth, validateWorkspace, tables.importTable);
 
 // ============ FLOWS ============
 router.get("/flow/list", requireAuth, flows.getFlows);
@@ -73,6 +81,8 @@ router.get("/flow/templates", requireAuth, flows.getFlowTemplates);
 
 // ============ CHAT ============
 router.post("/chat/send", requireAuth, chat.sendMessage);
+router.post("/chat/import-file/preview", requireAuth, chat.previewImportInChat);
+router.post("/chat/import-file", requireAuth, chat.importFileInChat);
 router.get("/chat/get-or-create", requireAuth, chat.getOrCreateChat);
 router.get("/chat/list", requireAuth, chat.listChats);
 router.delete("/chat/:workspaceId/:chatId", requireAuth, validateWorkspace, chat.deleteChat);
@@ -123,4 +133,33 @@ router.post("/integrations/google/spreadsheets/:spreadsheetId/row", requireAuth,
 // Ejecución desde flujos
 router.post("/integrations/google/execute", requireAuth, google.executeFlowAction);
 
+// ============ SUPER ADMIN ============
+router.get("/admin/status", requireAuth, admin.getSystemStatus);
+router.get("/admin/jobs", requireAuth, admin.getJobs);
+router.post("/admin/jobs/reload", requireAuth, admin.reloadJobs);
+router.get("/admin/snapshots", requireAuth, admin.getSnapshots);
+router.delete("/admin/snapshots/:workspaceId", requireAuth, admin.invalidateSnapshot);
+router.post("/admin/cache/clear", requireAuth, admin.clearAllCache);
+router.get("/admin/snapshot/:workspaceId", requireAuth, admin.getWorkspaceSnapshot);
+
+// ============ PAGOS ============
+// Webhook: SIN requireAuth (Wompi llama este endpoint directamente)
+router.post("/payments/webhook/:workspaceId", payment.handleWebhook);
+// Estado de un pago (requiere auth)
+router.get("/payments/status/:paymentId", requireAuth, payment.getPaymentStatus);
+// Estado de pago de un registro específico
+router.get("/payments/record/:workspaceId/:tableId/:recordId", requireAuth, payment.getRecordPaymentStatus);
+
 export default router;
+
+// ============ INBOUND WEBHOOKS ============
+// POST /inbound/:workspaceId/:tableId  (JWT auth)
+// Accepts JSON array or CSV text to insert records into any table
+// Used by external systems (ERPs, scripts, Google Sheets, etc.)
+const inboundRouter = Router();
+inboundRouter.post(
+  '/:workspaceId/:tableId',
+  requireAuth,
+  inbound.inboundImport
+);
+export { inboundRouter };

@@ -1,18 +1,28 @@
 import "dotenv/config";
+import http from "http";
 import express from "express";
 import cors from "cors";
-import api from "./routers/index.js";
+import api, { inboundRouter } from "./routers/index.js";
 import logger from "./config/logger.js";
 import cache from "./config/cache.js";
+import { getCronScheduler } from "./jobs/CronScheduler.js";
+import { getSocketService } from "./realtime/SocketService.js";
 
 const app = express();
 const PORT = process.env.PORT || 3010;
+const HOST = process.env.HOST || '0.0.0.0';
 
-app.use(cors());
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+// CORS origins (para Express y Socket.io)
+const corsOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
+  : ['http://localhost:3020', 'http://localhost:5173', 'http://localhost:5174'];
+
+app.use(cors({ origin: corsOrigins, credentials: true }));
+app.use(express.json({ limit: "25mb" }));
+app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 
 app.use("/api", api);
+app.use("/inbound", inboundRouter);
 
 app.get("/health", (req, res) => {
   res.json({ ok: true, service: "migracion-backend" });
@@ -29,8 +39,16 @@ app.post("/api/cache/clear", (req, res) => {
   res.json({ success: true, message: 'Cache cleared' });
 });
 
-const HOST = process.env.HOST || '0.0.0.0';
+// ─── HTTP Server + Socket.io ─────────────────────────────────────────────────
+const httpServer = http.createServer(app);
 
-app.listen(PORT, HOST, () => {
-  logger.info(`🚀 Migracion backend running on http://${HOST}:${PORT}`);
+// Inicializar Socket.io sobre el mismo servidor HTTP
+getSocketService().init(httpServer, corsOrigins);
+
+httpServer.listen(PORT, HOST, () => {
+  logger.info(`🚀 Backend running on http://${HOST}:${PORT}`);
+  logger.info(`🔌 Socket.io listo en ws://${HOST}:${PORT}`);
+  getCronScheduler().init().catch(err =>
+    logger.warn('CronScheduler init failed', { error: err.message })
+  );
 });

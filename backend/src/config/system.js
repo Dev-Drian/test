@@ -48,6 +48,31 @@ export const SystemConfig = {
       availability_checked: false,
     },
   },
+
+  // Pagos
+  payments: {
+    // Proveedor activo: 'mercadopago' | 'stripe'
+    provider: process.env.PAYMENT_PROVIDER || 'mercadopago',
+
+    mercadopago: {
+      // Access Token de MercadoPago (sandbox empieza con TEST-)
+      // Obtenerlo en: https://www.mercadopago.com.ar/developers/panel/app
+      accessToken: process.env.MP_ACCESS_TOKEN || '',
+      // Secret para validar webhooks (IPN signature)
+      webhookSecret: process.env.MP_WEBHOOK_SECRET || '',
+    },
+
+    // URL pública del servidor (para notification_url en MP y back_urls)
+    // En producción: https://tu-dominio.com
+    // En desarrollo: usar ngrok o similar para exponer localhost
+    appPublicUrl: process.env.APP_PUBLIC_URL || 'http://localhost:3010',
+
+    // Moneda por defecto
+    defaultCurrency: process.env.PAYMENT_DEFAULT_CURRENCY || 'COP',
+
+    // Expiración de links en horas
+    linkExpirationHours: 72,
+  },
   
   // Límites según plan (Bot Básico vs Premium)
   plans: {

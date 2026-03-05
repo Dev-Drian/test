@@ -22,8 +22,11 @@
     "jsonwebtoken": "^9.0.3",
     "nano": "^10.1.2",
     "node-cache": "^5.1.2",
+    "node-cron": "^4.2.1",
     "nspell": "^2.1.5",
+    "socket.io": "^4.8.3",
     "uuid": "^9.0.0",
-    "winston": "^3.19.0"
+    "winston": "^3.19.0",
+    "xlsx": "^0.18.5"
   }
 }

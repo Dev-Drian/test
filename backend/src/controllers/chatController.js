@@ -7,12 +7,17 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { ChatService } from '../services/ChatService.js';
+import { ImportService } from '../services/ImportService.js';
+import { TableRepository } from '../repositories/TableRepository.js';
 import { connectDB, getChatDbName, getAgentsDbName, getWorkspaceDbName, getTableDataDbName } from '../config/db.js';
 import { EVENTS } from '../core/EventEmitter.js';
 import { executeFlowsForTrigger } from '../services/FlowExecutor.js';
+import { getBusinessSnapshot } from '../services/BusinessSnapshot.js';
+import { getSocketService } from '../realtime/SocketService.js';
 import logger from '../config/logger.js';
 
 const log = logger.child('ChatController');
+const importService = new ImportService();
 
 // Cache de servicios por workspace
 const serviceCache = new Map();
@@ -43,9 +48,12 @@ function setupEventListeners(service) {
   service.on(EVENTS.RECORD_CREATED, async (data) => {
     log.info('Record created', { recordId: data.record?._id || data.recordId });
     
+    // Emitir en tiempo real
+    const { workspaceId, tableId, record } = data;
+    if (workspaceId) getSocketService().emitRecordCreated(workspaceId, tableId, record);
+
     // Ejecutar flujos automáticos
     try {
-      const { workspaceId, tableId, record } = data;
       if (workspaceId && tableId && record) {
         const flowResult = await executeFlowsForTrigger(workspaceId, 'create', tableId, record);
         log.debug('Flows executed', { count: flowResult.executed });
@@ -58,9 +66,12 @@ function setupEventListeners(service) {
   service.on(EVENTS.RECORD_UPDATED, async (data) => {
     log.info('Record updated', { recordId: data.record?._id || data.recordId });
     
+    // Emitir en tiempo real
+    const { workspaceId, tableId, record } = data;
+    if (workspaceId) getSocketService().emitRecordUpdated(workspaceId, tableId, record);
+
     // Ejecutar flujos de update
     try {
-      const { workspaceId, tableId, record } = data;
       if (workspaceId && tableId && record) {
         const flowResult = await executeFlowsForTrigger(workspaceId, 'update', tableId, record);
         log.debug('Update flows executed', { count: flowResult.executed });
@@ -137,6 +148,15 @@ export async function sendMessage(req, res) {
     }
     
     res.json(responseData);
+
+    // Emitir respuesta del bot en tiempo real (no bloquea la respuesta HTTP)
+    try {
+      getSocketService().emitNewMessage(workspaceId, result.chatId, {
+        role: 'assistant',
+        content: result.response,
+        action: result.action || null,
+      });
+    } catch (_) { /* silenciar — no crítico */ }
     
   } catch (err) {
     log.error('sendMessage error', { error: err.message });
@@ -330,4 +350,140 @@ function getFirstMessagePreview(messages) {
   if (!firstUserMsg) return null;
   const content = firstUserMsg.content || '';
   return content.length > 40 ? content.slice(0, 40) + '...' : content;
+}
+
+/**
+ * POST /chat/import-file
+ *
+ * Importa un archivo CSV o XLSX directamente desde el chat.
+ * El resultado aparece como mensaje del bot en la conversación.
+ *
+ * Body: { workspaceId, agentId, chatId?, tableId, file: { name, content, encoding } }
+ */
+export async function importFileInChat(req, res) {
+  try {
+    const { workspaceId, agentId, chatId: reqChatId, tableId, file } = req.body;
+
+    if (!workspaceId || !tableId || !file?.name || !file?.content) {
+      return res.status(400).json({ error: 'workspaceId, tableId and file (name + content) are required' });
+    }
+
+    // Validar que la tabla existe
+    const tableRepo = new TableRepository();
+    const table = await tableRepo.findById(tableId, workspaceId);
+    if (!table) {
+      return res.status(404).json({ error: `Tabla ${tableId} no encontrada en el workspace` });
+    }
+
+    const encoding = file.encoding || 'utf8';
+
+    // Importar el archivo
+    const result = await importService.importFile(
+      workspaceId, tableId,
+      file.content, file.name, encoding,
+      null, // auto-map
+      { skipErrors: true, validate: true }
+    );
+
+    // Invalidar snapshot y refrescar con datos frescos
+    let snapshotSummary = '';
+    try {
+      const freshSnapshot = await getBusinessSnapshot().get(workspaceId, { forceRefresh: true });
+      if (freshSnapshot) {
+        const lines = freshSnapshot.split('\n').slice(0, 5).join('\n');
+        snapshotSummary = `\n\n📊 **Estado actual de ${table.name}:** ${lines}`;
+      }
+    } catch (_) {}
+
+
+    // Construir respuesta amigable del bot
+    const ext = file.name.split('.').pop().toUpperCase();
+    let botReply = `✅ **Importación de ${file.name} completada** → _${table.name}_\n\n`;
+    botReply += `- **Importados:** ${result.imported} registros\n`;
+    if (result.skipped) botReply += `- **Omitidos:** ${result.skipped} filas vacías\n`;
+    if (result.errors?.length) {
+      botReply += `- **Errores:** ${result.errors.length} filas con problemas\n`;
+      const sample = result.errors.slice(0, 3);
+      sample.forEach(e => { botReply += `  • Fila ${e.row}: ${e.reason || e.error}\n`; });
+      if (result.errors.length > 3) botReply += `  ... y ${result.errors.length - 3} más\n`;
+    }
+    botReply += `\nTotal procesado: ${result.total} filas del archivo ${ext}.`;
+    botReply += snapshotSummary;
+
+    // Obtener o crear el chat para guardar el intercambio
+    const chatDb = await connectDB(getChatDbName(workspaceId));
+    let chat;
+    let currentChatId = reqChatId;
+
+    if (currentChatId) {
+      try { chat = await chatDb.get(currentChatId); } catch (_) {}
+    }
+    if (!chat) {
+      currentChatId = uuidv4();
+      chat = {
+        _id: currentChatId,
+        workspaceId,
+        agentId: agentId || '',
+        title: `Importar ${file.name}`,
+        messages: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    }
+
+    const ts = new Date().toISOString();
+    chat.messages = chat.messages || [];
+    chat.messages.push({ id: `msg_${Date.now()}_user`, role: 'user', content: `📎 Importar archivo: **${file.name}**`, timestamp: ts });
+    chat.messages.push({ id: `msg_${Date.now()}_assistant`, role: 'assistant', content: botReply, timestamp: ts });
+    chat.updatedAt = ts;
+    await chatDb.insert(chat);
+
+    log.info('importFileInChat complete', { workspaceId, tableId, imported: result.imported });
+
+    return res.json({
+      chatId: currentChatId,
+      response: botReply,
+      importResult: result,
+    });
+
+  } catch (err) {
+    log.error('importFileInChat error', { error: err.message });
+    return res.status(500).json({ error: err.message });
+  }
+}
+/**
+ * POST /chat/import-file/preview
+ *
+ * Genera una previsualización del archivo sin importar nada.
+ * El frontend muestra la vista previa como mensaje de bot con botones Confirmar / Cancelar.
+ *
+ * Body: { workspaceId, tableId, file: { name, content, encoding } }
+ */
+export async function previewImportInChat(req, res) {
+  try {
+    const { workspaceId, tableId, file } = req.body;
+
+    if (!workspaceId || !tableId || !file?.name || !file?.content) {
+      return res.status(400).json({ error: 'workspaceId, tableId and file (name + content) are required' });
+    }
+
+    // Validar que la tabla existe
+    const tableRepo = new TableRepository();
+    const table = await tableRepo.findById(tableId, workspaceId);
+    if (!table) {
+      return res.status(404).json({ error: `Tabla ${tableId} no encontrada en el workspace` });
+    }
+
+    const encoding = file.encoding || 'utf8';
+    const preview = await importService.previewFile(workspaceId, tableId, file.content, file.name, encoding);
+
+    return res.json({
+      tableName: table.name,
+      ...preview,
+    });
+
+  } catch (err) {
+    log.error('previewImportInChat error', { error: err.message });
+    return res.status(500).json({ error: err.message });
+  }
 }

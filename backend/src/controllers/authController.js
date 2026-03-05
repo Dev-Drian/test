@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import { connectDB, getDbPrefix } from '../config/db.js';
 import { generateToken, invalidateUserCache } from '../middleware/auth.js';
+import { getEmailService } from '../services/EmailService.js';
 
 // ═══ HELPERS ═══
 
@@ -109,6 +110,11 @@ export async function register(req, res) {
     };
     
     await db.insert(newUser);
+    
+    // Enviar email de bienvenida (no bloquea respuesta)
+    getEmailService().sendWelcome(email.toLowerCase(), name).catch(err =>
+      console.error('[AuthController] Error enviando email bienvenida:', err.message)
+    );
     
     // Generar token
     const token = generateToken(userId);
@@ -230,11 +236,12 @@ export async function getProfile(req, res) {
  */
 export async function updateProfile(req, res) {
   try {
-    const { name, profileImage } = req.body;
     const userId = req.user._id;
     
     const db = await connectDB(`${getDbPrefix()}accounts`);
     const user = await db.get(userId);
+    
+    const { name, profileImage, onboardingCompleted, businessType } = req.body;
     
     const updates = {
       ...user,
@@ -243,6 +250,8 @@ export async function updateProfile(req, res) {
     
     if (name) updates.name = name;
     if (profileImage !== undefined) updates.profileImage = profileImage;
+    if (onboardingCompleted !== undefined) updates.onboardingCompleted = !!onboardingCompleted;
+    if (businessType !== undefined) updates.businessType = businessType;
     
     await db.insert(updates);
     
@@ -329,6 +338,95 @@ export async function changePassword(req, res) {
  * GET /auth/workspaces
  * Lista los workspaces del usuario autenticado
  */
+/**
+ * POST /auth/forgot-password
+ * Genera un código de restablecimiento y lo envía por email
+ */
+export async function forgotPassword(req, res) {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email requerido' });
+
+    const db = await connectDB(`${getDbPrefix()}accounts`);
+    const result = await db.find({ selector: { email: email.toLowerCase() }, limit: 1 });
+
+    // Siempre responder 200 para no revelar si el email existe
+    if (result.docs.length === 0) {
+      return res.json({ message: 'Si el email existe, recibirás instrucciones' });
+    }
+
+    const user = result.docs[0];
+
+    // Generar código 6 dígitos
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date(Date.now() + 30 * 60 * 1000).toISOString(); // 30 min
+
+    await db.insert({
+      ...user,
+      resetPasswordCode: code,
+      resetPasswordExpiry: expiry,
+      updatedAt: new Date().toISOString(),
+    });
+
+    const resetUrl = `${process.env.APP_PUBLIC_URL || 'http://localhost:3020'}/reset-password?code=${code}&email=${encodeURIComponent(email)}`;
+    getEmailService().sendPasswordReset(user.email, user.name, { resetUrl, code }).catch(err =>
+      console.error('[AuthController] Error enviando reset email:', err.message)
+    );
+
+    res.json({ message: 'Si el email existe, recibirás instrucciones' });
+  } catch (error) {
+    console.error('[AuthController] forgotPassword error:', error);
+    res.status(500).json({ error: 'Error interno' });
+  }
+}
+
+/**
+ * POST /auth/reset-password
+ * Restablece la contraseña con el código enviado por email
+ */
+export async function resetPassword(req, res) {
+  try {
+    const { email, code, newPassword } = req.body;
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({ error: 'Email, código y nueva contraseña son requeridos' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+
+    const db = await connectDB(`${getDbPrefix()}accounts`);
+    const result = await db.find({ selector: { email: email.toLowerCase() }, limit: 1 });
+
+    if (result.docs.length === 0) {
+      return res.status(400).json({ error: 'Código inválido o expirado', code: 'INVALID_CODE' });
+    }
+
+    const user = result.docs[0];
+
+    if (!user.resetPasswordCode || user.resetPasswordCode !== code) {
+      return res.status(400).json({ error: 'Código inválido', code: 'INVALID_CODE' });
+    }
+
+    if (!user.resetPasswordExpiry || new Date(user.resetPasswordExpiry) < new Date()) {
+      return res.status(400).json({ error: 'Código expirado', code: 'CODE_EXPIRED' });
+    }
+
+    const { hash, salt } = hashPassword(newPassword);
+    const updatedUser = { ...user };
+    delete updatedUser.resetPasswordCode;
+    delete updatedUser.resetPasswordExpiry;
+    delete updatedUser.salt;
+
+    await db.insert({ ...updatedUser, password: { hash, salt }, updatedAt: new Date().toISOString() });
+    invalidateUserCache(user._id);
+
+    res.json({ message: 'Contraseña restablecida exitosamente' });
+  } catch (error) {
+    console.error('[AuthController] resetPassword error:', error);
+    res.status(500).json({ error: 'Error interno' });
+  }
+}
+
 export async function getUserWorkspaces(req, res) {
   try {
     const user = req.user;

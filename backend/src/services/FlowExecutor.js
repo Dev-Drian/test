@@ -10,6 +10,8 @@ import { processTemplate } from './flowEngine.js';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatMessageProvider } from '../integrations/notifications/ChatMessageProvider.js';
 import { getNotificationService } from '../integrations/notifications/NotificationService.js';
+import { getPaymentService, BasePaymentProvider } from './payments/PaymentService.js';
+import { getSocketService } from '../realtime/SocketService.js';
 
 /**
  * Obtiene el ID de la tabla de Log de Flujos
@@ -162,6 +164,9 @@ async function executeAction(action, context, workspaceId) {
     
     case 'send_message':
       return await executeSendMessage(workspaceId, action, context);
+    
+    case 'generate_payment_link':
+      return await executeGeneratePaymentLink(workspaceId, action, context);
     
     case 'error':
       return { success: false, error: action.message };
@@ -410,6 +415,128 @@ async function sendInAppNotification(workspaceId, recipient, message, context) {
     },
     recipient,
   });
+}
+
+/**
+ * Genera un link de pago vía Wompi y lo guarda en el registro.
+ *
+ * Configuración del nodo (action.payment):
+ *   amountSource    : 'field' | 'fixed'
+ *   amountField     : nombre del campo con el monto (si amountSource='field')
+ *   amountFixed     : valor numérico fijo (si amountSource='fixed')
+ *   description     : template con {{variables}}
+ *   currency        : 'COP' | 'MXN' | 'USD' (default: COP)
+ *   saveLinkToField : campo del registro donde guardar el link (default: paymentLink)
+ *   saveStatusToField: campo donde guardar el estado (default: paymentStatus)
+ *
+ * Resultado disponible en el contexto del siguiente nodo:
+ *   {{paymentLink}}     → URL del link de pago
+ *   {{paymentId}}       → ID de la preferencia MP
+ */
+async function executeGeneratePaymentLink(workspaceId, action, context) {
+  const {
+    payment = {},
+    targetTable,     // tabla del registro que origina el pago (opcional, usa context)
+  } = action;
+
+  const {
+    amountSource = 'field',
+    amountField = 'precio',
+    amountFixed,
+    description = 'Pago de servicio',
+    currency = 'COP',
+    saveLinkToField = 'paymentLink',
+    saveStatusToField = 'paymentStatus',
+  } = payment;
+
+  try {
+    // ── Resolver monto ──────────────────────────────────────────────────────
+    let amount;
+    if (amountSource === 'fixed') {
+      amount = Number(amountFixed);
+    } else {
+      // 'field': leer del registro de contexto
+      const rawValue = context[amountField] || context.precio || context.total || context.monto;
+      amount = parseFloat(String(rawValue).replace(/[.$]/g, '').replace(',', '.'));
+    }
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return {
+        success: false,
+        error: `Monto inválido para link de pago: '${amountSource === 'field' ? context[amountField] : amountFixed}'.`,
+      };
+    }
+
+    // ── Resolver tabla y registro ────────────────────────────────────────────
+    const recordId = context._id;
+    const tableId = targetTable || context._tableId;
+
+    if (!recordId || !tableId) {
+      return {
+        success: false,
+        error: 'No se encontró _id o _tableId en el contexto del flujo. El nodo debe ejecutarse después de un trigger de registro.',
+      };
+    }
+
+    // ── Construir referencia externa ─────────────────────────────────────────
+    const externalRef = BasePaymentProvider.buildExternalRef(workspaceId, tableId, recordId);
+
+    // ── Procesar descripción como template ───────────────────────────────────
+    const processedDescription = processTemplate(description, context);
+
+    // ── Crear link en MercadoPago ────────────────────────────────────────────
+    const paymentService = getPaymentService({ workspaceId });
+    const result = await paymentService.createPaymentLink({
+      title: processedDescription.slice(0, 256),
+      amount,
+      currency,
+      externalRef,
+      workspaceId,
+      payerEmail: context.email || context.correo || context.payerEmail || undefined,
+      payerName: context.nombre || context.name || context.cliente || undefined,
+    });
+
+    console.log(`[FlowExecutor] Payment link creado para registro ${recordId}:`, result.paymentUrl);
+
+    // ── Guardar link en el registro ───────────────────────────────────────────
+    const dataDb = await connectDB(getTableDataDbName(workspaceId, tableId));
+    const record = await dataDb.get(recordId);
+
+    const updatedRecord = {
+      ...record,
+      [saveLinkToField]: result.paymentUrl,
+      [saveStatusToField]: 'pendiente',
+      paymentId: result.paymentId,
+      paymentExternalRef: externalRef,
+      paymentAmount: amount,
+      paymentCurrency: currency,
+      // Guardamos el campo de estado para que el webhook lo sepa
+      _paymentStatusField: saveStatusToField,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await dataDb.insert(updatedRecord);
+
+    // ── Enriquecer contexto para nodos siguientes ────────────────────────────
+    context[saveLinkToField] = result.paymentUrl;
+    context.paymentLink = result.paymentUrl;
+    context.paymentId = result.paymentId;
+    context[saveStatusToField] = 'pendiente';
+
+    return {
+      success: true,
+      type: 'generate_payment_link',
+      paymentUrl: result.paymentUrl,
+      paymentId: result.paymentId,
+      amount,
+      currency,
+      externalRef,
+    };
+
+  } catch (err) {
+    console.error('[FlowExecutor] Error generando link de pago:', err);
+    return { success: false, error: err.message };
+  }
 }
 
 /**
@@ -983,6 +1110,13 @@ export async function executeFlowsForTrigger(workspaceId, triggerType, tableId, 
       });
       
       results.push({ flowId: flow._id, flowName: flow.name, logId, ...result });
+
+      // 🔌 Emitir evento en tiempo real
+      getSocketService().emitFlowExecuted(workspaceId, flow._id, result.success ? 'completed' : 'failed', {
+        flowName: flow.name,
+        nodesExecuted: result.results?.length || 0,
+        error: result.error || null,
+      });
     } catch (error) {
       const endTime = Date.now();
       

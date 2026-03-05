@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 // Configuración: mostrar usuarios de demo solo en desarrollo
@@ -99,10 +99,16 @@ export default function Login() {
   const [mounted, setMounted] = useState(false);
   const { login, register } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    // Activar modo registro si viene ?register=1 desde la landing
+    const params = new URLSearchParams(location.search);
+    if (params.get("register") === "1") {
+      setIsRegister(true);
+    }
+  }, [location.search]);
 
   const fillCredentials = (user) => {
     setForm(prev => ({ ...prev, email: user.email, password: user.password }));

@@ -3,8 +3,10 @@ import { Link } from "react-router-dom";
 import { WorkspaceContext } from "../context/WorkspaceContext";
 import { listTables, createTable, updateTable, getTableData, addTableRow, updateTableRow, deleteTableRow } from "../api/client";
 import TableBuilder from "../components/TableBuilder";
+import ImportModal from "../components/ImportModal";
 import { useToast, useConfirm } from "../components/Toast";
 import { FieldValidator } from "../utils/FieldValidator";
+import { useSocketEvent } from "../hooks/useSocket";
 
 // Iconos SVG compactos
 const Icons = {
@@ -60,6 +62,9 @@ export default function Tables() {
   const [editingTableConfig, setEditingTableConfig] = useState(null);
   const [updatingTable, setUpdatingTable] = useState(false);
 
+  // Import modal state
+  const [showImportModal, setShowImportModal] = useState(false);
+
   useEffect(() => {
     if (!workspaceId) return;
     setLoading(true);
@@ -69,6 +74,23 @@ export default function Tables() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [workspaceId]);
+
+  // WebSocket: registros en tiempo real (el agente crea/edita sin recargar)
+  useSocketEvent('record:created', ({ tableId, record }) => {
+    if (tableId === selectedTable?._id && record) {
+      setTableData(prev => {
+        const alreadyExists = prev.some(r => r._id === record._id);
+        if (alreadyExists) return prev;
+        return [record, ...prev];
+      });
+    }
+  });
+
+  useSocketEvent('record:updated', ({ tableId, record }) => {
+    if (tableId === selectedTable?._id && record) {
+      setTableData(prev => prev.map(r => r._id === record._id ? record : r));
+    }
+  });
 
   useEffect(() => {
     if (!workspaceId || !selectedTable) {
@@ -637,6 +659,15 @@ export default function Tables() {
                                 {Icons.code}
                                 JSON
                               </button>
+                              <button
+                                onClick={() => setShowImportModal(true)}
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-sky-400 hover:text-sky-200 hover:bg-sky-600/20 transition-all"
+                                style={{ border: '1px solid rgba(56, 189, 248, 0.35)' }}
+                                title="Importar desde CSV"
+                              >
+                                {Icons.plus}
+                                Importar
+                              </button>
                             </div>
                           )}
                           {/* Botón editar configuración (solo si tabla vacía) */}
@@ -829,14 +860,24 @@ export default function Tables() {
                           {Icons.empty}
                         </div>
                         <h4 className="text-lg text-slate-100 font-medium mb-2">Tabla vacía</h4>
-                        <p className="text-sm text-slate-400 mb-6 max-w-sm mx-auto">No hay registros en esta tabla aún. Comienza agregando tu primer registro.</p>
-                        <button
-                          onClick={() => setShowAddRow(true)}
-                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-400 transition-colors shadow-lg shadow-indigo-500/20"
-                        >
-                          {Icons.plus}
-                          Agregar primer registro
-                        </button>
+                        <p className="text-sm text-slate-400 mb-6 max-w-sm mx-auto">No hay registros en esta tabla aún. Comienza agregando tu primer registro o importa desde un CSV.</p>
+                        <div className="flex items-center justify-center gap-3">
+                          <button
+                            onClick={() => setShowAddRow(true)}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-400 transition-colors shadow-lg shadow-indigo-500/20"
+                          >
+                            {Icons.plus}
+                            Agregar primer registro
+                          </button>
+                          <button
+                            onClick={() => setShowImportModal(true)}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sky-400 text-sm font-medium hover:text-sky-200 hover:bg-sky-500/10 transition-colors"
+                            style={{ border: '1px solid rgba(56,189,248,0.35)' }}
+                          >
+                            {Icons.download}
+                            Importar CSV
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <div className="overflow-x-auto">
@@ -1057,6 +1098,23 @@ export default function Tables() {
       
       {/* Modal de confirmación */}
       {ConfirmModal}
+
+      {/* Modal de importación */}
+      {showImportModal && selectedTable && (
+        <ImportModal
+          workspaceId={workspaceId}
+          table={selectedTable}
+          onClose={() => setShowImportModal(false)}
+          onSuccess={() => {
+            setShowImportModal(false);
+            setLoadingData(true);
+            getTableData(workspaceId, selectedTable._id)
+              .then((res) => setTableData(res.data || []))
+              .catch((err) => toast.error(err.message))
+              .finally(() => setLoadingData(false));
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@
  * Lista los flujos existentes y permite crear nuevos desde plantillas
  */
 import { useState, useEffect } from 'react';
+import { useSocketEvent } from '../hooks/useSocket';
 import { Link, useNavigate } from 'react-router-dom';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { api } from '../api/client';
@@ -73,6 +74,14 @@ export default function Flows() {
   const [showGallery, setShowGallery] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [flowStatuses, setFlowStatuses] = useState({}); // { [flowId]: { status, ts } }
+
+  // WebSocket: estado de ejecución de flujos en tiempo real
+  useSocketEvent('flow:executed', ({ flowId, status, log }) => {
+    setFlowStatuses(prev => ({ ...prev, [flowId]: { status, log, ts: Date.now() } }));
+    // Limpiar badge después de 8 segundos
+    setTimeout(() => setFlowStatuses(prev => { const n = { ...prev }; delete n[flowId]; return n; }), 8000);
+  });
 
   // Cargar flujos
   useEffect(() => {
@@ -315,6 +324,13 @@ export default function Flows() {
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${flow.isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-500/20 text-zinc-400'}`}>
                             {flow.isActive ? 'Activo' : 'Inactivo'}
                           </span>
+                          {flowStatuses[flow._id] && (
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium animate-pulse ${
+                              flowStatuses[flow._id].status === 'success' ? 'bg-blue-500/20 text-blue-400' : 'bg-red-500/20 text-red-400'
+                            }`}>
+                              {flowStatuses[flow._id].status === 'success' ? '⚡ Ejecutado' : '⚠ Error'}
+                            </span>
+                          )}
                         </div>
                         <p className="text-sm text-zinc-400 mb-3">{flow.description || 'Sin descripción'}</p>
                         <div className="flex items-center gap-4 text-xs text-zinc-500">

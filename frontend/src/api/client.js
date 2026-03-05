@@ -48,6 +48,9 @@ export const updateProfile = (data) => api.put("/auth/me", data);
 export const changePassword = (currentPassword, newPassword) => 
   api.post("/auth/change-password", { currentPassword, newPassword });
 export const getUserWorkspaces = () => api.get("/auth/workspaces");
+export const forgotPassword = (email) => api.post("/auth/forgot-password", { email });
+export const resetPassword = (email, code, newPassword) => 
+  api.post("/auth/reset-password", { email, code, newPassword });
 
 // Workspaces
 export const createWorkspace = (data) => api.post("/workspace/create", data);
@@ -78,6 +81,12 @@ export const updateTableRow = (workspaceId, tableId, rowId, data) =>
   api.put(`/table/${workspaceId}/${tableId}/row/${rowId}`, data);
 export const deleteTableRow = (workspaceId, tableId, rowId) =>
   api.delete(`/table/${workspaceId}/${tableId}/row/${rowId}`);
+export const exportTableData = (workspaceId, tableId, format = 'csv') =>
+  api.get(`/table/${workspaceId}/${tableId}/export`, { params: { format }, responseType: format === 'csv' ? 'blob' : 'json' });
+export const importPreviewTable = (workspaceId, tableId, csvText) =>
+  api.post(`/table/${workspaceId}/${tableId}/import/preview`, { csvText });
+export const importTableData = (workspaceId, tableId, csvText, mapping, options = {}) =>
+  api.post(`/table/${workspaceId}/${tableId}/import`, { csvText, mapping, options });
 
 // Chat
 export const getOrCreateChat = (workspaceId, agentId, chatId) =>
@@ -89,6 +98,20 @@ export const deleteChat = (workspaceId, chatId) =>
   api.delete(`/chat/${workspaceId}/${chatId}`);
 export const renameChat = (workspaceId, chatId, title) =>
   api.put(`/chat/${workspaceId}/${chatId}/rename`, { title });
+export const importFileViaChat = ({ workspaceId, agentId, chatId, tableId, file }) =>
+  api.post("/chat/import-file", { workspaceId, agentId, chatId, tableId, file });
+export const previewImportViaChat = ({ workspaceId, tableId, file }) =>
+  api.post("/chat/import-file/preview", { workspaceId, tableId, file });
+
+// Admin - System observability
+export const getAdminStatus = () => api.get("/admin/status");
+export const getAdminJobs = () => api.get("/admin/jobs");
+export const reloadAdminJobs = () => api.post("/admin/jobs/reload");
+export const getAdminSnapshots = () => api.get("/admin/snapshots");
+export const invalidateAdminSnapshot = (workspaceId) => api.delete(`/admin/snapshots/${workspaceId}`);
+export const clearAdminCache = () => api.post("/admin/cache/clear");
+export const getAdminWorkspaceSnapshot = (workspaceId, force = false) =>
+  api.get(`/admin/snapshot/${workspaceId}`, { params: { force } });
 
 // Plans & Usage
 export const listPlans = () => api.get("/plans");
@@ -123,5 +146,11 @@ export const updateViewItemStatus = (viewId, itemId, data) =>
   api.put(`/views/${viewId}/item/${itemId}`, data);
 export const duplicateView = (viewId, data) =>
   api.post(`/views/${viewId}/duplicate`, data);
+
+// Payments
+export const getPaymentStatus = (paymentId, workspaceId) =>
+  api.get(`/payments/status/${paymentId}`, { params: { workspaceId } });
+export const getRecordPaymentStatus = (workspaceId, tableId, recordId) =>
+  api.get(`/payments/record/${workspaceId}/${tableId}/${recordId}`);
 
 export default api;
