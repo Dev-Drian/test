@@ -1,0 +1,23 @@
+# FlowAI — robots.txt
+# https://flowai.app
+
+User-agent: *
+
+# Permitir indexar la landing y login
+Allow: /
+Allow: /login
+
+# Bloquear rutas internas (requieren auth — Google no puede indexarlas de todos modos)
+Disallow: /dashboard
+Disallow: /chat
+Disallow: /agents
+Disallow: /tables
+Disallow: /flows
+Disallow: /views
+Disallow: /workspaces
+Disallow: /admin
+Disallow: /guia
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://flowai.app/sitemap.xml
