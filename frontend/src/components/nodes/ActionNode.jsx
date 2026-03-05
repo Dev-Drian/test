@@ -4,7 +4,7 @@
  */
 import { Handle, Position, useReactFlow } from '@xyflow/react';
 import { useCallback } from 'react';
-import { PlusIcon, EditIcon, RefreshIcon, BellIcon, CloseIcon, CheckIcon, TargetIcon, MinusIcon, MailIcon, BoltIcon, ClipboardIcon, ChatIcon, PhoneIcon, SearchIcon, SendIcon } from '../Icons';
+import { PlusIcon, EditIcon, RefreshIcon, BellIcon, CloseIcon, CheckIcon, TargetIcon, MinusIcon, MailIcon, BoltIcon, ClipboardIcon, ChatIcon, PhoneIcon, SearchIcon, SendIcon, CalendarIcon, TableIcon } from '../Icons';
 
 /**
  * Convierte nombres técnicos de campos a nombres amigables
@@ -112,6 +112,9 @@ function getActionDisplay(actionType) {
     'send_notification': { icon: <BellIcon size="sm" />, label: 'Enviar notificación', color: 'purple' },
     'send_email': { icon: <MailIcon size="sm" />, label: 'Enviar email', color: 'blue' },
     'send_message': { icon: <MailIcon size="sm" />, label: 'Enviar mensaje', color: 'cyan' },
+    // Integraciones Google
+    'google_calendar_event': { icon: <CalendarIcon size="sm" />, label: 'Google Calendar', color: 'red' },
+    'google_sheets_row': { icon: <TableIcon size="sm" />, label: 'Google Sheets', color: 'green' },
   };
   return actions[actionType] || { icon: <BoltIcon size="sm" />, label: actionType || 'Acción', color: 'purple' };
 }
@@ -302,6 +305,9 @@ export default function ActionNode({ id, data, selected, type }) {
               <option value="decrement" style={{ background: '#1e1e2a', color: '#f87171' }}>− Restar</option>
               <option value="increment" style={{ background: '#1e1e2a', color: '#34d399' }}>+ Sumar</option>
               <option value="send_notification" style={{ background: '#1e1e2a', color: '#a78bfa' }}>⚬ Notificar</option>
+              <option disabled style={{ background: '#1e1e2a', color: '#64748b' }}>── Google ──</option>
+              <option value="google_calendar_event" style={{ background: '#1e1e2a', color: '#f87171' }}>📅 Calendar</option>
+              <option value="google_sheets_row" style={{ background: '#1e1e2a', color: '#4ade80' }}>📊 Sheets</option>
             </select>
             
             {(data?.action === 'set_value' || data?.action === 'decrement' || data?.action === 'increment') && (
@@ -576,6 +582,138 @@ export default function ActionNode({ id, data, selected, type }) {
                     <span className="text-xs text-emerald-400">¡Listo! El mensaje se enviará cuando se dispare este flujo</span>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* UI para Google Calendar */}
+            {data?.action === 'google_calendar_event' && (
+              <div className="space-y-3">
+                {/* Header Google Calendar */}
+                <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                  <CalendarIcon size="sm" className="text-red-400" />
+                  <span className="text-xs font-medium text-red-300">Crear evento en Google Calendar</span>
+                </div>
+                
+                {/* Título del evento */}
+                <div>
+                  <label className="block text-[10px] text-red-400 mb-1.5">Título del evento</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ej: Reserva de {{cliente}}"
+                    className="w-full px-3 py-2 rounded-lg text-sm placeholder-zinc-500"
+                    style={{ background: '#18181b', border: '1px solid rgba(239, 68, 68, 0.2)', color: 'white' }}
+                    value={data?.eventTitle || ''}
+                    onChange={(e) => updateNodeData('eventTitle', e.target.value)}
+                  />
+                </div>
+
+                {/* Fecha inicio */}
+                <div>
+                  <label className="block text-[10px] text-red-400 mb-1.5">Campo de fecha (de la tabla)</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ej: fecha_reserva, fechaInicio"
+                    className="w-full px-3 py-2 rounded-lg text-sm placeholder-zinc-500"
+                    style={{ background: '#18181b', border: '1px solid rgba(239, 68, 68, 0.2)', color: 'white' }}
+                    value={data?.dateField || ''}
+                    onChange={(e) => updateNodeData('dateField', e.target.value)}
+                  />
+                </div>
+
+                {/* Duración */}
+                <div>
+                  <label className="block text-[10px] text-red-400 mb-1.5">Duración (horas)</label>
+                  <input 
+                    type="number" 
+                    placeholder="1"
+                    min="0.5"
+                    step="0.5"
+                    className="w-full px-3 py-2 rounded-lg text-sm placeholder-zinc-500"
+                    style={{ background: '#18181b', border: '1px solid rgba(239, 68, 68, 0.2)', color: 'white' }}
+                    value={data?.duration || '1'}
+                    onChange={(e) => updateNodeData('duration', e.target.value)}
+                  />
+                </div>
+
+                {/* Descripción */}
+                <div>
+                  <label className="block text-[10px] text-red-400 mb-1.5">Descripción (opcional)</label>
+                  <textarea 
+                    placeholder="Ej: Cliente: {{cliente}}, Tel: {{telefono}}"
+                    rows={2}
+                    className="w-full px-3 py-2 rounded-lg text-sm placeholder-zinc-500 resize-none"
+                    style={{ background: '#18181b', border: '1px solid rgba(239, 68, 68, 0.2)', color: 'white' }}
+                    value={data?.eventDescription || ''}
+                    onChange={(e) => updateNodeData('eventDescription', e.target.value)}
+                  />
+                </div>
+
+                {/* Ayuda */}
+                <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg" style={{ background: 'rgba(239, 68, 68, 0.05)' }}>
+                  <span className="text-[10px] text-zinc-400">
+                    💡 Usa <code className="bg-zinc-800 px-1 rounded text-red-400">{'{{campo}}'}</code> para insertar datos del registro
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* UI para Google Sheets */}
+            {data?.action === 'google_sheets_row' && (
+              <div className="space-y-3">
+                {/* Header Google Sheets */}
+                <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg" style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.2)' }}>
+                  <TableIcon size="sm" className="text-green-400" />
+                  <span className="text-xs font-medium text-green-300">Añadir fila a Google Sheets</span>
+                </div>
+                
+                {/* ID de la hoja */}
+                <div>
+                  <label className="block text-[10px] text-green-400 mb-1.5">ID de la hoja de cálculo</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ej: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+                    className="w-full px-3 py-2 rounded-lg text-sm placeholder-zinc-500"
+                    style={{ background: '#18181b', border: '1px solid rgba(34, 197, 94, 0.2)', color: 'white' }}
+                    value={data?.spreadsheetId || ''}
+                    onChange={(e) => updateNodeData('spreadsheetId', e.target.value)}
+                  />
+                  <span className="text-[9px] text-zinc-500 mt-1 block">
+                    Encuéntralo en la URL: docs.google.com/spreadsheets/d/<span className="text-green-400">ID_AQUÍ</span>/edit
+                  </span>
+                </div>
+
+                {/* Nombre de la pestaña */}
+                <div>
+                  <label className="block text-[10px] text-green-400 mb-1.5">Nombre de la pestaña</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ej: Reservas, Sheet1"
+                    className="w-full px-3 py-2 rounded-lg text-sm placeholder-zinc-500"
+                    style={{ background: '#18181b', border: '1px solid rgba(34, 197, 94, 0.2)', color: 'white' }}
+                    value={data?.sheetName || 'Sheet1'}
+                    onChange={(e) => updateNodeData('sheetName', e.target.value)}
+                  />
+                </div>
+
+                {/* Mapeo de campos */}
+                <div>
+                  <label className="block text-[10px] text-green-400 mb-1.5">Campos a exportar (uno por línea)</label>
+                  <textarea 
+                    placeholder="Columna: {{campo}}&#10;Fecha: {{fecha_reserva}}&#10;Cliente: {{nombre}}"
+                    rows={4}
+                    className="w-full px-3 py-2 rounded-lg text-sm placeholder-zinc-500 resize-none font-mono"
+                    style={{ background: '#18181b', border: '1px solid rgba(34, 197, 94, 0.2)', color: 'white' }}
+                    value={data?.fieldMapping || ''}
+                    onChange={(e) => updateNodeData('fieldMapping', e.target.value)}
+                  />
+                </div>
+
+                {/* Ayuda */}
+                <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg" style={{ background: 'rgba(34, 197, 94, 0.05)' }}>
+                  <span className="text-[10px] text-zinc-400">
+                    💡 Asegúrate de que los nombres de columna coincidan con tu Google Sheet
+                  </span>
+                </div>
               </div>
             )}
           </>

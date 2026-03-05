@@ -8,6 +8,7 @@ import * as notifications from "../controllers/notificationsController.js";
 import * as auth from "../controllers/authController.js";
 import * as plans from "../controllers/plansController.js";
 import * as views from "../controllers/viewsController.js";
+import * as google from "../controllers/googleController.js";
 import { requireAuth, optionalAuth, requireWorkspaceMember } from "../middleware/index.js";
 import { validateWorkspace } from "../middleware/index.js";
 import { checkCanCreateWorkspace, checkCanCreateTable, checkCanCreateAgent, checkCanCreateFlow } from "../middleware/limits.js";
@@ -100,5 +101,26 @@ router.post("/views/:viewId/refresh-mapping", requireAuth, views.refreshMapping)
 router.post("/views/:viewId/order", requireAuth, views.manageOrder);
 router.put("/views/:viewId/item/:itemId", requireAuth, views.updateItemStatus);
 router.post("/views/:viewId/duplicate", requireAuth, views.duplicateView);
+
+// ============ INTEGRACIONES - GOOGLE ============
+// OAuth
+router.get("/integrations/google/auth-url", requireAuth, google.getAuthUrl);
+router.get("/integrations/google/callback", google.handleCallback); // Sin auth (redirect de Google)
+router.get("/integrations/google/status", requireAuth, google.getStatus);
+router.post("/integrations/google/disconnect", requireAuth, google.disconnect);
+
+// Google Calendar
+router.get("/integrations/google/calendars", requireAuth, google.listCalendars);
+router.post("/integrations/google/calendar/event", requireAuth, google.createCalendarEvent);
+router.get("/integrations/google/calendar/events", requireAuth, google.listCalendarEvents);
+
+// Google Sheets
+router.get("/integrations/google/spreadsheets", requireAuth, google.listSpreadsheets);
+router.get("/integrations/google/spreadsheets/:spreadsheetId", requireAuth, google.getSpreadsheet);
+router.get("/integrations/google/spreadsheets/:spreadsheetId/headers", requireAuth, google.getSpreadsheetHeaders);
+router.post("/integrations/google/spreadsheets/:spreadsheetId/row", requireAuth, google.addSpreadsheetRow);
+
+// Ejecución desde flujos
+router.post("/integrations/google/execute", requireAuth, google.executeFlowAction);
 
 export default router;

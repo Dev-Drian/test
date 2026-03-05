@@ -81,6 +81,10 @@ export function getViewsDbName(workspaceId) {
   return `${DB_PREFIX}views_${workspaceId}`;
 }
 
+export function getIntegrationsDbName() {
+  return `${DB_PREFIX}integrations`;
+}
+
 /**
  * Obtiene el prefijo actual de BD (útil para debugging)
  */

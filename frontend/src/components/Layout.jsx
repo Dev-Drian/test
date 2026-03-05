@@ -57,6 +57,11 @@ const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
     </svg>
   ),
+  integrations: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+    </svg>
+  ),
   chevronRight: (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -117,6 +122,7 @@ const navItems = [
   { to: "/views", label: "Vistas", icon: Icons.views, tourId: "nav-views" },
   { to: "/flows", label: "Automatizar", icon: Icons.flows, tourId: "nav-flows" },
   { to: "/chat", label: "Chat", icon: Icons.chat, tourId: "nav-chat" },
+  { to: "/integrations", label: "Integraciones", icon: Icons.integrations, tourId: "nav-integrations" },
   { to: "/guia", label: "Ayuda", icon: Icons.guide, tourId: "nav-guide" },
 ];
 

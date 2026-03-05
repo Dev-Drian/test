@@ -14,6 +14,7 @@ import Guia from "./pages/Guia";
 import FlowEditor from "./pages/FlowEditor";
 import Views from "./pages/Views";
 import Flows from "./pages/Flows";
+import Integrations from "./pages/Integrations";
 import Login from "./pages/Login";
 import OnboardingWizard from "./components/OnboardingWizard";
 import { listWorkspaces } from "./api/client";
@@ -210,6 +211,7 @@ function AppContent() {
             <Route path="flows/editor/:flowId" element={<FlowEditor />} />
             <Route path="chat" element={<Chat />} />
             <Route path="guia" element={<Guia />} />
+            <Route path="integrations" element={<Integrations />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

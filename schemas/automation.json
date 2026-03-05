@@ -71,8 +71,31 @@
               "condition": { "type": "string", "description": "Expresión de condición" },
               "actionType": { 
                 "type": "string", 
-                "enum": ["create", "update", "delete", "notify", "webhook", "assign"],
+                "enum": ["create", "update", "delete", "notify", "webhook", "assign", "google_calendar_event", "google_sheets_row"],
                 "description": "Tipo de acción a ejecutar"
+              },
+              "googleCalendarConfig": {
+                "type": "object",
+                "description": "Configuración para crear eventos en Google Calendar",
+                "properties": {
+                  "calendarId": { "type": "string", "default": "primary" },
+                  "eventTitle": { "type": "string", "description": "Título del evento. Soporta {{campo}}" },
+                  "dateField": { "type": "string", "description": "Campo de la tabla con la fecha" },
+                  "duration": { "type": "number", "description": "Duración en horas", "default": 1 },
+                  "eventDescription": { "type": "string", "description": "Descripción. Soporta {{campo}}" }
+                }
+              },
+              "googleSheetsConfig": {
+                "type": "object",
+                "description": "Configuración para añadir filas a Google Sheets",
+                "properties": {
+                  "spreadsheetId": { "type": "string", "description": "ID de la hoja de cálculo" },
+                  "sheetName": { "type": "string", "description": "Nombre de la pestaña", "default": "Sheet1" },
+                  "fieldMapping": { 
+                    "type": "object", 
+                    "description": "Mapeo: {columna: valor o {{campo}}}" 
+                  }
+                }
               },
               "assignConfig": {
                 "type": "object",
