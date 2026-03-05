@@ -40,9 +40,10 @@ const STATUS_MAP = {
 export class WompiProvider extends BasePaymentProvider {
   constructor(options = {}) {
     super(options);
-    this.publicKey    = options.publicKey    || process.env.WOMPI_PUBLIC_KEY    || '';
-    this.privateKey   = options.privateKey   || process.env.WOMPI_PRIVATE_KEY   || '';
-    this.eventsSecret = options.eventsSecret || process.env.WOMPI_EVENTS_SECRET || '';
+    this.publicKey        = options.publicKey        || process.env.WOMPI_PUBLIC_KEY        || '';
+    this.privateKey       = options.privateKey       || process.env.WOMPI_PRIVATE_KEY       || '';
+    this.eventsSecret     = options.eventsSecret     || process.env.WOMPI_EVENTS_SECRET     || '';
+    this.integritySecret  = options.integritySecret  || process.env.WOMPI_INTEGRITY_SECRET  || this.eventsSecret;
     this.appPublicUrl = (process.env.APP_PUBLIC_URL || 'http://localhost:3010').replace(/\/$/, '');
 
     // Detectar sandbox por el prefijo de la llave
@@ -67,9 +68,9 @@ export class WompiProvider extends BasePaymentProvider {
    * Firma: SHA256(`${reference}${amountInCents}${currency}${eventsSecret}`)
    */
   async createPaymentLink(config) {
-    if (!this.publicKey || !this.eventsSecret) {
+    if (!this.publicKey || !this.integritySecret) {
       throw new Error(
-        'WOMPI_PUBLIC_KEY y WOMPI_EVENTS_SECRET deben estar en el .env del backend. ' +
+        'WOMPI_PUBLIC_KEY y WOMPI_INTEGRITY_SECRET deben estar en el .env del backend. ' +
         'Obtener en: https://comercios.wompi.co → Llaves y Webhooks'
       );
     }
@@ -90,9 +91,10 @@ export class WompiProvider extends BasePaymentProvider {
 
     // ── Firma de integridad ──────────────────────────────────────────────────
     // Wompi verifica que nadie haya alterado los parámetros del checkout
+    // Usa WOMPI_INTEGRITY_SECRET (distinto al WOMPI_EVENTS_SECRET del webhook)
     const integritySignature = crypto
       .createHash('sha256')
-      .update(`${externalRef}${amountInCents}${currency}${this.eventsSecret}`)
+      .update(`${externalRef}${amountInCents}${currency}${this.integritySecret}`)
       .digest('hex');
 
     // ── Construir URL de checkout ────────────────────────────────────────────

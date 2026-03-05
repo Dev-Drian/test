@@ -12,6 +12,7 @@ import * as google from "../controllers/googleController.js";
 import * as inbound from "../controllers/inboundController.js";
 import * as admin from "../controllers/adminController.js";
 import * as payment from "../controllers/paymentController.js";
+import * as metaWebhook from "../controllers/metaWebhookController.js";
 import { requireAuth, optionalAuth, requireWorkspaceMember } from "../middleware/index.js";
 import { validateWorkspace } from "../middleware/index.js";
 import { checkCanCreateWorkspace, checkCanCreateTable, checkCanCreateAgent, checkCanCreateFlow } from "../middleware/limits.js";
@@ -149,6 +150,12 @@ router.post("/payments/webhook/:workspaceId", payment.handleWebhook);
 router.get("/payments/status/:paymentId", requireAuth, payment.getPaymentStatus);
 // Estado de pago de un registro específico
 router.get("/payments/record/:workspaceId/:tableId/:recordId", requireAuth, payment.getRecordPaymentStatus);
+
+// ============ META (WhatsApp + Instagram + Messenger) ============
+// GET: verificación del webhook desde el dashboard de Meta
+// POST: recibe mensajes entrantes — añadir ?workspaceId=<id> en la URL del dashboard
+router.get("/webhooks/meta", metaWebhook.verifyWebhook);
+router.post("/webhooks/meta", metaWebhook.receiveEvent);
 
 export default router;
 

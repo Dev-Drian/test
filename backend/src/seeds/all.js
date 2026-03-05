@@ -16,6 +16,8 @@ import seedPlans from './plans.js';
 import seedUsers from './users.js';
 import seedAllWorkspaces from './workspaces-by-plan.js';
 import { seed as seedMesasData } from './mesas-data.js';
+import { seed as seedDulceMomento } from './dulce-momento.js';
+import { seed as seedClinicaVida } from './clinicavida.js';
 import { getDbPrefix } from '../config/db.js';
 
 const COUCHDB_URL = process.env.COUCHDB_URL || 'http://admin:password@127.0.0.1:5984';
@@ -141,7 +143,21 @@ async function main() {
       await seedAllWorkspaces();
     }
     
-    // 6. Seed Testing V3 (si es --v3 o --all)
+    // 6. Seed Dulce Momento
+    if (!V3_ONLY) {
+      console.log('\n🧁 Ejecutando seed: Dulce Momento');
+      console.log('─'.repeat(60));
+      await seedDulceMomento();
+    }
+
+    // 7. Seed ClínicaVida
+    if (!V3_ONLY) {
+      console.log('\n🏥 Ejecutando seed: ClínicaVida');
+      console.log('─'.repeat(60));
+      await seedClinicaVida();
+    }
+
+    // 8. Seed Testing V3 (si es --v3 o --all)
     if (V3_ONLY || RUN_ALL) {
       console.log('\n🧪 Ejecutando seed: Testing V3');
       console.log('─'.repeat(60));

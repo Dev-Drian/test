@@ -65,6 +65,9 @@ export default function Tables() {
   // Import modal state
   const [showImportModal, setShowImportModal] = useState(false);
 
+  // Payment flash: { [recordId]: { amount, currency, ts } } — resalta la fila 8s al confirmar pago
+  const [paymentFlash, setPaymentFlash] = useState({});
+
   useEffect(() => {
     if (!workspaceId) return;
     setLoading(true);
@@ -90,6 +93,19 @@ export default function Tables() {
     if (tableId === selectedTable?._id && record) {
       setTableData(prev => prev.map(r => r._id === record._id ? record : r));
     }
+  });
+
+  // Pago confirmado por Wompi webhook → actualizar estadoPago + flash verde 8s en la fila
+  useSocketEvent('payment:confirmed', ({ tableId, recordId, amount, currency }) => {
+    if (tableId === selectedTable?._id) {
+      setTableData(prev => prev.map(r =>
+        r._id === recordId ? { ...r, estadoPago: 'pagado' } : r
+      ));
+      setPaymentFlash(prev => ({ ...prev, [recordId]: { amount, currency, ts: Date.now() } }));
+      setTimeout(() => setPaymentFlash(prev => { const n = { ...prev }; delete n[recordId]; return n; }), 8000);
+    }
+    const amt = amount ? `$${Number(amount).toLocaleString('es-CO')} ${currency || 'COP'}` : '';
+    toast.success(`💳 Pago confirmado${amt ? `: ${amt}` : ''}`);
   });
 
   useEffect(() => {
@@ -903,7 +919,13 @@ export default function Tables() {
                             {filteredData.map((row, i) => (
                               <tr
                                 key={row._id || i}
-                                className={`transition-colors group ${editingRow === row._id ? 'bg-indigo-500/10' : 'hover:bg-slate-700/30'}`}
+                                className={`transition-colors group ${
+                                  editingRow === row._id
+                                    ? 'bg-indigo-500/10'
+                                    : paymentFlash[row._id]
+                                      ? 'bg-emerald-500/15 ring-1 ring-emerald-500/40'
+                                      : 'hover:bg-slate-700/30'
+                                }`}
                               >
                                 <td className="py-3 px-4 text-slate-500 text-xs font-mono">{i + 1}</td>
                                 {Object.keys(tableData[0])
