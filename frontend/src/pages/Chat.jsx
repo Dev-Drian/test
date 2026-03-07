@@ -3,6 +3,7 @@
  */
 import { useContext, useEffect, useState, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
+import { BarChart3, Calendar, Plus, Search, AlertTriangle, Check, Loader2, CheckCircle, XCircle } from "lucide-react";
 import { WorkspaceContext } from "../context/WorkspaceContext";
 import { useToast, useConfirm } from "../components/Toast";
 import { 
@@ -143,7 +144,7 @@ function ImportPreviewCard({ message, onConfirm, onCancel, confirming, agentName
           {/* Header */}
           <div className="p-4 rounded-xl mb-3" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
             <p className="text-sm text-slate-200 font-medium mb-1">
-              📊 Analicé <strong>{message.file?.name}</strong> — {totalRows} filas detectadas
+              <BarChart3 className="w-4 h-4 inline mr-1 text-emerald-400" /> Analicé <strong>{message.file?.name}</strong> — {totalRows} filas detectadas
             </p>
             <p className="text-xs text-slate-400">
               Tabla destino: <span className="text-emerald-400 font-semibold">{tableName}</span>
@@ -171,8 +172,8 @@ function ImportPreviewCard({ message, onConfirm, onCancel, confirming, agentName
                       <td className="px-3 py-1.5 text-slate-300">{header?.label || mapped || '—'}</td>
                       <td className="px-3 py-1.5">
                         {mapped
-                          ? <span className="text-emerald-400 text-[10px]">✓ mapeado</span>
-                          : <span className="text-amber-400 text-[10px]">⚠ ignorado</span>}
+                          ? <span className="text-emerald-400 text-[10px]"><Check className="w-3 h-3 inline" /> mapeado</span>
+                          : <span className="text-amber-400 text-[10px]"><AlertTriangle className="w-3 h-3 inline" /> ignorado</span>}
                       </td>
                     </tr>
                   );
@@ -210,7 +211,7 @@ function ImportPreviewCard({ message, onConfirm, onCancel, confirming, agentName
 
           {unmappedCols.length > 0 && (
             <p className="text-xs text-amber-400 mb-3">
-              ⚠ {unmappedCols.length} columna(s) sin mapear serán ignoradas: {unmappedCols.join(', ')}
+              <AlertTriangle className="w-3 h-3 inline mr-1" /> {unmappedCols.length} columna(s) sin mapear serán ignoradas: {unmappedCols.join(', ')}
             </p>
           )}
 
@@ -226,7 +227,7 @@ function ImportPreviewCard({ message, onConfirm, onCancel, confirming, agentName
                 className="px-4 py-2 rounded-xl text-white text-sm font-semibold transition-all hover:scale-[1.03] disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 4px 15px rgba(16,185,129,0.3)' }}
               >
-                {confirming ? '⏳ Importando...' : `✅ Confirmar (${totalRows} registros)`}
+                {confirming ? <><Loader2 className="w-4 h-4 inline mr-1 animate-spin" /> Importando...</> : <><CheckCircle className="w-4 h-4 inline mr-1" /> Confirmar ({totalRows} registros)</>}
               </button>
               <button
                 onClick={onCancel}
@@ -367,7 +368,7 @@ export default function Chat() {
     } catch (err) {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: '❌ No pude analizar el archivo: ' + (err.response?.data?.error || err.message),
+        content: 'No pude analizar el archivo: ' + (err.response?.data?.error || err.message),
         id: `err_${Date.now()}`,
         ts: Date.now(),
       }]);
@@ -397,7 +398,7 @@ export default function Chat() {
           : m
       ));
     } catch (err) {
-      const errMsg = '❌ Error al importar: ' + (err.response?.data?.error || err.message);
+      const errMsg = 'Error al importar: ' + (err.response?.data?.error || err.message);
       setMessages(prev => prev.map(m =>
         m.id === msg.id ? { ...m, type: undefined, content: errMsg } : m
       ));
@@ -410,7 +411,7 @@ export default function Chat() {
   // Cancel preview — remove the preview card
   const handleCancelImport = (msgId) => {
     setMessages(prev => prev.map(m =>
-      m.id === msgId ? { ...m, type: undefined, content: '❌ Importación cancelada.' } : m
+      m.id === msgId ? { ...m, type: undefined, content: 'Importación cancelada.' } : m
     ));
   };
 
@@ -853,11 +854,13 @@ export default function Chat() {
                 {/* Sugerencias de preguntas - Rediseñadas */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-xl mx-auto text-left">
                   {[
-                    { icon: "📊", text: "¿Cuántos registros tengo?", desc: "Ver resumen de datos", gradient: "from-blue-500/20 to-cyan-500/20", border: "border-blue-500/30" },
-                    { icon: "📅", text: "¿Qué citas hay para hoy?", desc: "Consultar agenda", gradient: "from-emerald-500/20 to-teal-500/20", border: "border-emerald-500/30" },
-                    { icon: "➕", text: "Quiero agregar un cliente", desc: "Crear nuevo registro", gradient: "from-violet-500/20 to-purple-500/20", border: "border-violet-500/30" },
-                    { icon: "🔍", text: "Buscar información", desc: "Filtrar datos", gradient: "from-amber-500/20 to-orange-500/20", border: "border-amber-500/30" },
-                  ].map((suggestion, idx) => (
+                    { icon: BarChart3, text: "¿Cuántos registros tengo?", desc: "Ver resumen de datos", gradient: "from-blue-500/20 to-cyan-500/20", border: "border-blue-500/30" },
+                    { icon: Calendar, text: "¿Qué citas hay para hoy?", desc: "Consultar agenda", gradient: "from-emerald-500/20 to-teal-500/20", border: "border-emerald-500/30" },
+                    { icon: Plus, text: "Quiero agregar un cliente", desc: "Crear nuevo registro", gradient: "from-violet-500/20 to-purple-500/20", border: "border-violet-500/30" },
+                    { icon: Search, text: "Buscar información", desc: "Filtrar datos", gradient: "from-amber-500/20 to-orange-500/20", border: "border-amber-500/30" },
+                  ].map((suggestion, idx) => {
+                    const IconComp = suggestion.icon;
+                    return (
                     <button
                       key={idx}
                       onClick={() => {
@@ -871,7 +874,7 @@ export default function Chat() {
                         opacity: 0
                       }}
                     >
-                      <span className="text-3xl transition-transform duration-500 group-hover:scale-125 group-hover:rotate-12">{suggestion.icon}</span>
+                      <IconComp className="w-7 h-7 transition-transform duration-500 group-hover:scale-125 group-hover:rotate-12" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-white font-semibold group-hover:text-white transition-colors">{suggestion.text}</p>
                         <p className="text-xs text-slate-400 mt-0.5">{suggestion.desc}</p>
@@ -880,7 +883,8 @@ export default function Chat() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                       </svg>
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>

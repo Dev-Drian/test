@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Users, UtensilsCrossed, Building2, ShoppingCart, Sparkles, Ruler, Scaling, Hash, ArrowDown, ArrowUp, Plus, Globe, Smartphone, Calendar, CalendarRange, Rewind, FastForward } from "lucide-react";
 import { SearchIcon, PlusIcon, EditIcon, TrashIcon, SparklesIcon, ListBulletIcon, NoSymbolIcon, ClockIcon, LinkIcon } from "./Icons";
 
 // Iconos SVG
@@ -104,29 +105,40 @@ const DEFAULT_FIELD = {
   formula: "", // Para campos calculados
 };
 
-// Validaciones avanzadas predefinidas
+// Mapa de iconos para plantillas
+const TemplateIconMap = {
+  Users, UtensilsCrossed, Building2, ShoppingCart, Sparkles
+};
+
+// Helper para renderizar icono de plantilla
+const TemplateIcon = ({ name, className = "w-6 h-6" }) => {
+  const IconComponent = TemplateIconMap[name];
+  return IconComponent ? <IconComponent className={className} /> : null;
+};
+
+// Validaciones avanzadas predefinidas - usando nombres de iconos
 const VALIDATION_TEMPLATES = {
   text: [
-    { id: 'minLength', label: 'Longitud mínima', type: 'number', placeholder: '3', icon: '📏' },
-    { id: 'maxLength', label: 'Longitud máxima', type: 'number', placeholder: '100', icon: '📐' },
-    { id: 'pattern', label: 'Patrón (regex)', type: 'text', placeholder: '^[A-Z]{3}\\d{4}$', icon: '🔣' },
+    { id: 'minLength', label: 'Longitud mínima', type: 'number', placeholder: '3', icon: 'Ruler' },
+    { id: 'maxLength', label: 'Longitud máxima', type: 'number', placeholder: '100', icon: 'Scaling' },
+    { id: 'pattern', label: 'Patrón (regex)', type: 'text', placeholder: '^[A-Z]{3}\\d{4}$', icon: 'Hash' },
   ],
   number: [
-    { id: 'min', label: 'Valor mínimo', type: 'number', placeholder: '0', icon: '⬇️' },
-    { id: 'max', label: 'Valor máximo', type: 'number', placeholder: '1000', icon: '⬆️' },
-    { id: 'step', label: 'Incremento', type: 'number', placeholder: '1', icon: '➕' },
+    { id: 'min', label: 'Valor mínimo', type: 'number', placeholder: '0', icon: 'ArrowDown' },
+    { id: 'max', label: 'Valor máximo', type: 'number', placeholder: '1000', icon: 'ArrowUp' },
+    { id: 'step', label: 'Incremento', type: 'number', placeholder: '1', icon: 'Plus' },
   ],
   email: [
-    { id: 'domain', label: 'Dominio permitido', type: 'text', placeholder: '@empresa.com', icon: '🌐' },
+    { id: 'domain', label: 'Dominio permitido', type: 'text', placeholder: '@empresa.com', icon: 'Globe' },
   ],
   phone: [
-    { id: 'format', label: 'Formato', type: 'select', options: ['Nacional', 'Internacional', 'Cualquiera'], icon: '📱' },
+    { id: 'format', label: 'Formato', type: 'select', options: ['Nacional', 'Internacional', 'Cualquiera'], icon: 'Smartphone' },
   ],
   date: [
-    { id: 'minDate', label: 'Fecha mínima', type: 'text', placeholder: 'today', icon: '📅' },
-    { id: 'maxDate', label: 'Fecha máxima', type: 'text', placeholder: '+30days', icon: '📆' },
-    { id: 'allowPast', label: 'Permitir pasado', type: 'boolean', icon: '⏪' },
-    { id: 'allowFuture', label: 'Permitir futuro', type: 'boolean', icon: '⏩' },
+    { id: 'minDate', label: 'Fecha mínima', type: 'text', placeholder: 'today', icon: 'Calendar' },
+    { id: 'maxDate', label: 'Fecha máxima', type: 'text', placeholder: '+30days', icon: 'CalendarRange' },
+    { id: 'allowPast', label: 'Permitir pasado', type: 'boolean', icon: 'Rewind' },
+    { id: 'allowFuture', label: 'Permitir futuro', type: 'boolean', icon: 'FastForward' },
   ],
 };
 
@@ -144,7 +156,7 @@ const TABLE_TEMPLATES = [
     id: 'crm',
     name: 'CRM - Clientes',
     description: 'Gestiona tus clientes y contactos',
-    icon: '👥',
+    icon: 'Users',
     color: 'blue',
     tableName: 'Clientes',
     tableDescription: 'Base de datos de clientes y prospectos',
@@ -161,7 +173,7 @@ const TABLE_TEMPLATES = [
     id: 'restaurant',
     name: 'Restaurante',
     description: 'Reservaciones y gestión de mesas',
-    icon: '🍽️',
+    icon: 'UtensilsCrossed',
     color: 'amber',
     tableName: 'Reservaciones',
     tableDescription: 'Sistema de reservas del restaurante',
@@ -179,7 +191,7 @@ const TABLE_TEMPLATES = [
     id: 'clinic',
     name: 'Clínica / Consultorio',
     description: 'Citas médicas y pacientes',
-    icon: '🏥',
+    icon: 'Building2',
     color: 'emerald',
     tableName: 'Citas',
     tableDescription: 'Agenda de citas médicas',
@@ -198,7 +210,7 @@ const TABLE_TEMPLATES = [
     id: 'ecommerce',
     name: 'E-commerce',
     description: 'Productos y catálogo',
-    icon: '🛒',
+    icon: 'ShoppingCart',
     color: 'purple',
     tableName: 'Productos',
     tableDescription: 'Catálogo de productos de la tienda',
@@ -216,7 +228,7 @@ const TABLE_TEMPLATES = [
     id: 'custom',
     name: 'Personalizada',
     description: 'Empieza desde cero',
-    icon: '✨',
+    icon: 'Sparkles',
     color: 'zinc',
     tableName: '',
     tableDescription: '',
@@ -499,14 +511,14 @@ export default function TableBuilder({ onSave, onCancel, availableTables = [], l
                   'border-white/10 hover:border-white/20 hover:bg-white/5'
                 }`}
               >
-                <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-4 ${
-                  template.color === 'blue' ? 'bg-blue-500/10' :
-                  template.color === 'amber' ? 'bg-amber-500/10' :
-                  template.color === 'emerald' ? 'bg-emerald-500/10' :
-                  template.color === 'purple' ? 'bg-purple-500/10' :
-                  'bg-white/5'
+                <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-4 ${
+                  template.color === 'blue' ? 'bg-blue-500/10 text-blue-400' :
+                  template.color === 'amber' ? 'bg-amber-500/10 text-amber-400' :
+                  template.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-400' :
+                  template.color === 'purple' ? 'bg-purple-500/10 text-purple-400' :
+                  'bg-white/5 text-zinc-400'
                 }`}>
-                  {template.icon}
+                  <TemplateIcon name={template.icon} className="w-7 h-7" />
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-1">{template.name}</h3>
                 <p className="text-sm text-zinc-400">{template.description}</p>

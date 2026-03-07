@@ -21,6 +21,11 @@ import Login from "./pages/Login";
 import Landing from "./pages/Landing";
 import Admin from "./pages/Admin";
 import OnboardingWizard from "./components/OnboardingWizard";
+import AuthTransition from "./components/AuthTransition";
+import Upgrade from "./pages/Upgrade";
+import ForgotPassword from "./pages/ForgotPassword";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
 import { listWorkspaces } from "./api/client";
 
 export { WorkspaceContext };
@@ -36,6 +41,13 @@ function ProtectedRoute({ children }) {
   const onboardingKey = user?._id ? `migracion_onboarding_${user._id}` : null;
   
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+
+  // Rutas que NO requieren onboarding completado
+  const bypassOnboardingRoutes = ['/upgrade'];
+  const shouldBypassOnboarding = bypassOnboardingRoutes.some(r => location.pathname.startsWith(r));
+  
+  // Verificar si hay un plan pendiente de pago
+  const hasPendingPlan = localStorage.getItem('pending_plan');
   
   // Actualizar estado cuando cambia el usuario
   useEffect(() => {
@@ -51,6 +63,12 @@ function ProtectedRoute({ children }) {
     
     // Si NO está autenticado, no verificar workspaces (irá a login)
     if (!isAuthenticated || !user) {
+      setCheckingWorkspaces(false);
+      return;
+    }
+
+    // Si hay plan pendiente o estamos en ruta de bypass, no verificar onboarding
+    if (hasPendingPlan || shouldBypassOnboarding) {
       setCheckingWorkspaces(false);
       return;
     }
@@ -87,7 +105,7 @@ function ProtectedRoute({ children }) {
         // En caso de error, no mostrar onboarding
       })
       .finally(() => setCheckingWorkspaces(false));
-  }, [isAuthenticated, loading, user, onboardingKey]);
+  }, [isAuthenticated, loading, user, onboardingKey, hasPendingPlan, shouldBypassOnboarding]);
   
   // Mientras carga auth, mostrar loader
   if (loading) {
@@ -112,8 +130,8 @@ function ProtectedRoute({ children }) {
     );
   }
   
-  // Mostrar wizard de onboarding si es necesario
-  if (showOnboarding) {
+  // Mostrar wizard de onboarding si es necesario (pero no en rutas de bypass)
+  if (showOnboarding && !shouldBypassOnboarding && !hasPendingPlan) {
     return (
       <OnboardingWizard 
         onComplete={() => {
@@ -169,7 +187,7 @@ function App() {
 }
 
 function AppContent() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, authTransition } = useAuth();
   
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(() =>
     localStorage.getItem("migracion_workspace_id") || ""
@@ -210,8 +228,19 @@ function AppContent() {
     <WorkspaceContext.Provider value={workspaceContext}>
       <SocketBridge>
         <TourProvider>
+          {/* Auth Transition Overlay */}
+          {authTransition && (
+            <AuthTransition 
+              type={authTransition.type} 
+              userName={user?.name || authTransition.userName}
+              onComplete={authTransition.onComplete}
+            />
+          )}
           <Routes>
             <Route path="/login" element={<LoginRoute />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
             <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route index element={<Dashboard />} />
               <Route path="workspaces" element={<Workspaces />} />
@@ -225,6 +254,7 @@ function AppContent() {
               <Route path="guia" element={<Guia />} />
               <Route path="integrations" element={<Integrations />} />
               <Route path="admin" element={<Admin />} />
+              <Route path="upgrade" element={<Upgrade />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>

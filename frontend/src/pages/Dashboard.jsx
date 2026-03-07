@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Rocket, PartyPopper } from "lucide-react";
 import { WorkspaceContext } from "../context/WorkspaceContext";
 import { listWorkspaces, listTables, listAgents, getTableData } from "../api/client";
 
@@ -335,7 +336,7 @@ const GettingStartedGuide = ({ tables, agents }) => {
       <div className="flex items-start justify-between mb-6">
         <div>
           <h2 className="text-lg font-semibold text-slate-100 flex items-center gap-2">
-            <span className="text-2xl">🚀</span>
+            <Rocket className="w-6 h-6 text-indigo-400" />
             Primeros pasos
           </h2>
           <p className="text-sm text-slate-400 mt-1">
@@ -411,7 +412,7 @@ const GettingStartedGuide = ({ tables, agents }) => {
       
       {completedSteps === steps.length && (
         <div className="mt-4 p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-center">
-          <p className="text-emerald-400 font-medium">🎉 ¡Todo listo! Ya puedes empezar a chatear con tu asistente</p>
+          <p className="text-emerald-400 font-medium flex items-center justify-center gap-2"><PartyPopper className="w-5 h-5" /> ¡Todo listo! Ya puedes empezar a chatear con tu asistente</p>
           <Link to="/chat" className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-400 transition-colors">
             Ir al chat
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>

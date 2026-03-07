@@ -3,6 +3,7 @@
  * Vista profesional para restaurantes con estado en tiempo real
  */
 import { useState, useMemo } from 'react';
+import { MapPin } from 'lucide-react';
 
 // Configuración de estados con diseño moderno
 const STATUS_CONFIG = {
@@ -222,8 +223,8 @@ function TableDetailModal({ table, onClose }) {
                     </span>
                   )}
                   {table._zone && table._zone !== 'General' && (
-                    <span className="px-2 py-0.5 rounded-md bg-slate-900/30 text-xs">
-                      📍 {table._zone}
+                    <span className="px-2 py-0.5 rounded-md bg-slate-900/30 text-xs flex items-center gap-1">
+                      <MapPin className="w-3 h-3" /> {table._zone}
                     </span>
                   )}
                 </div>

@@ -7,131 +7,44 @@ import WorkspaceSelector from "./WorkspaceSelector";
 import HelpButton from "./HelpButton";
 import SetupAssistantChat from "./SetupAssistantChat";
 import api from "../api/client";
+import { 
+  Home, FolderKanban, Bot, Table2, Zap, MessageCircle, BookOpen, Link2, Settings,
+  ChevronRight, ChevronDown, Calendar, Columns3, LayoutGrid, TableIcon, LayoutDashboard,
+  ShoppingCart, GanttChartSquare, Menu, LogOut, Check, Layers, Sparkles, Crown
+} from "lucide-react";
 
-// Iconos SVG minimalistas
-const Icons = {
-  logo: (
-    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-      <path d="M12 2L2 7l10 5 10-5-10-5z" fill="currentColor" opacity="0.9"/>
-      <path d="M2 17l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  ),
-  home: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-    </svg>
-  ),
-  workspaces: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
-    </svg>
-  ),
-  agents: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-    </svg>
-  ),
-  tables: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 11h16M9 4v16" />
-    </svg>
-  ),
-  flows: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-    </svg>
-  ),
-  chat: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-    </svg>
-  ),
-  guide: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-    </svg>
-  ),
-  views: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-    </svg>
-  ),
-  integrations: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
-    </svg>
-  ),
-  chevronRight: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-    </svg>
-  ),
-  chevronDown: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-    </svg>
-  ),
-  viewCalendar: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-    </svg>
-  ),
-  viewKanban: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125z" />
-    </svg>
-  ),
-  viewCards: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-    </svg>
-  ),
-  viewTable: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M13.125 12h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125M20.625 12c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5M12 14.625v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 14.625c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m0 0v1.5c0 .621-.504 1.125-1.125 1.125M10.875 18.75c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621.504-1.125 1.125-1.125m0 3.75h7.5c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-7.5" />
-    </svg>
-  ),
-  viewFloorplan: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 7.125C2.25 6.504 2.754 6 3.375 6h6c.621 0 1.125.504 1.125 1.125v3.75c0 .621-.504 1.125-1.125 1.125h-6a1.125 1.125 0 01-1.125-1.125v-3.75zM14.25 8.625c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v8.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-8.25zM3.75 16.125c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v2.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-2.25z" />
-    </svg>
-  ),
-  viewPos: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
-    </svg>
-  ),
-  viewTimeline: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5" />
-    </svg>
-  ),
-  menu: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
-  ),
-  admin: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  ),
+// Logo personalizado
+const LogoIcon = () => (
+  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+    <path d="M12 2L2 7l10 5 10-5-10-5z" fill="currentColor" opacity="0.9"/>
+    <path d="M2 17l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+// Mapeo de iconos para vistas
+const viewIcons = {
+  calendar: Calendar,
+  kanban: Columns3,
+  cards: LayoutGrid,
+  table: TableIcon,
+  floorplan: LayoutDashboard,
+  pos: ShoppingCart,
+  timeline: GanttChartSquare,
 };
 
 const navItems = [
-  { to: "/", label: "Inicio", icon: Icons.home, tourId: "nav-home" },
-  { to: "/workspaces", label: "Proyectos", icon: Icons.workspaces, tourId: "nav-workspaces" },
-  { to: "/agents", label: "Asistente IA", icon: Icons.agents, tourId: "nav-agents" },
-  { to: "/tables", label: "Mis datos", icon: Icons.tables, tourId: "nav-tables" },
-  { to: "/views", label: "Vistas", icon: Icons.views, tourId: "nav-views" },
-  { to: "/flows", label: "Automatizar", icon: Icons.flows, tourId: "nav-flows" },
-  { to: "/chat", label: "Chat", icon: Icons.chat, tourId: "nav-chat" },
-  { to: "/integrations", label: "Integraciones", icon: Icons.integrations, tourId: "nav-integrations" },
-  { to: "/guia", label: "Ayuda", icon: Icons.guide, tourId: "nav-guide" },
-  { to: "/admin", label: "Admin", icon: Icons.admin, tourId: "nav-admin" },
+  { to: "/", label: "Inicio", icon: Home, tourId: "nav-home" },
+  { to: "/workspaces", label: "Proyectos", icon: FolderKanban, tourId: "nav-workspaces" },
+  { to: "/agents", label: "Asistente IA", icon: Bot, tourId: "nav-agents" },
+  { to: "/tables", label: "Mis datos", icon: Table2, tourId: "nav-tables" },
+  { to: "/views", label: "Vistas", icon: Layers, tourId: "nav-views" },
+  { to: "/flows", label: "Automatizar", icon: Zap, tourId: "nav-flows" },
+  { to: "/chat", label: "Chat", icon: MessageCircle, tourId: "nav-chat" },
+  { to: "/integrations", label: "Integraciones", icon: Link2, tourId: "nav-integrations" },
+  { to: "/guia", label: "Ayuda", icon: BookOpen, tourId: "nav-guide" },
+  { to: "/upgrade", label: "Mi Plan", icon: Crown, tourId: "nav-plan" },
+  { to: "/admin", label: "Admin", icon: Settings, tourId: "nav-admin" },
 ];
 
 export default function Layout() {
@@ -164,16 +77,8 @@ export default function Layout() {
 
   // Obtener ícono según tipo de vista
   const getViewIcon = (type) => {
-    const viewIcons = {
-      calendar: Icons.viewCalendar,
-      kanban: Icons.viewKanban,
-      cards: Icons.viewCards,
-      table: Icons.viewTable,
-      floorplan: Icons.viewFloorplan,
-      pos: Icons.viewPos,
-      timeline: Icons.viewTimeline,
-    };
-    return viewIcons[type] || Icons.views;
+    const IconComponent = viewIcons[type] || Layers;
+    return <IconComponent className="w-4 h-4" />;
   };
 
   const handleLogout = () => {
@@ -210,7 +115,7 @@ export default function Layout() {
           <div className={`flex items-center gap-3 ${collapsed ? 'justify-center w-full' : ''}`}>
             <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg"
               style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)', boxShadow: '0 4px 20px rgba(139, 92, 246, 0.4)' }}>
-              {Icons.logo}
+              <LogoIcon />
             </div>
             {!collapsed && (
               <div className="flex flex-col">
@@ -224,7 +129,7 @@ export default function Layout() {
               onClick={() => setCollapsed(true)}
               className="p-1.5 rounded-lg transition-all hover:bg-white/10 text-slate-500 hover:text-white"
             >
-              {Icons.chevronRight}
+              <ChevronRight className="w-4 h-4" />
             </button>
           )}
         </div>
@@ -239,7 +144,7 @@ export default function Layout() {
         {/* Navigation */}
         <nav className="flex-1 py-4 px-3 overflow-y-auto">
           <div className="space-y-1">
-            {navItems.map(({ to, label, icon, tourId }) => {
+            {navItems.map(({ to, label, icon: Icon, tourId }) => {
               // Renderizado especial para Vistas con submenú
               if (to === '/views') {
                 return (
@@ -261,7 +166,7 @@ export default function Layout() {
                         title={collapsed ? label : undefined}
                       >
                         <span className={`transition-all duration-200 ${isActive(to) ? 'text-violet-400' : ''}`}>
-                          {icon}
+                          <Icon className="w-5 h-5" />
                         </span>
                         {!collapsed && <span>{label}</span>}
                         {isActive(to) && (
@@ -280,7 +185,7 @@ export default function Layout() {
                           className="p-2 rounded-lg hover:bg-white/10 text-slate-500 hover:text-white transition-all"
                         >
                           <span className={`transform transition-transform duration-200 block ${viewsExpanded ? 'rotate-0' : '-rotate-90'}`}>
-                            {Icons.chevronDown}
+                            <ChevronDown className="w-4 h-4" />
                           </span>
                         </button>
                       )}
@@ -329,7 +234,7 @@ export default function Layout() {
                   title={collapsed ? label : undefined}
                 >
                   <span className={`transition-all duration-200 ${isActive(to) ? 'text-violet-400' : ''}`}>
-                    {icon}
+                    <Icon className="w-5 h-5" />
                   </span>
                   {!collapsed && <span>{label}</span>}
                   {isActive(to) && (
@@ -406,6 +311,21 @@ export default function Layout() {
                 </div>
               )}
 
+              {/* Botón de mejorar plan para usuarios free */}
+              {user?.plan === 'free' && (
+                <Link
+                  to="/upgrade"
+                  className="flex items-center gap-2 mx-3 px-3 py-2.5 rounded-xl text-white text-sm font-medium transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  style={{ 
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #4f46e5 100%)',
+                    boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)'
+                  }}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Mejorar plan</span>
+                </Link>
+              )}
+
               {/* User info & logout - Rediseñado */}
               <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all"
                 style={{ 
@@ -420,8 +340,12 @@ export default function Layout() {
                   <span className="block text-xs font-semibold text-white truncate">
                     {user?.name || 'Usuario'}
                   </span>
-                  <span className="block text-[10px] text-slate-500 truncate">
-                    {user?.email}
+                  <span className="text-[10px] text-slate-500 truncate flex items-center gap-1">
+                    <Crown className="w-2.5 h-2.5 text-violet-400" />
+                    {user?.plan === 'free' ? 'Plan Gratuito' : 
+                     user?.plan === 'starter' ? 'Plan Inicial' :
+                     user?.plan === 'premium' ? 'Plan Premium' :
+                     user?.plan === 'enterprise' ? 'Plan Empresarial' : 'Plan'}
                   </span>
                 </div>
                 <button 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 // Configuración: mostrar usuarios de demo solo en desarrollo
@@ -108,6 +108,11 @@ export default function Login() {
     if (params.get("register") === "1") {
       setIsRegister(true);
     }
+    // Si viene con plan, guardarlo para después del registro
+    const planParam = params.get("plan");
+    if (planParam && planParam !== 'free') {
+      localStorage.setItem('pending_plan', planParam);
+    }
   }, [location.search]);
 
   const fillCredentials = (user) => {
@@ -132,7 +137,14 @@ export default function Login() {
         : await login(form.email, form.password);
 
       if (result.success) {
-        navigate("/");
+        // Verificar si hay un plan pendiente de pago
+        const pendingPlan = localStorage.getItem('pending_plan');
+        if (pendingPlan && pendingPlan !== 'free') {
+          localStorage.removeItem('pending_plan');
+          navigate(`/upgrade?selected=${pendingPlan}`);
+        } else {
+          navigate("/");
+        }
       } else {
         setError(result.error);
       }
@@ -339,9 +351,9 @@ export default function Login() {
                   <input type="checkbox" className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-violet-500 focus:ring-violet-500/50" />
                   <span className="text-sm text-slate-400">Recordarme</span>
                 </label>
-                <button type="button" className="text-sm text-violet-400 hover:text-violet-300 transition-colors">
+                <Link to="/forgot-password" className="text-sm text-violet-400 hover:text-violet-300 transition-colors">
                   ¿Olvidaste tu contraseña?
-                </button>
+                </Link>
               </div>
             )}
 

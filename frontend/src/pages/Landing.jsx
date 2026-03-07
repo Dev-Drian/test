@@ -260,7 +260,7 @@ function StepCard({ step, IconComp, title, description, delay = 0 }) {
 
 const PLANS = [
   { id: "free",       name: "Gratis",      description: "Para explorar la plataforma",     price: 0,      priceLabel: "$0",        features: ["1 proyecto", "3 tablas", "100 registros", "1 asistente IA", "GPT-4o Mini"] },
-  { id: "starter",    name: "Inicial",     description: "Para negocios pequeños",          price: 39000,  priceLabel: "$39.000",   features: ["3 proyectos", "10 tablas", "1.000 registros", "2 asistentes", "GPT-4o + Mini", "Exportar datos"] },
+  { id: "starter",    name: "Inicial",     description: "Para negocios pequeños",          price: 1000,  priceLabel: "$1.000",   features: ["3 proyectos", "10 tablas", "1.000 registros", "2 asistentes", "GPT-4o + Mini", "Exportar datos"] },
   { id: "premium",    name: "Premium",     description: "Para negocios en crecimiento",    price: 119000, priceLabel: "$119.000",  features: ["10 proyectos", "50 tablas", "10.000 registros", "5 asistentes", "Todos los modelos", "Webhooks + API", "Soporte prioritario"] },
   { id: "enterprise", name: "Empresarial", description: "Sin límites",                     price: 399000, priceLabel: "$399.000",  features: ["Todo ilimitado", "White label", "Dominio propio", "GPT-4 + Claude", "Onboarding dedicado", "SLA garantizado"] },
 ];
@@ -370,7 +370,16 @@ export default function Landing() {
     if (metaDesc) metaDesc.setAttribute("content", "Crea un asistente de IA que atiende clientes, gestiona citas, lleva inventario y automatiza tu negocio. Sin código. Gratis para empezar.");
   }, []);
 
-  const goToLogin = (register = false) => navigate(`/login${register ? "?register=1" : ""}`);
+  const goToLogin = (register = false, planId = null) => {
+    // Si seleccionó un plan de pago, guardarlo para después del registro
+    if (planId && planId !== 'free') {
+      localStorage.setItem('pending_plan', planId);
+      navigate(`/login?register=1&plan=${planId}`);
+    } else {
+      localStorage.removeItem('pending_plan');
+      navigate(`/login${register ? "?register=1" : ""}`);
+    }
+  };
 
   return (
     <div className="min-h-screen text-white" style={{ background: "#060610" }}>
@@ -567,7 +576,7 @@ export default function Landing() {
           <SectionHeader label="Precios" title="Simples y transparentes"
             subtitle="Empieza gratis hoy. Escala cuando tu negocio crezca. Sin contratos ni sorpresas." />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {PLANS.map((plan, i) => <PlanCard key={plan.id} plan={plan} onGetStarted={() => goToLogin(true)} delay={i * 80} />)}
+            {PLANS.map((plan, i) => <PlanCard key={plan.id} plan={plan} onGetStarted={() => goToLogin(true, plan.id)} delay={i * 80} />)}
           </div>
         </div>
       </section>

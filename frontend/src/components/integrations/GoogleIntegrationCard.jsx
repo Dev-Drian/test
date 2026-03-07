@@ -6,6 +6,7 @@
  */
 
 import { useState } from 'react';
+import { Calendar, Sheet, Check } from 'lucide-react';
 import { useGoogleIntegration } from '../../hooks/useGoogleIntegration';
 
 export default function GoogleIntegrationCard() {
@@ -126,7 +127,7 @@ export default function GoogleIntegrationCard() {
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 rounded-xl bg-red-500/5 border border-red-500/10">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-red-400">📅</span>
+                <Calendar className="w-4 h-4 text-red-400" />
                 <span className="text-sm font-medium text-red-300">Calendar</span>
               </div>
               <p className="text-xs text-zinc-400">
@@ -135,7 +136,7 @@ export default function GoogleIntegrationCard() {
             </div>
             <div className="p-3 rounded-xl bg-green-500/5 border border-green-500/10">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-green-400">📊</span>
+                <Sheet className="w-4 h-4 text-green-400" />
                 <span className="text-sm font-medium text-green-300">Sheets</span>
               </div>
               <p className="text-xs text-zinc-400">
@@ -161,15 +162,15 @@ export default function GoogleIntegrationCard() {
               Conecta tu cuenta de Google para desbloquear:
             </p>
             <div className="flex items-center gap-2 text-sm text-zinc-400">
-              <span className="text-emerald-400">✓</span>
+              <Check className="w-4 h-4 text-emerald-400" />
               <span>Crear eventos en Calendar automáticamente</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-zinc-400">
-              <span className="text-emerald-400">✓</span>
+              <Check className="w-4 h-4 text-emerald-400" />
               <span>Exportar datos a Google Sheets</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-zinc-400">
-              <span className="text-emerald-400">✓</span>
+              <Check className="w-4 h-4 text-emerald-400" />
               <span>Sincronizar reservas con tu calendario</span>
             </div>
           </div>

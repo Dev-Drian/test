@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useRef, useEffect, useContext } from 'react';
+import { BarChart3, Package, Zap, Bell, UtensilsCrossed, Briefcase } from 'lucide-react';
 import { WorkspaceContext } from '../context/WorkspaceContext';
 import { sendChatMessage, listAgents, getOrCreateChat } from '../api/client';
 import { emitEvent, EVENTS } from '../utils/events';
@@ -39,17 +40,28 @@ const Icons = {
   ),
 };
 
+// Mapa de iconos
+const IconMap = {
+  BarChart3, Package, Zap, Bell, UtensilsCrossed, Briefcase
+};
+
+// Helper para renderizar iconos
+const QuestionIcon = ({ name, className = "w-5 h-5" }) => {
+  const IconComponent = IconMap[name];
+  return IconComponent ? <IconComponent className={className} /> : null;
+};
+
 // Ejemplos de preguntas - Organizados por capacidad
 const EXAMPLE_QUESTIONS = [
   // Crear tablas
-  { text: "Crear tabla de clientes", icon: "📊", color: "from-blue-500/20 to-cyan-500/20", category: "table" },
-  { text: "Necesito una tabla de productos", icon: "📦", color: "from-purple-500/20 to-indigo-500/20", category: "table" },
+  { text: "Crear tabla de clientes", icon: "BarChart3", color: "from-blue-500/20 to-cyan-500/20", category: "table" },
+  { text: "Necesito una tabla de productos", icon: "Package", color: "from-purple-500/20 to-indigo-500/20", category: "table" },
   // Automatizaciones
-  { text: "Cuando se cree un cliente, enviar email", icon: "⚡", color: "from-amber-500/20 to-yellow-500/20", category: "flow" },
-  { text: "Notificar al crear un pedido nuevo", icon: "🔔", color: "from-rose-500/20 to-pink-500/20", category: "flow" },
+  { text: "Cuando se cree un cliente, enviar email", icon: "Zap", color: "from-amber-500/20 to-yellow-500/20", category: "flow" },
+  { text: "Notificar al crear un pedido nuevo", icon: "Bell", color: "from-rose-500/20 to-pink-500/20", category: "flow" },
   // Sistemas completos
-  { text: "Sistema para mi restaurante", icon: "🍽️", color: "from-orange-500/20 to-red-500/20", category: "setup" },
-  { text: "CRM para gestionar ventas", icon: "💼", color: "from-emerald-500/20 to-teal-500/20", category: "setup" },
+  { text: "Sistema para mi restaurante", icon: "UtensilsCrossed", color: "from-orange-500/20 to-red-500/20", category: "setup" },
+  { text: "CRM para gestionar ventas", icon: "Briefcase", color: "from-emerald-500/20 to-teal-500/20", category: "setup" },
 ];
 
 /**
@@ -187,19 +199,19 @@ export default function SetupAssistantChat() {
       setMessages([{
         id: 'welcome',
         role: 'assistant',
-        content: `¡Hola! 👋 Soy tu **Asistente IA con GPT-4o**.
+        content: `¡Hola! Soy tu **Asistente IA con GPT-4o**.
 
 Puedo hacer muchas cosas por ti:
 
-**📊 Crear Tablas:**
+**Crear Tablas:**
 • "Crear tabla de clientes"
 • "Necesito una tabla de productos"
 
-**⚡ Crear Automatizaciones:**
+**Crear Automatizaciones:**
 • "Cuando se cree un cliente, enviar email"
 • "Notificar al crear pedido nuevo"
 
-**🏢 Configurar Sistemas Completos:**
+**Configurar Sistemas Completos:**
 • "Sistema para mi restaurante"
 • "CRM para gestionar ventas"
 
@@ -455,7 +467,7 @@ _Te mostraré un resumen antes de crear cualquier cosa._
                           onClick={() => handleExampleClick(example.text)}
                           className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-left text-xs bg-gradient-to-r ${example.color} hover:opacity-80 text-slate-200 transition-all border border-slate-700/30 hover:border-slate-600/50`}
                         >
-                          <span className="text-base shrink-0">{example.icon}</span>
+                          <QuestionIcon name={example.icon} className="w-4 h-4 shrink-0" />
                           <span className="truncate leading-tight">{example.text}</span>
                         </button>
                       ))}

@@ -13,6 +13,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { Settings, Clock, HardDrive, Timer, Database, RefreshCw, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "../components/Toast";
 import {
   getAdminStatus,
@@ -46,7 +47,7 @@ function StatusBadge({ ok, label }) {
   );
 }
 
-function MetricCard({ icon, label, value, sub, accent = "#8b5cf6" }) {
+function MetricCard({ icon: Icon, label, value, sub, accent = "#8b5cf6" }) {
   return (
     <div
       className="p-4 rounded-2xl flex flex-col gap-1"
@@ -56,7 +57,7 @@ function MetricCard({ icon, label, value, sub, accent = "#8b5cf6" }) {
       }}
     >
       <div className="flex items-center gap-2 mb-1">
-        <span className="text-xl">{icon}</span>
+        <Icon className="w-5 h-5" style={{ color: accent }} />
         <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">{label}</span>
       </div>
       <p className="text-2xl font-bold" style={{ color: accent }}>{value ?? "—"}</p>
@@ -100,7 +101,7 @@ function ActionButton({ onClick, loading, children, variant = "default" }) {
       className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:scale-[1.03] disabled:opacity-50 disabled:cursor-not-allowed"
       style={style}
     >
-      {loading ? "⏳ Cargando..." : children}
+      {loading ? <><Loader2 className="w-3 h-3 animate-spin inline mr-1" /> Cargando...</> : children}
     </button>
   );
 }
@@ -214,7 +215,7 @@ export default function Admin() {
         {/* ── Header ──────────────────────────────────────── */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-100 mb-1">⚙️ Super Admin</h1>
+            <h1 className="text-2xl font-bold text-slate-100 mb-1 flex items-center gap-2"><Settings className="w-6 h-6 text-violet-400" /> Super Admin</h1>
             <p className="text-sm text-slate-500">
               Observabilidad del sistema · actualizado hace <span className="text-slate-400 font-medium">{REFRESH_INTERVAL - countdown}s</span>
               <span className="ml-2 text-slate-600">· próximo refresh en {countdown}s</span>
@@ -237,10 +238,10 @@ export default function Admin() {
         <section>
           <SectionTitle>Estado del sistema</SectionTitle>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <MetricCard icon="🕐" label="Uptime" value={status ? `${Math.floor(status.system.uptime / 60)}m` : "—"} sub={`${status?.system.uptime ?? 0}s total`} accent="#8b5cf6" />
-            <MetricCard icon="💾" label="Memoria" value={status ? `${status.system.memoryMB} MB` : "—"} sub="RSS process" accent="#6366f1" />
-            <MetricCard icon="⏰" label="Jobs activos" value={status?.scheduler.activeJobs ?? "—"} sub="Cron jobs" accent="#10b981" />
-            <MetricCard icon="🗄" label="Cache keys" value={status?.cache.totalKeys ?? "—"} sub={`${status?.cache.snapshotsCached ?? 0} snapshots`} accent="#f59e0b" />
+            <MetricCard icon={Clock} label="Uptime" value={status ? `${Math.floor(status.system.uptime / 60)}m` : "—"} sub={`${status?.system.uptime ?? 0}s total`} accent="#8b5cf6" />
+            <MetricCard icon={HardDrive} label="Memoria" value={status ? `${status.system.memoryMB} MB` : "—"} sub="RSS process" accent="#6366f1" />
+            <MetricCard icon={Timer} label="Jobs activos" value={status?.scheduler.activeJobs ?? "—"} sub="Cron jobs" accent="#10b981" />
+            <MetricCard icon={Database} label="Cache keys" value={status?.cache.totalKeys ?? "—"} sub={`${status?.cache.snapshotsCached ?? 0} snapshots`} accent="#f59e0b" />
           </div>
 
           <div className="flex flex-wrap gap-3 p-4 rounded-2xl" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
@@ -256,7 +257,7 @@ export default function Admin() {
           <SectionTitle
             action={
               <ActionButton onClick={handleReloadJobs} loading={actionLoading.reloadJobs} variant="success">
-                🔄 Recargar jobs
+                <RefreshCw className="w-3 h-3 inline mr-1" /> Recargar jobs
               </ActionButton>
             }
           >
@@ -301,7 +302,7 @@ export default function Admin() {
           <SectionTitle
             action={
               <ActionButton onClick={handleClearCache} loading={actionLoading.clearCache} variant="danger">
-                🗑 Limpiar cache completa
+                <Trash2 className="w-3 h-3 inline mr-1" /> Limpiar cache completa
               </ActionButton>
             }
           >

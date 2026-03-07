@@ -13,7 +13,7 @@
 
 import axios from 'axios';
 import crypto from 'crypto';
-import { BasePaymentProvider } from '../PaymentService.js';
+import { BasePaymentProvider } from './BasePaymentProvider.js';
 
 const MP_API_BASE = 'https://api.mercadopago.com';
 
@@ -51,9 +51,22 @@ export class MercadoPagoProvider extends BasePaymentProvider {
       payerEmail,
       payerName,
       notifyUrl,
+      successUrl,
+      failureUrl,
+      pendingUrl,
     } = config;
 
-    const webhookUrl = notifyUrl || `${this.appPublicUrl}/api/payments/webhook/${workspaceId}`;
+    const webhookUrl = notifyUrl || `${this.appPublicUrl}/api/plans/webhook`;
+    
+    // URLs de retorno - preferir las pasadas, sino usar defaults
+    const backUrls = {
+      success: successUrl || `${this.appPublicUrl}/payment/success`,
+      failure: failureUrl || `${this.appPublicUrl}/payment/failure`,
+      pending: pendingUrl || `${this.appPublicUrl}/payment/pending`,
+    };
+
+    // auto_return solo funciona con URLs públicas (no localhost)
+    const isPublicUrl = backUrls.success && !backUrls.success.includes('localhost');
 
     const preferenceBody = {
       items: [
@@ -67,12 +80,8 @@ export class MercadoPagoProvider extends BasePaymentProvider {
       ],
       external_reference: externalRef,
       notification_url: webhookUrl,
-      back_urls: {
-        success: `${this.appPublicUrl}/payment/success`,
-        failure: `${this.appPublicUrl}/payment/failure`,
-        pending: `${this.appPublicUrl}/payment/pending`,
-      },
-      auto_return: 'approved',
+      back_urls: backUrls,
+      ...(isPublicUrl && { auto_return: 'approved' }),
       // Si tienes el email del pagador mejora la conversión
       ...(payerEmail && {
         payer: {
@@ -111,6 +120,28 @@ export class MercadoPagoProvider extends BasePaymentProvider {
       const mpError = err.response?.data;
       const message = mpError?.message || err.message;
       throw new Error(`MercadoPago createPaymentLink error: ${message}`);
+    }
+  }
+
+  /**
+   * Consulta una merchant_order por ID
+   * Se usa para obtener los pagos asociados a una orden
+   */
+  async getMerchantOrder(orderId) {
+    if (!this.accessToken) {
+      throw new Error('MP_ACCESS_TOKEN no configurado.');
+    }
+
+    try {
+      const response = await axios.get(
+        `${MP_API_BASE}/merchant_orders/${orderId}`,
+        { headers: this._headers }
+      );
+
+      return response.data;
+    } catch (err) {
+      const mpError = err.response?.data;
+      throw new Error(`MercadoPago getMerchantOrder error: ${mpError?.message || err.message}`);
     }
   }
 

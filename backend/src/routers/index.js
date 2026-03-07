@@ -32,11 +32,19 @@ router.get("/auth/workspaces", requireAuth, auth.getUserWorkspaces);
 // ============ PLANES Y LÍMITES ============
 // Público - Lista planes para mostrar en pricing
 router.get("/plans", plans.listPlans);
+// Proveedores de pago disponibles (ANTES de :planId para evitar conflicto)
+router.get("/plans/providers", plans.getPaymentProviders);
 router.get("/plans/:planId", plans.getPlan);
 
 // Usuario - Su plan y uso
 router.get("/user/plan", requireAuth, plans.getMyPlan);
 router.get("/user/usage", requireAuth, plans.getMyUsage);
+
+// Suscripción - Crear link de pago para plan
+router.post("/plans/subscribe", requireAuth, plans.subscribe);
+
+// Webhook de suscripciones (Wompi llama esto) - SIN AUTH
+router.post("/plans/webhook", plans.handleSubscriptionWebhook);
 
 // SuperAdmin - Gestión de planes
 router.post("/admin/plans", requireAuth, plans.createPlan);

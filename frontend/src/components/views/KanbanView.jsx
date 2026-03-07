@@ -28,10 +28,10 @@ const getColumnColor = (columnName) => {
 };
 
 const PRIORITY_STYLES = {
-  'alta': { bg: 'bg-red-500/20', text: 'text-red-400', icon: '🔴' },
-  'media': { bg: 'bg-amber-500/20', text: 'text-amber-400', icon: '🟡' },
-  'baja': { bg: 'bg-emerald-500/20', text: 'text-emerald-400', icon: '🟢' },
-  'default': { bg: 'bg-slate-600/20', text: 'text-slate-400', icon: '⚪' },
+  'alta': { bg: 'bg-red-500/20', text: 'text-red-400', dot: 'bg-red-500' },
+  'media': { bg: 'bg-amber-500/20', text: 'text-amber-400', dot: 'bg-amber-500' },
+  'baja': { bg: 'bg-emerald-500/20', text: 'text-emerald-400', dot: 'bg-emerald-500' },
+  'default': { bg: 'bg-slate-600/20', text: 'text-slate-400', dot: 'bg-slate-400' },
 };
 
 const getPriorityStyle = (priority) => {
@@ -413,7 +413,7 @@ export default function KanbanView({ view, data, meta, onRefresh, workspaceId })
                             <div className="flex items-center gap-2 flex-wrap">
                               {card.priority && (
                                 <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${priorityStyle.bg} ${priorityStyle.text}`}>
-                                  <span>{priorityStyle.icon}</span>{card.priority}
+                                  <span className={`w-2 h-2 rounded-full ${priorityStyle.dot}`}></span>{card.priority}
                                 </span>
                               )}
                               {card.assignee && (

@@ -3,6 +3,7 @@
  * Simplifica la creación de flujos con preguntas simples
  */
 import { useState, useEffect } from 'react';
+import { Calendar, HelpCircle, User, ShoppingCart, Bell, Sparkles, MessageSquare, Database, Pencil, Clock, Mail, Smartphone, MapPin, Package, Hash, FileText, Plus, CheckCircle } from 'lucide-react';
 import { api } from '../api/client';
 
 // Pasos del wizard
@@ -14,11 +15,24 @@ const STEPS = [
   { id: 4, title: '¡Listo!', desc: 'Revisar y crear' },
 ];
 
+// Mapa de iconos para renderizar
+const IconMap = {
+  Calendar, HelpCircle, User, ShoppingCart, Bell, Sparkles, 
+  MessageSquare, Database, Pencil, Clock, Mail, Smartphone, 
+  MapPin, Package, Hash, FileText, Plus, CheckCircle
+};
+
+// Helper para renderizar iconos
+const Icon = ({ name, className = "w-5 h-5" }) => {
+  const IconComponent = IconMap[name];
+  return IconComponent ? <IconComponent className={className} /> : null;
+};
+
 // Objetivos predefinidos
 const GOALS = [
   { 
     id: 'reservation', 
-    icon: '📅', 
+    icon: 'Calendar', 
     label: 'Gestionar reservas/citas',
     description: 'Permite a los usuarios reservar, consultar o cancelar citas',
     suggestedTrigger: 'keywords',
@@ -28,7 +42,7 @@ const GOALS = [
   },
   { 
     id: 'faq', 
-    icon: '❓', 
+    icon: 'HelpCircle', 
     label: 'Responder preguntas',
     description: 'Responde automáticamente a preguntas frecuentes',
     suggestedTrigger: 'keywords',
@@ -38,7 +52,7 @@ const GOALS = [
   },
   { 
     id: 'registration', 
-    icon: '👤', 
+    icon: 'User', 
     label: 'Registrar clientes',
     description: 'Captura datos de nuevos clientes o usuarios',
     suggestedTrigger: 'keywords',
@@ -48,7 +62,7 @@ const GOALS = [
   },
   { 
     id: 'order', 
-    icon: '🛒', 
+    icon: 'ShoppingCart', 
     label: 'Tomar pedidos',
     description: 'Recibe y procesa pedidos de productos o servicios',
     suggestedTrigger: 'keywords',
@@ -58,7 +72,7 @@ const GOALS = [
   },
   { 
     id: 'notification', 
-    icon: '🔔', 
+    icon: 'Bell', 
     label: 'Enviar notificaciones',
     description: 'Notifica automáticamente cuando ocurre algo',
     suggestedTrigger: 'database',
@@ -68,7 +82,7 @@ const GOALS = [
   },
   { 
     id: 'custom', 
-    icon: '✨', 
+    icon: 'Sparkles', 
     label: 'Personalizado',
     description: 'Crea un flujo desde cero con tu propia lógica',
     suggestedTrigger: 'keywords',
@@ -80,32 +94,32 @@ const GOALS = [
 
 // Triggers disponibles
 const TRIGGERS = [
-  { id: 'keywords', icon: '💬', label: 'Cuando alguien escribe...', description: 'Se activa con palabras clave específicas' },
-  { id: 'database', icon: '📊', label: 'Cuando se crea un registro', description: 'Se activa al crear datos en una tabla' },
-  { id: 'update', icon: '✏️', label: 'Cuando se modifica un registro', description: 'Se activa al actualizar datos' },
-  { id: 'schedule', icon: '⏰', label: 'En un horario específico', description: 'Se activa a cierta hora/día' },
+  { id: 'keywords', icon: 'MessageSquare', label: 'Cuando alguien escribe...', description: 'Se activa con palabras clave específicas' },
+  { id: 'database', icon: 'Database', label: 'Cuando se crea un registro', description: 'Se activa al crear datos en una tabla' },
+  { id: 'update', icon: 'Pencil', label: 'Cuando se modifica un registro', description: 'Se activa al actualizar datos' },
+  { id: 'schedule', icon: 'Clock', label: 'En un horario específico', description: 'Se activa a cierta hora/día' },
 ];
 
 // Campos comunes
 const COMMON_FIELDS = [
-  { key: 'nombre', label: 'Nombre', type: 'text', icon: '👤' },
-  { key: 'email', label: 'Email', type: 'email', icon: '📧' },
-  { key: 'telefono', label: 'Teléfono', type: 'phone', icon: '📱' },
-  { key: 'fecha', label: 'Fecha', type: 'date', icon: '📅' },
-  { key: 'hora', label: 'Hora', type: 'time', icon: '🕐' },
-  { key: 'direccion', label: 'Dirección', type: 'text', icon: '📍' },
-  { key: 'mensaje', label: 'Mensaje', type: 'text', icon: '💬' },
-  { key: 'producto', label: 'Producto', type: 'text', icon: '📦' },
-  { key: 'cantidad', label: 'Cantidad', type: 'number', icon: '🔢' },
-  { key: 'notas', label: 'Notas', type: 'text', icon: '📝' },
+  { key: 'nombre', label: 'Nombre', type: 'text', icon: 'User' },
+  { key: 'email', label: 'Email', type: 'email', icon: 'Mail' },
+  { key: 'telefono', label: 'Teléfono', type: 'phone', icon: 'Smartphone' },
+  { key: 'fecha', label: 'Fecha', type: 'date', icon: 'Calendar' },
+  { key: 'hora', label: 'Hora', type: 'time', icon: 'Clock' },
+  { key: 'direccion', label: 'Dirección', type: 'text', icon: 'MapPin' },
+  { key: 'mensaje', label: 'Mensaje', type: 'text', icon: 'MessageSquare' },
+  { key: 'producto', label: 'Producto', type: 'text', icon: 'Package' },
+  { key: 'cantidad', label: 'Cantidad', type: 'number', icon: 'Hash' },
+  { key: 'notas', label: 'Notas', type: 'text', icon: 'FileText' },
 ];
 
 // Acciones disponibles
 const ACTIONS = [
-  { id: 'create', icon: '➕', label: 'Crear registro', description: 'Guarda los datos en una tabla' },
-  { id: 'update', icon: '✏️', label: 'Actualizar registro', description: 'Modifica un registro existente' },
-  { id: 'respond', icon: '💬', label: 'Solo responder', description: 'Envía un mensaje sin guardar datos' },
-  { id: 'notify', icon: '🔔', label: 'Notificar', description: 'Envía una notificación al equipo' },
+  { id: 'create', icon: 'Plus', label: 'Crear registro', description: 'Guarda los datos en una tabla' },
+  { id: 'update', icon: 'Pencil', label: 'Actualizar registro', description: 'Modifica un registro existente' },
+  { id: 'respond', icon: 'MessageSquare', label: 'Solo responder', description: 'Envía un mensaje sin guardar datos' },
+  { id: 'notify', icon: 'Bell', label: 'Notificar', description: 'Envía una notificación al equipo' },
 ];
 
 export default function FlowWizard({ workspaceId, onCreate, onClose }) {
@@ -252,7 +266,7 @@ export default function FlowWizard({ workspaceId, onCreate, onClose }) {
         position: { x: 250, y },
         data: {
           label: 'Confirmación',
-          message: config.responseMessage || '✅ ¡Listo! Tus datos han sido guardados.',
+          message: config.responseMessage || '¡Listo! Tus datos han sido guardados.',
         },
       });
       edges.push({ id: `e${edges.length + 1}`, source: 'action-1', target: 'response-1' });
@@ -309,8 +323,8 @@ export default function FlowWizard({ workspaceId, onCreate, onClose }) {
                   onClick={() => handleSelectGoal(goal)}
                   className="group p-5 rounded-2xl text-left transition-all hover:scale-[1.02] border border-white/10 hover:border-violet-500/40 hover:bg-violet-500/5"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform">
-                    {goal.icon}
+                  <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <Icon name={goal.icon} className="w-6 h-6 text-violet-400" />
                   </div>
                   <h3 className="text-base font-semibold text-white mb-1">{goal.label}</h3>
                   <p className="text-sm text-zinc-500">{goal.description}</p>
@@ -353,7 +367,7 @@ export default function FlowWizard({ workspaceId, onCreate, onClose }) {
                         : 'border-white/10 hover:border-white/20'
                     }`}
                   >
-                    <span className="text-xl mb-2 block">{trigger.icon}</span>
+                    <Icon name={trigger.icon} className="w-5 h-5 text-violet-400 mb-2" />
                     <p className="text-sm font-medium text-white">{trigger.label}</p>
                     <p className="text-xs text-zinc-500 mt-1">{trigger.description}</p>
                   </button>
@@ -424,7 +438,7 @@ export default function FlowWizard({ workspaceId, onCreate, onClose }) {
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-xl">{field.icon}</span>
+                      <Icon name={field.icon} className="w-5 h-5 text-violet-400" />
                       <div>
                         <p className="text-sm font-medium text-white">{field.label}</p>
                         <p className="text-xs text-zinc-500">Tipo: {field.type}</p>
@@ -463,7 +477,7 @@ export default function FlowWizard({ workspaceId, onCreate, onClose }) {
                         : 'border-white/10 hover:border-white/20'
                     }`}
                   >
-                    <span className="text-xl mb-2 block">{action.icon}</span>
+                    <Icon name={action.icon} className="w-5 h-5 text-violet-400 mb-2" />
                     <p className="text-sm font-medium text-white">{action.label}</p>
                     <p className="text-xs text-zinc-500 mt-1">{action.description}</p>
                   </button>
@@ -498,7 +512,7 @@ export default function FlowWizard({ workspaceId, onCreate, onClose }) {
               <textarea
                 value={config.responseMessage}
                 onChange={(e) => setConfig(prev => ({ ...prev, responseMessage: e.target.value }))}
-                placeholder="Ej: ✅ ¡Tu reserva ha sido confirmada!"
+                placeholder="Ej: ¡Tu reserva ha sido confirmada!"
                 rows={3}
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500/50 resize-none"
               />
