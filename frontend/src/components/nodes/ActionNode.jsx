@@ -3,8 +3,8 @@
  * Color: Púrpura (#8b5cf6)
  */
 import { Handle, Position, useReactFlow } from '@xyflow/react';
-import { useCallback } from 'react';
-import { PlusIcon, EditIcon, RefreshIcon, BellIcon, CloseIcon, CheckIcon, TargetIcon, MinusIcon, MailIcon, BoltIcon, ClipboardIcon, ChatIcon, PhoneIcon, SearchIcon, SendIcon, CalendarIcon, TableIcon } from '../Icons';
+import { useCallback, useEffect } from 'react';
+import { PlusIcon, EditIcon, RefreshIcon, BellIcon, CloseIcon, CheckIcon, TargetIcon, MinusIcon, MailIcon, BoltIcon, ClipboardIcon, ChatIcon, PhoneIcon, SearchIcon, SendIcon, CalendarIcon, TableIcon, TelegramIcon } from '../Icons';
 
 /**
  * Convierte nombres técnicos de campos a nombres amigables
@@ -112,6 +112,7 @@ function getActionDisplay(actionType) {
     'send_notification': { icon: <BellIcon size="sm" />, label: 'Enviar notificación', color: 'purple' },
     'send_email': { icon: <MailIcon size="sm" />, label: 'Enviar email', color: 'blue' },
     'send_message': { icon: <MailIcon size="sm" />, label: 'Enviar mensaje', color: 'cyan' },
+    'telegram': { icon: <SendIcon size="sm" />, label: 'Telegram', color: 'sky' },
     // Integraciones Google
     'google_calendar_event': { icon: <CalendarIcon size="sm" />, label: 'Google Calendar', color: 'red' },
     'google_sheets_row': { icon: <TableIcon size="sm" />, label: 'Google Sheets', color: 'green' },
@@ -137,9 +138,27 @@ export default function ActionNode({ id, data, selected, type }) {
   const actionInfo = getActionDisplay(effectiveActionType);
   const formattedFields = formatFields(data?.fields);
   
+  // Auto-configurar nodos de telegram
+  useEffect(() => {
+    if (type === 'telegram') {
+      if (!data?.channel) {
+        updateNodeData('channel', 'telegram');
+      }
+      if (!data?.actionType) {
+        updateNodeData('actionType', 'send_message');
+      }
+      // Auto-seleccionar "número fijo" para Telegram
+      if (!data?.targetType) {
+        updateNodeData('targetType', 'fixed');
+      }
+    }
+  }, [type, data?.channel, data?.actionType, data?.targetType, updateNodeData]);
+  
   // Detectar modo vista: viene de flujo guardado o de plantilla con campos
+  // Excluir 'telegram' del modo vista para que siempre muestre el formulario
   const isTemplateType = ['insert', 'update', 'notify', 'action'].includes(type);
-  const isViewMode = data?.actionType || (data?.fields && data.fields.length > 0) || data?.tablePlaceholder || isTemplateType;
+  const isTelegramType = type === 'telegram';
+  const isViewMode = !isTelegramType && (data?.actionType || (data?.fields && data.fields.length > 0) || data?.tablePlaceholder || isTemplateType);
   
   // Obtener nombre de tabla
   const tableName = data?.targetTableName || data?.tablePlaceholder || 'Tabla';
@@ -362,7 +381,7 @@ export default function ActionNode({ id, data, selected, type }) {
             )}
 
             {/* UI para send_message - diseño intuitivo con pasos guiados */}
-            {data?.action === 'send_message' && (
+            {(data?.action === 'send_message' || type === 'telegram') && (
               <div className="space-y-3">
                 
                 {/* PASO 1: Destinatario */}
@@ -457,10 +476,12 @@ export default function ActionNode({ id, data, selected, type }) {
                 {/* Campos extra según tipo de destino */}
                 {data?.targetType === 'fixed' && (
                   <div className="px-3 py-2 rounded-lg" style={{ background: 'rgba(6, 182, 212, 0.05)', border: '1px solid rgba(6, 182, 212, 0.1)' }}>
-                    <label className="block text-[10px] text-cyan-400 mb-1.5">Número de teléfono</label>
+                    <label className="block text-[10px] text-cyan-400 mb-1.5">
+                      {type === 'telegram' || data?.channel === 'telegram' ? 'Chat ID de Telegram' : 'Número de teléfono'}
+                    </label>
                     <input 
                       type="text" 
-                      placeholder="Ej: +57 300 123 4567"
+                      placeholder={type === 'telegram' || data?.channel === 'telegram' ? 'Ej: 6979556376' : 'Ej: +57 300 123 4567'}
                       className="w-full px-3 py-2 rounded-lg text-sm placeholder-zinc-500"
                       style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
                       value={data?.targetValue || ''}
@@ -521,8 +542,8 @@ export default function ActionNode({ id, data, selected, type }) {
                   </div>
                 )}
 
-                {/* PASO 2: Canal - solo si ya eligió destino */}
-                {data?.targetType && (
+                {/* PASO 2: Canal - solo si ya eligió destino Y NO es nodo telegram (ya tiene canal definido) */}
+                {data?.targetType && type !== 'telegram' && (
                   <div className="rounded-lg overflow-hidden" style={{ border: '1px solid rgba(6, 182, 212, 0.2)' }}>
                     <div className="px-3 py-2 flex items-center gap-2" style={{ background: 'rgba(6, 182, 212, 0.1)' }}>
                       <span className="w-5 h-5 rounded-full bg-cyan-500 text-[10px] font-bold text-white flex items-center justify-center">2</span>
@@ -567,15 +588,29 @@ export default function ActionNode({ id, data, selected, type }) {
                         <PhoneIcon size="md" className="text-zinc-500" />
                         <span className="text-[10px] text-zinc-500">WhatsApp</span>
                       </button>
+
+                      {/* Telegram */}
+                      <button
+                        type="button"
+                        onClick={() => updateNodeData('channel', 'telegram')}
+                        className={`flex-1 p-2 rounded-lg flex flex-col items-center gap-1 transition-all ${
+                          data?.channel === 'telegram' 
+                            ? 'bg-cyan-500/20 ring-1 ring-cyan-500' 
+                            : 'bg-zinc-800/50 hover:bg-zinc-700/50'
+                        }`}
+                      >
+                        <TelegramIcon size="md" className={data?.channel === 'telegram' ? 'text-cyan-400' : 'text-zinc-400'} />
+                        <span className="text-[10px] text-zinc-300">Telegram</span>
+                      </button>
                     </div>
                   </div>
                 )}
 
-                {/* PASO 3: Mensaje - solo si ya eligió canal */}
-                {data?.targetType && data?.channel && (
+                {/* PASO 3: Mensaje - solo si ya eligió canal (o es telegram que ya tiene canal) */}
+                {data?.targetType && (data?.channel || type === 'telegram') && (
                   <div className="rounded-lg overflow-hidden" style={{ border: '1px solid rgba(6, 182, 212, 0.2)' }}>
                     <div className="px-3 py-2 flex items-center gap-2" style={{ background: 'rgba(6, 182, 212, 0.1)' }}>
-                      <span className="w-5 h-5 rounded-full bg-cyan-500 text-[10px] font-bold text-white flex items-center justify-center">3</span>
+                      <span className="w-5 h-5 rounded-full bg-cyan-500 text-[10px] font-bold text-white flex items-center justify-center">{type === 'telegram' ? '2' : '3'}</span>
                       <span className="text-xs font-medium text-cyan-400">Escribe el mensaje</span>
                     </div>
                     <div className="p-2" style={{ background: '#18181b' }}>
@@ -598,10 +633,14 @@ export default function ActionNode({ id, data, selected, type }) {
                 )}
 
                 {/* Indicador de completado */}
-                {data?.targetType && data?.channel && data?.message && (
+                {data?.targetType && (data?.channel || type === 'telegram') && data?.message && (
                   <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                     <CheckIcon size="sm" className="text-emerald-400" />
-                    <span className="text-xs text-emerald-400">¡Listo! El mensaje se enviará cuando se dispare este flujo</span>
+                    <span className="text-xs text-emerald-400">
+                      {type === 'telegram' 
+                        ? '¡Listo! Se enviará a Telegram cuando se ejecute el flujo' 
+                        : '¡Listo! El mensaje se enviará cuando se dispare este flujo'}
+                    </span>
                   </div>
                 )}
               </div>

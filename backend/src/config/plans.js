@@ -54,7 +54,7 @@ export const DEFAULT_PLANS = {
     _id: 'starter',
     name: 'Inicial',
     description: 'Para negocios pequeños',
-    price: 1000,
+    price: 39000,
     currency: 'COP',
     billingPeriod: 'monthly',
     isDefault: false,

@@ -85,7 +85,7 @@ export default function Terms() {
             <section>
               <h2 className="text-xl font-semibold text-white mb-4">4. Planes y Pagos</h2>
               <p className="text-slate-300 leading-relaxed">
-                FlowAI ofrece diferentes planes de suscripción con distintas funcionalidades y límites. Los pagos se procesan a través de proveedores de pago seguros (Wompi, MercadoPago). Al suscribirse a un plan de pago:
+                FlowAI ofrece diferentes planes de suscripción con distintas funcionalidades y límites. Los pagos se procesan a través de Wompi, un proveedor de pago seguro. Al suscribirse a un plan de pago:
               </p>
               <ul className="list-disc list-inside text-slate-300 space-y-2 mt-4">
                 <li>Acepta los precios vigentes al momento de la suscripción</li>

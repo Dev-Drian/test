@@ -2,7 +2,8 @@
  * paymentController — Webhooks de pagos + endpoints de estado
  *
  * Endpoints:
- *   POST /api/payments/webhook/:workspaceId   ← Wompi llama esto tras cada transacción
+ *   POST /api/webhooks/wompi                  ← UNIFICADO: recibe todos los pagos de Wompi
+ *   POST /api/payments/webhook/:workspaceId   ← Wompi llama esto para pagos de flujos (legacy)
  *   GET  /api/payments/status/:paymentId      ← Consultar estado de un pago
  *   GET  /api/payments/record/:workspaceId/:tableId/:recordId ← Estado de pago de un registro
  */
@@ -12,17 +13,230 @@ import { connectDB, getTableDataDbName } from '../config/db.js';
 import { getNotificationService } from '../integrations/notifications/NotificationService.js';
 import { getSocketService } from '../realtime/SocketService.js';
 import logger from '../config/logger.js';
+import cache from '../config/cache.js';
 
-// ─── Webhook de Wompi ────────────────────────────────────────────────────────
+// ─── Función auxiliar para obtener prefijo de BD ─────────────────────────────
+function getDbPrefix() {
+  return process.env.DB_PREFIX || 'chatbot_';
+}
+
+// ─── Webhook UNIFICADO de Wompi ──────────────────────────────────────────────
 
 /**
- * Recibe la notificación de pago de Wompi.
- *
- * Wompi envía webhooks con estructura:
- *   { event: "transaction.updated", data: { transaction: { id, status, reference, ... } } }
- *
- * Header de validación: X-Event-Checksum = SHA256(bodyString + eventsSecret)
- * Docs: https://docs.wompi.co/docs/colombia/eventos
+ * POST /api/webhooks/wompi
+ * 
+ * Webhook ÚNICO para Wompi. Detecta automáticamente si es:
+ *   - Pago de plan (referencia empieza con "sub:")
+ *   - Pago de flujo (referencia empieza con "ws:")
+ * 
+ * Esta es la ÚNICA URL que debes configurar en el dashboard de Wompi.
+ */
+export async function handleUnifiedWebhook(req, res) {
+  // Responder 200 INMEDIATAMENTE
+  res.status(200).json({ received: true });
+
+  try {
+    logger.info('[Wompi] Webhook unificado recibido:', JSON.stringify(req.body, null, 2));
+
+    // Validar que sea un webhook de Wompi
+    const isWompi = req.body?.event?.startsWith('transaction') || req.body?.data?.transaction;
+    if (!isWompi) {
+      logger.warn('[Wompi] Webhook no reconocido');
+      return;
+    }
+
+    const transactionId = req.body?.data?.transaction?.id;
+    if (!transactionId) {
+      logger.warn('[Wompi] Sin transaction ID');
+      return;
+    }
+
+    // ═══ IDEMPOTENCIA: Evitar procesar el mismo webhook 2 veces ═══
+    const idempotencyKey = `wompi:processed:${transactionId}`;
+    if (cache.get(idempotencyKey)) {
+      logger.info(`[Wompi] Transacción ${transactionId} ya procesada (idempotencia)`);
+      return;
+    }
+
+    // Validar firma
+    const paymentService = getPaymentService({ provider: 'wompi' });
+    const isValid = paymentService.validateWebhook(req.body, req.headers);
+    if (!isValid) {
+      logger.warn('[Wompi] Firma inválida');
+      return;
+    }
+
+    // Solo procesar eventos de transacción
+    const event = req.body?.event || '';
+    if (event && !event.startsWith('transaction')) {
+      logger.info(`[Wompi] Ignorando evento: ${event}`);
+      return;
+    }
+
+    // Consultar estado del pago
+    const paymentData = await paymentService.getPaymentStatus(String(transactionId));
+    logger.info('[Wompi] Estado del pago:', paymentData);
+
+    // Solo procesar pagos aprobados
+    if (paymentData.status !== 'pagado' && paymentData.status !== 'approved') {
+      logger.info(`[Wompi] Pago no aprobado: ${paymentData.status}`);
+      return;
+    }
+
+    const ref = paymentData.externalRef;
+
+    // ─── DETECTAR TIPO DE PAGO ───────────────────────────────────────────────
+    
+    if (ref?.startsWith('sub:')) {
+      // Es un pago de SUSCRIPCIÓN de plan
+      await processSubscriptionPayment(ref, paymentData, transactionId);
+    } else if (ref?.startsWith('ws:') || BasePaymentProvider.parseExternalRef(ref)) {
+      // Es un pago de FLUJO (registro de tabla)
+      await processFlowPayment(ref, paymentData, transactionId);
+    } else {
+      logger.warn('[Wompi] Referencia no reconocida:', ref);
+      return; // No marcar como procesado si no reconocemos la referencia
+    }
+
+    // ═══ MARCAR COMO PROCESADO (idempotencia) ═══
+    // TTL de 24h para evitar reprocesar webhooks duplicados
+    cache.set(idempotencyKey, { processedAt: new Date().toISOString() }, 86400);
+
+  } catch (err) {
+    logger.error('[Wompi] Error procesando webhook:', err.message, err.stack);
+  }
+}
+
+/**
+ * Procesa un pago de suscripción de plan
+ */
+async function processSubscriptionPayment(ref, paymentData, transactionId) {
+  // Formato: sub:provider:userId:planId:timestamp
+  const parts = ref.split(':');
+  if (parts.length < 4) {
+    logger.warn('[Wompi] Referencia de suscripción inválida:', ref);
+    return;
+  }
+
+  const userId = parts[2];
+  const planId = parts[3];
+
+  logger.info(`[Wompi] Activando plan ${planId} para usuario ${userId}`);
+
+  // Actualizar plan del usuario
+  const accountsDb = await connectDB(`${getDbPrefix()}accounts`);
+  const user = await accountsDb.get(userId);
+  
+  const oldPlan = user.plan || 'free';
+  
+  await accountsDb.insert({
+    ...user,
+    plan: planId,
+    planActivatedAt: new Date().toISOString(),
+    planPaymentId: transactionId,
+    planProvider: 'wompi',
+    updatedAt: new Date().toISOString(),
+  });
+
+  // IMPORTANTE: Invalidar el cache del usuario para que el frontend vea el nuevo plan
+  cache.del(`user:${userId}`);
+  logger.info(`[Wompi] Cache de usuario ${userId} invalidado`);
+
+  // Actualizar estado de la suscripción
+  const subscriptionsDb = await connectDB(`${getDbPrefix()}_subscriptions`);
+  try {
+    const subscription = await subscriptionsDb.get(ref);
+    await subscriptionsDb.insert({
+      ...subscription,
+      status: 'active',
+      activatedAt: new Date().toISOString(),
+      transactionId,
+    });
+  } catch (e) {
+    logger.warn('[Wompi] Suscripción no encontrada:', ref);
+  }
+
+  // Enviar email de confirmación
+  try {
+    const { getEmailService } = await import('../services/EmailService.js');
+    const { getPlans } = await import('./plansController.js');
+    const plans = await getPlans();
+    const newPlan = plans[planId];
+    
+    await getEmailService().sendPlanUpgrade(user.email, user.name, {
+      planName: newPlan?.name || planId,
+      features: Object.entries(newPlan?.features || {})
+        .filter(([_, v]) => v === true)
+        .map(([k]) => k)
+    });
+  } catch (emailErr) {
+    logger.error('[Wompi] Error enviando email:', emailErr.message);
+  }
+
+  // Notificar via socket
+  try {
+    getSocketService().toUser(userId, 'plan:upgraded', {
+      oldPlan,
+      newPlan: planId,
+    });
+  } catch (socketErr) {
+    logger.error('[Wompi] Error socket:', socketErr.message);
+  }
+
+  logger.info(`[Wompi] Plan ${planId} activado exitosamente para ${userId}`);
+}
+
+/**
+ * Procesa un pago de flujo (registro de tabla)
+ */
+async function processFlowPayment(refString, paymentData, transactionId) {
+  const ref = BasePaymentProvider.parseExternalRef(refString);
+  if (!ref) {
+    logger.warn('[Wompi] external_reference inválido:', refString);
+    return;
+  }
+
+  logger.info(`[Wompi] Procesando pago de flujo para registro ${ref.recordId}`);
+
+  // Actualizar el registro en la tabla
+  await markRecordAsPaid(ref.workspaceId, ref.tableId, ref.recordId, {
+    paymentId: String(transactionId),
+    paymentStatus: 'pagado',
+    paymentAmount: paymentData.amount,
+    paymentCurrency: paymentData.currency,
+    paymentDate: paymentData.paidAt || new Date().toISOString(),
+    paymentMethod: paymentData.paymentMethodId,
+    payerEmail: paymentData.payerEmail,
+  });
+
+  // Notificar al workspace
+  await notifyPaymentConfirmed(ref.workspaceId, {
+    recordId: ref.recordId,
+    tableId: ref.tableId,
+    amount: paymentData.amount,
+    currency: paymentData.currency,
+    payerEmail: paymentData.payerEmail,
+  });
+
+  // Emitir evento en tiempo real
+  getSocketService().emitPaymentConfirmed(ref.workspaceId, {
+    recordId: ref.recordId,
+    tableId: ref.tableId,
+    amount: paymentData.amount,
+    currency: paymentData.currency,
+    payerEmail: paymentData.payerEmail,
+  });
+
+  logger.info('[Wompi] Pago de flujo procesado exitosamente');
+}
+
+// ─── Webhook legacy (por workspace) ──────────────────────────────────────────
+
+/**
+ * POST /api/payments/webhook/:workspaceId (LEGACY - usar /api/webhooks/wompi)
+ * 
+ * Recibe la notificación de pago de Wompi para un workspace específico.
+ * Mantener por retrocompatibilidad con flujos existentes.
  */
 export async function handleWebhook(req, res) {
   const { workspaceId } = req.params;
@@ -227,4 +441,27 @@ async function notifyPaymentConfirmed(workspaceId, data) {
   } catch (err) {
     logger.warn('[Payments] No se pudo enviar notificación de pago', { error: err.message });
   }
+}
+
+// ─── Redirect de éxito de pago ───────────────────────────────────────────────
+
+/**
+ * GET /payment/success
+ * Wompi redirige aquí después del pago - redireccionamos al frontend
+ */
+export async function handlePaymentSuccess(req, res) {
+  // Obtener parámetros de la URL que Wompi envía
+  const { id, env } = req.query;
+  
+  // URL del frontend (en desarrollo localhost, en producción la URL real)
+  const frontendUrl = process.env.NODE_ENV === 'production'
+    ? process.env.FRONTEND_URL || 'https://tuapp.com'
+    : 'http://localhost:3020';
+  
+  // Redirigir al frontend con los parámetros de la transacción
+  const redirectUrl = `${frontendUrl}/upgrade?payment=success&transactionId=${id || ''}&env=${env || ''}`;
+  
+  logger.info('[Payments] Redirigiendo a página de éxito', { transactionId: id, redirectUrl });
+  
+  return res.redirect(302, redirectUrl);
 }

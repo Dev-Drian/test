@@ -61,10 +61,18 @@ export async function register(req, res) {
       });
     }
     
-    if (password.length < 6) {
+    if (password.length < 8) {
       return res.status(400).json({ 
-        error: 'La contraseña debe tener al menos 6 caracteres',
+        error: 'La contraseña debe tener al menos 8 caracteres',
         code: 'PASSWORD_TOO_SHORT'
+      });
+    }
+    
+    // Validar complejidad mínima (al menos 1 número o símbolo)
+    if (!/[0-9!@#$%^&*]/.test(password)) {
+      return res.status(400).json({ 
+        error: 'La contraseña debe incluir al menos un número o símbolo',
+        code: 'PASSWORD_TOO_WEAK'
       });
     }
     
@@ -78,9 +86,11 @@ export async function register(req, res) {
       });
       
       if (existing.docs.length > 0) {
-        return res.status(409).json({ 
-          error: 'El email ya está registrado',
-          code: 'EMAIL_EXISTS'
+        // Respuesta genérica para evitar enumeración de cuentas
+        // (no revelar si el email existe o no)
+        return res.status(400).json({ 
+          error: 'No se pudo crear la cuenta. Verifica los datos e intenta de nuevo.',
+          code: 'REGISTRATION_FAILED'
         });
       }
     } catch (err) {

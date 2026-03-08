@@ -267,6 +267,87 @@ export class BaseRepository {
     const doc = await this.findById(id, ...dbArgs);
     return doc !== null;
   }
+  
+  /**
+   * Crea un índice para mejorar rendimiento de queries
+   * @param {string[]} fields - Campos a indexar
+   * @param {string} name - Nombre del índice
+   * @param {...any} dbArgs - Argumentos para la BD
+   */
+  async createIndex(fields, name, ...dbArgs) {
+    try {
+      const db = await this.getDb(...dbArgs);
+      await db.createIndex({
+        index: { fields },
+        ddoc: name,
+        name,
+      });
+      this.log.debug('Index created', { name, fields });
+    } catch (error) {
+      // Índice ya existe, ignorar
+      if (!error.message?.includes('exists')) {
+        this.log.warn('createIndex error:', { error: error.message });
+      }
+    }
+  }
+  
+  /**
+   * Operación bulk insert para mejor rendimiento
+   * @param {object[]} docs - Documentos a insertar
+   * @param {...any} dbArgs - Argumentos para la BD
+   * @returns {Promise<object[]>} Resultados
+   */
+  async bulkInsert(docs, ...dbArgs) {
+    if (!docs?.length) return [];
+    
+    const db = await this.getDb(...dbArgs);
+    const now = new Date().toISOString();
+    
+    const preparedDocs = docs.map(doc => ({
+      _id: doc._id || uuidv4(),
+      ...doc,
+      createdAt: doc.createdAt || now,
+      updatedAt: now,
+    }));
+    
+    try {
+      const result = await db.bulk({ docs: preparedDocs });
+      this.log.info('Bulk insert completed', { count: docs.length });
+      cache.invalidatePattern(`${this.cacheNamespace}:*`);
+      return result;
+    } catch (error) {
+      this.log.error('bulkInsert error:', { error: error.message });
+      throw error;
+    }
+  }
+  
+  /**
+   * Operación bulk update para mejor rendimiento
+   * @param {object[]} docs - Documentos con _id y _rev
+   * @param {...any} dbArgs - Argumentos para la BD
+   * @returns {Promise<object[]>} Resultados
+   */
+  async bulkUpdate(docs, ...dbArgs) {
+    if (!docs?.length) return [];
+    
+    const db = await this.getDb(...dbArgs);
+    const now = new Date().toISOString();
+    
+    const preparedDocs = docs.map(doc => ({
+      ...doc,
+      updatedAt: now,
+    }));
+    
+    try {
+      const result = await db.bulk({ docs: preparedDocs });
+      this.log.info('Bulk update completed', { count: docs.length });
+      cache.invalidatePattern(`${this.cacheNamespace}:*`);
+      return result;
+    } catch (error) {
+      this.log.error('bulkUpdate error:', { error: error.message });
+      throw error;
+    }
+  }
 }
 
 export default BaseRepository;

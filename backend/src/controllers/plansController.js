@@ -7,6 +7,7 @@
 
 import { connectDB, getDbPrefix } from '../config/db.js';
 import { getPlans, invalidatePlansCache, getUserUsage } from '../middleware/limits.js';
+import cache from '../config/cache.js';
 
 /**
  * GET /api/plans - Lista todos los planes
@@ -435,11 +436,10 @@ export async function subscribe(req, res) {
 }
 
 /**
- * POST /api/plans/webhook - Webhook para procesar pagos de suscripciones
- * Soporta Wompi y MercadoPago
+ * POST /api/plans/webhook - Webhook para procesar pagos de suscripciones (Wompi)
  */
 export async function handleSubscriptionWebhook(req, res) {
-  // Responder inmediatamente (los proveedores reintentan si no reciben 200 rápido)
+  // Responder inmediatamente (Wompi reintenta si no recibe 200 rápido)
   res.status(200).json({ received: true });
 
   try {
@@ -447,103 +447,39 @@ export async function handleSubscriptionWebhook(req, res) {
     
     const { getPaymentService } = await import('../services/payments/PaymentService.js');
     
-    // Detectar proveedor por la estructura del webhook
-    const isMercadoPagoPayment = req.body?.type === 'payment' || req.body?.action?.startsWith('payment.');
-    const isMercadoPagoOrder = req.body?.topic === 'merchant_order' || req.body?.topic === 'payment';
-    const isMercadoPago = isMercadoPagoPayment || isMercadoPagoOrder;
+    // Verificar que sea un webhook de Wompi
     const isWompi = req.body?.event?.startsWith('transaction') || req.body?.data?.transaction;
     
-    let provider = 'wompi';
-    let transactionId = null;
-    let paymentData = null;
-    
-    if (isMercadoPago) {
-      provider = 'mercadopago';
-      const paymentService = getPaymentService({ provider: 'mercadopago' });
-      
-      // MercadoPago puede enviar diferentes formatos de webhook
-      if (isMercadoPagoOrder) {
-        // Formato IPN: { resource: "url", topic: "merchant_order" o "payment" }
-        const resourceUrl = req.body?.resource;
-        const topic = req.body?.topic;
-        
-        console.info(`[PlanWebhook] MercadoPago IPN - Topic: ${topic}, Resource: ${resourceUrl}`);
-        
-        if (topic === 'merchant_order') {
-          // Para merchant_order, consultamos la orden y buscamos pagos aprobados
-          const orderId = resourceUrl?.split('/').pop();
-          console.info(`[PlanWebhook] Consultando merchant_order: ${orderId}`);
-          
-          try {
-            const orderData = await paymentService.getMerchantOrder(orderId);
-            console.info(`[PlanWebhook] Merchant order status: ${orderData.status}, payments:`, orderData.payments?.length);
-            
-            // Buscar un pago aprobado en la orden
-            const approvedPayment = orderData.payments?.find(p => p.status === 'approved');
-            if (!approvedPayment) {
-              console.info('[PlanWebhook] Merchant order sin pagos aprobados');
-              return;
-            }
-            
-            transactionId = approvedPayment.id;
-            console.info(`[PlanWebhook] Pago aprobado encontrado: ${transactionId}`);
-            
-          } catch (orderErr) {
-            console.error('[PlanWebhook] Error consultando merchant_order:', orderErr.message);
-            return;
-          }
-        } else if (topic === 'payment') {
-          // Para payment IPN, el ID viene en la URL
-          transactionId = resourceUrl?.split('/').pop();
-        }
-        
-      } else {
-        // Formato webhook v2: { type: "payment", data: { id: "xxx" } }
-        transactionId = req.body?.data?.id;
-      }
-      
-      console.info(`[PlanWebhook] MercadoPago webhook - Payment ID: ${transactionId}`);
-      
-      if (!transactionId) {
-        console.warn('[PlanWebhook] MercadoPago: Sin payment ID');
-        return;
-      }
-      
-      // Consultar estado del pago en MercadoPago
-      paymentData = await paymentService.getPaymentStatus(String(transactionId));
-      
-    } else if (isWompi) {
-      provider = 'wompi';
-      transactionId = req.body?.data?.transaction?.id;
-      
-      console.info(`[PlanWebhook] Wompi webhook - Transaction ID: ${transactionId}`);
-      
-      if (!transactionId) {
-        console.warn('[PlanWebhook] Wompi: Sin transaction ID');
-        return;
-      }
-      
-      // Validar firma del webhook de Wompi
-      const paymentService = getPaymentService({ provider: 'wompi' });
-      const isValid = paymentService.validateWebhook(req.body, req.headers);
-      if (!isValid) {
-        console.warn('[PlanWebhook] Wompi: Firma inválida');
-        return;
-      }
-      
-      // Solo procesar eventos de transacción
-      const event = req.body?.event || '';
-      if (event && !event.startsWith('transaction')) {
-        console.info(`[PlanWebhook] Ignorando evento: ${event}`);
-        return;
-      }
-      
-      paymentData = await paymentService.getPaymentStatus(String(transactionId));
-      
-    } else {
-      console.warn('[PlanWebhook] Proveedor no reconocido:', JSON.stringify(req.body).slice(0, 200));
+    if (!isWompi) {
+      console.warn('[PlanWebhook] Webhook no reconocido como Wompi');
       return;
     }
+    
+    const transactionId = req.body?.data?.transaction?.id;
+    
+    console.info(`[PlanWebhook] Wompi webhook - Transaction ID: ${transactionId}`);
+    
+    if (!transactionId) {
+      console.warn('[PlanWebhook] Wompi: Sin transaction ID');
+      return;
+    }
+    
+    // Validar firma del webhook
+    const paymentService = getPaymentService({ provider: 'wompi' });
+    const isValid = paymentService.validateWebhook(req.body, req.headers);
+    if (!isValid) {
+      console.warn('[PlanWebhook] Wompi: Firma inválida');
+      return;
+    }
+    
+    // Solo procesar eventos de transacción
+    const event = req.body?.event || '';
+    if (event && !event.startsWith('transaction')) {
+      console.info(`[PlanWebhook] Ignorando evento: ${event}`);
+      return;
+    }
+    
+    const paymentData = await paymentService.getPaymentStatus(String(transactionId));
     
     console.info(`[PlanWebhook] Estado del pago:`, paymentData);
     
@@ -584,7 +520,7 @@ export async function handleSubscriptionWebhook(req, res) {
       plan: planId,
       planActivatedAt: new Date().toISOString(),
       planPaymentId: transactionId,
-      planProvider: provider,
+      planProvider: 'wompi',
       updatedAt: new Date().toISOString(),
     });
 
@@ -637,6 +573,166 @@ export async function handleSubscriptionWebhook(req, res) {
   }
 }
 
+/**
+ * POST /api/plans/verify-payment
+ * Verifica un pago pendiente directamente con Wompi y actualiza el plan
+ * Útil cuando el webhook no llega (desarrollo local sin ngrok)
+ * Acepta: reference (referencia de pago) o transactionId (ID de transacción de Wompi)
+ */
+export async function verifyPayment(req, res) {
+  try {
+    const userId = req.userId || req.user?._id;
+    const { reference, transactionId } = req.body;
+    
+    if (!reference && !transactionId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Referencia de pago o ID de transacción requeridos' 
+      });
+    }
+    
+    console.info(`[VerifyPayment] Verificando pago para usuario ${userId}:`, { reference, transactionId });
+    
+    let transaction;
+    
+    // Si tenemos el ID de transacción, consultamos directamente
+    if (transactionId) {
+      const response = await fetch(
+        `https://sandbox.wompi.co/v1/transactions/${transactionId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${process.env.WOMPI_PRIVATE_KEY}`,
+          }
+        }
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        transaction = data.data;
+      }
+    }
+    
+    // Si no lo encontramos por ID, buscar por referencia
+    if (!transaction && reference) {
+      const response = await fetch(
+        `https://sandbox.wompi.co/v1/transactions?reference=${encodeURIComponent(reference)}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${process.env.WOMPI_PRIVATE_KEY}`,
+          }
+        }
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        transaction = data.data?.[0];
+      }
+    }
+    
+    if (!transaction) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Transacción no encontrada' 
+      });
+    }
+    
+    console.info(`[VerifyPayment] Transacción encontrada:`, {
+      id: transaction.id,
+      status: transaction.status,
+      reference: transaction.reference,
+    });
+    
+    // Verificar que el pago esté aprobado
+    if (transaction.status !== 'APPROVED') {
+      return res.json({ 
+        success: false, 
+        status: transaction.status,
+        message: `El pago está en estado: ${transaction.status}` 
+      });
+    }
+    
+    // Parsear referencia: sub:provider:userId:planId:timestamp
+    const ref = transaction.reference;
+    if (!ref || !ref.startsWith('sub:')) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Esta no es una transacción de suscripción' 
+      });
+    }
+    
+    const parts = ref.split(':');
+    if (parts.length < 4) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Referencia de pago inválida' 
+      });
+    }
+    
+    const refUserId = parts[2];
+    const planId = parts[3];
+    
+    // Verificar que el pago pertenece al usuario actual
+    if (refUserId !== userId) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Este pago no pertenece a tu cuenta' 
+      });
+    }
+    
+    // Actualizar plan del usuario
+    const accountsDb = await connectDB(`${getDbPrefix()}accounts`);
+    const user = await accountsDb.get(userId);
+    
+    // Verificar si ya se aplicó el pago
+    if (user.planPaymentId === String(transaction.id)) {
+      return res.json({ 
+        success: true, 
+        message: 'Este pago ya fue aplicado',
+        plan: user.plan 
+      });
+    }
+    
+    const oldPlan = user.plan || 'free';
+    
+    await accountsDb.insert({
+      ...user,
+      plan: planId,
+      planActivatedAt: new Date().toISOString(),
+      planPaymentId: String(transaction.id),
+      planProvider: 'wompi',
+      updatedAt: new Date().toISOString(),
+    });
+    
+    // Invalidar cache del usuario para que los cambios se reflejen inmediatamente
+    cache.del(`user:${userId}`);
+    
+    console.info(`[VerifyPayment] Plan ${planId} activado para ${userId} (antes: ${oldPlan})`);
+    
+    // Notificar via socket
+    try {
+      const { getSocketService } = await import('../realtime/SocketService.js');
+      getSocketService().toUser(userId, 'plan:upgraded', {
+        oldPlan,
+        newPlan: planId,
+      });
+    } catch (e) {}
+    
+    res.json({ 
+      success: true, 
+      message: '¡Plan actualizado exitosamente!',
+      oldPlan,
+      newPlan: planId 
+    });
+    
+  } catch (err) {
+    console.error('[VerifyPayment] Error:', err.message);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error verificando el pago' 
+    });
+  }
+}
+
 export default {
   listPlans,
   getPlan,
@@ -648,5 +744,6 @@ export default {
   getMyPlan,
   getPaymentProviders,
   subscribe,
-  handleSubscriptionWebhook
+  handleSubscriptionWebhook,
+  verifyPayment
 };

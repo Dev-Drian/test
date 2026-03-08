@@ -275,19 +275,21 @@ export default function Login() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
                 Correo electrónico
               </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden="true">
                   {Icons.mail}
                 </span>
                 <input
+                  id="email"
                   type="email"
                   name="email"
                   value={form.email}
                   onChange={handleChange}
                   required
+                  autoComplete="email"
                   className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-800/50 border border-slate-700/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all"
                   placeholder="tu@email.com"
                 />
@@ -295,26 +297,29 @@ export default function Login() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
                 Contraseña
               </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden="true">
                   {Icons.lock}
                 </span>
                 <input
+                  id="password"
                   type={showPassword ? "text" : "password"}
                   name="password"
                   value={form.password}
                   onChange={handleChange}
                   required
                   minLength={6}
+                  autoComplete="current-password"
                   className="w-full pl-12 pr-12 py-3.5 rounded-xl bg-slate-800/50 border border-slate-700/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
                 >
                   {showPassword ? Icons.eyeOff : Icons.eye}
@@ -324,20 +329,22 @@ export default function Login() {
 
             {isRegister && (
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-300 mb-2">
                   Confirmar contraseña
                 </label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden="true">
                     {Icons.lock}
                   </span>
                   <input
+                    id="confirmPassword"
                     type={showPassword ? "text" : "password"}
                     name="confirmPassword"
                     value={form.confirmPassword}
                     onChange={handleChange}
                     required={isRegister}
                     minLength={6}
+                    autoComplete="new-password"
                     className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-800/50 border border-slate-700/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all"
                     placeholder="••••••••"
                   />

@@ -451,26 +451,37 @@ export class ChatService {
   // ─── Private Methods ────────────────────────────────────────
   
   async _getAgentTables(agent, workspaceId) {
-    const tableIds = agent.tables || [];
-    if (!tableIds.length) {
+    const tableRefs = agent.tables || [];
+    if (!tableRefs.length) {
       return this.tableRepo.findAll(workspaceId);
     }
     
-    // Normalizar IDs - pueden ser strings o objetos {id, tableId, title}
-    const normalizedIds = tableIds.map(t => {
-      if (typeof t === 'string') return t;
-      return t?.id || t?.tableId;
+    // Normalizar referencias - pueden ser:
+    // - UUIDs directos: "4c6fd752-a396-4e07-9a58-434688ad5d8f"
+    // - Nombres de tablas: "productos", "Pedidos"
+    // - Objetos: {id, tableId, title}
+    const normalizedRefs = tableRefs.map(t => {
+      if (typeof t === 'string') return t.trim();
+      return t?.id || t?.tableId || t?.name;
     }).filter(Boolean);
     
-    if (!normalizedIds.length) {
+    if (!normalizedRefs.length) {
       return this.tableRepo.findAll(workspaceId);
     }
     
-    const tables = await Promise.all(
-      normalizedIds.map(id => this.tableRepo.findById(id, workspaceId))
-    );
+    // Obtener todas las tablas y filtrar por ID o nombre
+    const allTables = await this.tableRepo.findAll(workspaceId);
     
-    return tables.filter(Boolean);
+    return allTables.filter(table => {
+      const tableId = table._id || table.id;
+      const tableName = (table.name || '').toLowerCase();
+      
+      return normalizedRefs.some(ref => {
+        const refLower = ref.toLowerCase();
+        // Coincide por ID exacto o por nombre (case-insensitive)
+        return tableId === ref || tableName === refLower;
+      });
+    });
   }
   
   _emitActionEvents(result, context) {

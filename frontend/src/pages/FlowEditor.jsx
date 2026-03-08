@@ -29,7 +29,7 @@ import ResponseNode from '../components/nodes/ResponseNode';
 import QueryNode from '../components/nodes/QueryNode';
 import DefaultNode from '../components/nodes/DefaultNode';
 import CollectNode from '../components/nodes/CollectNode';
-import { RocketIcon, SearchIcon, SplitIcon, BoltIcon, CalendarIcon, ChatIcon, EditIcon, TrashIcon, ClipboardIcon, LightBulbIcon, TargetIcon, SparklesIcon, LinkIcon, FolderIcon, PlusIcon, ClockIcon, BellIcon, SwitchIcon, LoopIcon, TimerIcon, EmailIcon, WhatsAppIcon, SmsIcon, WebhookIcon, GlobeIcon, TransformIcon, VariableIcon, NoteIcon, CheckCircleIcon, FormIcon, ErrorIcon, SubflowIcon } from '../components/Icons';
+import { RocketIcon, SearchIcon, SplitIcon, BoltIcon, CalendarIcon, ChatIcon, EditIcon, TrashIcon, ClipboardIcon, LightBulbIcon, TargetIcon, SparklesIcon, LinkIcon, FolderIcon, PlusIcon, ClockIcon, BellIcon, SwitchIcon, LoopIcon, TimerIcon, EmailIcon, WhatsAppIcon, TelegramIcon, SmsIcon, WebhookIcon, GlobeIcon, TransformIcon, VariableIcon, NoteIcon, CheckCircleIcon, FormIcon, ErrorIcon, SubflowIcon } from '../components/Icons';
 
 // Mapeo de tipos de nodos - incluye aliases para plantillas
 const nodeTypes = {
@@ -58,6 +58,7 @@ const nodeTypes = {
   wait: ActionNode,           // Esperar tiempo
   email: ActionNode,          // Enviar email
   whatsapp: ActionNode,       // Enviar WhatsApp
+  telegram: ActionNode,       // Enviar Telegram
   notification: ActionNode,   // Notificación interna
   sms: ActionNode,            // Enviar SMS
   webhook: ActionNode,        // Llamar webhook
@@ -249,6 +250,7 @@ const blockCategories = [
       { type: 'response', icon: <ChatIcon size="sm" />, label: 'Responder', color: '#ec4899', desc: 'Al usuario' },
       { type: 'email', icon: <EmailIcon size="sm" />, label: 'Email', color: '#3b82f6', desc: 'Correo' },
       { type: 'whatsapp', icon: <WhatsAppIcon size="sm" />, label: 'WhatsApp', color: '#25d366', desc: 'Mensaje WA' },
+      { type: 'telegram', icon: <TelegramIcon size="sm" />, label: 'Telegram', color: '#0088cc', desc: 'Mensaje TG' },
       { type: 'notification', icon: <BellIcon size="sm" />, label: 'Notificar', color: '#f59e0b', desc: 'Al equipo' },
     ]
   },
@@ -518,6 +520,7 @@ export default function FlowEditor() {
         setTables(tablesRes.data || []);
       } catch (err) {
         console.error('Error loading data:', err);
+        addToast('Error al cargar los datos', 'error');
       } finally {
         setLoading(false);
       }
@@ -1991,7 +1994,7 @@ export default function FlowEditor() {
                             <div className="p-3 rounded-lg" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
                               <p className="text-[11px] text-emerald-400 font-medium mb-1">💳 Generar Link de Pago</p>
                               <p className="text-[10px] text-zinc-400 leading-relaxed">
-                                Genera un link de MercadoPago y lo guarda en el registro. El siguiente nodo puede usar <code className="bg-zinc-800 px-1 rounded text-emerald-300">{"{{paymentLink}}"}</code> para enviarlo al cliente.
+                                Genera un link de pago con Wompi y lo guarda en el registro. El siguiente nodo puede usar <code className="bg-zinc-800 px-1 rounded text-emerald-300">{"{{paymentLink}}"}</code> para enviarlo al cliente.
                               </p>
                             </div>
 

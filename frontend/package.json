@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@xyflow/react": "^12.10.0",
     "axios": "^1.6.0",
     "intro.js": "^8.3.2",

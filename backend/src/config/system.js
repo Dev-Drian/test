@@ -51,18 +51,19 @@ export const SystemConfig = {
 
   // Pagos
   payments: {
-    // Proveedor activo: 'mercadopago' | 'stripe'
-    provider: process.env.PAYMENT_PROVIDER || 'mercadopago',
+    // Proveedor activo: 'wompi'
+    provider: process.env.PAYMENT_PROVIDER || 'wompi',
 
-    mercadopago: {
-      // Access Token de MercadoPago (sandbox empieza con TEST-)
-      // Obtenerlo en: https://www.mercadopago.com.ar/developers/panel/app
-      accessToken: process.env.MP_ACCESS_TOKEN || '',
-      // Secret para validar webhooks (IPN signature)
-      webhookSecret: process.env.MP_WEBHOOK_SECRET || '',
+    wompi: {
+      // Llaves de Wompi
+      // Obtenerlo en: https://comercios.wompi.co
+      publicKey: process.env.WOMPI_PUBLIC_KEY || '',
+      privateKey: process.env.WOMPI_PRIVATE_KEY || '',
+      integritySecret: process.env.WOMPI_INTEGRITY_SECRET || '',
+      eventsSecret: process.env.WOMPI_EVENTS_SECRET || '',
     },
 
-    // URL pública del servidor (para notification_url en MP y back_urls)
+    // URL pública del servidor (para notification_url y back_urls)
     // En producción: https://tu-dominio.com
     // En desarrollo: usar ngrok o similar para exponer localhost
     appPublicUrl: process.env.APP_PUBLIC_URL || 'http://localhost:3010',

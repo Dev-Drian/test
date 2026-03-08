@@ -42,6 +42,7 @@ const navItems = [
   { to: "/flows", label: "Automatizar", icon: Zap, tourId: "nav-flows" },
   { to: "/chat", label: "Chat", icon: MessageCircle, tourId: "nav-chat" },
   { to: "/integrations", label: "Integraciones", icon: Link2, tourId: "nav-integrations" },
+  { to: "/advanced", label: "Avanzado", icon: Sparkles, tourId: "nav-advanced" },
   { to: "/guia", label: "Ayuda", icon: BookOpen, tourId: "nav-guide" },
   { to: "/upgrade", label: "Mi Plan", icon: Crown, tourId: "nav-plan" },
   { to: "/admin", label: "Admin", icon: Settings, tourId: "nav-admin" },

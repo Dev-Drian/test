@@ -260,7 +260,7 @@ function StepCard({ step, IconComp, title, description, delay = 0 }) {
 
 const PLANS = [
   { id: "free",       name: "Gratis",      description: "Para explorar la plataforma",     price: 0,      priceLabel: "$0",        features: ["1 proyecto", "3 tablas", "100 registros", "1 asistente IA", "GPT-4o Mini"] },
-  { id: "starter",    name: "Inicial",     description: "Para negocios pequeños",          price: 1000,  priceLabel: "$1.000",   features: ["3 proyectos", "10 tablas", "1.000 registros", "2 asistentes", "GPT-4o + Mini", "Exportar datos"] },
+  { id: "starter",    name: "Inicial",     description: "Para negocios pequeños",          price: 39000,  priceLabel: "$39.000",   features: ["3 proyectos", "10 tablas", "1.000 registros", "2 asistentes", "GPT-4o + Mini", "Exportar datos"] },
   { id: "premium",    name: "Premium",     description: "Para negocios en crecimiento",    price: 119000, priceLabel: "$119.000",  features: ["10 proyectos", "50 tablas", "10.000 registros", "5 asistentes", "Todos los modelos", "Webhooks + API", "Soporte prioritario"] },
   { id: "enterprise", name: "Empresarial", description: "Sin límites",                     price: 399000, priceLabel: "$399.000",  features: ["Todo ilimitado", "White label", "Dominio propio", "GPT-4 + Claude", "Onboarding dedicado", "SLA garantizado"] },
 ];

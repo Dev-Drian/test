@@ -13,19 +13,21 @@ import * as inbound from "../controllers/inboundController.js";
 import * as admin from "../controllers/adminController.js";
 import * as payment from "../controllers/paymentController.js";
 import * as metaWebhook from "../controllers/metaWebhookController.js";
+import * as telegram from "../controllers/telegramController.js";
 import { requireAuth, optionalAuth, requireWorkspaceMember } from "../middleware/index.js";
 import { validateWorkspace } from "../middleware/index.js";
+import { loginLimiter, registerLimiter, forgotPasswordLimiter } from "../middleware/index.js";
 import { checkCanCreateWorkspace, checkCanCreateTable, checkCanCreateAgent, checkCanCreateFlow } from "../middleware/limits.js";
 
 const router = Router();
 
-// ============ AUTH (público) ============
-router.post("/auth/register", auth.register);
-router.post("/auth/login", auth.login);
+// ============ AUTH (público + rate limited) ============
+router.post("/auth/register", registerLimiter, auth.register);
+router.post("/auth/login", loginLimiter, auth.login);
 router.get("/auth/me", requireAuth, auth.getProfile);
 router.put("/auth/me", requireAuth, auth.updateProfile);
 router.post("/auth/change-password", requireAuth, auth.changePassword);
-router.post("/auth/forgot-password", auth.forgotPassword);
+router.post("/auth/forgot-password", forgotPasswordLimiter, auth.forgotPassword);
 router.post("/auth/reset-password", auth.resetPassword);
 router.get("/auth/workspaces", requireAuth, auth.getUserWorkspaces);
 
@@ -42,9 +44,10 @@ router.get("/user/usage", requireAuth, plans.getMyUsage);
 
 // Suscripción - Crear link de pago para plan
 router.post("/plans/subscribe", requireAuth, plans.subscribe);
+router.post("/plans/verify-payment", requireAuth, plans.verifyPayment);
 
-// Webhook de suscripciones (Wompi llama esto) - SIN AUTH
-router.post("/plans/webhook", plans.handleSubscriptionWebhook);
+// Webhook de planes usa el unificado (/api/webhooks/wompi) - Esta ruta redirige allí
+router.post("/plans/webhook", payment.handleUnifiedWebhook);
 
 // SuperAdmin - Gestión de planes
 router.post("/admin/plans", requireAuth, plans.createPlan);
@@ -142,6 +145,18 @@ router.post("/integrations/google/spreadsheets/:spreadsheetId/row", requireAuth,
 // Ejecución desde flujos
 router.post("/integrations/google/execute", requireAuth, google.executeFlowAction);
 
+// ============ INTEGRACIONES - TELEGRAM ============
+// Webhook (público - recibe updates de Telegram)
+router.post("/telegram/webhook/:workspaceId", telegram.handleWebhook);
+
+// API protegida
+router.get("/telegram/:workspaceId/bot-info", requireAuth, validateWorkspace, telegram.getBotInfo);
+router.post("/telegram/:workspaceId/send", requireAuth, validateWorkspace, telegram.sendMessage);
+router.post("/telegram/:workspaceId/send-photo", requireAuth, validateWorkspace, telegram.sendPhoto);
+router.post("/telegram/:workspaceId/setup-webhook", requireAuth, validateWorkspace, telegram.setupWebhook);
+router.delete("/telegram/:workspaceId/webhook", requireAuth, validateWorkspace, telegram.deleteWebhook);
+router.post("/telegram/:workspaceId/set-commands", requireAuth, validateWorkspace, telegram.setCommands);
+
 // ============ SUPER ADMIN ============
 router.get("/admin/status", requireAuth, admin.getSystemStatus);
 router.get("/admin/jobs", requireAuth, admin.getJobs);
@@ -152,7 +167,9 @@ router.post("/admin/cache/clear", requireAuth, admin.clearAllCache);
 router.get("/admin/snapshot/:workspaceId", requireAuth, admin.getWorkspaceSnapshot);
 
 // ============ PAGOS ============
-// Webhook: SIN requireAuth (Wompi llama este endpoint directamente)
+// Webhook UNIFICADO: ÚNICA URL que configurar en Wompi (detecta automáticamente planes vs flujos)
+router.post("/webhooks/wompi", payment.handleUnifiedWebhook);
+// Webhook legacy por workspace (mantener por retrocompatibilidad)
 router.post("/payments/webhook/:workspaceId", payment.handleWebhook);
 // Estado de un pago (requiere auth)
 router.get("/payments/status/:paymentId", requireAuth, payment.getPaymentStatus);
@@ -164,6 +181,88 @@ router.get("/payments/record/:workspaceId/:tableId/:recordId", requireAuth, paym
 // POST: recibe mensajes entrantes — añadir ?workspaceId=<id> en la URL del dashboard
 router.get("/webhooks/meta", metaWebhook.verifyWebhook);
 router.post("/webhooks/meta", metaWebhook.receiveEvent);
+
+// ============ ADVANCED FEATURES ============
+import * as advancedFeatures from "../controllers/advancedFeaturesController.js";
+
+// --- AI Flow Builder ---
+router.post("/ai-flow/:workspaceId/generate", requireAuth, validateWorkspace, advancedFeatures.generateFlowFromDescription);
+router.post("/ai-flow/suggest-improvements", requireAuth, advancedFeatures.suggestFlowImprovements);
+router.post("/ai-flow/describe", requireAuth, advancedFeatures.describeFlow);
+router.post("/ai-flow/autocomplete", requireAuth, advancedFeatures.autocompleteFlow);
+
+// --- Flow Execution ---
+router.post("/flow-execution/:workspaceId/execute", requireAuth, validateWorkspace, advancedFeatures.executeFlow);
+router.get("/flow-execution/:workspaceId/:flowId/history", requireAuth, validateWorkspace, advancedFeatures.getExecutionHistory);
+
+// --- Global Variables ---
+router.get("/variables/:workspaceId", requireAuth, validateWorkspace, advancedFeatures.getGlobalVariables);
+router.post("/variables/:workspaceId", requireAuth, validateWorkspace, advancedFeatures.upsertGlobalVariable);
+router.delete("/variables/:workspaceId/:variableId", requireAuth, validateWorkspace, advancedFeatures.deleteGlobalVariable);
+
+// --- Conversation Analytics ---
+router.get("/analytics/:workspaceId/conversations", requireAuth, validateWorkspace, advancedFeatures.getConversationStats);
+router.get("/analytics/:workspaceId/conversations/ai", requireAuth, validateWorkspace, advancedFeatures.analyzeConversationsWithAI);
+router.get("/analytics/:workspaceId/realtime", requireAuth, validateWorkspace, advancedFeatures.getRealTimeMetrics);
+
+// --- Flow Doctor ---
+router.post("/flow-doctor/analyze", requireAuth, advancedFeatures.analyzeFlow);
+router.post("/flow-doctor/analyze-ai", requireAuth, advancedFeatures.analyzeFlowWithAI);
+router.post("/flow-doctor/auto-fix", requireAuth, advancedFeatures.autoFixFlow);
+
+// --- Webhooks ---
+router.get("/webhooks/:workspaceId/list", requireAuth, validateWorkspace, advancedFeatures.listWebhooks);
+router.post("/webhooks/:workspaceId/create", requireAuth, validateWorkspace, advancedFeatures.createWebhook);
+router.put("/webhooks/:workspaceId/:webhookId", requireAuth, validateWorkspace, advancedFeatures.updateWebhook);
+router.delete("/webhooks/:workspaceId/:webhookId", requireAuth, validateWorkspace, advancedFeatures.deleteWebhook);
+router.get("/webhooks/:workspaceId/:webhookId/code", requireAuth, validateWorkspace, advancedFeatures.getWebhookCode);
+router.post("/webhooks/:workspaceId/:webhookId/test", requireAuth, validateWorkspace, advancedFeatures.testWebhook);
+
+// --- Conversation Replay ---
+router.get("/replay/:workspaceId/:chatId/timeline", requireAuth, validateWorkspace, advancedFeatures.getConversationTimeline);
+router.get("/replay/:workspaceId/message/:messageId", requireAuth, validateWorkspace, advancedFeatures.getMessageDetails);
+router.get("/replay/:workspaceId/:chatId/analyze", requireAuth, validateWorkspace, advancedFeatures.analyzeConversation);
+router.post("/replay/:workspaceId/message/:messageId/simulate", requireAuth, validateWorkspace, advancedFeatures.simulateAlternativeResponse);
+router.get("/replay/:workspaceId/:chatId/export", requireAuth, validateWorkspace, advancedFeatures.exportConversation);
+
+// --- Collaboration ---
+router.get("/collab/:workspaceId/:flowId/users", requireAuth, validateWorkspace, advancedFeatures.getActiveCollaborators);
+router.get("/collab/:workspaceId/:flowId/history", requireAuth, validateWorkspace, advancedFeatures.getChangeHistory);
+router.get("/collab/stats", requireAuth, advancedFeatures.getCollaborationStats);
+
+// --- Integrations ---
+router.get("/integrations/available", requireAuth, advancedFeatures.listAvailableIntegrations);
+router.get("/integrations/categories", requireAuth, advancedFeatures.getIntegrationCategories);
+router.get("/integrations/:workspaceId/connected", requireAuth, validateWorkspace, advancedFeatures.listConnectedIntegrations);
+router.post("/integrations/:workspaceId/connect", requireAuth, validateWorkspace, advancedFeatures.connectIntegration);
+router.post("/integrations/:workspaceId/telegram/connect", requireAuth, validateWorkspace, advancedFeatures.connectTelegram);
+router.delete("/integrations/:workspaceId/:connectionId", requireAuth, validateWorkspace, advancedFeatures.disconnectIntegration);
+router.post("/integrations/:workspaceId/:connectionId/execute", requireAuth, validateWorkspace, advancedFeatures.executeIntegrationAction);
+
+// --- Templates Marketplace ---
+router.get("/templates", requireAuth, advancedFeatures.listTemplates);
+router.get("/templates/categories", requireAuth, advancedFeatures.getTemplateCategories);
+router.get("/templates/:templateId", requireAuth, advancedFeatures.getTemplate);
+router.post("/templates/suggest", requireAuth, advancedFeatures.suggestTemplates);
+router.post("/templates/:workspaceId/:templateId/install", requireAuth, validateWorkspace, advancedFeatures.installTemplate);
+router.post("/templates/generate-custom", requireAuth, advancedFeatures.generateCustomTemplate);
+router.post("/templates/:workspaceId/:flowId/save", requireAuth, validateWorkspace, advancedFeatures.saveFlowAsTemplate);
+
+// --- Mobile API Management ---
+router.get("/mobile/:workspaceId/api-key", requireAuth, validateWorkspace, advancedFeatures.getMobileApiKey);
+router.post("/mobile/:workspaceId/api-key", requireAuth, validateWorkspace, advancedFeatures.generateMobileApiKey);
+router.delete("/mobile/:workspaceId/api-key", requireAuth, validateWorkspace, advancedFeatures.revokeMobileApiKey);
+
+// --- Mobile API Public Endpoints (API key auth) ---
+router.get("/mobile/:workspaceId/stats", advancedFeatures.mobileGetStats);
+router.get("/mobile/:workspaceId/chats", advancedFeatures.mobileGetChats);
+router.get("/mobile/:workspaceId/chats/:chatId/messages", advancedFeatures.mobileGetChatMessages);
+router.post("/mobile/:workspaceId/chats/:chatId/reply", advancedFeatures.mobileSendReply);
+router.get("/mobile/:workspaceId/notifications", advancedFeatures.mobileGetNotifications);
+router.get("/mobile/:workspaceId/flows/status", advancedFeatures.mobileGetFlowsStatus);
+
+// --- Public Webhook Endpoint (no auth) ---
+router.all("/inbound/webhook/:path", advancedFeatures.processWebhookCall);
 
 export default router;
 

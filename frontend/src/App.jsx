@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, lazy, Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { WorkspaceContext } from "./context/WorkspaceContext";
 import { useWorkspace } from "./context/WorkspaceContext";
@@ -6,27 +6,32 @@ import { SocketProvider } from "./context/SocketContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { TourProvider } from "./context/TourContext";
 import { ToastProvider } from "./components/Toast";
+import { FullPageSpinner } from "./components/Spinner";
 import Layout from "./components/Layout";
-import Dashboard from "./pages/Dashboard";
-import Workspaces from "./pages/Workspaces";
-import Agents from "./pages/Agents";
-import Tables from "./pages/Tables";
-import Chat from "./pages/Chat";
-import Guia from "./pages/Guia";
-import FlowEditor from "./pages/FlowEditor";
-import Views from "./pages/Views";
-import Flows from "./pages/Flows";
-import Integrations from "./pages/Integrations";
-import Login from "./pages/Login";
-import Landing from "./pages/Landing";
-import Admin from "./pages/Admin";
-import OnboardingWizard from "./components/OnboardingWizard";
-import AuthTransition from "./components/AuthTransition";
-import Upgrade from "./pages/Upgrade";
-import ForgotPassword from "./pages/ForgotPassword";
-import Terms from "./pages/Terms";
-import Privacy from "./pages/Privacy";
 import { listWorkspaces } from "./api/client";
+
+// ═══ LAZY LOADING DE PÁGINAS ═══
+// Mejora la carga inicial dividiendo el bundle
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Workspaces = lazy(() => import("./pages/Workspaces"));
+const Agents = lazy(() => import("./pages/Agents"));
+const Tables = lazy(() => import("./pages/Tables"));
+const Chat = lazy(() => import("./pages/Chat"));
+const Guia = lazy(() => import("./pages/Guia"));
+const FlowEditor = lazy(() => import("./pages/FlowEditor"));
+const Views = lazy(() => import("./pages/Views"));
+const Flows = lazy(() => import("./pages/Flows"));
+const Integrations = lazy(() => import("./pages/Integrations"));
+const Login = lazy(() => import("./pages/Login"));
+const Landing = lazy(() => import("./pages/Landing"));
+const Admin = lazy(() => import("./pages/Admin"));
+const OnboardingWizard = lazy(() => import("./components/OnboardingWizard"));
+const AuthTransition = lazy(() => import("./components/AuthTransition"));
+const Upgrade = lazy(() => import("./pages/Upgrade"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const AdvancedFeatures = lazy(() => import("./pages/AdvancedFeatures"));
 
 export { WorkspaceContext };
 
@@ -109,11 +114,7 @@ function ProtectedRoute({ children }) {
   
   // Mientras carga auth, mostrar loader
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <FullPageSpinner message="Verificando sesión..." />;
   }
   
   // Si no está autenticado: mostrar Landing en "/", login en el resto
@@ -123,11 +124,7 @@ function ProtectedRoute({ children }) {
   
   // Mientras verifica workspaces, mostrar loader
   if (checkingWorkspaces) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <FullPageSpinner message="Cargando workspace..." />;
   }
   
   // Mostrar wizard de onboarding si es necesario (pero no en rutas de bypass)
@@ -156,18 +153,18 @@ function LoginRoute() {
   const { isAuthenticated, loading } = useAuth();
   
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <FullPageSpinner />;
   }
   
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
   
-  return <Login />;
+  return (
+    <Suspense fallback={<FullPageSpinner />}>
+      <Login />
+    </Suspense>
+  );
 }
 
 // Puente: lee workspaceId del contexto y lo pasa al SocketProvider
@@ -230,13 +227,16 @@ function AppContent() {
         <TourProvider>
           {/* Auth Transition Overlay */}
           {authTransition && (
-            <AuthTransition 
-              type={authTransition.type} 
-              userName={user?.name || authTransition.userName}
-              onComplete={authTransition.onComplete}
-            />
+            <Suspense fallback={<FullPageSpinner />}>
+              <AuthTransition 
+                type={authTransition.type} 
+                userName={user?.name || authTransition.userName}
+                onComplete={authTransition.onComplete}
+              />
+            </Suspense>
           )}
-          <Routes>
+          <Suspense fallback={<FullPageSpinner />}>
+            <Routes>
             <Route path="/login" element={<LoginRoute />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/terms" element={<Terms />} />
@@ -253,11 +253,13 @@ function AppContent() {
               <Route path="chat" element={<Chat />} />
               <Route path="guia" element={<Guia />} />
               <Route path="integrations" element={<Integrations />} />
+              <Route path="advanced" element={<AdvancedFeatures />} />
               <Route path="admin" element={<Admin />} />
               <Route path="upgrade" element={<Upgrade />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>
+          </Suspense>
         </TourProvider>
       </SocketBridge>
     </WorkspaceContext.Provider>

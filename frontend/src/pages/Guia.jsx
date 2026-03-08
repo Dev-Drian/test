@@ -125,7 +125,7 @@ const concepts = [
   {
     title: "Tablas",
     icon: <ChartIcon size="lg" />,
-    description: "Almacenan datos estructurados. Define campos con tipos (texto, número, fecha, etc.)."
+    description: "Almacenan datos estructurados. Define campos con tipos (texto, numero, fecha, etc.)."
   },
   {
     title: "Agentes",
@@ -135,12 +135,51 @@ const concepts = [
   {
     title: "Flujos",
     icon: <BoltIcon size="lg" />,
-    description: "Automatizaciones visuales. Conecta bloques para crear procesos sin código."
+    description: "Automatizaciones visuales. Conecta bloques para crear procesos sin codigo."
   },
   {
     title: "Chat",
     icon: <ChatIconComponent size="lg" />,
     description: "Interfaz para hablar con agentes. Usa lenguaje natural para consultar datos."
+  }
+];
+
+// Funcionalidades avanzadas
+const advancedFeatures = [
+  {
+    title: "Estadisticas",
+    color: "#8b5cf6",
+    description: "Ve metricas de tus conversaciones: mensajes por dia, usuarios activos, tiempos de respuesta. Incluye analisis con IA."
+  },
+  {
+    title: "Crear con IA",
+    color: "#06b6d4",
+    description: "Describe en palabras lo que quieres que haga tu bot y la IA genera el flujo completo automaticamente."
+  },
+  {
+    title: "Plantillas",
+    color: "#10b981",
+    description: "Bots prediseñados listos para usar: soporte, ventas, citas medicas, inmobiliaria y mas. Solo instala y personaliza."
+  },
+  {
+    title: "Conexiones",
+    color: "#f59e0b",
+    description: "Conecta tu bot con otras aplicaciones. Recibe datos de formularios, pagos, CRMs y mas mediante webhooks."
+  },
+  {
+    title: "Variables",
+    color: "#ec4899",
+    description: "Configura datos de tu negocio en un solo lugar: horarios, precios, telefonos. Usables en todos tus flujos con {{variable}}."
+  },
+  {
+    title: "App Movil",
+    color: "#3b82f6",
+    description: "Monitorea tus chats desde tu celular. Escanea un codigo QR y recibe notificaciones en tiempo real."
+  },
+  {
+    title: "Revisar Flujos",
+    color: "#ef4444",
+    description: "Detecta problemas en tus flujos automaticamente. Obtiene sugerencias de la IA para mejorar el rendimiento."
   }
 ];
 
@@ -252,6 +291,48 @@ export default function Guia() {
           </div>
         </div>
 
+        {/* Funcionalidades Avanzadas */}
+        <div className="mb-12">
+          <h2 className="text-xl font-semibold text-slate-100 mb-6 flex items-center gap-3">
+            <span className="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>
+              <SparklesIcon size="sm" />
+            </span>
+            Funcionalidades Avanzadas
+          </h2>
+          <p className="text-slate-400 text-sm mb-6">
+            Accede desde el menu lateral en "Avanzado" para desbloquear estas herramientas profesionales.
+          </p>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {advancedFeatures.map((feature, idx) => (
+              <div 
+                key={feature.title}
+                className="p-4 rounded-xl transition-all duration-300 hover:scale-[1.02]"
+                style={{ 
+                  background: 'rgba(51, 65, 85, 0.4)', 
+                  border: '1px solid rgba(100, 116, 139, 0.3)',
+                  borderLeft: `3px solid ${feature.color}`,
+                  animation: 'fade-up 0.4s ease-out forwards',
+                  animationDelay: `${800 + idx * 80}ms`,
+                  opacity: 0
+                }}
+              >
+                <h3 className="text-sm font-semibold text-slate-100 mb-2" style={{ color: feature.color }}>{feature.title}</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+          
+          <Link 
+            to="/advanced"
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105"
+            style={{ background: 'rgba(139, 92, 246, 0.2)', color: '#a78bfa' }}
+          >
+            Explorar funciones avanzadas
+            <span>→</span>
+          </Link>
+        </div>
+
         {/* Tips */}
         <div 
           className="p-6 rounded-2xl transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/10" 
@@ -263,23 +344,31 @@ export default function Guia() {
             opacity: 0
           }}
         >
-          <h3 className="text-lg font-semibold text-indigo-400 mb-4 flex items-center gap-2"><SparklesIcon size="sm" /> Tips para aprovechar al máximo</h3>
+          <h3 className="text-lg font-semibold text-indigo-400 mb-4 flex items-center gap-2"><SparklesIcon size="sm" /> Tips para aprovechar al maximo</h3>
           <ul className="space-y-3 text-sm text-indigo-400/80">
             <li className="flex items-start gap-3">
               <span className="text-indigo-400">•</span>
-              <span>Usa nombres descriptivos para tus tablas y agentes</span>
+              <span>Empieza con una plantilla prediseñada - te ahorrara mucho tiempo</span>
             </li>
             <li className="flex items-start gap-3">
               <span className="text-indigo-400">•</span>
-              <span>Vincula solo las tablas necesarias a cada agente</span>
+              <span>Usa "Crear con IA" para describir tu bot en palabras y generarlo automaticamente</span>
             </li>
             <li className="flex items-start gap-3">
               <span className="text-indigo-400">•</span>
-              <span>Experimenta con diferentes modelos de IA según tu necesidad</span>
+              <span>Configura tus variables (horarios, precios) una vez y usalas en todos los flujos</span>
             </li>
             <li className="flex items-start gap-3">
               <span className="text-indigo-400">•</span>
-              <span>Los flujos te permiten automatizar tareas repetitivas sin código</span>
+              <span>Revisa las estadisticas para ver que preguntan mas tus usuarios</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="text-indigo-400">•</span>
+              <span>Usa "Revisar Flujos" periodicamente para detectar y corregir problemas</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="text-indigo-400">•</span>
+              <span>Conecta la app movil para recibir notificaciones de chats importantes</span>
             </li>
           </ul>
         </div>

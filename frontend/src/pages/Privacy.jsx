@@ -58,7 +58,7 @@ export default function Privacy() {
               <ul className="list-disc list-inside text-slate-300 space-y-2">
                 <li><strong>Datos de registro:</strong> nombre, correo electrónico, contraseña</li>
                 <li><strong>Datos de perfil:</strong> foto, nombre de empresa, tipo de negocio</li>
-                <li><strong>Datos de facturación:</strong> procesados por nuestros proveedores de pago (Wompi, MercadoPago)</li>
+                <li><strong>Datos de facturación:</strong> procesados por nuestro proveedor de pago (Wompi)</li>
                 <li><strong>Contenido:</strong> datos que ingresa en tablas, configuraciones de agentes y flujos</li>
               </ul>
 

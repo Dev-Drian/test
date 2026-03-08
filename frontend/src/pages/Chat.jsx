@@ -294,8 +294,11 @@ export default function Chat() {
       const t = res.data || [];
       setImportTables(t);
       if (t.length > 0) setImportTableId(t[0]._id);
-    } catch (e) { console.error(e); }
-  }, [workspaceId, importTables.length]);
+    } catch (e) {
+      console.error(e);
+      toast.error('Error al cargar tablas');
+    }
+  }, [workspaceId, importTables.length, toast]);
 
   const handleFileSelect = useCallback((e) => {
     const file = e.target.files[0];
@@ -500,6 +503,7 @@ export default function Chat() {
       setChatList(prev => [{ _id: newChat._id, title: "Nueva conversación", messageCount: 0, createdAt: newChat.createdAt }, ...prev]);
     } catch (err) {
       console.error("Error creating chat:", err);
+      toast.error('Error al crear conversación');
     }
   };
 
@@ -543,6 +547,7 @@ export default function Chat() {
       setChatList(prev => prev.map(c => c._id === editingChatId ? { ...c, title: editingTitle.trim() } : c));
     } catch (err) {
       console.error("Error renaming chat:", err);
+      toast.error('Error al renombrar conversación');
     }
     setEditingChatId(null);
   };
@@ -570,6 +575,7 @@ export default function Chat() {
         setChatList(prev => [{ _id: currentChatId, title: text.slice(0, 40) + (text.length > 40 ? "..." : ""), messageCount: 0, createdAt: newChat.createdAt }, ...prev]);
       } catch (err) {
         console.error("Error creating chat:", err);
+        toast.error('Error al iniciar conversación');
         return;
       }
     }

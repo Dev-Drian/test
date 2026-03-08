@@ -149,14 +149,8 @@ export async function sendMessage(req, res) {
     
     res.json(responseData);
 
-    // Emitir respuesta del bot en tiempo real (no bloquea la respuesta HTTP)
-    try {
-      getSocketService().emitNewMessage(workspaceId, result.chatId, {
-        role: 'assistant',
-        content: result.response,
-        action: result.action || null,
-      });
-    } catch (_) { /* silenciar — no crítico */ }
+    // NOTA: No emitir por socket aquí - el frontend ya recibe la respuesta por HTTP.
+    // La emisión por socket solo es útil para mensajes de otros canales (WhatsApp, etc.)
     
   } catch (err) {
     log.error('sendMessage error', { error: err.message });

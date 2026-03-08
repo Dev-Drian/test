@@ -23,14 +23,6 @@ const ProviderIcons = {
       <path d="M20 20L25 15L30 20L25 25L20 20Z" fill="white" fillOpacity="0.7"/>
     </svg>
   ),
-  mercadopago: () => (
-    <svg viewBox="0 0 40 40" className="w-full h-full">
-      <rect width="40" height="40" rx="8" fill="#009EE3"/>
-      <circle cx="20" cy="20" r="10" fill="white"/>
-      <path d="M15 20C15 17.24 17.24 15 20 15C22.76 15 25 17.24 25 20" stroke="#009EE3" strokeWidth="2" fill="none"/>
-      <circle cx="20" cy="22" r="3" fill="#009EE3"/>
-    </svg>
-  ),
 };
 
 // Planes disponibles
@@ -62,7 +54,7 @@ const PLANS = [
     name: 'Inicial',
     description: 'Para negocios pequeños',
     price: 39000,
-    priceLabel: '$1.000',
+    priceLabel: '$39.000',
     period: 'COP/mes',
     icon: Rocket,
     color: 'from-blue-500 to-cyan-500',
@@ -134,25 +126,41 @@ function PlanCard({ plan, currentPlan, onSelect, loading }) {
   return (
     <div 
       className={`relative flex flex-col rounded-2xl border transition-all duration-300 hover:-translate-y-1 ${
-        plan.popular 
-          ? 'border-violet-500/50 bg-gradient-to-b from-violet-600/10 to-transparent shadow-xl' 
-          : 'border-white/10 bg-white/[0.02] hover:border-white/20'
-      } ${isCurrent ? 'ring-2 ring-emerald-500/50' : ''}`}
+        isCurrent
+          ? 'border-emerald-500/60 bg-gradient-to-b from-emerald-600/10 to-transparent ring-2 ring-emerald-500/40'
+          : plan.popular 
+            ? 'border-violet-500/50 bg-gradient-to-b from-violet-600/10 to-transparent' 
+            : 'border-white/10 bg-white/[0.02] hover:border-white/20'
+      }`}
       style={{ 
-        boxShadow: plan.popular ? `0 20px 60px ${plan.shadowColor}` : undefined 
+        boxShadow: isCurrent 
+          ? '0 20px 60px rgba(16, 185, 129, 0.25)' 
+          : plan.popular 
+            ? `0 20px 60px ${plan.shadowColor}` 
+            : undefined 
       }}
     >
-      {/* Badge de popular */}
-      {plan.popular && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg whitespace-nowrap flex items-center gap-1">
-          <Star className="w-3 h-3" /> Más popular
-        </div>
-      )}
-
-      {/* Badge de plan actual */}
-      {isCurrent && (
-        <div className="absolute -top-3 right-4 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500 text-white shadow-lg flex items-center gap-1">
-          <CheckCircle className="w-3 h-3" /> Tu plan
+      {/* Badge único - prioridad: plan actual > popular */}
+      {(isCurrent || plan.popular) && (
+        <div className="absolute -top-3 inset-x-0 flex justify-center">
+          <div className={`px-4 py-1.5 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1.5 ${
+            isCurrent 
+              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' 
+              : 'bg-gradient-to-r from-violet-500 to-purple-500 text-white'
+          }`}>
+            {isCurrent ? (
+              <>
+                <CheckCircle className="w-3.5 h-3.5" />
+                <span>Tu plan</span>
+                {plan.popular && <span className="opacity-70">· Popular</span>}
+              </>
+            ) : (
+              <>
+                <Star className="w-3.5 h-3.5" />
+                <span>Más popular</span>
+              </>
+            )}
+          </div>
         </div>
       )}
 
@@ -309,23 +317,46 @@ export default function Upgrade() {
   // Verificar si viene de un pago exitoso o con plan preseleccionado
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const payment = params.get('payment'); // Wompi usa "payment=success"
     const success = params.get('success');
-    const planId = params.get('plan');
     const cancelled = params.get('cancelled');
     const selected = params.get('selected');
+    const ref = params.get('ref'); // Referencia del pago
+    const transactionId = params.get('id'); // ID de transacción de Wompi
 
-    if (success === 'true' && planId) {
-      toast.success(`¡Plan ${planId} activado! Tu suscripción está siendo procesada.`);
-      refreshUser?.();
+    // Solo procesar una vez y limpiar URL inmediatamente
+    if (payment === 'success' || success === 'true') {
       window.history.replaceState({}, '', '/upgrade');
+      
+      // Si hay referencia o ID de transacción, verificar el pago con el backend
+      if (ref || transactionId) {
+        toast.info('Verificando tu pago...');
+        api.post('/plans/verify-payment', { reference: ref, transactionId })
+          .then(response => {
+            if (response.data.success) {
+              toast.success(response.data.message || '¡Plan actualizado exitosamente!');
+              refreshUser?.();
+            } else {
+              toast.warning(response.data.message || 'El pago está siendo procesado');
+            }
+          })
+          .catch(err => {
+            console.error('Error verificando pago:', err);
+            toast.info('El pago se procesará en unos momentos');
+            refreshUser?.();
+          });
+      } else {
+        toast.success('¡Pago procesado! Tu plan se actualizará en unos segundos.');
+        refreshUser?.();
+      }
     } else if (cancelled === 'true') {
+      window.history.replaceState({}, '', '/upgrade');
       toast.info('Pago cancelado. Puedes intentarlo de nuevo cuando quieras.');
-      window.history.replaceState({}, '', '/upgrade');
     } else if (selected && selected !== currentPlan && selected !== 'free') {
-      setAutoStartPlan(selected);
       window.history.replaceState({}, '', '/upgrade');
+      setAutoStartPlan(selected);
     }
-  }, [refreshUser, toast, currentPlan]);
+  }, []); // Sin dependencias para ejecutar solo una vez
 
   // Auto-iniciar pago si viene con plan preseleccionado
   useEffect(() => {

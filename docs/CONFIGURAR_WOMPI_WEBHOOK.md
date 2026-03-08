@@ -28,7 +28,7 @@
 Buscar el campo que dice **"URL de eventos"** o **"Webhook URL"** y escribir exactamente esto:
 
 ```
-https://superluxurious-subpetrosal-debra.ngrok-free.dev/api/payments/webhook/dulce-momento
+https://webhooks-production-e437.up.railway.app/wompi/events
 ```
 
 > ⚠️ **Importante:** Copiar y pegar completo, sin espacios al inicio ni al final.
@@ -52,12 +52,21 @@ Cuando un cliente pague el anticipo de un pedido, el sistema actualizará autom�
 
 | Campo | Valor |
 |---|---|
-| URL del webhook | `https://superluxurious-subpetrosal-debra.ngrok-free.dev/api/payments/webhook/dulce-momento` |
-| Ambiente | Pruebas (sandbox) |
-| Secreto de eventos | Ya configurado en el sistema |
-| Secreto de integridad | Ya configurado en el sistema |
+| URL del webhook | `https://webhooks-production-e437.up.railway.app/wompi/events` |
+| Ambiente | Producción (Railway) |
+| Secreto de eventos | Configurar en Railway: `WOMPI_EVENTS_SECRET` |
+| Secreto de integridad | Configurar en Railway: `WOMPI_INTEGRITY_SECRET` |
 
 ---
 
-> **Nota:** Esta URL funciona mientras ngrok esté activo en la computadora del desarrollador.  
-> En producción se cambiará por el dominio real del servidor.
+## Arquitectura del Webhook
+
+```
+Wompi → Railway (webhooks-service) → Backend principal
+```
+
+El servicio de webhooks en Railway recibe los eventos y los reenvía al backend.
+Para que funcione correctamente, configura en Railway:
+
+- `BACKEND_URL` = URL de tu backend en producción
+- `WOMPI_EVENTS_SECRET` = Tu secreto de eventos de Wompi

@@ -7,6 +7,9 @@ import logger from "./config/logger.js";
 import cache from "./config/cache.js";
 import { getCronScheduler } from "./jobs/CronScheduler.js";
 import { getSocketService } from "./realtime/SocketService.js";
+import { handlePaymentSuccess } from "./controllers/paymentController.js";
+import { sanitizeBody } from "./utils/sanitize.js";
+import httpLogger from "./middleware/httpLogger.js";
 
 const app = express();
 const PORT = process.env.PORT || 3010;
@@ -20,9 +23,16 @@ const corsOrigins = process.env.CORS_ORIGINS
 app.use(cors({ origin: corsOrigins, credentials: true }));
 app.use(express.json({ limit: "25mb" }));
 app.use(express.urlencoded({ extended: true, limit: "25mb" }));
+// Sanitizar inputs para prevenir XSS
+app.use(sanitizeBody({ escapeHtml: false }));
+// Logging HTTP estructurado
+app.use(httpLogger);
 
 app.use("/api", api);
 app.use("/inbound", inboundRouter);
+
+// Redirect de Wompi después del pago (sin prefijo /api)
+app.get("/payment/success", handlePaymentSuccess);
 
 app.get("/health", (req, res) => {
   res.json({ ok: true, service: "migracion-backend" });

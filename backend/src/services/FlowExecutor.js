@@ -12,6 +12,7 @@ import { ChatMessageProvider } from '../integrations/notifications/ChatMessagePr
 import { getNotificationService } from '../integrations/notifications/NotificationService.js';
 import { getPaymentService, BasePaymentProvider } from './payments/PaymentService.js';
 import { getSocketService } from '../realtime/SocketService.js';
+import * as TelegramService from './TelegramService.js';
 
 /**
  * Obtiene el ID de la tabla de Log de Flujos
@@ -248,6 +249,10 @@ async function executeSendMessage(workspaceId, action, context) {
           result = { success: true, type: 'whatsapp_pending', phone: recipient.phone };
           break;
         
+        case 'telegram':
+          result = await sendTelegramMessage(workspaceId, recipient, processedMessage, context);
+          break;
+        
         default:
           result = { success: false, error: `Canal no soportado: ${channel}` };
       }
@@ -289,9 +294,14 @@ async function resolveMessageRecipients(workspaceId, targetType, options) {
       return [];
     
     case 'fixed':
-      // Número fijo de WhatsApp
+      // Número fijo de WhatsApp o chatId de Telegram
       if (targetValue) {
-        return [{ phone: targetValue.replace(/\s+/g, '') }];
+        const cleanValue = targetValue.toString().replace(/\s+/g, '');
+        // Si es un número puro (chatId de Telegram o teléfono), retornar ambos
+        if (/^\d+$/.test(cleanValue)) {
+          return [{ phone: cleanValue, chatId: cleanValue, telegramChatId: cleanValue }];
+        }
+        return [{ phone: cleanValue }];
       }
       return [];
     
@@ -418,6 +428,33 @@ async function sendInAppNotification(workspaceId, recipient, message, context) {
 }
 
 /**
+ * Envía mensaje de Telegram
+ */
+async function sendTelegramMessage(workspaceId, recipient, message, context) {
+  try {
+    // recipient puede tener chatId directamente o telegramChatId
+    const chatId = recipient.chatId || recipient.telegramChatId || recipient.telegram_chat_id;
+    
+    if (!chatId) {
+      console.warn('[FlowExecutor] No Telegram chatId provided', recipient);
+      return { success: false, error: 'No se proporcionó chatId de Telegram' };
+    }
+    
+    const result = await TelegramService.sendMessage(workspaceId, chatId, message);
+    
+    if (result?.ok || result?.success) {
+      console.log(`[FlowExecutor] Telegram message sent to ${chatId}`);
+      return { success: true, type: 'telegram', chatId, messageId: result.result?.message_id };
+    } else {
+      return { success: false, error: result?.description || 'Error enviando mensaje de Telegram' };
+    }
+  } catch (error) {
+    console.error('[FlowExecutor] sendTelegramMessage error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Genera un link de pago vía Wompi y lo guarda en el registro.
  *
  * Configuración del nodo (action.payment):
@@ -484,7 +521,7 @@ async function executeGeneratePaymentLink(workspaceId, action, context) {
     // ── Procesar descripción como template ───────────────────────────────────
     const processedDescription = processTemplate(description, context);
 
-    // ── Crear link en MercadoPago ────────────────────────────────────────────
+    // ── Crear link de pago con Wompi ─────────────────────────────────────────
     const paymentService = getPaymentService({ workspaceId });
     const result = await paymentService.createPaymentLink({
       title: processedDescription.slice(0, 256),

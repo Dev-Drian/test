@@ -19,8 +19,13 @@ import { TableRepository } from '../repositories/TableRepository.js';
 import { EntityRepository } from '../repositories/EntityRepository.js';
 import { getBusinessSnapshot } from '../services/BusinessSnapshot.js';
 import logger from '../config/logger.js';
+import { getUserPlan } from '../middleware/limits.js';
 
 const log = logger.child('InboundController');
+
+// Límites de importación
+const MAX_RECORDS_PER_IMPORT = 10000;
+const MAX_BODY_SIZE_MB = 10;
 
 const importService = new ImportService();
 const tableRepo = new TableRepository();
@@ -70,6 +75,15 @@ export async function inboundImport(req, res) {
       if (!records || records.length === 0) {
         return res.status(400).json({
           error: 'Expected JSON array or { data: [...] } or { records: [...] }',
+        });
+      }
+
+      // Validar límite de registros
+      if (records.length > MAX_RECORDS_PER_IMPORT) {
+        return res.status(400).json({
+          error: `Máximo ${MAX_RECORDS_PER_IMPORT} registros por importación. Enviaste ${records.length}.`,
+          code: 'IMPORT_LIMIT_EXCEEDED',
+          limit: MAX_RECORDS_PER_IMPORT,
         });
       }
 

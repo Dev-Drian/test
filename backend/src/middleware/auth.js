@@ -9,7 +9,16 @@ import jwt from 'jsonwebtoken';
 import { connectDB, getDbPrefix } from '../config/db.js';
 import cache from '../config/cache.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'cambiar-en-produccion-super-secreto';
+// Validar JWT_SECRET en producción
+const isProduction = process.env.NODE_ENV === 'production';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (isProduction && (!JWT_SECRET || JWT_SECRET.includes('cambiar') || JWT_SECRET.length < 32)) {
+  console.error('[FATAL] JWT_SECRET debe configurarse en producción (mínimo 32 caracteres)');
+  process.exit(1);
+}
+
+const EFFECTIVE_JWT_SECRET = JWT_SECRET || 'dev-secret-only-for-development-not-production';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const USER_CACHE_TTL = 300; // 5 minutos
 
@@ -34,16 +43,11 @@ export async function requireAuth(req, res, next) {
     // Verificar token
     let decoded;
     try {
-      decoded = jwt.verify(token, JWT_SECRET);
+      decoded = jwt.verify(token, EFFECTIVE_JWT_SECRET);
     } catch (err) {
-      if (err.name === 'TokenExpiredError') {
-        return res.status(401).json({ 
-          error: 'Token expirado',
-          code: 'TOKEN_EXPIRED'
-        });
-      }
+      // Respuesta genérica para no revelar tipo de error
       return res.status(401).json({ 
-        error: 'Token inválido',
+        error: 'Token inválido o expirado',
         code: 'TOKEN_INVALID'
       });
     }
@@ -92,7 +96,7 @@ export async function optionalAuth(req, res, next) {
   
   try {
     const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, EFFECTIVE_JWT_SECRET);
     const user = await getUserById(decoded.userId);
     
     if (user && user.status !== 'inactive') {
@@ -152,7 +156,7 @@ export async function requireWorkspaceMember(req, res, next) {
 export function generateToken(userId, extra = {}) {
   return jwt.sign(
     { userId, ...extra },
-    JWT_SECRET,
+    EFFECTIVE_JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
   );
 }

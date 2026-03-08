@@ -17,3 +17,10 @@ export {
   generateToken,
   invalidateUserCache
 } from './auth.js';
+
+export {
+  loginLimiter,
+  registerLimiter,
+  forgotPasswordLimiter,
+  apiLimiter,
+} from './rateLimit.js';

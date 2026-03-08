@@ -78,8 +78,15 @@ export class OpenAIProvider extends AIProvider {
       };
       
     } catch (error) {
-      console.error('[OpenAIProvider] Error:', error.response?.data || error.message);
-      throw new Error(`OpenAI API error: ${error.message}`);
+      const errorData = error.response?.data;
+      const errorMessage = errorData?.error?.message || errorData?.message || error.message || 'Unknown error';
+      console.error('[OpenAIProvider] Error:', {
+        status: error.response?.status,
+        errorType: errorData?.error?.type,
+        errorCode: errorData?.error?.code,
+        errorMessage,
+      });
+      throw new Error(`OpenAI: ${errorMessage}`);
     }
   }
   
@@ -156,8 +163,16 @@ export class OpenAIProvider extends AIProvider {
       };
       
     } catch (error) {
-      console.error('[OpenAIProvider] Function call error:', error.response?.data || error.message);
-      throw new Error(`OpenAI Function Call error: ${error.message}`);
+      const errorData = error.response?.data;
+      const errorMessage = errorData?.error?.message || errorData?.message || error.message || 'Unknown error';
+      console.error('[OpenAIProvider] Function call error:', {
+        status: error.response?.status,
+        errorType: errorData?.error?.type,
+        errorCode: errorData?.error?.code,
+        errorMessage,
+        fullData: errorData,
+      });
+      throw new Error(`OpenAI: ${errorMessage}`);
     }
   }
   
