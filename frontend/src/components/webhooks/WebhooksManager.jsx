@@ -17,6 +17,7 @@ import {
   LightBulbIcon
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
+import HelpCollapse from '../common/HelpCollapse';
 
 // Tooltip de ayuda
 function HelpTip({ text, children }) {
@@ -182,7 +183,7 @@ export default function WebhooksManager({ workspaceId }) {
   const deleteWebhook = async (webhookId) => {
     try {
       await api.delete(`/webhooks/${workspaceId}/${webhookId}`);
-      setWebhooks(prev => prev.filter(w => w.id !== webhookId));
+      setWebhooks(prev => prev.filter(w => w._id !== webhookId));
       setSelectedWebhook(null);
       setToast({ type: 'success', message: 'Webhook eliminado' });
     } catch (err) {
@@ -251,34 +252,24 @@ export default function WebhooksManager({ workspaceId }) {
         </button>
       </div>
 
-      {/* Tip colapsable - más compacto */}
-      <details className="group bg-zinc-800/30 border border-zinc-700/50 rounded-xl">
-        <summary className="flex items-center gap-3 p-4 cursor-pointer text-sm">
-          <LightBulbIcon className="w-5 h-5 text-blue-400" />
-          <span className="text-zinc-300 font-medium">¿Qué es un Webhook? (clic para ver)</span>
-          <span className="ml-auto text-zinc-500 text-xs group-open:hidden">Mostrar</span>
-          <span className="ml-auto text-zinc-500 text-xs hidden group-open:inline">Ocultar</span>
-        </summary>
-        <div className="px-4 pb-4 pt-0 border-t border-zinc-700/50">
-          <p className="text-sm text-zinc-400 mb-3 mt-3">
-            Un webhook es una URL especial que otras apps pueden llamar para activar tus flujos automáticamente.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
-            <div className="bg-zinc-800/50 rounded-lg p-2.5 border border-zinc-700/30">
-              <span className="text-amber-400 font-medium">Formulario web →</span>
-              <span className="text-zinc-400 ml-1">Activa bot de bienvenida</span>
-            </div>
-            <div className="bg-zinc-800/50 rounded-lg p-2.5 border border-zinc-700/30">
-              <span className="text-green-400 font-medium">Tienda online →</span>
-              <span className="text-zinc-400 ml-1">Notifica pedido por WhatsApp</span>
-            </div>
-            <div className="bg-zinc-800/50 rounded-lg p-2.5 border border-zinc-700/30">
-              <span className="text-violet-400 font-medium">Sistema citas →</span>
-              <span className="text-zinc-400 ml-1">Envía recordatorios</span>
-            </div>
+      {/* Tip colapsable - unificado */}
+      <HelpCollapse title="¿Qué es un Webhook?">
+        <p className="mb-3 mt-1">Un webhook es una URL especial que otras apps pueden llamar para activar tus flujos automáticamente.</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+          <div className="bg-zinc-800/50 rounded-lg p-2.5 border border-zinc-700/30">
+            <span className="text-amber-400 font-medium">Formulario web →</span>
+            <span className="text-zinc-400 ml-1">Activa bot de bienvenida</span>
+          </div>
+          <div className="bg-zinc-800/50 rounded-lg p-2.5 border border-zinc-700/30">
+            <span className="text-green-400 font-medium">Tienda online →</span>
+            <span className="text-zinc-400 ml-1">Notifica pedido por WhatsApp</span>
+          </div>
+          <div className="bg-zinc-800/50 rounded-lg p-2.5 border border-zinc-700/30">
+            <span className="text-violet-400 font-medium">Sistema citas →</span>
+            <span className="text-zinc-400 ml-1">Envía recordatorios</span>
           </div>
         </div>
-      </details>
+      </HelpCollapse>
       
       {loading ? (
         <div className="flex justify-center py-12">
@@ -552,7 +543,7 @@ export default function WebhooksManager({ workspaceId }) {
         <ConfirmModal
           title="Eliminar webhook"
           message={`¿Estás seguro de eliminar "${confirmDelete.name}"? Esta acción no se puede deshacer.`}
-          onConfirm={() => deleteWebhook(confirmDelete.id)}
+          onConfirm={() => deleteWebhook(confirmDelete._id)}
           onCancel={() => setConfirmDelete(null)}
         />
       )}

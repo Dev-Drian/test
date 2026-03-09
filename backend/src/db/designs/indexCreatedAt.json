@@ -1,0 +1,9 @@
+{
+  "_id": "_design/indexCreatedAt",
+  "views": {
+    "byCreatedAt": {
+      "map": "function (doc) { if (doc.createdAt) { emit(doc.createdAt); } }"
+    }
+  },
+  "language": "javascript"
+}

@@ -11,6 +11,7 @@ import {
   ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
+import HelpCollapse from '../common/HelpCollapse';
 
 /**
  * ConversationAnalytics - Dashboard de analítica de conversaciones
@@ -51,6 +52,17 @@ export default function ConversationAnalytics({ workspaceId }) {
   
   useEffect(() => {
     loadStats();
+    // Cargar último análisis guardado
+    (async () => {
+      try {
+        const latest = await api.get(`/analytics/${workspaceId}/conversations/ai/latest`);
+        if (latest.data?.success && latest.data.analysis) {
+          setAiAnalysis(latest.data.analysis);
+        }
+      } catch (e) {
+        // silencioso
+      }
+    })();
     
     // Actualizar realtime cada 30 segundos
     const interval = setInterval(async () => {
@@ -70,7 +82,8 @@ export default function ConversationAnalytics({ workspaceId }) {
     setAiLoading(true);
     try {
       const response = await api.get(`/analytics/${workspaceId}/conversations/ai`);
-      if (response.data.success) {
+      if (response.data) {
+        // Guardamos siempre el payload de analysis para poder mostrar mensajes de estado
         setAiAnalysis(response.data.analysis);
       }
     } catch (err) {
@@ -137,12 +150,33 @@ export default function ConversationAnalytics({ workspaceId }) {
         </div>
       </div>
       
+      {/* Tip colapsable */}
+      <details className="group bg-zinc-800/30 border border-zinc-700/50 rounded-xl">
+        <summary className="flex items-center gap-3 p-4 cursor-pointer text-sm">
+          <SparklesIcon className="w-5 h-5 text-violet-400" />
+          <span className="text-zinc-300 font-medium">¿Qué es Analytics? (clic para ver)</span>
+          <span className="ml-auto text-zinc-500 text-xs group-open:hidden">Mostrar</span>
+          <span className="ml-auto text-zinc-500 text-xs hidden group-open:inline">Ocultar</span>
+        </summary>
+        <div className="px-4 pb-4 pt-0 border-t border-zinc-700/50 text-sm text-zinc-400">
+          Aquí ves métricas clave de tus conversaciones: volumen, horarios pico, sentimiento y un análisis con IA. Úsalo para detectar oportunidades y mejorar tus flujos.
+        </div>
+      </details>
+      
       {loading ? (
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-500" />
         </div>
       ) : (
         <>
+          {/* Qué es... */}
+          <HelpCollapse title="¿Qué son las Estadísticas?" icon={ChartBarIcon}>
+            <p>
+              Aquí ves métricas clave de tus conversaciones: actividad en tiempo real, volumen, preguntas frecuentes,
+              horas pico y tasa de resolución. Úsalo para identificar momentos de mayor demanda y oportunidades de mejora.
+            </p>
+          </HelpCollapse>
+          
           {/* Real-time Stats */}
           {realtime && (
             <div className="bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl p-6 text-white">
@@ -339,6 +373,12 @@ export default function ConversationAnalytics({ workspaceId }) {
                 <SparklesIcon className="w-5 h-5 text-violet-400" />
                 <h3 className="font-semibold text-white">Análisis con IA</h3>
               </div>
+              {/* Mensaje de estado cuando no hay datos o hay error */}
+              {aiAnalysis?.success === false && (
+                <div className="mb-4 p-3 rounded-lg bg-zinc-900/60 border border-zinc-700 text-sm text-zinc-300">
+                  {aiAnalysis.message || aiAnalysis.error || 'No fue posible generar el análisis.'}
+                </div>
+              )}
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Main Topics */}

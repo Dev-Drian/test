@@ -203,6 +203,7 @@ router.delete("/variables/:workspaceId/:variableId", requireAuth, validateWorksp
 // --- Conversation Analytics ---
 router.get("/analytics/:workspaceId/conversations", requireAuth, validateWorkspace, advancedFeatures.getConversationStats);
 router.get("/analytics/:workspaceId/conversations/ai", requireAuth, validateWorkspace, advancedFeatures.analyzeConversationsWithAI);
+router.get("/analytics/:workspaceId/conversations/ai/latest", requireAuth, validateWorkspace, advancedFeatures.getLatestAIAnalysis);
 router.get("/analytics/:workspaceId/realtime", requireAuth, validateWorkspace, advancedFeatures.getRealTimeMetrics);
 
 // --- Flow Doctor ---
@@ -275,5 +276,10 @@ inboundRouter.post(
   '/:workspaceId/:tableId',
   requireAuth,
   inbound.inboundImport
+);
+// Public webhook endpoint without /api prefix
+inboundRouter.all(
+  '/webhook/:path',
+  advancedFeatures.processWebhookCall
 );
 export { inboundRouter };

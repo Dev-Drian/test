@@ -9,6 +9,7 @@ import {
   CheckIcon
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
+import HelpCollapse from '../common/HelpCollapse';
 
 const VARIABLE_TYPES = {
   text: { label: 'Texto', icon: 'Aa', color: 'blue' },
@@ -172,27 +173,22 @@ export default function GlobalVariables({ workspaceId }) {
         </button>
       </div>
 
-      {/* Explicación educativa */}
-      <div className="bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/20 rounded-xl p-5">
-        <h3 className="font-semibold text-white mb-2">¿Qué son las Variables Globales?</h3>
-        <p className="text-sm text-zinc-300 mb-3">
-          Son <span className="text-violet-400 font-medium">datos de tu negocio</span> que puedes usar en cualquier mensaje de tus flujos. 
-          Por ejemplo, si cambias tu horario aquí, se actualiza automáticamente en todos los flujos.
-        </p>
+      {/* Explicación educativa unificada */}
+      <HelpCollapse title="¿Qué son las Variables Globales?" icon={VariableIcon}>
+        <p className="mb-3">Son <span className="text-violet-400 font-medium">datos de tu negocio</span> reutilizables en cualquier flujo. Si cambias aquí, se actualiza en todo el bot.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
           <div className="bg-zinc-800/50 rounded-lg p-3">
             <span className="font-medium text-white block mb-1">Ejemplo de uso:</span>
-            <span className="text-zinc-400">En un mensaje escribes: </span>
-            <code className="text-violet-400 bg-violet-500/10 px-1 rounded">{"{{horario}}"}</code>
-            <span className="text-zinc-400"> y el bot lo reemplaza por </span>
-            <span className="text-green-400">"Lunes a Viernes 9am-6pm"</span>
+            <span className="text-zinc-400">En un mensaje escribe </span>
+            <code className="text-violet-400 bg-violet-500/10 px-1 rounded">{'{{horario}}'}</code>
+            <span className="text-zinc-400"> y el bot lo reemplaza por el valor configurado.</span>
           </div>
           <div className="bg-zinc-800/50 rounded-lg p-3">
             <span className="font-medium text-white block mb-1">Variables comunes:</span>
-            <span className="text-zinc-400">Horarios, teléfono de contacto, dirección, precios, promociones activas, redes sociales.</span>
+            <span className="text-zinc-400">Horarios, teléfono, dirección, precios, promociones, redes sociales.</span>
           </div>
         </div>
-      </div>
+      </HelpCollapse>
       
       {/* Filters */}
       <div className="flex gap-4 items-center">

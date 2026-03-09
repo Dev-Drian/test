@@ -1,17 +1,17 @@
 /**
- * AdvancedFeaturesController - Controlador para las 12 features avanzadas
+ * AdvancedFeaturesController - Controlador para las funcionalidades avanzadas del sistema
  * 
- * Expone los endpoints para:
- * - AI Flow Builder
- * - Flow Execution
- * - Global Variables
- * - Conversation Analytics
- * - Flow Doctor
- * - Webhooks
- * - Conversation Replay
- * - Collaboration
- * - Integrations
- * - Templates
+ * Este controlador expone los endpoints necesarios para gestionar las siguientes características avanzadas:
+ * - Generación y gestión de flujos mediante IA (AI Flow Builder).
+ * - Ejecución y monitoreo de flujos.
+ * - Gestión de variables globales.
+ * - Análisis de conversaciones.
+ * - Diagnóstico y optimización de flujos (Flow Doctor).
+ * - Configuración y manejo de webhooks.
+ * - Reproducción de conversaciones.
+ * - Colaboración en tiempo real.
+ * - Integraciones con servicios externos.
+ * - Gestión de plantillas de flujos.
  */
 
 import * as AIFlowBuilder from '../services/AIFlowBuilder.js';
@@ -32,7 +32,11 @@ const log = logger.child('AdvancedFeaturesController');
 // ==================== AI FLOW BUILDER ====================
 
 /**
- * Genera un flujo desde descripción en lenguaje natural
+ * Genera un flujo a partir de una descripción en lenguaje natural proporcionada por el usuario.
+ * Utiliza un modelo de IA para interpretar la descripción y crear un flujo automatizado.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function generateFlowFromDescription(req, res) {
   try {
@@ -40,40 +44,48 @@ export async function generateFlowFromDescription(req, res) {
     const { description, options } = req.body;
     
     if (!description) {
-      return res.status(400).json({ error: 'Se requiere descripción' });
+      return res.status(400).json({ error: 'Se requiere una descripción en lenguaje natural para generar el flujo.' });
     }
     
     const flow = await AIFlowBuilder.generateFlowFromDescription(description, options);
     
     res.json({ success: true, flow });
   } catch (error) {
-    log.error('Error generating flow', { error: error.message });
+    log.error('Error al generar el flujo a partir de la descripción.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Sugiere mejoras para un flujo existente
+ * Proporciona sugerencias para mejorar un flujo existente.
+ * Analiza el flujo actual y sugiere optimizaciones o ajustes para mejorar su desempeño.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function suggestFlowImprovements(req, res) {
   try {
     const { flow } = req.body;
     
     if (!flow) {
-      return res.status(400).json({ error: 'Se requiere flujo' });
+      return res.status(400).json({ error: 'Se requiere un flujo para sugerir mejoras.' });
     }
     
     const suggestions = await AIFlowBuilder.suggestFlowImprovements(flow);
     
     res.json({ success: true, suggestions });
   } catch (error) {
-    log.error('Error suggesting improvements', { error: error.message });
+    log.error('Error al sugerir mejoras para el flujo.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Describe un flujo en lenguaje natural
+ * Genera una descripción en lenguaje natural para un flujo existente.
+ * Permite entender de manera clara y sencilla el propósito y funcionamiento del flujo.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function describeFlow(req, res) {
   try {
@@ -83,13 +95,17 @@ export async function describeFlow(req, res) {
     
     res.json({ success: true, description });
   } catch (error) {
-    log.error('Error describing flow', { error: error.message });
+    log.error('Error al generar la descripción del flujo.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Autocompleta un flujo parcial
+ * Completa automáticamente un flujo parcial utilizando IA.
+ * Basado en el contexto y el flujo parcial proporcionado, genera las partes faltantes del flujo.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function autocompleteFlow(req, res) {
   try {
@@ -99,7 +115,7 @@ export async function autocompleteFlow(req, res) {
     
     res.json({ success: true, completion });
   } catch (error) {
-    log.error('Error autocompleting flow', { error: error.message });
+    log.error('Error al autocompletar el flujo.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
@@ -107,7 +123,10 @@ export async function autocompleteFlow(req, res) {
 // ==================== FLOW EXECUTION ====================
 
 /**
- * Ejecuta un flujo
+ * Ejecuta un flujo.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function executeFlow(req, res) {
   try {
@@ -123,13 +142,16 @@ export async function executeFlow(req, res) {
     
     res.json({ success: true, execution: result });
   } catch (error) {
-    log.error('Error executing flow', { error: error.message });
+    log.error('Error ejecutando el flujo.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Obtiene historial de ejecuciones
+ * Obtiene historial de ejecuciones.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function getExecutionHistory(req, res) {
   try {
@@ -145,7 +167,7 @@ export async function getExecutionHistory(req, res) {
     
     res.json({ success: true, history });
   } catch (error) {
-    log.error('Error getting execution history', { error: error.message });
+    log.error('Error obteniendo el historial de ejecuciones.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
@@ -153,7 +175,10 @@ export async function getExecutionHistory(req, res) {
 // ==================== GLOBAL VARIABLES ====================
 
 /**
- * Lista variables globales
+ * Lista variables globales.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function getGlobalVariables(req, res) {
   try {
@@ -163,13 +188,16 @@ export async function getGlobalVariables(req, res) {
     
     res.json({ success: true, variables });
   } catch (error) {
-    log.error('Error getting variables', { error: error.message });
+    log.error('Error obteniendo variables globales.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Crea o actualiza una variable
+ * Crea o actualiza una variable.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function upsertGlobalVariable(req, res) {
   try {
@@ -180,13 +208,16 @@ export async function upsertGlobalVariable(req, res) {
     
     res.json({ success: true, variable });
   } catch (error) {
-    log.error('Error upserting variable', { error: error.message });
+    log.error('Error al crear o actualizar la variable.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Elimina una variable
+ * Elimina una variable.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function deleteGlobalVariable(req, res) {
   try {
@@ -196,7 +227,7 @@ export async function deleteGlobalVariable(req, res) {
     
     res.json({ success: true });
   } catch (error) {
-    log.error('Error deleting variable', { error: error.message });
+    log.error('Error al eliminar la variable.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
@@ -204,7 +235,10 @@ export async function deleteGlobalVariable(req, res) {
 // ==================== CONVERSATION ANALYTICS ====================
 
 /**
- * Obtiene estadísticas de conversaciones
+ * Obtiene estadísticas de conversaciones.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function getConversationStats(req, res) {
   try {
@@ -218,13 +252,16 @@ export async function getConversationStats(req, res) {
     
     res.json({ success: true, stats });
   } catch (error) {
-    log.error('Error getting conversation stats', { error: error.message });
+    log.error('Error obteniendo estadísticas de conversaciones.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Análisis de conversaciones con IA
+ * Análisis de conversaciones con IA.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function analyzeConversationsWithAI(req, res) {
   try {
@@ -238,13 +275,30 @@ export async function analyzeConversationsWithAI(req, res) {
     
     res.json({ success: true, analysis });
   } catch (error) {
-    log.error('Error analyzing conversations', { error: error.message });
+    log.error('Error al analizar las conversaciones.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Métricas en tiempo real
+ * Último análisis de conversaciones con IA (persistido)
+ */
+export async function getLatestAIAnalysis(req, res) {
+  try {
+    const { workspaceId } = req.params;
+    const result = await ConversationAnalyticsService.getLatestAIAnalysis(workspaceId);
+    res.json({ success: result.success, analysis: result.analysis, error: result.error });
+  } catch (error) {
+    log.error('Error obteniendo el último análisis IA.', { error: error.message });
+    res.status(500).json({ error: error.message });
+  }
+}
+
+/**
+ * Métricas en tiempo real.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function getRealTimeMetrics(req, res) {
   try {
@@ -254,7 +308,7 @@ export async function getRealTimeMetrics(req, res) {
     
     res.json({ success: true, metrics });
   } catch (error) {
-    log.error('Error getting realtime metrics', { error: error.message });
+    log.error('Error obteniendo métricas en tiempo real.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
@@ -262,7 +316,10 @@ export async function getRealTimeMetrics(req, res) {
 // ==================== FLOW DOCTOR ====================
 
 /**
- * Analiza un flujo
+ * Analiza un flujo.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function analyzeFlow(req, res) {
   try {
@@ -272,13 +329,16 @@ export async function analyzeFlow(req, res) {
     
     res.json({ success: true, analysis });
   } catch (error) {
-    log.error('Error analyzing flow', { error: error.message });
+    log.error('Error al analizar el flujo.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Análisis de flujo con IA
+ * Análisis de flujo con IA.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function analyzeFlowWithAI(req, res) {
   try {
@@ -288,13 +348,16 @@ export async function analyzeFlowWithAI(req, res) {
     
     res.json({ success: true, analysis });
   } catch (error) {
-    log.error('Error analyzing flow with AI', { error: error.message });
+    log.error('Error al analizar el flujo con IA.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Auto-arregla un flujo
+ * Auto-arregla un flujo.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function autoFixFlow(req, res) {
   try {
@@ -304,7 +367,7 @@ export async function autoFixFlow(req, res) {
     
     res.json({ success: true, fixed });
   } catch (error) {
-    log.error('Error auto-fixing flow', { error: error.message });
+    log.error('Error al auto-fixar el flujo.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
@@ -312,7 +375,10 @@ export async function autoFixFlow(req, res) {
 // ==================== WEBHOOKS ====================
 
 /**
- * Lista webhooks
+ * Lista webhooks.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function listWebhooks(req, res) {
   try {
@@ -322,13 +388,16 @@ export async function listWebhooks(req, res) {
     
     res.json({ success: true, webhooks });
   } catch (error) {
-    log.error('Error listing webhooks', { error: error.message });
+    log.error('Error obteniendo webhooks.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Crea un webhook
+ * Crea un webhook.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function createWebhook(req, res) {
   try {
@@ -339,13 +408,16 @@ export async function createWebhook(req, res) {
     
     res.json({ success: true, webhook });
   } catch (error) {
-    log.error('Error creating webhook', { error: error.message });
+    log.error('Error al crear el webhook.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Actualiza un webhook
+ * Actualiza un webhook.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function updateWebhook(req, res) {
   try {
@@ -356,29 +428,38 @@ export async function updateWebhook(req, res) {
     
     res.json({ success: true, webhook });
   } catch (error) {
-    log.error('Error updating webhook', { error: error.message });
+    log.error('Error al actualizar el webhook.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Elimina un webhook
+ * Elimina un webhook.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function deleteWebhook(req, res) {
   try {
     const { workspaceId, webhookId } = req.params;
     
-    await WebhookService.deleteWebhook(workspaceId, webhookId);
-    
-    res.json({ success: true });
+    const ok = await WebhookService.deleteWebhook(workspaceId, webhookId);
+    if (ok) {
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ success: false, error: 'Webhook no encontrado' });
+    }
   } catch (error) {
-    log.error('Error deleting webhook', { error: error.message });
+    log.error('Error al eliminar el webhook.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Procesa llamada a webhook (público)
+ * Procesa llamada a webhook (público).
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function processWebhookCall(req, res) {
   try {
@@ -396,13 +477,16 @@ export async function processWebhookCall(req, res) {
     
     res.status(result.status).json(result.success ? result.data : { error: result.error });
   } catch (error) {
-    log.error('Error processing webhook', { error: error.message });
+    log.error('Error procesando webhook', { error: error.message });
     res.status(500).json({ error: 'Error interno' });
   }
 }
 
 /**
- * Genera código de ejemplo para un webhook
+ * Genera código de ejemplo para un webhook.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function getWebhookCode(req, res) {
   try {
@@ -420,13 +504,16 @@ export async function getWebhookCode(req, res) {
     
     res.json({ success: true, code });
   } catch (error) {
-    log.error('Error getting webhook code', { error: error.message });
+    log.error('Error obteniendo el código del webhook.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Prueba un webhook con datos de ejemplo
+ * Prueba un webhook con datos de ejemplo.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function testWebhook(req, res) {
   try {
@@ -451,7 +538,10 @@ export async function testWebhook(req, res) {
 // ==================== CONVERSATION REPLAY ====================
 
 /**
- * Obtiene timeline de una conversación
+ * Obtiene timeline de una conversación.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function getConversationTimeline(req, res) {
   try {
@@ -461,13 +551,16 @@ export async function getConversationTimeline(req, res) {
     
     res.json({ success: true, timeline });
   } catch (error) {
-    log.error('Error getting conversation timeline', { error: error.message });
+    log.error('Error obteniendo la timeline de la conversación.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Detalles de un mensaje
+ * Detalles de un mensaje.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function getMessageDetails(req, res) {
   try {
@@ -477,13 +570,16 @@ export async function getMessageDetails(req, res) {
     
     res.json({ success: true, details });
   } catch (error) {
-    log.error('Error getting message details', { error: error.message });
+    log.error('Error obteniendo los detalles del mensaje.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Analiza conversación con IA
+ * Analiza conversación con IA.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function analyzeConversation(req, res) {
   try {
@@ -493,13 +589,16 @@ export async function analyzeConversation(req, res) {
     
     res.json({ success: true, analysis });
   } catch (error) {
-    log.error('Error analyzing conversation', { error: error.message });
+    log.error('Error al analizar la conversación.', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Simula respuesta alternativa
+ * Simula respuesta alternativa.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function simulateAlternativeResponse(req, res) {
   try {
@@ -520,7 +619,10 @@ export async function simulateAlternativeResponse(req, res) {
 }
 
 /**
- * Exporta conversación
+ * Exporta conversación.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function exportConversation(req, res) {
   try {
@@ -552,7 +654,10 @@ export async function exportConversation(req, res) {
 // ==================== COLLABORATION ====================
 
 /**
- * Obtiene usuarios activos en una sesión de edición
+ * Obtiene usuarios activos en una sesión de edición.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function getActiveCollaborators(req, res) {
   try {
@@ -562,13 +667,16 @@ export async function getActiveCollaborators(req, res) {
     
     res.json({ success: true, users });
   } catch (error) {
-    log.error('Error getting collaborators', { error: error.message });
+    log.error('Error obteniendo colaboradores', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Obtiene historial de cambios
+ * Obtiene historial de cambios.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function getChangeHistory(req, res) {
   try {
@@ -578,13 +686,16 @@ export async function getChangeHistory(req, res) {
     
     res.json({ success: true, history });
   } catch (error) {
-    log.error('Error getting change history', { error: error.message });
+    log.error('Error obteniendo el historial de cambios', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Estadísticas de sesiones de colaboración
+ * Estadísticas de sesiones de colaboración.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function getCollaborationStats(req, res) {
   try {
@@ -592,7 +703,7 @@ export async function getCollaborationStats(req, res) {
     
     res.json({ success: true, stats });
   } catch (error) {
-    log.error('Error getting collaboration stats', { error: error.message });
+    log.error('Error obteniendo estadísticas de colaboración', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
@@ -600,7 +711,10 @@ export async function getCollaborationStats(req, res) {
 // ==================== INTEGRATIONS ====================
 
 /**
- * Lista integraciones disponibles
+ * Lista integraciones disponibles.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function listAvailableIntegrations(req, res) {
   try {
@@ -610,13 +724,16 @@ export async function listAvailableIntegrations(req, res) {
     
     res.json({ success: true, integrations });
   } catch (error) {
-    log.error('Error listing integrations', { error: error.message });
+    log.error('Error obteniendo integraciones', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Categorías de integraciones
+ * Categorías de integraciones.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function getIntegrationCategories(req, res) {
   try {
@@ -624,13 +741,16 @@ export async function getIntegrationCategories(req, res) {
     
     res.json({ success: true, categories });
   } catch (error) {
-    log.error('Error getting integration categories', { error: error.message });
+    log.error('Error obteniendo categorías de integraciones', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Conecta una integración
+ * Conecta una integración.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function connectIntegration(req, res) {
   try {
@@ -645,13 +765,16 @@ export async function connectIntegration(req, res) {
     
     res.json({ success: true, connection });
   } catch (error) {
-    log.error('Error connecting integration', { error: error.message });
+    log.error('Error conectando la integración', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Lista integraciones conectadas
+ * Lista integraciones conectadas.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function listConnectedIntegrations(req, res) {
   try {
@@ -661,13 +784,16 @@ export async function listConnectedIntegrations(req, res) {
     
     res.json({ success: true, integrations });
   } catch (error) {
-    log.error('Error listing connected integrations', { error: error.message });
+    log.error('Error obteniendo las integraciones conectadas', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Desconecta una integración
+ * Desconecta una integración.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function disconnectIntegration(req, res) {
   try {
@@ -677,13 +803,16 @@ export async function disconnectIntegration(req, res) {
     
     res.json({ success: true });
   } catch (error) {
-    log.error('Error disconnecting integration', { error: error.message });
+    log.error('Error desconectando la integración', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Conecta un bot de Telegram
+ * Conecta un bot de Telegram.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function connectTelegram(req, res) {
   try {
@@ -724,13 +853,16 @@ export async function connectTelegram(req, res) {
       }
     });
   } catch (error) {
-    log.error('Error connecting Telegram', { error: error.message });
+    log.error('Error conectando Telegram', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Ejecuta acción de integración
+ * Ejecuta acción de integración.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function executeIntegrationAction(req, res) {
   try {
@@ -746,7 +878,7 @@ export async function executeIntegrationAction(req, res) {
     
     res.json({ success: true, result });
   } catch (error) {
-    log.error('Error executing integration action', { error: error.message });
+    log.error('Error ejecutando la acción de integración', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
@@ -754,7 +886,10 @@ export async function executeIntegrationAction(req, res) {
 // ==================== TEMPLATES ====================
 
 /**
- * Lista templates disponibles
+ * Lista templates disponibles.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function listTemplates(req, res) {
   try {
@@ -764,13 +899,16 @@ export async function listTemplates(req, res) {
     
     res.json({ success: true, templates });
   } catch (error) {
-    log.error('Error listing templates', { error: error.message });
+    log.error('Error obteniendo templates', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Obtiene un template por ID
+ * Obtiene un template por ID.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function getTemplate(req, res) {
   try {
@@ -784,13 +922,16 @@ export async function getTemplate(req, res) {
     
     res.json({ success: true, template });
   } catch (error) {
-    log.error('Error getting template', { error: error.message });
+    log.error('Error obteniendo el template', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Categorías de templates
+ * Categorías de templates.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function getTemplateCategories(req, res) {
   try {
@@ -798,13 +939,16 @@ export async function getTemplateCategories(req, res) {
     
     res.json({ success: true, categories });
   } catch (error) {
-    log.error('Error getting template categories', { error: error.message });
+    log.error('Error obteniendo categorías de templates', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Sugiere templates con IA
+ * Sugiere templates con IA.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function suggestTemplates(req, res) {
   try {
@@ -818,13 +962,16 @@ export async function suggestTemplates(req, res) {
     
     res.json({ success: true, suggestions });
   } catch (error) {
-    log.error('Error suggesting templates', { error: error.message });
+    log.error('Error sugeriendo templates', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Instala un template
+ * Instala un template.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function installTemplate(req, res) {
   try {
@@ -839,13 +986,16 @@ export async function installTemplate(req, res) {
     
     res.json({ success: true, ...result });
   } catch (error) {
-    log.error('Error installing template', { error: error.message });
+    log.error('Error instalando el template', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Genera template personalizado con IA
+ * Genera template personalizado con IA.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function generateCustomTemplate(req, res) {
   try {
@@ -855,13 +1005,16 @@ export async function generateCustomTemplate(req, res) {
     
     res.json({ success: true, template });
   } catch (error) {
-    log.error('Error generating custom template', { error: error.message });
+    log.error('Error generando el template personalizado', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Guarda flujo como template
+ * Guarda flujo como template.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function saveFlowAsTemplate(req, res) {
   try {
@@ -872,7 +1025,7 @@ export async function saveFlowAsTemplate(req, res) {
     
     res.json({ success: true, template });
   } catch (error) {
-    log.error('Error saving flow as template', { error: error.message });
+    log.error('Error guardando el flujo como template', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
@@ -883,7 +1036,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { connectDB } from '../config/db.js';
 
 /**
- * Obtiene o genera API key para mobile
+ * Obtiene o genera API key para mobile.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function getMobileApiKey(req, res) {
   try {
@@ -899,13 +1055,16 @@ export async function getMobileApiKey(req, res) {
       res.json({ success: true, apiKey: null });
     }
   } catch (error) {
-    log.error('Error getting mobile API key', { error: error.message });
+    log.error('Error obteniendo la API key para mobile', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Genera nueva API key para mobile
+ * Genera nueva API key para mobile.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function generateMobileApiKey(req, res) {
   try {
@@ -935,13 +1094,16 @@ export async function generateMobileApiKey(req, res) {
     
     res.json({ success: true, apiKey });
   } catch (error) {
-    log.error('Error generating mobile API key', { error: error.message });
+    log.error('Error generando la API key para mobile', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Revoca API key
+ * Revoca API key.
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function revokeMobileApiKey(req, res) {
   try {
@@ -956,13 +1118,16 @@ export async function revokeMobileApiKey(req, res) {
     
     res.json({ success: true });
   } catch (error) {
-    log.error('Error revoking mobile API key', { error: error.message });
+    log.error('Error revocando la API key', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
- * Middleware para validar API key de mobile
+ * Middleware para validar API key de mobile.
+ * 
+ * @param {String} apiKey - La API key.
+ * @param {String} workspaceId - El ID del workspace.
  */
 async function validateMobileApiKey(apiKey, workspaceId) {
   if (!apiKey) return false;
@@ -975,6 +1140,9 @@ async function validateMobileApiKey(apiKey, workspaceId) {
 
 /**
  * Endpoint público para mobile: stats
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function mobileGetStats(req, res) {
   try {
@@ -986,17 +1154,20 @@ export async function mobileGetStats(req, res) {
       return res.status(401).json({ error: 'API key inválida' });
     }
     
-    const stats = await ConversationAnalyticsService.getRealtimeMetrics(workspaceId);
+    const stats = await ConversationAnalyticsService.getRealTimeMetrics(workspaceId);
     
     res.json({ success: true, stats });
   } catch (error) {
-    log.error('Error getting mobile stats', { error: error.message });
+    log.error('Error obteniendo los stats del mobile', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
  * Endpoint público para mobile: lista de chats
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function mobileGetChats(req, res) {
   try {
@@ -1022,13 +1193,16 @@ export async function mobileGetChats(req, res) {
     
     res.json({ success: true, chats: result.docs });
   } catch (error) {
-    log.error('Error getting mobile chats', { error: error.message });
+    log.error('Error obteniendo los chats del mobile', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
  * Endpoint público para mobile: mensajes de un chat
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function mobileGetChatMessages(req, res) {
   try {
@@ -1049,13 +1223,16 @@ export async function mobileGetChatMessages(req, res) {
     
     res.json({ success: true, messages: chat.messages || [] });
   } catch (error) {
-    log.error('Error getting mobile chat messages', { error: error.message });
+    log.error('Error obteniendo los mensajes del chat', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
  * Endpoint público para mobile: enviar respuesta
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function mobileSendReply(req, res) {
   try {
@@ -1093,13 +1270,16 @@ export async function mobileSendReply(req, res) {
     
     res.json({ success: true, message: newMessage });
   } catch (error) {
-    log.error('Error sending mobile reply', { error: error.message });
+    log.error('Error enviando la respuesta', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
  * Endpoint público para mobile: notificaciones
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function mobileGetNotifications(req, res) {
   try {
@@ -1124,13 +1304,16 @@ export async function mobileGetNotifications(req, res) {
     
     res.json({ success: true, notifications: result.docs });
   } catch (error) {
-    log.error('Error getting mobile notifications', { error: error.message });
+    log.error('Error obteniendo las notificaciones', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
 
 /**
  * Endpoint público para mobile: estado de flujos
+ * 
+ * @param {Object} req - Objeto de solicitud HTTP.
+ * @param {Object} res - Objeto de respuesta HTTP.
  */
 export async function mobileGetFlowsStatus(req, res) {
   try {
@@ -1160,7 +1343,7 @@ export async function mobileGetFlowsStatus(req, res) {
     
     res.json({ success: true, flows });
   } catch (error) {
-    log.error('Error getting mobile flows status', { error: error.message });
+    log.error('Error obteniendo el estado de los flujos', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 }
@@ -1184,6 +1367,7 @@ export default {
   // Conversation Analytics
   getConversationStats,
   analyzeConversationsWithAI,
+  getLatestAIAnalysis,
   getRealTimeMetrics,
   
   // Flow Doctor

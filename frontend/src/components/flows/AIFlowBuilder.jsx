@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { SparklesIcon, LightBulbIcon, ArrowPathIcon, CheckIcon } from '@heroicons/react/24/outline';
+import HelpCollapse from '../common/HelpCollapse';
 import api from '../../api/client';
 
 /**
@@ -65,25 +66,13 @@ export default function AIFlowBuilder({ workspaceId, onFlowGenerated }) {
   
   return (
     <div className="space-y-6">
-      {/* Explicación educativa */}
-      <div className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/20 rounded-xl p-5">
-        <div className="flex items-start gap-4">
-          <div className="p-2 rounded-lg bg-purple-500/20">
-            <SparklesIcon className="w-5 h-5 text-purple-400" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-white mb-2">¿Cómo funciona?</h3>
-            <p className="text-sm text-zinc-300 mb-3">
-              Es como tener un <span className="text-purple-400 font-medium">asistente experto</span> que crea bots por ti. 
-              Solo describe en palabras lo que quieres y la IA diseña el flujo completo automáticamente.
-            </p>
-            <div className="text-xs text-zinc-400 bg-zinc-800/50 rounded-lg p-3">
-              <span className="font-medium text-white">Tip:</span> Entre más detalles des en tu descripción, mejor será el resultado. 
-              Menciona qué preguntas hacer, qué datos guardar, y cómo debe responder el bot.
-            </div>
-          </div>
+      {/* Explicación educativa unificada */}
+      <HelpCollapse title="¿Qué es Crear con IA?" icon={SparklesIcon}>
+        <p className="mb-2">Es como tener un <span className="text-purple-400 font-medium">asistente experto</span> que crea bots por ti. Describe lo que quieres y la IA diseña el flujo.</p>
+        <div className="text-xs text-zinc-400 bg-zinc-800/50 rounded-lg p-3">
+          <span className="font-medium text-white">Tip:</span> Da detalles: preguntas, datos a guardar, y respuestas esperadas para mejores resultados.
         </div>
-      </div>
+      </HelpCollapse>
       
       <div className="bg-zinc-900/50 rounded-xl shadow-lg border border-zinc-700 overflow-hidden">
       {/* Header */}

@@ -12,6 +12,7 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
+import HelpCollapse from '../common/HelpCollapse';
 
 /**
  * MobileMonitorSetup - Configuración de API para monitor móvil
@@ -176,6 +177,12 @@ export default function MobileMonitorSetup({ workspaceId }) {
         </div>
       ) : (
         <>
+          {/* Qué es App Móvil */}
+          <HelpCollapse title="¿Qué es la App Móvil?" icon={DevicePhoneMobileIcon}>
+            Permite monitorear tu bot desde el teléfono. Genera una API Key, configura la app con el QR y consulta
+            endpoints como estadísticas, chats y notificaciones usando el header <code className="bg-zinc-800 px-1 rounded">X-API-Key</code>.
+          </HelpCollapse>
+          
           {/* Stats Preview */}
           {stats && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

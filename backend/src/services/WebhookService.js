@@ -7,7 +7,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
-import { connectDB } from '../config/db.js';
+import { connectDB, getFlowsDbName } from '../config/db.js';
 import cache from '../config/cache.js';
 import logger from '../config/logger.js';
 import { getFlowExecutionService } from './FlowExecutionService.js';
@@ -64,6 +64,25 @@ export async function createWebhook(workspaceId, flowId, options = {}) {
   
   await db.insert(webhook);
   
+  // Registrar en índice global para búsqueda por path
+  try {
+    const indexDb = await connectDB('webhooks_index');
+    try {
+      await indexDb.createIndex({ index: { fields: ['type', 'path'] }, name: 'idx_type_path' });
+    } catch {}
+    await indexDb.insert({
+      _id: `idx_${webhookId}`,
+      type: 'webhook_index',
+      path,
+      webhookId,
+      workspaceId,
+      flowId,
+      createdAt: new Date().toISOString()
+    });
+  } catch (e) {
+    log.warn('Failed to register webhook in index', { error: e.message });
+  }
+  
   // Generar URL completa
   const baseUrl = process.env.BASE_URL || 'http://localhost:3010';
   webhook.url = `${baseUrl}/inbound/webhook/${path}`;
@@ -114,18 +133,44 @@ export async function getWebhookByPath(path) {
 export async function listWebhooks(workspaceId) {
   try {
     const db = await connectDB(getDbName(workspaceId));
+    // Asegurar índice de sort por createdAt
+    try { await db.createIndex({ index: { fields: ['createdAt'] }, name: 'idx_createdAt' }); } catch {}
     
     const result = await db.find({
-      selector: { type: 'webhook' },
+      // Mango: los campos de sort deben estar en el selector
+      selector: { type: 'webhook', createdAt: { $gte: '0' } },
       sort: [{ createdAt: 'desc' }]
     });
     
     const baseUrl = process.env.BASE_URL || 'http://localhost:3010';
-    
-    return (result.docs || []).map(w => ({
+    const webhooks = (result.docs || []).map(w => ({
       ...w,
       url: `${baseUrl}/inbound/webhook/${w.path}`
     }));
+    
+    // Reparación ligera: asegurar presencia en índice global por path
+    try {
+      const indexDb = await connectDB('webhooks_index');
+      try { await indexDb.createIndex({ index: { fields: ['type', 'path'] }, name: 'idx_type_path' }); } catch {}
+      for (const w of webhooks) {
+        const exists = await indexDb.find({ selector: { type: 'webhook_index', path: w.path }, limit: 1 });
+        if (!exists.docs || exists.docs.length === 0) {
+          await indexDb.insert({
+            _id: `idx_${w._id}`,
+            type: 'webhook_index',
+            path: w.path,
+            webhookId: w._id,
+            workspaceId: w.workspaceId,
+            flowId: w.flowId,
+            createdAt: new Date().toISOString()
+          });
+        }
+      }
+    } catch (e) {
+      log.warn('Failed to ensure webhook index entries', { error: e.message });
+    }
+    
+    return webhooks;
   } catch (error) {
     log.error('Error listing webhooks', { error: error.message });
     return [];
@@ -146,8 +191,6 @@ export async function updateWebhook(workspaceId, webhookId, updates) {
       _rev: existing._rev,
       updatedAt: new Date().toISOString()
     };
-    
-    // No permitir cambiar path
     updated.path = existing.path;
     
     await db.insert(updated);
@@ -275,7 +318,7 @@ export async function processWebhookCall(path, method, headers, body, query, ip)
     const executionService = getFlowExecutionService();
     
     // Obtener el flujo
-    const flowsDb = await connectDB(`workspace_${webhook.workspaceId}_flows`);
+    const flowsDb = await connectDB(getFlowsDbName(webhook.workspaceId));
     const flow = await flowsDb.get(webhook.flowId);
     
     // Ejecutar

@@ -11,6 +11,7 @@ import {
   ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
+import HelpCollapse from '../common/HelpCollapse';
 
 const SEVERITY_CONFIG = {
   error: {
@@ -159,43 +160,33 @@ export default function FlowDoctor({ workspaceId, flow: externalFlow, onApplyFix
   
   return (
     <div className="space-y-6">
-      {/* Explicación educativa */}
-      <div className="bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/20 rounded-xl p-5">
-        <div className="flex items-start gap-4">
-          <div className="p-2 rounded-lg bg-violet-500/20">
-            <WrenchScrewdriverIcon className="w-5 h-5 text-violet-400" />
+      {/* Explicación educativa unificada */}
+      <HelpCollapse title="¿Qué es Revisar Flujos?" icon={WrenchScrewdriverIcon}>
+        <p className="mb-3">Analiza tus flujos para detectar problemas y sugerir mejoras. Útil para mantener tu bot sano y optimizado.</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+          <div className="flex items-start gap-2 bg-zinc-800/50 rounded-lg p-3">
+            <ExclamationTriangleIcon className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <span className="font-medium text-white block mb-1">Detecta errores</span>
+              <span className="text-zinc-400">Nodos desconectados, configuraciones faltantes, bucles infinitos.</span>
+            </div>
           </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-white mb-2">¿Qué hace Flow Doctor?</h3>
-            <p className="text-sm text-zinc-300 mb-3">
-              Es como un <span className="text-violet-400 font-medium">"médico"</span> para tus bots. Revisa tus flujos buscando problemas y te da sugerencias para mejorarlos.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-              <div className="flex items-start gap-2 bg-zinc-800/50 rounded-lg p-3">
-                <ExclamationTriangleIcon className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
-                <div>
-                  <span className="font-medium text-white block mb-1">Detecta errores</span>
-                  <span className="text-zinc-400">Nodos desconectados, configuraciones faltantes, bucles infinitos.</span>
-                </div>
-              </div>
-              <div className="flex items-start gap-2 bg-zinc-800/50 rounded-lg p-3">
-                <LightBulbIcon className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-                <div>
-                  <span className="font-medium text-white block mb-1">Sugiere mejoras</span>
-                  <span className="text-zinc-400">Tips para hacer tu bot más efectivo y profesional.</span>
-                </div>
-              </div>
-              <div className="flex items-start gap-2 bg-zinc-800/50 rounded-lg p-3">
-                <SparklesIcon className="w-4 h-4 text-violet-400 mt-0.5 flex-shrink-0" />
-                <div>
-                  <span className="font-medium text-white block mb-1">Análisis con IA</span>
-                  <span className="text-zinc-400">La IA revisa tu flujo y da recomendaciones personalizadas.</span>
-                </div>
-              </div>
+          <div className="flex items-start gap-2 bg-zinc-800/50 rounded-lg p-3">
+            <LightBulbIcon className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <span className="font-medium text-white block mb-1">Sugiere mejoras</span>
+              <span className="text-zinc-400">Tips para hacer tu bot más efectivo y profesional.</span>
+            </div>
+          </div>
+          <div className="flex items-start gap-2 bg-zinc-800/50 rounded-lg p-3">
+            <SparklesIcon className="w-4 h-4 text-violet-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <span className="font-medium text-white block mb-1">Análisis con IA</span>
+              <span className="text-zinc-400">La IA revisa tu flujo y da recomendaciones personalizadas.</span>
             </div>
           </div>
         </div>
-      </div>
+      </HelpCollapse>
       
       <div className="bg-zinc-900/50 rounded-xl border border-zinc-700 overflow-hidden">
       {/* Header */}

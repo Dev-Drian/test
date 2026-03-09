@@ -17,6 +17,8 @@ import {
   PaperAirplaneIcon
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
+import HelpCollapse from '../common/HelpCollapse';
+import { Squares2X2Icon } from '@heroicons/react/24/outline';
 
 // Mapeo de iconos por código de template
 const TEMPLATE_ICONS = {
@@ -169,6 +171,11 @@ export default function TemplatesMarketplace({ workspaceId, onInstall }) {
           IA Sugerir Template
         </button>
       </div>
+      
+      {/* Tip colapsable unificado */}
+      <HelpCollapse title="¿Qué son los Templates?" icon={Squares2X2Icon}>
+        Son flujos pre-diseñados para casos de uso comunes. Instálalos y personaliza variables para activar un bot en minutos.
+      </HelpCollapse>
       
       {/* Filters */}
       <div className="flex gap-4 items-center flex-wrap">

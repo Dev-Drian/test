@@ -42,6 +42,7 @@ export async function getConversationStats(workspaceId, options = {}) {
       selector: {
         createdAt: { $gte: startDate }
       },
+      use_index: 'indexCreatedAt',
       limit: 1000
     });
     
@@ -169,9 +170,17 @@ export async function analyzeConversationsWithAI(workspaceId, options = {}) {
     // Obtener muestra de conversaciones recientes
     const dbName = `workspace_${workspaceId}_chats`;
     const db = await connectDB(dbName);
+    // Asegurar índice Mango por createdAt para permitir sort
+    try {
+      await db.createIndex({ index: { fields: ['createdAt'] }, name: 'idx_createdAt' });
+    } catch (e) {
+      // Ignorar si ya existe u otros avisos; CouchDB devuelve conflicto si existe
+      log.debug?.('createIndex(createdAt) skipped', { error: e.message });
+    }
     
     const result = await db.find({
-      selector: {},
+      // Mango requiere que los campos de sort estén presentes en el selector
+      selector: { createdAt: { $gte: '0' } },
       sort: [{ createdAt: 'desc' }],
       limit: options.sampleSize || 50
     });
@@ -304,9 +313,17 @@ export async function getRealTimeMetrics(workspaceId) {
       trend: 'stable', // TODO: calcular tendencia real
       updatedAt: new Date().toISOString()
     };
+    // Compatibilidad con UI actual: exponer campos planos
+    const flat = {
+      activeChats: metrics.lastHour.conversations,
+      messagesLastHour: metrics.lastHour.messages,
+      avgResponseTime: 0,
+      resolvedToday: 0
+    };
+    const payload = { ...metrics, ...flat };
     
-    cache.set(cacheKey, metrics, 60); // 1 minuto de cache
-    return metrics;
+    cache.set(cacheKey, payload, 60); // 1 minuto de cache
+    return payload;
     
   } catch (error) {
     log.error('Error getting realtime metrics', { error: error.message });
@@ -336,9 +353,35 @@ export async function generateAnalyticsReport(workspaceId, period = '30d') {
   };
 }
 
+/**
+ * Obtiene el último análisis de conversaciones generado por IA
+ */
+export async function getLatestAIAnalysis(workspaceId) {
+  try {
+    const analyticsDb = await connectDB(`workspace_${workspaceId}_analytics`);
+    // Asegurar índice por generatedAt
+    try {
+      await analyticsDb.createIndex({ index: { fields: ['generatedAt'] }, name: 'idx_generatedAt' });
+    } catch (e) {
+      // ignorar si ya existe
+    }
+    const result = await analyticsDb.find({
+      selector: { type: 'conversation_analysis', generatedAt: { $gte: '0' } },
+      sort: [{ generatedAt: 'desc' }],
+      limit: 1
+    });
+    const doc = result.docs?.[0] || null;
+    return { success: !!doc, analysis: doc };
+  } catch (error) {
+    log.error('Error getting latest AI analysis', { error: error.message });
+    return { success: false, error: error.message };
+  }
+}
+
 export default {
   getConversationStats,
   analyzeConversationsWithAI,
   getRealTimeMetrics,
-  generateAnalyticsReport
+  generateAnalyticsReport,
+  getLatestAIAnalysis
 };
