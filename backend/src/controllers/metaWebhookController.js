@@ -32,6 +32,8 @@ import { ChatRepository } from '../repositories/ChatRepository.js';
 import { getSocketService } from '../realtime/SocketService.js';
 import { EVENTS } from '../core/EventEmitter.js';
 import { executeFlowsForTrigger } from '../services/FlowExecutor.js';
+import { WorkspaceConfigRepository } from '../config/WorkspaceConfigRepository.js';
+import { getWorkspacesDbName } from '../config/db.js';
 import logger from '../config/logger.js';
 
 const log = logger.child('MetaWebhook');
@@ -52,17 +54,18 @@ const serviceCache = new Map();
 
 /**
  * Valida la firma X-Hub-Signature-256 de Meta.
- * Si APP_SECRET no está configurado, acepta sin validar (warn).
+ * Usa appSecret del workspace o el global de .env como fallback.
  */
-function validateSignature(rawBody, headers) {
-  if (!APP_SECRET) {
-    log.warn('META_APP_SECRET no configurado. Aceptando webhook sin validar firma.');
+function validateSignature(rawBody, headers, appSecret) {
+  const secret = appSecret || APP_SECRET;
+  if (!secret) {
+    log.warn('APP_SECRET no configurado. Aceptando webhook sin validar firma.');
     return true;
   }
   const sig = headers['x-hub-signature-256'] || '';
   if (!sig) return false;
   const expected = 'sha256=' + crypto
-    .createHmac('sha256', APP_SECRET)
+    .createHmac('sha256', secret)
     .update(rawBody)
     .digest('hex');
   return expected === sig;
@@ -120,53 +123,57 @@ async function getOrCreateExternalChatId(workspaceId, senderId, platform) {
 
 // ── Enviar respuesta por cada canal ──────────────────────────────────────────
 
-async function replyWhatsApp(toNumber, text) {
-  if (!WA_TOKEN || !WA_PHONE_ID) {
-    log.warn('[WhatsApp] META_WHATSAPP_TOKEN o META_WHATSAPP_PHONE_NUMBER_ID no configurados');
+async function replyWhatsApp(toNumber, text, creds = {}) {
+  const token = creds.token || WA_TOKEN;
+  const phoneId = creds.phoneNumberId || WA_PHONE_ID;
+  if (!token || !phoneId) {
+    log.warn('[WhatsApp] Token o Phone Number ID no configurados');
     return;
   }
   try {
     await axios.post(
-      `${META_GRAPH_URL}/${WA_PHONE_ID}/messages`,
+      `${META_GRAPH_URL}/${phoneId}/messages`,
       {
         messaging_product: 'whatsapp',
         to: toNumber,
         type: 'text',
         text: { body: text },
       },
-      { headers: { Authorization: `Bearer ${WA_TOKEN}`, 'Content-Type': 'application/json' } }
+      { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
     );
   } catch (err) {
     log.error('[WhatsApp] Error enviando mensaje', { error: err.response?.data || err.message });
   }
 }
 
-async function replyMessenger(recipientId, text) {
-  if (!PAGE_TOKEN) {
-    log.warn('[Messenger] META_PAGE_TOKEN no configurado');
+async function replyMessenger(recipientId, text, creds = {}) {
+  const token = creds.pageToken || PAGE_TOKEN;
+  if (!token) {
+    log.warn('[Messenger] Page Token no configurado');
     return;
   }
   try {
     await axios.post(
       `${META_GRAPH_URL}/me/messages`,
       { recipient: { id: recipientId }, message: { text } },
-      { params: { access_token: PAGE_TOKEN } }
+      { params: { access_token: token } }
     );
   } catch (err) {
     log.error('[Messenger] Error enviando mensaje', { error: err.response?.data || err.message });
   }
 }
 
-async function replyInstagram(recipientId, text) {
-  if (!IG_TOKEN) {
-    log.warn('[Instagram] META_INSTAGRAM_TOKEN no configurado');
+async function replyInstagram(recipientId, text, creds = {}) {
+  const token = creds.token || IG_TOKEN;
+  if (!token) {
+    log.warn('[Instagram] Token no configurado');
     return;
   }
   try {
     await axios.post(
       `${META_GRAPH_URL}/me/messages`,
       { recipient: { id: recipientId }, message: { text } },
-      { params: { access_token: IG_TOKEN } }
+      { params: { access_token: token } }
     );
   } catch (err) {
     log.error('[Instagram] Error enviando mensaje', { error: err.response?.data || err.message });
@@ -230,31 +237,80 @@ export function verifyWebhook(req, res) {
  * POST /api/webhooks/meta
  * Recibe eventos de WhatsApp, Instagram y Messenger.
  *
- * El workspaceId se pasa como query param:
- *   POST /api/webhooks/meta?workspaceId=dulce-momento
- *
- * O bien se mapea por número/página en META_WORKSPACE_MAP (ver .env).
+ * El workspaceId se resuelve automáticamente buscando qué workspace
+ * tiene configurado el pageId / phoneNumberId / igAccountId que envió el mensaje.
+ * Fallback: query param ?workspaceId= o META_DEFAULT_WORKSPACE_ID.
  */
 export async function receiveEvent(req, res) {
   // Responder 200 de inmediato (Meta reintenta si no responde en 20s)
   res.sendStatus(200);
 
-  // Validar firma
-  const rawBody = JSON.stringify(req.body);
-  if (!validateSignature(rawBody, req.headers)) {
+  const body = req.body;
+
+  // ── Extraer identificador de plataforma del payload ─────────────────────
+  let platformMetaId = null;
+  if (body.object === 'whatsapp_business_account') {
+    // WhatsApp: metadata.phone_number_id identifica el número del negocio
+    const firstChange = body.entry?.[0]?.changes?.[0]?.value?.metadata;
+    platformMetaId = firstChange?.phone_number_id || null;
+  } else if (body.object === 'page') {
+    // Messenger: entry[].id es el Page ID
+    platformMetaId = body.entry?.[0]?.id || null;
+  } else if (body.object === 'instagram') {
+    // Instagram: entry[].id es el IG Account ID o Page ID
+    platformMetaId = body.entry?.[0]?.id || null;
+  }
+
+  // ── Resolver workspaceId ────────────────────────────────────────────────
+  const repo = new WorkspaceConfigRepository(() => getWorkspacesDbName());
+  let workspaceId = null;
+
+  // 1. Buscar por identificador de plataforma (auto-routing)
+  if (platformMetaId) {
+    workspaceId = await repo.findWorkspaceByMetaId(platformMetaId);
+    if (workspaceId) {
+      log.info('[Meta] Workspace resuelto automáticamente', { platformMetaId, workspaceId });
+    }
+  }
+
+  // 2. Fallback: query param
+  if (!workspaceId && req.query.workspaceId) {
+    workspaceId = req.query.workspaceId;
+  }
+
+  // 3. Fallback: variable de entorno
+  if (!workspaceId) {
+    workspaceId = process.env.META_DEFAULT_WORKSPACE_ID;
+  }
+
+  if (!workspaceId) {
+    log.warn('[Meta] No se pudo resolver workspaceId', { platformMetaId, object: body.object });
+    return;
+  }
+
+  // Leer config per-workspace (tokens, appSecret)
+  let metaConfig = {};
+  try {
+    const wsConfig = await repo.getConfig(workspaceId);
+    metaConfig = wsConfig?.integrations?.meta || {};
+  } catch (err) {
+    log.warn('[Meta] No se pudo leer config del workspace, usando .env', { error: err.message });
+  }
+
+  // Validar firma con appSecret del workspace o global
+  const rawBody = JSON.stringify(body);
+  if (!validateSignature(rawBody, req.headers, metaConfig.appSecret)) {
     log.warn('[Meta] Firma inválida — descartando evento');
     return;
   }
 
-  const body = req.body;
-
-  // workspaceId por query param (recomendado: configurar URL única por workspace)
-  // Ej: https://tudominio.com/api/webhooks/meta?workspaceId=dulce-momento
-  const workspaceId = req.query.workspaceId || process.env.META_DEFAULT_WORKSPACE_ID;
-  if (!workspaceId) {
-    log.warn('[Meta] No workspaceId en query ni META_DEFAULT_WORKSPACE_ID configurado');
-    return;
-  }
+  // Credenciales con fallback a .env
+  const waCreds = {
+    token: metaConfig.whatsapp?.token || WA_TOKEN,
+    phoneNumberId: metaConfig.whatsapp?.phoneNumberId || WA_PHONE_ID,
+  };
+  const igCreds = { token: metaConfig.instagram?.token || IG_TOKEN };
+  const msgCreds = { pageToken: metaConfig.messenger?.pageToken || PAGE_TOKEN };
 
   try {
     // ────────────── WhatsApp ──────────────────────────────────────────────────
@@ -264,13 +320,34 @@ export async function receiveEvent(req, res) {
           const value    = change.value || {};
           const messages = value.messages || [];
           for (const msg of messages) {
-            if (msg.type !== 'text') continue; // por ahora solo texto
-            const from = msg.from; // número internacionaln tipo "573001234567"
-            const text = msg.text?.body || '';
-            log.info('[WhatsApp] Mensaje recibido', { from, text: text.slice(0, 60) });
+            const from = msg.from;
+            let text = '';
+            if (msg.type === 'text') {
+              text = msg.text?.body || '';
+            } else if (msg.type === 'image') {
+              text = `[Imagen recibida] ${msg.image?.caption || ''}`;
+            } else if (msg.type === 'document') {
+              text = `[Documento recibido: ${msg.document?.filename || 'archivo'}]`;
+            } else if (msg.type === 'audio') {
+              text = '[Audio recibido]';
+            } else if (msg.type === 'location') {
+              text = `[Ubicación: ${msg.location?.latitude}, ${msg.location?.longitude}]`;
+            } else {
+              text = `[Mensaje tipo ${msg.type} no soportado]`;
+            }
+            if (!text) continue;
+            log.info('[WhatsApp] Mensaje recibido', { from, type: msg.type, text: text.slice(0, 60) });
+
+            // Notificar al frontend en tiempo real
+            getSocketService().toWorkspace(workspaceId, 'meta:message', {
+              platform: 'whatsapp',
+              senderId: from,
+              text: text.slice(0, 200),
+              senderName: value.contacts?.[0]?.profile?.name || from,
+            });
 
             const reply = await dispatchToAgent({ workspaceId, senderId: from, text, platform: 'whatsapp' });
-            if (reply) await replyWhatsApp(from, reply);
+            if (reply) await replyWhatsApp(from, reply, waCreds);
           }
         }
       }
@@ -287,8 +364,16 @@ export async function receiveEvent(req, res) {
           const text = msg.message.text;
           log.info('[Instagram] Mensaje recibido', { from, text: text.slice(0, 60) });
 
+          // Notificar al frontend en tiempo real
+          getSocketService().toWorkspace(workspaceId, 'meta:message', {
+            platform: 'instagram',
+            senderId: from,
+            text: text.slice(0, 200),
+            senderName: from,
+          });
+
           const reply = await dispatchToAgent({ workspaceId, senderId: from, text, platform: 'instagram' });
-          if (reply) await replyInstagram(from, reply);
+          if (reply) await replyInstagram(from, reply, igCreds);
         }
       }
       return;
@@ -303,8 +388,16 @@ export async function receiveEvent(req, res) {
           const text = event.message.text;
           log.info('[Messenger] Mensaje recibido', { from, text: text.slice(0, 60) });
 
+          // Notificar al frontend en tiempo real
+          getSocketService().toWorkspace(workspaceId, 'meta:message', {
+            platform: 'messenger',
+            senderId: from,
+            text: text.slice(0, 200),
+            senderName: from,
+          });
+
           const reply = await dispatchToAgent({ workspaceId, senderId: from, text, platform: 'messenger' });
-          if (reply) await replyMessenger(from, reply);
+          if (reply) await replyMessenger(from, reply, msgCreds);
         }
       }
       return;

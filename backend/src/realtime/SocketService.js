@@ -17,6 +17,7 @@
  *   payment:confirmed     → pago aprobado en Wompi
  *   notification:new      → nueva notificación interna
  *   agent:updated         → configuración del agente cambió
+ *   widget:message         → mensaje del widget (visitante anónimo)
  */
 
 import { Server as SocketIOServer } from 'socket.io';
@@ -29,6 +30,7 @@ let _instance = null;
 export class SocketService {
   constructor() {
     this.io = null;
+    this.widgetNs = null;
     // workspaceId → Set de socket ids (para saber qué clientes hay conectados)
     this._rooms = new Map();
   }
@@ -85,6 +87,23 @@ export class SocketService {
     });
 
     log.info('SocketService inicializado ✅');
+
+    // ── Namespace /widget para visitantes anónimos ─────────────────────────
+    this.widgetNs = this.io.of('/widget');
+    this.widgetNs.on('connection', (socket) => {
+      log.info('Widget visitor conectado', { socketId: socket.id });
+
+      socket.on('join:visitor', ({ visitorId, token } = {}) => {
+        if (!visitorId || !token) return;
+        socket.join(`visitor:${visitorId}`);
+        log.info('Visitor unido a room', { socketId: socket.id, visitorId });
+      });
+
+      socket.on('disconnect', () => {
+        log.info('Widget visitor desconectado', { socketId: socket.id });
+      });
+    });
+
     return this.io;
   }
 
@@ -151,6 +170,14 @@ export class SocketService {
 
   emitAgentUpdated(workspaceId, agentId) {
     this.toWorkspace(workspaceId, 'agent:updated', { agentId });
+  }
+
+  /**
+   * Emite un evento a un visitante del widget
+   */
+  toVisitor(visitorId, event, data = {}) {
+    if (!this.widgetNs) return;
+    this.widgetNs.to(`visitor:${visitorId}`).emit(event, { ...data, ts: Date.now() });
   }
 }
 

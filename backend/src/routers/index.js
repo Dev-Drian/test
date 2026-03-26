@@ -14,6 +14,8 @@ import * as admin from "../controllers/adminController.js";
 import * as payment from "../controllers/paymentController.js";
 import * as metaWebhook from "../controllers/metaWebhookController.js";
 import * as telegram from "../controllers/telegramController.js";
+import * as metaIntegration from "../controllers/metaIntegrationController.js";
+import * as widget from "../controllers/widgetController.js";
 import { requireAuth, optionalAuth, requireWorkspaceMember } from "../middleware/index.js";
 import { validateWorkspace } from "../middleware/index.js";
 import { loginLimiter, registerLimiter, forgotPasswordLimiter } from "../middleware/index.js";
@@ -264,6 +266,29 @@ router.get("/mobile/:workspaceId/flows/status", advancedFeatures.mobileGetFlowsS
 
 // --- Public Webhook Endpoint (no auth) ---
 router.all("/inbound/webhook/:path", advancedFeatures.processWebhookCall);
+// ============ INTEGRACIONES - META (dashboard) ============
+// OAuth — Facebook Login para Messenger e Instagram
+router.get("/integrations/meta/auth-url", requireAuth, metaIntegration.getMetaAuthUrl);
+router.get("/integrations/meta/callback", metaIntegration.handleMetaCallback); // Sin auth (redirect de Facebook)
+router.get("/integrations/meta/pages", requireAuth, metaIntegration.listPages);
+router.post("/integrations/meta/select-page", requireAuth, metaIntegration.selectPage);
+// Configuración manual + estado
+router.get("/integrations/meta/config", requireAuth, metaIntegration.getMetaConfig);
+router.put("/integrations/meta/config", requireAuth, metaIntegration.updateMetaConfig);
+router.post("/integrations/meta/test", requireAuth, metaIntegration.testConnection);
+router.post("/integrations/meta/disconnect", requireAuth, metaIntegration.disconnectMeta);
+
+// ============ WIDGET (endpoints públicos — auth por token) ============
+router.get("/widget/:token/config", widget.getConfig);
+router.post("/widget/:token/session", widget.createSession);
+router.post("/widget/:token/message", widget.sendMessage);
+router.get("/widget/:token/history/:visitorId", widget.getHistory);
+
+// ============ WIDGET (dashboard — requieren auth) ============
+router.post("/integrations/widget/enable", requireAuth, widget.enableWidget);
+router.post("/integrations/widget/disable", requireAuth, widget.disableWidget);
+router.get("/integrations/widget/settings", requireAuth, widget.getWidgetSettings);
+router.put("/integrations/widget/theme", requireAuth, widget.updateWidgetTheme);
 
 export default router;
 

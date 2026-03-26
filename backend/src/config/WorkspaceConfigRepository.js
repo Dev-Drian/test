@@ -8,6 +8,9 @@
 import { BaseRepository } from '../repositories/BaseRepository.js';
 import { SystemConfig, getConfig } from './system.js';
 
+// Cache compartido a nivel de módulo para el lookup Meta → workspaceId
+let _sharedMetaLookup = null;
+
 export class WorkspaceConfigRepository extends BaseRepository {
   constructor(db) {
     super(db);
@@ -129,10 +132,26 @@ export class WorkspaceConfigRepository extends BaseRepository {
       
       // Integraciones
       integrations: {
-        whatsapp: {
+        meta: {
           enabled: false,
-          token: null,
-          phoneId: null,
+          whatsapp: {
+            enabled: false,
+            token: null,
+            phoneNumberId: null,
+            businessId: null,
+            verifyToken: null,
+          },
+          instagram: {
+            enabled: false,
+            token: null,
+          },
+          messenger: {
+            enabled: false,
+            pageToken: null,
+            pageId: null,
+          },
+          appSecret: null,
+          webhookUrl: null,
         },
         email: {
           enabled: false,
@@ -142,6 +161,18 @@ export class WorkspaceConfigRepository extends BaseRepository {
           enabled: false,
           url: null,
           secret: null,
+        },
+        widget: {
+          enabled: false,
+          token: null,
+          agentId: null,
+          theme: {
+            primaryColor: '#4F46E5',
+            position: 'bottom-right',
+            title: 'Chat con nosotros',
+            subtitle: '',
+            avatarUrl: null,
+          },
         },
       },
       
@@ -209,6 +240,8 @@ export class WorkspaceConfigRepository extends BaseRepository {
    */
   invalidateCache(workspaceId) {
     this.configCache.delete(workspaceId);
+    // Limpiar el lookup de Meta compartido para forzar reconstrucción
+    _sharedMetaLookup = null;
   }
   
   /**
@@ -216,6 +249,44 @@ export class WorkspaceConfigRepository extends BaseRepository {
    */
   clearCache() {
     this.configCache.clear();
+    _sharedMetaLookup = null;
+  }
+
+  /**
+   * Busca el workspaceId asociado a un identificador de Meta (pageId, phoneNumberId, igAccountId).
+   * Escanea todos los config_* docs y construye un mapa en memoria (singleton compartido).
+   * @param {string} metaId - pageId, phoneNumberId o igAccountId
+   * @returns {Promise<string|null>} workspaceId o null si no se encuentra
+   */
+  async findWorkspaceByMetaId(metaId) {
+    if (!metaId) return null;
+
+    // Usar lookup cacheado si existe
+    if (_sharedMetaLookup && _sharedMetaLookup.has(metaId)) {
+      return _sharedMetaLookup.get(metaId);
+    }
+
+    // Construir lookup escaneando todos los workspace configs
+    const db = await this.getDb();
+    const result = await db.list({ include_docs: true, startkey: 'config_', endkey: 'config_\ufff0' });
+
+    const lookup = new Map();
+    for (const row of result.rows || []) {
+      const doc = row.doc;
+      if (!doc || doc.type !== 'workspace_config') continue;
+      const wsId = doc.workspaceId;
+      const meta = doc.integrations?.meta;
+      if (!meta) continue;
+
+      // Indexar todos los identificadores posibles
+      if (meta.messenger?.pageId) lookup.set(meta.messenger.pageId, wsId);
+      if (meta.instagram?.pageId) lookup.set(meta.instagram.pageId, wsId);
+      if (meta.instagram?.igAccountId) lookup.set(meta.instagram.igAccountId, wsId);
+      if (meta.whatsapp?.phoneNumberId) lookup.set(meta.whatsapp.phoneNumberId, wsId);
+    }
+
+    _sharedMetaLookup = lookup;
+    return lookup.get(metaId) || null;
   }
 }
 

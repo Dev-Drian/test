@@ -65,7 +65,7 @@ export class BaseRepository {
       cache.set(cacheKey, doc, this.cacheTTL);
       return doc;
     } catch (error) {
-      if (error.status === 404) {
+      if (error.status === 404 || error.statusCode === 404) {
         cache.set(cacheKey, null, 30); // Cache negativo corto
         return null;
       }
@@ -200,7 +200,7 @@ export class BaseRepository {
       
       return updated;
     } catch (error) {
-      if (error.status === 404) return null;
+      if (error.status === 404 || error.statusCode === 404) return null;
       this.log.error('update error:', { id, error: error.message });
       throw error;
     }
@@ -240,7 +240,7 @@ export class BaseRepository {
       
       return true;
     } catch (error) {
-      if (error.status === 404) return false;
+      if (error.status === 404 || error.statusCode === 404) return false;
       this.log.error('delete error:', { id, error: error.message });
       throw error;
     }

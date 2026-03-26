@@ -10,6 +10,8 @@ import { WorkspaceContext } from '../context/WorkspaceContext';
 import GoogleIntegrationCard from '../components/integrations/GoogleIntegrationCard';
 import TelegramBotManager from '../components/integrations/TelegramBotManager';
 import { useGoogleIntegration } from '../hooks/useGoogleIntegration';
+import WidgetIntegrationCard from '../components/integrations/WidgetIntegrationCard';
+import MetaIntegrationCard from '../components/integrations/MetaIntegrationCard';
 import { Toast } from '../components/Toast';
 import { 
   MagnifyingGlassIcon, 
@@ -145,7 +147,6 @@ export default function Integrations() {
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [connectModal, setConnectModal] = useState(null);
   const [connectedIntegrations, setConnectedIntegrations] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [telegramToken, setTelegramToken] = useState('');
   const [connectingTelegram, setConnectingTelegram] = useState(false);
   const [managingIntegration, setManagingIntegration] = useState(null); // 'telegram', etc.
@@ -155,10 +156,10 @@ export default function Integrations() {
 
   // Detectar parámetros de callback de OAuth
   useEffect(() => {
-    const googleStatus = searchParams.get('google');
+    const googleParam = searchParams.get('google');
     const error = searchParams.get('error');
 
-    if (googleStatus === 'connected') {
+    if (googleParam === 'connected') {
       setToast({ type: 'success', message: '¡Google conectado exitosamente!' });
       searchParams.delete('google');
       setSearchParams(searchParams);
@@ -294,8 +295,7 @@ export default function Integrations() {
           </div>
         </div>
         
-        {/* Stats */}
-        <div className="flex gap-4 mt-4">
+        <div className="flex gap-4 mt-4 flex-wrap">
           <div className="px-4 py-2 rounded-lg bg-green-500/10 border border-green-500/20">
             <span className="text-green-400 font-semibold">{totalConnected}</span>
             <span className="text-zinc-400 ml-2 text-sm">Conectadas</span>
@@ -307,13 +307,16 @@ export default function Integrations() {
         </div>
       </div>
 
-      {/* Google Integration Card (Destacada) */}
       <div className="mb-8">
         <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-green-400"></span>
-          Integración Principal
+          <span className="w-2 h-2 rounded-full bg-green-400" />
+          Integraciones principales
         </h2>
-        <GoogleIntegrationCard />
+        <div className="grid gap-6">
+          <GoogleIntegrationCard />
+          <WidgetIntegrationCard />
+          <MetaIntegrationCard />
+        </div>
       </div>
 
       {/* Search & Filters */}

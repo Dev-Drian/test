@@ -69,10 +69,10 @@ const StatCard = ({ icon, label, value, color, link, trend, delay = 0 }) => (
     
     <div className="relative flex items-start justify-between mb-4">
       <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 ${
-        color === 'blue' ? 'bg-gradient-to-br from-indigo-500 to-blue-600 shadow-lg shadow-indigo-500/30' :
-        color === 'green' ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30' :
-        color === 'purple' ? 'bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-500/30' :
-        'bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/30'
+        color === 'blue' ? 'bg-linear-to-br from-indigo-500 to-blue-600 shadow-lg shadow-indigo-500/30' :
+        color === 'green' ? 'bg-linear-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30' :
+        color === 'purple' ? 'bg-linear-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-500/30' :
+        'bg-linear-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/30'
       }`}>
         {icon}
       </div>
@@ -124,10 +124,10 @@ const QuickAction = ({ to, icon, label, desc, color, delay = 0 }) => (
     />
     
     <div className={`relative w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:-rotate-6 text-white ${
-      color === 'blue' ? 'bg-gradient-to-br from-indigo-500 to-blue-600 shadow-xl shadow-indigo-500/25' :
-      color === 'purple' ? 'bg-gradient-to-br from-violet-500 to-purple-600 shadow-xl shadow-violet-500/25' :
-      color === 'green' ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-xl shadow-emerald-500/25' :
-      'bg-gradient-to-br from-amber-500 to-orange-600 shadow-xl shadow-amber-500/25'
+      color === 'blue' ? 'bg-linear-to-br from-indigo-500 to-blue-600 shadow-xl shadow-indigo-500/25' :
+      color === 'purple' ? 'bg-linear-to-br from-violet-500 to-purple-600 shadow-xl shadow-violet-500/25' :
+      color === 'green' ? 'bg-linear-to-br from-emerald-500 to-teal-600 shadow-xl shadow-emerald-500/25' :
+      'bg-linear-to-br from-amber-500 to-orange-600 shadow-xl shadow-amber-500/25'
     }`}>
       {icon}
     </div>
@@ -268,7 +268,7 @@ const MetricsPanel = ({ stats, tables }) => {
               return (
                 <div key={i}>
                   <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-slate-400 truncate max-w-[120px]">{item.name}</span>
+                    <span className="text-slate-400 truncate max-w-30">{item.name}</span>
                     <span className="text-slate-500">{item.count}</span>
                   </div>
                   <div className="h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
@@ -352,7 +352,7 @@ const GettingStartedGuide = ({ tables, agents }) => {
       {/* Barra de progreso */}
       <div className="h-2 bg-slate-700/50 rounded-full mb-6 overflow-hidden">
         <div 
-          className="h-full bg-gradient-to-r from-indigo-500 to-sky-500 rounded-full transition-all duration-500"
+          className="h-full bg-linear-to-r from-indigo-500 to-sky-500 rounded-full transition-all duration-500"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -501,7 +501,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full" style={{ background: '#0f172a' }}>
+      <div className="flex items-center justify-center h-full">
         <div className="flex flex-col items-center gap-4">
           <div className="relative w-12 h-12">
             <div className="absolute inset-0 border-2 rounded-full border-indigo-500/20" />
@@ -514,25 +514,21 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#0f172a' }}>
-      {/* Header simple */}
-      <header className="sticky top-0 z-10" style={{ 
-        background: 'rgba(15, 23, 42, 0.95)',
-        borderBottom: '1px solid rgba(100, 116, 139, 0.2)',
-        backdropFilter: 'blur(20px)'
-      }}>
-        <div className="max-w-6xl mx-auto px-6 py-5">
+    <div className="min-h-full">
+      <div className="max-w-6xl mx-auto px-6 py-6">
+        {/* Page header */}
+        <div className="mb-8 animate-fade-up">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {workspaceId && (
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white bg-indigo-500">
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white" style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', boxShadow: '0 4px 16px rgba(99,102,241,0.3)' }}>
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5z" />
                   </svg>
                 </div>
               )}
               <div>
-                <h1 className="text-xl font-semibold text-slate-100">
+                <h1 className="text-xl font-semibold text-white tracking-tight">
                   {workspaceId ? workspaceName : "Bienvenido"}
                 </h1>
                 <p className="text-sm text-slate-400 mt-0.5">
@@ -544,8 +540,8 @@ export default function Dashboard() {
             {workspaceId && (
               <Link 
                 to="/workspaces" 
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:bg-slate-700/50 text-slate-400"
-                style={{ border: '1px solid rgba(100, 116, 139, 0.3)' }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:bg-white/6 text-slate-400"
+                style={{ border: '1px solid rgba(255,255,255,0.08)' }}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
@@ -555,9 +551,6 @@ export default function Dashboard() {
             )}
           </div>
         </div>
-      </header>
-
-      <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Error */}
         {error && (
           <div className="mb-8 p-4 bg-error-light border border-error-DEFAULT/20 rounded-xl flex items-center gap-3 animate-fade-up">
@@ -681,7 +674,7 @@ export default function Dashboard() {
                       <div className="w-24 text-sm text-slate-400 truncate">{item.name}</div>
                       <div className="flex-1 h-2 bg-slate-700/50 rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 rounded-full transition-all duration-700"
+                          className="h-full bg-linear-to-r from-indigo-500 to-indigo-400 rounded-full transition-all duration-700"
                           style={{ width: `${stats.totalRecords > 0 ? (item.count / stats.totalRecords) * 100 : 0}%` }}
                         />
                       </div>
@@ -741,7 +734,7 @@ export default function Dashboard() {
                     </div>
                     <div className="mt-3 h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-gradient-to-r from-sky-500 to-sky-400 rounded-full transition-all duration-700"
+                        className="h-full bg-linear-to-r from-sky-500 to-sky-400 rounded-full transition-all duration-700"
                         style={{ width: `${Math.min(stats.totalRecords / 10, 100)}%` }}
                       />
                     </div>
@@ -793,7 +786,7 @@ export default function Dashboard() {
                         
                         return (
                           <div key={table._id} className="flex items-start gap-3 group">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                               isRecent ? 'bg-sky-500/15 text-sky-400' :
                               i < 2 ? 'bg-indigo-500/15 text-indigo-400' :
                               'bg-slate-700/50 text-slate-400'
@@ -808,7 +801,7 @@ export default function Dashboard() {
                                 {isRecent ? 'Creada recientemente' : table.updatedAt ? 'Actualizada' : 'Tabla activa'}
                               </p>
                             </div>
-                            <span className="text-xs text-slate-500 flex-shrink-0">
+                            <span className="text-xs text-slate-500 shrink-0">
                               {timeAgo}
                             </span>
                           </div>

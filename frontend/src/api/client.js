@@ -32,9 +32,14 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem("migracion_token");
-      localStorage.removeItem("migracion_user");
-      window.location.href = "/login";
+      // Don't interfere with AuthContext's own profile check
+      const isProfileCheck = error.config?.url?.endsWith('/auth/me');
+      if (!isProfileCheck) {
+        localStorage.removeItem("migracion_token");
+        localStorage.removeItem("migracion_user");
+        // Notify React auth system instead of hard redirect
+        window.dispatchEvent(new Event('auth:session-expired'));
+      }
     }
     return Promise.reject(error);
   }
