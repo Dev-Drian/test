@@ -6,6 +6,7 @@ import { useSocket } from "../hooks/useSocket";
 import WorkspaceSelector from "./WorkspaceSelector";
 import HelpButton from "./HelpButton";
 import SetupAssistantChat from "./SetupAssistantChat";
+import MetaNotificationBanner, { NotificationBell } from "./MetaNotificationBanner";
 import api from "../api/client";
 import { 
   LayoutDashboard, FolderKanban, Bot, Database, Zap, MessageSquare, HelpCircle, Link2, Settings,
@@ -317,6 +318,9 @@ export default function Layout() {
                 </div>
               )}
               
+              {/* Notifications bell */}
+              {workspaceId && <NotificationBell collapsed={collapsed} />}
+
               {/* Socket status — indicador sutil */}
               {workspaceId && (
                 <div className="flex items-center gap-1 px-2">
@@ -370,6 +374,9 @@ export default function Layout() {
       
       {/* Chat de configuración asistida */}
       <SetupAssistantChat />
+
+      {/* Notificaciones globales de mensajes Meta */}
+      <MetaNotificationBanner />
     </div>
   );
 }

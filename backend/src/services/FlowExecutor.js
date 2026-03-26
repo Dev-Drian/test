@@ -12,6 +12,7 @@ import { ChatMessageProvider } from '../integrations/notifications/ChatMessagePr
 import { getNotificationService } from '../integrations/notifications/NotificationService.js';
 import { getPaymentService, BasePaymentProvider } from './payments/PaymentService.js';
 import { getSocketService } from '../realtime/SocketService.js';
+import { getNotificationService as getNewNotificationService } from './NotificationService.js';
 import * as TelegramService from './TelegramService.js';
 
 /**
@@ -549,6 +550,10 @@ async function executeGeneratePaymentLink(workspaceId, action, context) {
       paymentCurrency: currency,
       // Guardamos el campo de estado para que el webhook lo sepa
       _paymentStatusField: saveStatusToField,
+      // Guardar contexto de chat para notificar cuando se confirme el pago
+      _paymentChatId: context._chatId || null,
+      _paymentAgentId: context._agentId || null,
+      _paymentPlatform: context._platform || null,
       updatedAt: new Date().toISOString(),
     };
 
@@ -1154,6 +1159,25 @@ export async function executeFlowsForTrigger(workspaceId, triggerType, tableId, 
         nodesExecuted: result.results?.length || 0,
         error: result.error || null,
       });
+
+      // 🔔 Persistir notificación
+      try {
+        if (result.success) {
+          await getNewNotificationService().notifyFlowCompleted(workspaceId, {
+            flowId: flow._id,
+            flowName: flow.name,
+            nodesExecuted: result.results?.length || 0,
+          });
+        } else {
+          await getNewNotificationService().notifyFlowFailed(workspaceId, {
+            flowId: flow._id,
+            flowName: flow.name,
+            error: result.error,
+          });
+        }
+      } catch (notifErr) {
+        console.warn('[FlowExecutor] Notification error:', notifErr.message);
+      }
     } catch (error) {
       const endTime = Date.now();
       

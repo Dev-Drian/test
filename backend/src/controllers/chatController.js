@@ -8,12 +8,15 @@
 import { v4 as uuidv4 } from 'uuid';
 import { ChatService } from '../services/ChatService.js';
 import { ImportService } from '../services/ImportService.js';
+import { getNotificationService } from '../services/NotificationService.js';
 import { TableRepository } from '../repositories/TableRepository.js';
-import { connectDB, getChatDbName, getAgentsDbName, getWorkspaceDbName, getTableDataDbName } from '../config/db.js';
+import { connectDB, getChatDbName, getAgentsDbName, getWorkspaceDbName, getTableDataDbName, getWorkspacesDbName } from '../config/db.js';
 import { EVENTS } from '../core/EventEmitter.js';
 import { executeFlowsForTrigger } from '../services/FlowExecutor.js';
 import { getBusinessSnapshot } from '../services/BusinessSnapshot.js';
 import { getSocketService } from '../realtime/SocketService.js';
+import { replyWhatsApp, replyMessenger, replyInstagram } from './metaWebhookController.js';
+import { WorkspaceConfigRepository } from '../config/WorkspaceConfigRepository.js';
 import logger from '../config/logger.js';
 
 const log = logger.child('ChatController');
@@ -154,6 +157,18 @@ export async function sendMessage(req, res) {
     
   } catch (err) {
     log.error('sendMessage error', { error: err.message });
+    
+    // Notify AI/agent error
+    try {
+      await getNotificationService().notifyAgentError(workspaceId, {
+        chatId,
+        agentId,
+        error: err.message,
+      });
+    } catch (notifyErr) {
+      log.warn('Failed to notify agent error', { error: notifyErr.message });
+    }
+    
     res.status(500).json({ error: err.message });
   }
 }
@@ -248,20 +263,70 @@ export async function listChats(req, res) {
       limit: 100,
     });
     
-    const chatList = result.docs.map(c => ({
-      _id: c._id,
-      title: c.title || getFirstMessagePreview(c.messages) || 'Nueva conversación',
-      agentId: c.agentId,
-      messageCount: c.messages?.length || 0,
-      lastMessage: c.messages?.slice(-1)[0]?.content?.slice(0, 50) || null,
-      createdAt: c.createdAt,
-      updatedAt: c.updatedAt,
-    }));
+    const chatList = result.docs.map(c => {
+      // Calculate unread count: messages after operatorLastReadAt
+      const lastReadAt = c.operatorLastReadAt ? new Date(c.operatorLastReadAt).getTime() : 0;
+      const unreadCount = (c.messages || []).filter(m => {
+        // Only count user messages as unread (not assistant/bot replies)
+        if (m.role !== 'user') return false;
+        const msgTime = m.timestamp ? new Date(m.timestamp).getTime() : 0;
+        return msgTime > lastReadAt;
+      }).length;
+      
+      return {
+        _id: c._id,
+        title: c.title || getFirstMessagePreview(c.messages) || 'Nueva conversación',
+        agentId: c.agentId,
+        messageCount: c.messages?.length || 0,
+        unreadCount,
+        lastMessage: c.messages?.slice(-1)[0]?.content?.slice(0, 50) || null,
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt,
+        ...(c.channel && { channel: c.channel }),
+        ...(c.externalRef && { externalRef: c.externalRef }),
+        ...(c.senderName && { senderName: c.senderName }),
+      };
+    });
     
     res.json(chatList);
     
   } catch (err) {
     log.error('listChats error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
+}
+
+/**
+ * POST /chat/:workspaceId/:chatId/mark-read
+ * 
+ * Marca un chat como leído por el operador
+ */
+export async function markChatRead(req, res) {
+  try {
+    const { workspaceId, chatId } = req.params;
+    
+    if (!workspaceId || !chatId) {
+      return res.status(400).json({ error: 'workspaceId and chatId required' });
+    }
+    
+    const chatDb = await connectDB(getChatDbName(workspaceId));
+    let chat;
+    try {
+      chat = await chatDb.get(chatId);
+    } catch (e) {
+      if (e.status === 404) {
+        return res.status(404).json({ error: 'Chat not found' });
+      }
+      throw e;
+    }
+    
+    chat.operatorLastReadAt = new Date().toISOString();
+    await chatDb.insert(chat);
+    
+    res.json({ success: true, operatorLastReadAt: chat.operatorLastReadAt });
+    
+  } catch (err) {
+    log.error('markChatRead error', { error: err.message });
     res.status(500).json({ error: err.message });
   }
 }
@@ -344,6 +409,92 @@ function getFirstMessagePreview(messages) {
   if (!firstUserMsg) return null;
   const content = firstUserMsg.content || '';
   return content.length > 40 ? content.slice(0, 40) + '...' : content;
+}
+
+/**
+ * POST /chat/reply-external
+ *
+ * Respuesta manual del operador humano a un chat externo (Messenger/WhatsApp/Instagram).
+ * Envía el mensaje directamente a la plataforma sin pasar por el bot de IA.
+ *
+ * Body: { workspaceId, chatId, message }
+ */
+export async function replyExternal(req, res) {
+  try {
+    const { workspaceId, chatId, message } = req.body;
+
+    if (!workspaceId || !chatId || !message?.trim()) {
+      return res.status(400).json({ error: 'workspaceId, chatId and message are required' });
+    }
+
+    // Cargar el chat para obtener channel y externalRef
+    const chatDb = await connectDB(getChatDbName(workspaceId));
+    let chat;
+    try {
+      chat = await chatDb.get(chatId);
+    } catch {
+      return res.status(404).json({ error: 'Chat not found' });
+    }
+
+    if (!chat.externalRef || !chat.channel) {
+      return res.status(400).json({ error: 'This chat is not an external channel chat' });
+    }
+
+    // Extraer senderId del externalRef (e.g. "messenger:123456")
+    const [platform, senderId] = chat.externalRef.split(':');
+    if (!senderId) {
+      return res.status(400).json({ error: 'Invalid externalRef format' });
+    }
+
+    // Leer config del workspace para obtener tokens
+    const configRepo = new WorkspaceConfigRepository(() => getWorkspacesDbName());
+    let metaConfig = {};
+    try {
+      const wsConfig = await configRepo.getConfig(workspaceId);
+      metaConfig = wsConfig?.integrations?.meta || {};
+    } catch {}
+
+    const text = message.trim();
+
+    // Enviar a la plataforma correspondiente
+    if (platform === 'whatsapp') {
+      const creds = {
+        token: metaConfig.whatsapp?.token || process.env.META_WHATSAPP_TOKEN || '',
+        phoneNumberId: metaConfig.whatsapp?.phoneNumberId || process.env.META_WHATSAPP_PHONE_NUMBER_ID || '',
+      };
+      await replyWhatsApp(senderId, text, creds);
+    } else if (platform === 'messenger') {
+      const creds = { pageToken: metaConfig.messenger?.pageToken || process.env.META_PAGE_TOKEN || '' };
+      await replyMessenger(senderId, text, creds);
+    } else if (platform === 'instagram') {
+      const creds = { token: metaConfig.instagram?.token || process.env.META_INSTAGRAM_TOKEN || process.env.META_PAGE_TOKEN || '' };
+      await replyInstagram(senderId, text, creds);
+    } else {
+      return res.status(400).json({ error: `Unsupported platform: ${platform}` });
+    }
+
+    // Guardar el mensaje en el chat como 'assistant' (operador humano)
+    const ts = new Date().toISOString();
+    const msgId = `msg_${Date.now()}_operator`;
+    chat.messages = chat.messages || [];
+    chat.messages.push({
+      id: msgId,
+      role: 'assistant',
+      content: text,
+      timestamp: ts,
+      isHuman: true,
+    });
+    chat.updatedAt = ts;
+    await chatDb.insert(chat);
+
+    log.info('replyExternal sent', { workspaceId, chatId, platform, senderId: senderId.slice(0, 10) });
+
+    res.json({ success: true, chatId, messageId: msgId });
+
+  } catch (err) {
+    log.error('replyExternal error', { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
 }
 
 /**

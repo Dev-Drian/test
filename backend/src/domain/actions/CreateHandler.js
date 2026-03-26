@@ -1071,7 +1071,14 @@ NO uses emojis excesivos.`,
       // como descontar stock, crear seguimientos, etc.
       try {
         console.log('[CreateHandler] Executing afterCreate flows...');
-        await executeFlowsForTrigger(workspaceId, 'create', tableId, created);
+        // Agregar contexto de chat al registro para que los flows puedan usarlo
+        // (ej: para enviar mensajes al chat cuando se confirma un pago)
+        const recordWithContext = {
+          ...created,
+          _chatId: context.chatId || null,
+          _agentId: context.agentId || null,
+        };
+        await executeFlowsForTrigger(workspaceId, 'create', tableId, recordWithContext);
       } catch (flowError) {
         console.error('[CreateHandler] Error in afterCreate flows:', flowError.message);
         // No fallar la creación por errores en flows secundarios

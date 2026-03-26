@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useMetaIntegration } from '../../hooks/useMetaIntegration';
 import { useSearchParams } from 'react-router-dom';
+import { listAgents } from '../../api/client';
+import { useWorkspace } from '../../context/WorkspaceContext';
 
 // ── Iconos SVG ────────────────────────────────────────────────────────────────
 function WhatsAppIcon({ className }) {
@@ -95,9 +97,12 @@ export default function MetaIntegrationCard() {
   } = useMetaIntegration();
 
   const [searchParams] = useSearchParams();
+  const { workspaceId } = useWorkspace();
   const [notification, setNotification] = useState(null);
   const [connectingChannel, setConnectingChannel] = useState(null);
   const [disconnectingChannel, setDisconnectingChannel] = useState(null);
+  const [agents, setAgents] = useState([]);
+  const [savingAgent, setSavingAgent] = useState(false);
 
   // Page selection (multi-page OAuth flow)
   const [showPageSelector, setShowPageSelector] = useState(false);
@@ -112,6 +117,15 @@ export default function MetaIntegrationCard() {
   const [waTesting, setWaTesting] = useState(false);
   const [waSaving, setWaSaving] = useState(false);
   const [waTestResult, setWaTestResult] = useState(null);
+
+  // Cargar agentes del workspace
+  useEffect(() => {
+    if (!workspaceId) return;
+    listAgents(workspaceId).then(res => {
+      const list = res.data || res;
+      setAgents(Array.isArray(list) ? list.filter(a => a.active !== false) : []);
+    }).catch(() => {});
+  }, [workspaceId]);
 
   // Leer resultado OAuth del query string
   useEffect(() => {
@@ -329,6 +343,37 @@ export default function MetaIntegrationCard() {
           connecting={false}
         />
       </div>
+
+      {/* ── Agente por defecto para canales externos ── */}
+      {isAnyConnected && agents.length > 0 && (
+        <div className="mb-5 p-4 rounded-xl border border-indigo-500/20 bg-indigo-500/5">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <p className="text-sm font-medium text-indigo-300">Agente para canales externos</p>
+              <p className="text-xs text-zinc-500 mt-0.5">Este agente responderá los mensajes de Messenger, Instagram y WhatsApp</p>
+            </div>
+          </div>
+          <select
+            value={config.defaultAgentId || ''}
+            onChange={async (e) => {
+              const val = e.target.value || null;
+              setSavingAgent(true);
+              try {
+                await saveConfig({ defaultAgentId: val });
+                setNotification({ type: 'success', message: val ? `Agente "${agents.find(a => a._id === val)?.name}" asignado` : 'Agente desvinculado' });
+              } catch {}
+              setSavingAgent(false);
+            }}
+            disabled={savingAgent}
+            className="w-full px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
+          >
+            <option value="">Automático (primer agente activo)</option>
+            {agents.map(a => (
+              <option key={a._id} value={a._id}>{a.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* ── WhatsApp manual setup (expandible) ── */}
       {showWhatsAppSetup && (

@@ -89,7 +89,7 @@ export class ChatService {
    * @param {string} options.apiKey - API key de OpenAI
    * @returns {Promise<{chatId, response, action}>}
    */
-  async processMessage({ workspaceId, chatId, agentId, message, apiKey }) {
+  async processMessage({ workspaceId, chatId, agentId, message, apiKey, metadata }) {
     // V2: Request ID único para trazabilidad
     const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const startTime = Date.now();
@@ -117,10 +117,15 @@ export class ChatService {
     
     if (!chat) {
       log.debug('Creating new chat', { requestId });
-      chat = await this.chatRepo.create({
-        agentId,
-        messages: [],
-      }, workspaceId);
+      const chatData = { agentId, messages: [] };
+      // Si viene de un canal externo (Meta), guardar referencia y nombre
+      if (metadata?.externalRef) {
+        chatData.externalRef = metadata.externalRef;
+        chatData.senderName = metadata.senderName || metadata.senderId;
+        chatData.channel = metadata.platform || 'web';
+        chatData.title = metadata.senderName || 'Conversación externa';
+      }
+      chat = await this.chatRepo.create(chatData, workspaceId);
       chatId = chat._id;
     }
     

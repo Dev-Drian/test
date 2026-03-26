@@ -5,7 +5,8 @@ import {
   LinkIcon,
   Cog6ToothIcon,
   DevicePhoneMobileIcon,
-  WrenchScrewdriverIcon
+  WrenchScrewdriverIcon,
+  BellIcon
 } from '@heroicons/react/24/outline';
 
 // Lazy load de componentes
@@ -13,6 +14,7 @@ const WebhooksManager = lazy(() => import('../components/webhooks/WebhooksManage
 const GlobalVariables = lazy(() => import('../components/settings/GlobalVariables'));
 const MobileMonitorSetup = lazy(() => import('../components/mobile/MobileMonitorSetup'));
 const FlowDoctor = lazy(() => import('../components/flows/FlowDoctor'));
+const NotificationPreferences = lazy(() => import('../components/settings/NotificationPreferences'));
 
 /**
  * AdvancedFeatures - Página con todas las funcionalidades avanzadas
@@ -35,6 +37,13 @@ export default function AdvancedFeatures() {
       icon: Cog6ToothIcon,
       description: 'Datos del negocio',
       hint: 'Configura información global: horarios, precios, contacto, etc. Tu bot puede usar estos datos en sus respuestas.'
+    },
+    { 
+      id: 'notifications', 
+      name: 'Notificaciones', 
+      icon: BellIcon,
+      description: 'Ajustes de alertas',
+      hint: 'Configura qué notificaciones quieres recibir: mensajes, pagos, errores, etc.'
     },
     { 
       id: 'mobile', 
@@ -81,6 +90,8 @@ export default function AdvancedFeatures() {
         return <WebhooksManager workspaceId={workspaceId} />;
       case 'variables':
         return <GlobalVariables workspaceId={workspaceId} />;
+      case 'notifications':
+        return <NotificationPreferences />;
       case 'mobile':
         return <MobileMonitorSetup workspaceId={workspaceId} />;
       case 'doctor':

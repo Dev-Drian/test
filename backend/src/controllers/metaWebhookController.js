@@ -50,6 +50,9 @@ const IG_TOKEN        = process.env.META_INSTAGRAM_TOKEN || PAGE_TOKEN;
 // Cache de ChatService por workspaceId
 const serviceCache = new Map();
 
+// Cache de perfiles de usuario (para no consultar en cada mensaje)
+const profileCache = new Map();
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /**
@@ -92,13 +95,26 @@ async function getService(workspaceId) {
 /**
  * Busca el primer agente activo del workspace como agente de recepción.
  */
-async function getDefaultAgentId(workspaceId) {
+async function getDefaultAgentId(workspaceId, metaConfig = {}) {
   try {
     const repo  = new AgentRepository();
-    const agents = await repo.getAgentsByWorkspaceId(workspaceId);
+
+    // 1. Usar agente configurado en Meta config
+    if (metaConfig.defaultAgentId) {
+      const agent = await repo.findById(metaConfig.defaultAgentId, workspaceId);
+      if (agent && agent.active !== false) {
+        log.info('[Meta] Usando agente configurado', { agentId: agent._id, name: agent.name });
+        return agent._id;
+      }
+      log.warn('[Meta] Agente configurado no encontrado o inactivo, buscando otro', { defaultAgentId: metaConfig.defaultAgentId });
+    }
+
+    // 2. Fallback: primer agente activo
+    const agents = await repo.findAll(workspaceId);
     const active = agents.find(a => a.active !== false) || agents[0];
     return active?._id || null;
-  } catch {
+  } catch (err) {
+    log.error('[Meta] Error buscando agente', { workspaceId, error: err.message });
     return null;
   }
 }
@@ -110,20 +126,85 @@ async function getDefaultAgentId(workspaceId) {
 async function getOrCreateExternalChatId(workspaceId, senderId, platform) {
   try {
     const repo  = new ChatRepository();
-    const chats = await repo.listChats(workspaceId);
     const key   = `${platform}:${senderId}`;
-    const found = chats.find(c => c.externalRef === key);
-    if (found) return found._id;
-    // Si no existe, retornar null → ChatService creará uno nuevo y lo devuelve
+    const chats = await repo.find({ externalRef: key }, {}, workspaceId);
+    if (chats.length > 0) return chats[0]._id;
     return null;
   } catch {
     return null;
   }
 }
 
-// ── Enviar respuesta por cada canal ──────────────────────────────────────────
+/**
+ * Obtiene el perfil del usuario (nombre, foto) desde la Graph API de Meta.
+ * Solo aplica para Messenger e Instagram (WhatsApp ya lo trae en el webhook).
+ *
+ * @param {string} userId - PSID (Messenger) o IG-scoped user ID
+ * @param {string} platform - 'messenger' | 'instagram'
+ * @param {string} token - Page token o IG token
+ * @returns {Promise<{name: string, profilePic: string|null}>}
+ */
+async function fetchSenderProfile(userId, platform, token) {
+  const cacheKey = `${platform}:${userId}`;
+  if (profileCache.has(cacheKey)) return profileCache.get(cacheKey);
 
-async function replyWhatsApp(toNumber, text, creds = {}) {
+  const fallback = { name: userId, profilePic: null };
+  if (!token) return fallback;
+
+  try {
+    const fields = platform === 'instagram'
+      ? 'name,username,profile_pic'
+      : 'first_name,last_name,profile_pic';
+    const { data } = await axios.get(`${META_GRAPH_URL}/${userId}`, {
+      params: { fields, access_token: token },
+      timeout: 5000,
+    });
+
+    let name;
+    if (platform === 'instagram') {
+      name = data.name || data.username || userId;
+    } else {
+      name = [data.first_name, data.last_name].filter(Boolean).join(' ') || userId;
+    }
+    const profile = { name, profilePic: data.profile_pic || null };
+    profileCache.set(cacheKey, profile);
+    return profile;
+  } catch (err) {
+    log.warn(`[${platform}] No se pudo obtener perfil del usuario`, { userId, error: err.message });
+    return fallback;
+  }
+}
+
+/**
+ * Obtiene las credenciales de Meta para un workspace/agent.
+ * Útil para enviar mensajes proactivos (ej: notificación de pago confirmado).
+ * 
+ * @param {string} workspaceId
+ * @param {string} agentId - (opcional) para futuro soporte de credenciales por agente
+ * @returns {Promise<object>} { whatsappToken, phoneNumberId, pageAccessToken, instagramToken }
+ */
+export async function getMetaCredentials(workspaceId, agentId = null) {
+  const repo = WorkspaceConfigRepository.getInstance();
+  let metaConfig = {};
+  
+  try {
+    const wsConfig = await repo.getConfig(workspaceId);
+    metaConfig = wsConfig?.integrations?.meta || {};
+  } catch (err) {
+    log.warn('[Meta] No se pudo leer config del workspace', { workspaceId, error: err.message });
+  }
+  
+  return {
+    whatsappToken: metaConfig.whatsapp?.token || WA_TOKEN,
+    phoneNumberId: metaConfig.whatsapp?.phoneNumberId || WA_PHONE_ID,
+    pageAccessToken: metaConfig.messenger?.pageToken || PAGE_TOKEN,
+    instagramToken: metaConfig.instagram?.token || IG_TOKEN,
+  };
+}
+
+// ── Enviar respuesta por cada canal (exportados para uso desde chatController) ──
+
+export async function replyWhatsApp(toNumber, text, creds = {}) {
   const token = creds.token || WA_TOKEN;
   const phoneId = creds.phoneNumberId || WA_PHONE_ID;
   if (!token || !phoneId) {
@@ -146,7 +227,7 @@ async function replyWhatsApp(toNumber, text, creds = {}) {
   }
 }
 
-async function replyMessenger(recipientId, text, creds = {}) {
+export async function replyMessenger(recipientId, text, creds = {}) {
   const token = creds.pageToken || PAGE_TOKEN;
   if (!token) {
     log.warn('[Messenger] Page Token no configurado');
@@ -163,7 +244,7 @@ async function replyMessenger(recipientId, text, creds = {}) {
   }
 }
 
-async function replyInstagram(recipientId, text, creds = {}) {
+export async function replyInstagram(recipientId, text, creds = {}) {
   const token = creds.token || IG_TOKEN;
   if (!token) {
     log.warn('[Instagram] Token no configurado');
@@ -191,8 +272,8 @@ async function replyInstagram(recipientId, text, creds = {}) {
  * @param {string} opts.text        - Mensaje de texto recibido
  * @param {string} opts.platform    - 'whatsapp' | 'messenger' | 'instagram'
  */
-async function dispatchToAgent({ workspaceId, senderId, text, platform }) {
-  const agentId = await getDefaultAgentId(workspaceId);
+async function dispatchToAgent({ workspaceId, senderId, senderName, text, platform, metaConfig }) {
+  const agentId = await getDefaultAgentId(workspaceId, metaConfig);
   if (!agentId) {
     log.warn('[Meta] No hay agente activo en workspace', { workspaceId });
     return null;
@@ -206,11 +287,19 @@ async function dispatchToAgent({ workspaceId, senderId, text, platform }) {
     chatId,
     agentId,
     message: text,
-    userId: `${platform}:${senderId}`,
-    metadata: { platform, senderId },
+    metadata: {
+      platform,
+      senderId,
+      senderName: senderName || senderId,
+      externalRef: `${platform}:${senderId}`,
+    },
   });
 
-  return result?.response || result?.message || null;
+  return {
+    response: result?.response || result?.message || null,
+    chatId: result?.chatId || null,
+    agentId,
+  };
 }
 
 // ── Controladores ─────────────────────────────────────────────────────────────
@@ -339,15 +428,24 @@ export async function receiveEvent(req, res) {
             log.info('[WhatsApp] Mensaje recibido', { from, type: msg.type, text: text.slice(0, 60) });
 
             // Notificar al frontend en tiempo real
+            const waName = value.contacts?.[0]?.profile?.name || from;
             getSocketService().toWorkspace(workspaceId, 'meta:message', {
               platform: 'whatsapp',
               senderId: from,
               text: text.slice(0, 200),
-              senderName: value.contacts?.[0]?.profile?.name || from,
+              senderName: waName,
             });
 
-            const reply = await dispatchToAgent({ workspaceId, senderId: from, text, platform: 'whatsapp' });
-            if (reply) await replyWhatsApp(from, reply, waCreds);
+            const result = await dispatchToAgent({ workspaceId, senderId: from, senderName: waName, text, platform: 'whatsapp', metaConfig });
+            if (result?.response) await replyWhatsApp(from, result.response, waCreds);
+
+            // Notificar que el chat está listo (después de creado/guardado en BD)
+            if (result?.chatId) {
+              getSocketService().toWorkspace(workspaceId, 'meta:chat-ready', {
+                platform: 'whatsapp', chatId: result.chatId, agentId: result.agentId,
+                senderId: from, senderName: waName,
+              });
+            }
           }
         }
       }
@@ -364,16 +462,27 @@ export async function receiveEvent(req, res) {
           const text = msg.message.text;
           log.info('[Instagram] Mensaje recibido', { from, text: text.slice(0, 60) });
 
+          // Obtener perfil del usuario desde Graph API
+          const igProfile = await fetchSenderProfile(from, 'instagram', igCreds.token);
+
           // Notificar al frontend en tiempo real
           getSocketService().toWorkspace(workspaceId, 'meta:message', {
             platform: 'instagram',
             senderId: from,
             text: text.slice(0, 200),
-            senderName: from,
+            senderName: igProfile.name,
+            profilePic: igProfile.profilePic,
           });
 
-          const reply = await dispatchToAgent({ workspaceId, senderId: from, text, platform: 'instagram' });
-          if (reply) await replyInstagram(from, reply, igCreds);
+          const result = await dispatchToAgent({ workspaceId, senderId: from, senderName: igProfile.name, text, platform: 'instagram', metaConfig });
+          if (result?.response) await replyInstagram(from, result.response, igCreds);
+
+          if (result?.chatId) {
+            getSocketService().toWorkspace(workspaceId, 'meta:chat-ready', {
+              platform: 'instagram', chatId: result.chatId, agentId: result.agentId,
+              senderId: from, senderName: igProfile.name,
+            });
+          }
         }
       }
       return;
@@ -388,16 +497,27 @@ export async function receiveEvent(req, res) {
           const text = event.message.text;
           log.info('[Messenger] Mensaje recibido', { from, text: text.slice(0, 60) });
 
+          // Obtener perfil del usuario desde Graph API
+          const msgProfile = await fetchSenderProfile(from, 'messenger', msgCreds.pageToken);
+
           // Notificar al frontend en tiempo real
           getSocketService().toWorkspace(workspaceId, 'meta:message', {
             platform: 'messenger',
             senderId: from,
             text: text.slice(0, 200),
-            senderName: from,
+            senderName: msgProfile.name,
+            profilePic: msgProfile.profilePic,
           });
 
-          const reply = await dispatchToAgent({ workspaceId, senderId: from, text, platform: 'messenger' });
-          if (reply) await replyMessenger(from, reply, msgCreds);
+          const result = await dispatchToAgent({ workspaceId, senderId: from, senderName: msgProfile.name, text, platform: 'messenger', metaConfig });
+          if (result?.response) await replyMessenger(from, result.response, msgCreds);
+
+          if (result?.chatId) {
+            getSocketService().toWorkspace(workspaceId, 'meta:chat-ready', {
+              platform: 'messenger', chatId: result.chatId, agentId: result.agentId,
+              senderId: from, senderName: msgProfile.name,
+            });
+          }
         }
       }
       return;

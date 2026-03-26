@@ -134,6 +134,7 @@ export class WorkspaceConfigRepository extends BaseRepository {
       integrations: {
         meta: {
           enabled: false,
+          defaultAgentId: null,
           whatsapp: {
             enabled: false,
             token: null,

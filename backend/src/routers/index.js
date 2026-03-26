@@ -4,7 +4,7 @@ import * as agents from "../controllers/agentsController.js";
 import * as tables from "../controllers/tablesController.js";
 import * as chat from "../controllers/chatController.js";
 import * as flows from "../controllers/flowsController.js";
-import * as notifications from "../controllers/notificationsController.js";
+import * as notifications from "../controllers/notificationController.js";
 import * as auth from "../controllers/authController.js";
 import * as plans from "../controllers/plansController.js";
 import * as views from "../controllers/viewsController.js";
@@ -95,21 +95,24 @@ router.get("/flow/templates", requireAuth, flows.getFlowTemplates);
 
 // ============ CHAT ============
 router.post("/chat/send", requireAuth, chat.sendMessage);
+router.post("/chat/reply-external", requireAuth, chat.replyExternal);
 router.post("/chat/import-file/preview", requireAuth, chat.previewImportInChat);
 router.post("/chat/import-file", requireAuth, chat.importFileInChat);
 router.get("/chat/get-or-create", requireAuth, chat.getOrCreateChat);
 router.get("/chat/list", requireAuth, chat.listChats);
+router.post("/chat/:workspaceId/:chatId/mark-read", requireAuth, validateWorkspace, chat.markChatRead);
 router.delete("/chat/:workspaceId/:chatId", requireAuth, validateWorkspace, chat.deleteChat);
 router.put("/chat/:workspaceId/:chatId/rename", requireAuth, validateWorkspace, chat.renameChat);
 
 // ============ NOTIFICATIONS ============
-router.get("/notifications/list", requireAuth, notifications.listNotifications);
-router.get("/notifications/unread-count", requireAuth, notifications.getUnreadCount);
-router.put("/notifications/:notificationId/read", requireAuth, notifications.markAsRead);
-router.put("/notifications/read-all", requireAuth, notifications.markAllAsRead);
-router.post("/notifications/send", requireAuth, notifications.sendNotification);
-router.get("/notifications/config", requireAuth, notifications.getConfig);
-router.put("/notifications/config", requireAuth, notifications.updateConfig);
+router.get("/notifications", requireAuth, notifications.listNotifications);
+router.get("/notifications/count", requireAuth, notifications.countUnread);
+router.post("/notifications/:id/read", requireAuth, notifications.markRead);
+router.post("/notifications/read-all", requireAuth, notifications.markAllRead);
+router.post("/notifications/:id/dismiss", requireAuth, notifications.dismissNotification);
+router.post("/notifications/dismiss-all", requireAuth, notifications.dismissAll);
+router.get("/notifications/preferences", requireAuth, notifications.getPreferences);
+router.put("/notifications/preferences", requireAuth, notifications.setPreferences);
 
 // ============ VIEWS ============
 router.get("/views/types", requireAuth, views.getViewTypes);

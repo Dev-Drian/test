@@ -57,6 +57,10 @@ export function getChatDbName(workspaceId) {
   return `${DB_PREFIX}chat_${workspaceId}`;
 }
 
+export function getNotificationsDbName(workspaceId) {
+  return `${DB_PREFIX}notifications_${workspaceId}`;
+}
+
 export function getProjectDbName(workspaceId) {
   return `${DB_PREFIX}project_${workspaceId}`;
 }

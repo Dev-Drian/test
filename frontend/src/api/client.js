@@ -97,12 +97,15 @@ export const importTableData = (workspaceId, tableId, csvText, mapping, options 
 export const getOrCreateChat = (workspaceId, agentId, chatId) =>
   api.get("/chat/get-or-create", { params: { workspaceId, agentId, chatId } });
 export const sendChatMessage = (data) => api.post("/chat/send", data);
+export const replyExternalChat = (data) => api.post("/chat/reply-external", data);
 export const listChats = (workspaceId, agentId) =>
   api.get("/chat/list", { params: { workspaceId, agentId } });
 export const deleteChat = (workspaceId, chatId) =>
   api.delete(`/chat/${workspaceId}/${chatId}`);
 export const renameChat = (workspaceId, chatId, title) =>
   api.put(`/chat/${workspaceId}/${chatId}/rename`, { title });
+export const markChatRead = (workspaceId, chatId) =>
+  api.post(`/chat/${workspaceId}/${chatId}/mark-read`);
 export const importFileViaChat = ({ workspaceId, agentId, chatId, tableId, file }) =>
   api.post("/chat/import-file", { workspaceId, agentId, chatId, tableId, file });
 export const previewImportViaChat = ({ workspaceId, tableId, file }) =>

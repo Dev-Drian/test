@@ -50,12 +50,14 @@ export function SocketProvider({ workspaceId, children }) {
     socketRef.current = socket;
 
     socket.on('connect', () => {
+      console.log('[Socket] ✅ Conectado, socketId:', socket.id, '| joining ws:', workspaceId);
       setConnected(true);
       // Unirse a la sala del workspace
       socket.emit('join', { workspaceId });
     });
 
     socket.on('disconnect', (reason) => {
+      console.log('[Socket] ❌ Desconectado:', reason);
       setConnected(false);
       if (reason === 'io server disconnect') {
         // El servidor cortó la conexión — reconectar manualmente
@@ -71,6 +73,7 @@ export function SocketProvider({ workspaceId, children }) {
     // Escucha genérica para debug (solo en desarrollo)
     if (import.meta.env.DEV) {
       socket.onAny((event, data) => {
+        console.log('[Socket] 📨 Event:', event, data);
         setLastEvent({ event, data, ts: Date.now() });
       });
     }

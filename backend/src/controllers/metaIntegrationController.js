@@ -43,6 +43,7 @@ export async function getMetaConfig(req, res) {
 
     res.json({
       enabled:  meta.enabled || false,
+      defaultAgentId: meta.defaultAgentId || null,
       whatsapp: {
         enabled:       meta.whatsapp?.enabled || false,
         phoneNumberId: meta.whatsapp?.phoneNumberId || null,
@@ -76,7 +77,7 @@ export async function getMetaConfig(req, res) {
 // ── PUT /api/integrations/meta/config ─────────────────────────────────────────
 export async function updateMetaConfig(req, res) {
   try {
-    const { workspaceId, whatsapp, instagram, messenger, appSecret } = req.body;
+    const { workspaceId, whatsapp, instagram, messenger, appSecret, defaultAgentId } = req.body;
     if (!workspaceId) return res.status(400).json({ error: 'workspaceId requerido' });
 
     const repo = getRepo();
@@ -86,6 +87,7 @@ export async function updateMetaConfig(req, res) {
     // Merge incremental — solo actualizar campos proporcionados
     const updated = {
       enabled: true,
+      defaultAgentId: defaultAgentId !== undefined ? defaultAgentId : (current.defaultAgentId || null),
       whatsapp: {
         ...current.whatsapp,
         ...(whatsapp || {}),

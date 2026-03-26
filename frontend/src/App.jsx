@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { WorkspaceContext } from "./context/WorkspaceContext";
 import { useWorkspace } from "./context/WorkspaceContext";
 import { SocketProvider } from "./context/SocketContext";
+import { NotificationProvider } from "./components/MetaNotificationBanner";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { TourProvider } from "./context/TourContext";
 import { ToastProvider } from "./components/Toast";
@@ -248,6 +249,7 @@ function AppContent() {
   return (
     <WorkspaceContext.Provider value={workspaceContext}>
       <SocketBridge>
+        <NotificationProvider>
         <TourProvider>
           {/* Auth Transition Overlay */}
           {authTransition && (
@@ -286,6 +288,7 @@ function AppContent() {
           </Routes>
           </Suspense>
         </TourProvider>
+        </NotificationProvider>
       </SocketBridge>
     </WorkspaceContext.Provider>
   );

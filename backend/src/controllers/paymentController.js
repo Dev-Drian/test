@@ -11,7 +11,10 @@
 import { getPaymentService, BasePaymentProvider } from '../services/payments/PaymentService.js';
 import { connectDB, getTableDataDbName } from '../config/db.js';
 import { getNotificationService } from '../integrations/notifications/NotificationService.js';
+import { getNotificationService as getNewNotificationService } from '../services/NotificationService.js';
 import { getSocketService } from '../realtime/SocketService.js';
+import { getChatRepository } from '../repositories/ChatRepository.js';
+import { replyWhatsApp, replyMessenger, replyInstagram, getMetaCredentials } from './metaWebhookController.js';
 import logger from '../config/logger.js';
 import cache from '../config/cache.js';
 
@@ -198,8 +201,8 @@ async function processFlowPayment(refString, paymentData, transactionId) {
 
   logger.info(`[Wompi] Procesando pago de flujo para registro ${ref.recordId}`);
 
-  // Actualizar el registro en la tabla
-  await markRecordAsPaid(ref.workspaceId, ref.tableId, ref.recordId, {
+  // Actualizar el registro en la tabla (retorna el registro con _paymentChatId, etc.)
+  const updatedRecord = await markRecordAsPaid(ref.workspaceId, ref.tableId, ref.recordId, {
     paymentId: String(transactionId),
     paymentStatus: 'pagado',
     paymentAmount: paymentData.amount,
@@ -226,6 +229,30 @@ async function processFlowPayment(refString, paymentData, transactionId) {
     currency: paymentData.currency,
     payerEmail: paymentData.payerEmail,
   });
+
+  // 🔔 Persistir notificación
+  try {
+    await getNewNotificationService().notifyPaymentConfirmed(ref.workspaceId, {
+      paymentId: String(transactionId),
+      amount: paymentData.amount,
+      currency: paymentData.currency,
+      payerEmail: paymentData.payerEmail,
+      recordId: ref.recordId,
+      tableId: ref.tableId,
+    });
+  } catch (notifErr) {
+    logger.warn('[Wompi] Notification error:', notifErr.message);
+  }
+  
+  // 💬 Enviar mensaje de confirmación al chat (si el pago se originó desde un chat)
+  try {
+    await sendPaymentConfirmationToChat(ref.workspaceId, updatedRecord, {
+      paymentAmount: paymentData.amount,
+      paymentCurrency: paymentData.currency,
+    });
+  } catch (chatErr) {
+    logger.warn('[Wompi] Chat notification error:', chatErr.message);
+  }
 
   logger.info('[Wompi] Pago de flujo procesado exitosamente');
 }
@@ -440,6 +467,109 @@ async function notifyPaymentConfirmed(workspaceId, data) {
     });
   } catch (err) {
     logger.warn('[Payments] No se pudo enviar notificación de pago', { error: err.message });
+  }
+}
+
+/**
+ * Envía un mensaje al chat confirmando el pago procesado
+ * Si el pago se originó desde un chat con canal externo (WhatsApp/Messenger/Instagram),
+ * también envía el mensaje al canal externo.
+ * 
+ * @param {string} workspaceId
+ * @param {object} record - Registro actualizado con _paymentChatId, _paymentAgentId, _paymentPlatform
+ * @param {object} paymentData - Datos del pago (amount, currency, etc.)
+ */
+async function sendPaymentConfirmationToChat(workspaceId, record, paymentData) {
+  const chatId = record._paymentChatId;
+  const agentId = record._paymentAgentId;
+  
+  if (!chatId) {
+    logger.debug('[Payments] No chatId - skipping chat notification');
+    return;
+  }
+  
+  try {
+    const chatRepo = getChatRepository();
+    const chat = await chatRepo.findById(workspaceId, chatId);
+    
+    if (!chat) {
+      logger.warn('[Payments] Chat not found for payment notification', { chatId });
+      return;
+    }
+    
+    // Extraer platform y senderId del externalRef del chat (formato: "whatsapp:123456789")
+    let platform = null;
+    let senderId = chat.senderId;
+    if (chat.externalRef) {
+      const parts = chat.externalRef.split(':');
+      if (parts.length >= 2) {
+        platform = parts[0];
+        senderId = senderId || parts[1];
+      }
+    }
+    
+    // Formatear monto
+    const amountFormatted = paymentData.paymentAmount
+      ? new Intl.NumberFormat('es-CO', { 
+          style: 'currency', 
+          currency: paymentData.paymentCurrency || 'COP' 
+        }).format(paymentData.paymentAmount)
+      : '';
+    
+    // Mensaje de confirmación
+    const confirmMessage = `✅ ¡Tu pago${amountFormatted ? ` de ${amountFormatted}` : ''} ha sido confirmado! Gracias por tu compra.`;
+    
+    // Guardar mensaje en el chat
+    await chatRepo.addMessage(workspaceId, chatId, 'assistant', confirmMessage);
+    
+    // Emitir por WebSocket para actualizar el frontend
+    getSocketService().toWorkspace(workspaceId, 'chat:message', {
+      chatId,
+      agentId,
+      message: {
+        id: `payment_confirm_${Date.now()}`,
+        role: 'assistant',
+        content: confirmMessage,
+        timestamp: new Date().toISOString(),
+      },
+    });
+    
+    // Si hay canal externo (WhatsApp/Messenger/Instagram), enviar también ahí
+    if (platform && chat.senderId) {
+      try {
+        const creds = await getMetaCredentials(workspaceId, agentId);
+        
+        if (platform === 'whatsapp' && creds.whatsappToken && creds.phoneNumberId) {
+          await replyWhatsApp(chat.senderId, confirmMessage, {
+            token: creds.whatsappToken,
+            phoneNumberId: creds.phoneNumberId,
+          });
+        } else if (platform === 'messenger' && creds.pageAccessToken) {
+          await replyMessenger(chat.senderId, confirmMessage, creds.pageAccessToken);
+        } else if (platform === 'instagram' && creds.pageAccessToken) {
+          await replyInstagram(chat.senderId, confirmMessage, creds.pageAccessToken);
+        }
+        
+        logger.info('[Payments] Payment confirmation sent to external channel', { 
+          platform, 
+          chatId, 
+          senderId: chat.senderId,
+        });
+      } catch (extErr) {
+        logger.warn('[Payments] Failed to send to external channel', { 
+          platform, 
+          error: extErr.message,
+        });
+      }
+    }
+    
+    logger.info('[Payments] Payment confirmation sent to chat', { chatId, agentId });
+    
+  } catch (err) {
+    logger.error('[Payments] Error sending payment confirmation to chat', { 
+      error: err.message, 
+      chatId,
+    });
   }
 }
 

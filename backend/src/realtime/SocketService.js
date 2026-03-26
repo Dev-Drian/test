@@ -117,7 +117,11 @@ export class SocketService {
       log.warn('SocketService no inicializado — no se puede emitir', { event, workspaceId });
       return;
     }
-    this.io.to(`ws:${workspaceId}`).emit(event, { ...data, workspaceId, ts: Date.now() });
+    const room = `ws:${workspaceId}`;
+    const sockets = this.io.sockets.adapter.rooms.get(room);
+    const count = sockets ? sockets.size : 0;
+    log.info('toWorkspace emit', { room, event, clientsInRoom: count });
+    this.io.to(room).emit(event, { ...data, workspaceId, ts: Date.now() });
   }
 
   /**

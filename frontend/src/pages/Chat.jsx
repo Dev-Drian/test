@@ -11,10 +11,12 @@ import {
   listAgents,
   listTables,
   getOrCreateChat, 
-  sendChatMessage, 
+  sendChatMessage,
+  replyExternalChat, 
   listChats, 
   deleteChat,
   renameChat,
+  markChatRead,
   importFileViaChat,
   previewImportViaChat,
 } from "../api/client";
@@ -260,6 +262,28 @@ export default function Chat() {
     }
   });
 
+  // External channel: refresh chat list when a chat is created/updated via Meta
+  useSocketEvent('meta:chat-ready', (data) => {
+    if (!workspaceId) return;
+    const incomingAgentId = data?.agentId;
+    if (!incomingAgentId) return;
+
+    // Switch to the correct agent if different
+    if (incomingAgentId !== selectedAgentId) {
+      setSelectedAgentId(incomingAgentId);
+    }
+
+    // Fetch chat list for the incoming agent (not the currently selected one)
+    listChats(workspaceId, incomingAgentId)
+      .then(res => {
+        setChatList(res.data || []);
+        if (data?.chatId) setChatId(data.chatId);
+      })
+      .catch(() => {});
+
+    toast.success(`📩 Chat listo: ${data?.senderName || 'Contacto'} vía ${data?.platform || 'meta'}`);
+  });
+
   // Filter chats by channel + search
   const filteredChats = useMemo(() => {
     let list = chatList;
@@ -454,7 +478,18 @@ export default function Chat() {
     }
   };
 
-  const handleSelectChat = (chat) => setChatId(chat._id);
+  const handleSelectChat = async (chat) => {
+    setChatId(chat._id);
+    // Mark as read if has unread messages
+    if (chat.unreadCount > 0 && workspaceId) {
+      try {
+        await markChatRead(workspaceId, chat._id);
+        setChatList(prev => prev.map(c => c._id === chat._id ? { ...c, unreadCount: 0 } : c));
+      } catch (err) {
+        console.error('Error marking chat as read:', err);
+      }
+    }
+  };
 
   const handleDeleteChat = async (e, chatIdToDelete) => {
     e.stopPropagation();
@@ -504,12 +539,20 @@ export default function Chat() {
     }
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
-    setMessages(prev => [...prev, { role: "user", content: text, id: Date.now(), ts: Date.now() }]);
+    // Si es un chat externo, el operador es "assistant" (responde al cliente)
+    const isExternal = activeChatMeta?.channel && activeChatMeta.channel !== 'web';
+    const msgRole = isExternal ? 'assistant' : 'user';
+    setMessages(prev => [...prev, { role: msgRole, content: text, id: Date.now(), ts: Date.now(), ...(isExternal && { isHuman: true }) }]);
     setSending(true);
     try {
-      const res = await sendChatMessage({ workspaceId, agentId: selectedAgentId || undefined, chatId: currentChatId, message: text, token: import.meta.env.VITE_OPENAI_KEY || undefined, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
-      const reply = res.data?.response || res.data?.text || "Sin respuesta.";
-      setMessages(prev => [...prev, { role: "assistant", content: reply, id: Date.now() + 1, ts: Date.now() }]);
+      if (isExternal) {
+        await replyExternalChat({ workspaceId, chatId: currentChatId, message: text });
+        // No hay respuesta de bot — el mensaje ya se envió al usuario externo
+      } else {
+        const res = await sendChatMessage({ workspaceId, agentId: selectedAgentId || undefined, chatId: currentChatId, message: text, token: import.meta.env.VITE_OPENAI_KEY || undefined, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+        const reply = res.data?.response || res.data?.text || "Sin respuesta.";
+        setMessages(prev => [...prev, { role: "assistant", content: reply, id: Date.now() + 1, ts: Date.now() }]);
+      }
       setChatList(prev => prev.map(c => c._id === currentChatId && c.messageCount === 0 ? { ...c, title: text.slice(0, 40) + (text.length > 40 ? "..." : ""), messageCount: 2 } : c));
     } catch (err) {
       setMessages(prev => [...prev, { role: "assistant", content: "Error: " + (err.response?.data?.error || err.message), id: Date.now() + 1, ts: Date.now() }]);
@@ -676,12 +719,19 @@ export default function Chat() {
                       onClick={() => handleSelectChat(chat)}>
 
                       {/* Channel icon */}
-                      <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
+                      <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
                         style={{ background: `linear-gradient(135deg, ${channelColor.text}20, ${channelColor.text}35)`, border: `1px solid ${channelColor.text}30` }}>
                         {(() => {
                           const ChannelIcon = CHANNEL_ICONS[ch] || Bot;
                           return <ChannelIcon className="w-4 h-4" style={{ color: channelColor.text }} />;
                         })()}
+                        {/* Unread badge */}
+                        {chat.unreadCount > 0 && (
+                          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full text-[10px] font-bold text-white bg-red-500 shadow-lg"
+                            style={{ boxShadow: '0 0 8px rgba(239,68,68,0.5)' }}>
+                            {chat.unreadCount > 9 ? '9+' : chat.unreadCount}
+                          </span>
+                        )}
                       </div>
 
                       {editingChatId === chat._id ? (

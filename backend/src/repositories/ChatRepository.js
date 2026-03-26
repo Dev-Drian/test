@@ -41,10 +41,14 @@ export class ChatRepository extends BaseRepository {
   async create(data, workspaceId) {
     const chat = {
       _id: data._id || uuidv4(),
+      type: 'chat',
       agentId: data.agentId,
       title: data.title || 'Nueva conversación',
       messages: data.messages || [],
       data: data.data || {},
+      ...(data.externalRef && { externalRef: data.externalRef }),
+      ...(data.senderName && { senderName: data.senderName }),
+      ...(data.channel && { channel: data.channel }),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
