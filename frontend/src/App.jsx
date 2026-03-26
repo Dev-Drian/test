@@ -8,21 +8,7 @@ import { TourProvider } from "./context/TourContext";
 import { ToastProvider } from "./components/Toast";
 import { FullPageSpinner } from "./components/Spinner";
 import Layout from "./components/Layout";
-import Dashboard from "./pages/Dashboard";
-import Workspaces from "./pages/Workspaces";
-import Agents from "./pages/Agents";
-import Tables from "./pages/Tables";
-import Chat from "./pages/Chat";
-import Guia from "./pages/Guia";
-import FlowEditor from "./pages/FlowEditor";
-import Views from "./pages/Views";
-import Flows from "./pages/Flows";
-import Integrations from "./pages/Integrations";
-import Login from "./pages/Login";
-import Landing from "./pages/Landing";
-import Admin from "./pages/Admin";
 import WidgetEmbed from "./pages/WidgetEmbed";
-import OnboardingWizard from "./components/OnboardingWizard";
 import { listWorkspaces } from "./api/client";
 
 // ═══ LAZY LOADING DE PÁGINAS ═══

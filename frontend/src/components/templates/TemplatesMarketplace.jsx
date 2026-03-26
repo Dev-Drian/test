@@ -18,7 +18,6 @@ import {
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 import HelpCollapse from '../common/HelpCollapse';
-import { Squares2X2Icon } from '@heroicons/react/24/outline';
 
 // Mapeo de iconos por código de template
 const TEMPLATE_ICONS = {
