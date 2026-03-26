@@ -1,86 +1,27 @@
-import { useState, lazy, Suspense, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, lazy, Suspense } from 'react';
 import { useWorkspace } from '../context/WorkspaceContext';
-import { useSocketContext } from '../context/SocketContext';
-import { useToast } from '../components/Toast';
-import api from '../api/client';
 import {
   SparklesIcon,
-  ChartBarIcon,
   LinkIcon,
-  RectangleStackIcon,
   Cog6ToothIcon,
   DevicePhoneMobileIcon,
   WrenchScrewdriverIcon
 } from '@heroicons/react/24/outline';
 
 // Lazy load de componentes
-const ConversationAnalytics = lazy(() => import('../components/analytics/ConversationAnalytics'));
 const WebhooksManager = lazy(() => import('../components/webhooks/WebhooksManager'));
-const TemplatesMarketplace = lazy(() => import('../components/templates/TemplatesMarketplace'));
 const GlobalVariables = lazy(() => import('../components/settings/GlobalVariables'));
 const MobileMonitorSetup = lazy(() => import('../components/mobile/MobileMonitorSetup'));
 const FlowDoctor = lazy(() => import('../components/flows/FlowDoctor'));
-const AIFlowBuilder = lazy(() => import('../components/flows/AIFlowBuilder'));
 
 /**
  * AdvancedFeatures - Página con todas las funcionalidades avanzadas
  */
 export default function AdvancedFeatures() {
   const { workspaceId, workspaceName } = useWorkspace();
-  const { socket } = useSocketContext();
-  const [activeTab, setActiveTab] = useState('analytics');
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  
-  // Handler para crear flujo desde AI Builder
-  const handleFlowGenerated = useCallback(async (flow) => {
-    try {
-      const flowData = {
-        workspaceId,
-        name: flow.name || 'Flujo generado con IA',
-        description: flow.description || 'Creado con AI Flow Builder',
-        nodes: flow.nodes || [],
-        edges: flow.edges || [],
-        aiGenerated: true
-      };
-      
-      const res = await api.post('/flow/create', flowData);
-      toast.success('Flujo creado exitosamente');
-      navigate(`/flows/editor?flowId=${res.data._id}`);
-    } catch (err) {
-      console.error('Error creating flow:', err);
-      const errorData = err.response?.data;
-      if (err.response?.status === 403 && errorData?.code === 'LIMIT_REACHED') {
-        toast.error(errorData.upgrade?.message || 'Has alcanzado el limite de flujos de tu plan.');
-      } else {
-        toast.error('Error al crear el flujo: ' + (errorData?.error || err.message));
-      }
-    }
-  }, [workspaceId, navigate, toast]);
+  const [activeTab, setActiveTab] = useState('webhooks');
   
   const tabs = [
-    { 
-      id: 'analytics', 
-      name: 'Estadisticas', 
-      icon: ChartBarIcon,
-      description: 'Métricas de conversaciones',
-      hint: 'Ve cuántos mensajes recibe tu bot, usuarios activos, horarios pico y tendencias. Ideal para entender cómo interactúan tus clientes.'
-    },
-    { 
-      id: 'ai-builder', 
-      name: 'Crear con IA', 
-      icon: SparklesIcon,
-      description: 'Bot en segundos',
-      hint: 'Describe en palabras lo que quieres que haga tu bot y la IA lo crea automáticamente. No necesitas saber programar.'
-    },
-    { 
-      id: 'templates', 
-      name: 'Plantillas', 
-      icon: RectangleStackIcon,
-      description: 'Bots pre-diseñados',
-      hint: 'Bots listos para usar: soporte al cliente, agendar citas, catálogo de productos. Solo actívalos y personaliza.'
-    },
     { 
       id: 'webhooks', 
       name: 'Conexiones', 
@@ -90,14 +31,14 @@ export default function AdvancedFeatures() {
     },
     { 
       id: 'variables', 
-      name: 'Configuracion', 
+      name: 'Configuración', 
       icon: Cog6ToothIcon,
       description: 'Datos del negocio',
       hint: 'Configura información global: horarios, precios, contacto, etc. Tu bot puede usar estos datos en sus respuestas.'
     },
     { 
       id: 'mobile', 
-      name: 'App Movil', 
+      name: 'App Móvil', 
       icon: DevicePhoneMobileIcon,
       description: 'Monitoreo celular',
       hint: 'Escanea un QR para conectar la app móvil y recibir notificaciones de conversaciones importantes en tiempo real.'
@@ -136,12 +77,6 @@ export default function AdvancedFeatures() {
   
   const renderContent = () => {
     switch (activeTab) {
-      case 'analytics':
-        return <ConversationAnalytics workspaceId={workspaceId} />;
-      case 'ai-builder':
-        return <AIFlowBuilder workspaceId={workspaceId} onFlowGenerated={handleFlowGenerated} />;
-      case 'templates':
-        return <TemplatesMarketplace workspaceId={workspaceId} />;
       case 'webhooks':
         return <WebhooksManager workspaceId={workspaceId} />;
       case 'variables':

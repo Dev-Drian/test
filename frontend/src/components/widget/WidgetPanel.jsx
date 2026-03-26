@@ -43,7 +43,7 @@ export default function WidgetPanel({ messages, isTyping, onSend, theme }) {
       <div className="flex-1 overflow-y-auto px-4 py-3">
         {messages.length === 0 && !isTyping && (
           <div className="text-center text-zinc-500 text-sm mt-8">
-            👋 ¡Envía un mensaje para comenzar!
+            ¡Envía un mensaje para comenzar!
           </div>
         )}
         {messages.map((msg, i) => (

@@ -203,6 +203,29 @@ function AppContent() {
     }
   }, [isAuthenticated, user]);
 
+  // Auto-seleccionar el primer workspace si no hay ninguno seleccionado
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+    
+    // Si ya hay un workspace seleccionado, no hacer nada
+    if (selectedWorkspaceId) return;
+    
+    listWorkspaces()
+      .then((res) => {
+        const workspaces = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+        if (workspaces.length > 0) {
+          const first = workspaces[0];
+          setSelectedWorkspaceId(first._id);
+          setSelectedWorkspaceName(first.name || "");
+          localStorage.setItem("migracion_workspace_id", first._id);
+          localStorage.setItem("migracion_workspace_name", first.name || "");
+        }
+      })
+      .catch((err) => {
+        console.error("Error auto-seleccionando workspace:", err);
+      });
+  }, [isAuthenticated, user, selectedWorkspaceId]);
+
   const workspaceContext = useMemo(
     () => ({
       workspaceId: selectedWorkspaceId || null,

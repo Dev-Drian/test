@@ -185,46 +185,45 @@ const advancedFeatures = [
 
 export default function Guia() {
   return (
-    <div className="min-h-full p-6" style={{ background: '#0f172a' }}>
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 text-indigo-400" style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(99, 102, 241, 0.05))' }}>
+    <div className="min-h-full py-4 px-5" style={{ background: 'linear-gradient(135deg, #0a0a0f 0%, #0f0f18 100%)' }}>
+      <div className="max-w-5xl mx-auto">
+        {/* Header - más compacto */}
+        <div className="flex items-center gap-4 mb-6">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-indigo-400 shrink-0" style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(99, 102, 241, 0.05))' }}>
             {Icons.book}
           </div>
-          <h1 className="text-3xl font-bold text-slate-100 mb-3">Guía de Uso</h1>
-          <p className="text-slate-400 text-lg max-w-xl mx-auto">
-            Aprende a usar la plataforma paso a paso. Desde crear un workspace hasta chatear con tu agente de IA.
-          </p>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-100">Guía de Uso</h1>
+            <p className="text-slate-400 text-sm">
+              Aprende a usar la plataforma paso a paso
+            </p>
+          </div>
         </div>
 
         {/* Pasos */}
-        <div className="mb-16">
-          <h2 className="text-xl font-semibold text-slate-100 mb-6 flex items-center gap-3">
-            <span className="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+            <span className="w-7 h-7 rounded-lg flex items-center justify-center text-sm" style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
               <ClipboardIcon size="sm" />
             </span>
             Pasos para comenzar
           </h2>
           
-          <div className="space-y-4">
+          <div className="space-y-3">
             {steps.map((step, idx) => (
               <div 
                 key={step.number}
-                className="p-5 rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
+                className="p-4 rounded-xl transition-all duration-200 hover:scale-[1.01]"
                 style={{ 
                   background: 'rgba(51, 65, 85, 0.4)', 
                   border: '1px solid rgba(100, 116, 139, 0.3)',
-                  borderLeft: `4px solid ${step.color}`,
-                  animation: 'fade-up 0.4s ease-out forwards',
-                  animationDelay: `${idx * 100}ms`,
-                  opacity: 0
+                  borderLeft: `4px solid ${step.color}`
                 }}
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-3">
                   {/* Número */}
                   <div 
-                    className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-bold shrink-0"
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold shrink-0"
                     style={{ background: step.color }}
                   >
                     {step.number}
@@ -232,22 +231,22 @@ export default function Guia() {
                   
                   {/* Contenido */}
                   <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-slate-100">{step.title}</h3>
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="font-semibold text-slate-100">{step.title}</h3>
                       <Link 
                         to={step.link}
-                        className="text-xs px-3 py-1.5 rounded-lg transition-all hover:scale-105"
+                        className="text-xs px-2.5 py-1 rounded-lg transition-all hover:scale-105"
                         style={{ background: `${step.color}20`, color: step.color }}
                       >
                         Ir →
                       </Link>
                     </div>
-                    <p className="text-sm text-slate-400 mb-4">{step.description}</p>
+                    <p className="text-xs text-slate-400 mb-3">{step.description}</p>
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-1.5">
                       {step.actions.map((action, i) => (
-                        <div key={i} className="flex items-center gap-2 text-sm text-slate-500">
-                          <span className="w-5 h-5 rounded flex items-center justify-center shrink-0" style={{ background: `${step.color}15`, color: step.color }}>
+                        <div key={i} className="flex items-center gap-1.5 text-xs text-slate-500">
+                          <span className="w-4 h-4 rounded flex items-center justify-center shrink-0" style={{ background: `${step.color}15`, color: step.color }}>
                             {Icons.check}
                           </span>
                           {action}
@@ -262,113 +261,103 @@ export default function Guia() {
         </div>
 
         {/* Conceptos */}
-        <div className="mb-12">
-          <h2 className="text-xl font-semibold text-slate-100 mb-6 flex items-center gap-3">
-            <span className="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-slate-100 mb-3 flex items-center gap-2">
+            <span className="w-7 h-7 rounded-lg flex items-center justify-center text-sm" style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>
               <LightBulbIcon size="sm" />
             </span>
             Conceptos clave
           </h2>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {concepts.map((concept, idx) => (
+          <div className="grid grid-cols-3 lg:grid-cols-5 gap-3">
+            {concepts.map((concept) => (
               <div 
                 key={concept.title}
-                className="p-4 rounded-xl transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-indigo-500/5"
+                className="p-3 rounded-xl transition-all duration-200 hover:scale-[1.02]"
                 style={{ 
                   background: 'rgba(51, 65, 85, 0.4)', 
-                  border: '1px solid rgba(100, 116, 139, 0.3)',
-                  animation: 'fade-up 0.4s ease-out forwards',
-                  animationDelay: `${600 + idx * 80}ms`,
-                  opacity: 0
+                  border: '1px solid rgba(100, 116, 139, 0.3)'
                 }}
               >
-                <span className="text-3xl mb-3 block text-indigo-400">{concept.icon}</span>
-                <h3 className="text-sm font-semibold text-slate-100 mb-1">{concept.title}</h3>
-                <p className="text-xs text-slate-500">{concept.description}</p>
+                <span className="text-2xl mb-2 block text-indigo-400">{concept.icon}</span>
+                <h3 className="text-xs font-semibold text-slate-100 mb-0.5">{concept.title}</h3>
+                <p className="text-[10px] text-slate-500 leading-tight">{concept.description}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* Funcionalidades Avanzadas */}
-        <div className="mb-12">
-          <h2 className="text-xl font-semibold text-slate-100 mb-6 flex items-center gap-3">
-            <span className="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-slate-100 mb-2 flex items-center gap-2">
+            <span className="w-7 h-7 rounded-lg flex items-center justify-center text-sm" style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>
               <SparklesIcon size="sm" />
             </span>
             Funcionalidades Avanzadas
           </h2>
-          <p className="text-slate-400 text-sm mb-6">
-            Accede desde el menu lateral en "Avanzado" para desbloquear estas herramientas profesionales.
+          <p className="text-slate-500 text-xs mb-3">
+            Accede desde el menu lateral en "Avanzado" para desbloquear estas herramientas.
           </p>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {advancedFeatures.map((feature, idx) => (
+          <div className="grid grid-cols-2 gap-3">
+            {advancedFeatures.map((feature) => (
               <div 
                 key={feature.title}
-                className="p-4 rounded-xl transition-all duration-300 hover:scale-[1.02]"
+                className="p-3 rounded-xl transition-all duration-200 hover:scale-[1.01]"
                 style={{ 
                   background: 'rgba(51, 65, 85, 0.4)', 
                   border: '1px solid rgba(100, 116, 139, 0.3)',
-                  borderLeft: `3px solid ${feature.color}`,
-                  animation: 'fade-up 0.4s ease-out forwards',
-                  animationDelay: `${800 + idx * 80}ms`,
-                  opacity: 0
+                  borderLeft: `3px solid ${feature.color}`
                 }}
               >
-                <h3 className="text-sm font-semibold text-slate-100 mb-2" style={{ color: feature.color }}>{feature.title}</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">{feature.description}</p>
+                <h3 className="text-xs font-semibold mb-1" style={{ color: feature.color }}>{feature.title}</h3>
+                <p className="text-[11px] text-slate-400 leading-relaxed">{feature.description}</p>
               </div>
             ))}
           </div>
           
           <Link 
             to="/advanced"
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105"
+            className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
             style={{ background: 'rgba(139, 92, 246, 0.2)', color: '#a78bfa' }}
           >
-            Explorar funciones avanzadas
-            <span>→</span>
+            Explorar funciones avanzadas →
           </Link>
         </div>
 
         {/* Tips */}
         <div 
-          className="p-6 rounded-2xl transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/10" 
+          className="p-4 rounded-xl" 
           style={{ 
             background: 'rgba(99, 102, 241, 0.05)', 
-            border: '1px solid rgba(99, 102, 241, 0.2)',
-            animation: 'fade-up 0.5s ease-out forwards',
-            animationDelay: '900ms',
-            opacity: 0
+            border: '1px solid rgba(99, 102, 241, 0.2)'
           }}
         >
-          <h3 className="text-lg font-semibold text-indigo-400 mb-4 flex items-center gap-2"><SparklesIcon size="sm" /> Tips para aprovechar al maximo</h3>
-          <ul className="space-y-3 text-sm text-indigo-400/80">
-            <li className="flex items-start gap-3">
+          <h3 className="text-sm font-semibold text-indigo-400 mb-3 flex items-center gap-2"><SparklesIcon size="sm" /> Tips para aprovechar al máximo</h3>
+          <ul className="grid grid-cols-2 gap-2 text-xs text-indigo-400/80">
+            <li className="flex items-start gap-2">
               <span className="text-indigo-400">•</span>
-              <span>Empieza con una plantilla prediseñada - te ahorrara mucho tiempo</span>
+              <span>Empieza con una plantilla prediseñada - te ahorrará tiempo</span>
             </li>
-            <li className="flex items-start gap-3">
+            <li className="flex items-start gap-2">
               <span className="text-indigo-400">•</span>
-              <span>Usa "Crear con IA" para describir tu bot en palabras y generarlo automaticamente</span>
+              <span>Usa "Crear con IA" para generar bots automáticamente</span>
             </li>
-            <li className="flex items-start gap-3">
+            <li className="flex items-start gap-2">
               <span className="text-indigo-400">•</span>
-              <span>Configura tus variables (horarios, precios) una vez y usalas en todos los flujos</span>
+              <span>Configura variables una vez y úsalas en todos los flujos</span>
             </li>
-            <li className="flex items-start gap-3">
+            <li className="flex items-start gap-2">
               <span className="text-indigo-400">•</span>
-              <span>Revisa las estadisticas para ver que preguntan mas tus usuarios</span>
+              <span>Revisa estadísticas para ver qué preguntan tus usuarios</span>
             </li>
-            <li className="flex items-start gap-3">
+            <li className="flex items-start gap-2">
               <span className="text-indigo-400">•</span>
-              <span>Usa "Revisar Flujos" periodicamente para detectar y corregir problemas</span>
+              <span>Usa "Revisar Flujos" para detectar problemas</span>
             </li>
-            <li className="flex items-start gap-3">
+            <li className="flex items-start gap-2">
               <span className="text-indigo-400">•</span>
-              <span>Conecta la app movil para recibir notificaciones de chats importantes</span>
+              <span>Conecta la app móvil para notificaciones</span>
             </li>
           </ul>
         </div>

@@ -220,7 +220,7 @@ const blockCategories = [
   {
     id: 'data',
     label: 'Datos',
-    shortLabel: '📊',
+    shortLabel: 'DB',
     color: '#3b82f6',
     blocks: [
       { type: 'query', icon: <SearchIcon size="sm" />, label: 'Consultar', color: '#3b82f6', desc: 'Buscar datos' },
@@ -232,7 +232,7 @@ const blockCategories = [
   {
     id: 'logic',
     label: 'Lógica',
-    shortLabel: '⚡',
+    shortLabel: 'IF',
     color: '#f59e0b',
     blocks: [
       { type: 'condition', icon: <SplitIcon size="sm" />, label: 'Condición', color: '#f59e0b', desc: '¿Sí o no?' },
@@ -244,7 +244,7 @@ const blockCategories = [
   {
     id: 'notify',
     label: 'Enviar',
-    shortLabel: '💬',
+    shortLabel: 'TX',
     color: '#ec4899',
     blocks: [
       { type: 'response', icon: <ChatIcon size="sm" />, label: 'Responder', color: '#ec4899', desc: 'Al usuario' },
@@ -348,7 +348,7 @@ const ConfirmModal = ({ isOpen, title, message, confirmText, cancelText, onConfi
 const TipCard = ({ icon, title, text }) => (
   <div className="p-3 rounded-xl bg-slate-700/30 border border-slate-600/30">
     <div className="flex items-start gap-3">
-      <span className="text-lg">{icon}</span>
+      <span className="text-lg text-violet-400">{icon}</span>
       <div>
         <h4 className="text-sm font-medium text-slate-200">{title}</h4>
         <p className="text-xs text-slate-400 mt-0.5">{text}</p>
@@ -1145,23 +1145,23 @@ export default function FlowEditor() {
                 <div className="p-4 space-y-3 max-h-80 overflow-y-auto">
                   {nodes.length === 0 ? (
                     <>
-                      <TipCard icon="🎯" title="Empieza con un Trigger" text="Arrastra un bloque 'Inicio' desde el panel derecho para definir qué inicia tu flujo." />
-                      <TipCard icon="💡" title="Usa plantillas" text="Haz clic en 'Plantillas' para usar flujos predefinidos y ahorrarte tiempo." />
+                      <TipCard icon="►" title="Empieza con un Trigger" text="Arrastra un bloque 'Inicio' desde el panel derecho para definir qué inicia tu flujo." />
+                      <TipCard icon="✦" title="Usa plantillas" text="Haz clic en 'Plantillas' para usar flujos predefinidos y ahorrarte tiempo." />
                     </>
                   ) : nodes.length === 1 ? (
                     <>
-                      <TipCard icon="🔗" title="Conecta bloques" text="Ahora arrastra otro bloque y conéctalo haciendo clic y arrastrando desde el punto de conexión." />
+                      <TipCard icon="→" title="Conecta bloques" text="Ahora arrastra otro bloque y conéctalo haciendo clic y arrastrando desde el punto de conexión." />
                       <TipCard icon="⚡" title="Define acciones" text="Usa bloques de 'Acción' para guardar datos, enviar mensajes o notificaciones." />
                     </>
                   ) : edges.length === 0 ? (
                     <>
-                      <TipCard icon="🔗" title="¡Conecta tus bloques!" text="Haz clic en un punto de salida (abajo del bloque) y arrastra hasta el punto de entrada de otro bloque." />
+                      <TipCard icon="→" title="¡Conecta tus bloques!" text="Haz clic en un punto de salida (abajo del bloque) y arrastra hasta el punto de entrada de otro bloque." />
                     </>
                   ) : (
                     <>
-                      <TipCard icon="✅" title="¡Bien hecho!" text="Tu flujo está tomando forma. Usa el modo 'Probar' para simular cómo funcionará." />
-                      <TipCard icon="💾" title="Guarda tu trabajo" text="No olvides guardar con Ctrl+S o el botón 'Guardar' para no perder tus cambios." />
-                      <TipCard icon="🔄" title="Undo/Redo" text="Si te equivocas, usa Ctrl+Z para deshacer o Ctrl+Y para rehacer." />
+                      <TipCard icon="✓" title="¡Bien hecho!" text="Tu flujo está tomando forma. Usa el modo 'Probar' para simular cómo funcionará." />
+                      <TipCard icon="↕" title="Guarda tu trabajo" text="No olvides guardar con Ctrl+S o el botón 'Guardar' para no perder tus cambios." />
+                      <TipCard icon="⇄" title="Undo/Redo" text="Si te equivocas, usa Ctrl+Z para deshacer o Ctrl+Y para rehacer." />
                     </>
                   )}
                 </div>
@@ -1756,7 +1756,7 @@ export default function FlowEditor() {
                             <option value="notification">Enviar notificación</option>
                             <option value="decrement">Restar cantidad</option>
                             <option value="increment">Sumar cantidad</option>
-                            <option value="generate_payment_link">💳 Generar link de pago</option>
+                            <option value="generate_payment_link">Generar link de pago</option>
                           </select>
                         </div>
                         
@@ -1987,12 +1987,12 @@ export default function FlowEditor() {
                           </>
                         )}
 
-                        {/* ── 💳 Link de pago ─────────────────────────────── */}
+                        {/* ── Link de pago ─────────────────────────────────── */}
                         {selectedNode.data?.actionType === 'generate_payment_link' && (
                           <div className="space-y-3">
                             {/* Banner informativo */}
                             <div className="p-3 rounded-lg" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
-                              <p className="text-[11px] text-emerald-400 font-medium mb-1">💳 Generar Link de Pago</p>
+                              <p className="text-[11px] text-emerald-400 font-medium mb-1">Generar Link de Pago</p>
                               <p className="text-[10px] text-zinc-400 leading-relaxed">
                                 Genera un link de pago con Wompi y lo guarda en el registro. El siguiente nodo puede usar <code className="bg-zinc-800 px-1 rounded text-emerald-300">{"{{paymentLink}}"}</code> para enviarlo al cliente.
                               </p>

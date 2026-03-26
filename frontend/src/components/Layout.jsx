@@ -8,17 +8,15 @@ import HelpButton from "./HelpButton";
 import SetupAssistantChat from "./SetupAssistantChat";
 import api from "../api/client";
 import { 
-  Home, FolderKanban, Bot, Table2, Zap, MessageCircle, BookOpen, Link2, Settings,
-  ChevronRight, ChevronDown, Calendar, Columns3, LayoutGrid, TableIcon, LayoutDashboard,
-  ShoppingCart, GanttChartSquare, Menu, LogOut, Check, Layers, Sparkles, Crown
+  LayoutDashboard, FolderKanban, Bot, Database, Zap, MessageSquare, HelpCircle, Link2, Settings,
+  ChevronRight, ChevronDown, Calendar, Columns3, LayoutGrid, TableIcon, Rocket,
+  ShoppingCart, GanttChartSquare, Menu, LogOut, Check, Layers, Sparkles, Crown, Plug, Shield
 } from "lucide-react";
 
-// Logo personalizado
+// Logo profesional - cohete
 const LogoIcon = () => (
-  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-    <path d="M12 2L2 7l10 5 10-5-10-5z" fill="currentColor" opacity="0.9"/>
-    <path d="M2 17l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
   </svg>
 );
 
@@ -33,20 +31,44 @@ const viewIcons = {
   timeline: GanttChartSquare,
 };
 
-const navItems = [
-  { to: "/", label: "Inicio", icon: Home, tourId: "nav-home" },
-  { to: "/workspaces", label: "Proyectos", icon: FolderKanban, tourId: "nav-workspaces" },
-  { to: "/agents", label: "Asistente IA", icon: Bot, tourId: "nav-agents" },
-  { to: "/tables", label: "Mis datos", icon: Table2, tourId: "nav-tables" },
-  { to: "/views", label: "Vistas", icon: Layers, tourId: "nav-views" },
-  { to: "/flows", label: "Automatizar", icon: Zap, tourId: "nav-flows" },
-  { to: "/chat", label: "Chat", icon: MessageCircle, tourId: "nav-chat" },
-  { to: "/integrations", label: "Integraciones", icon: Link2, tourId: "nav-integrations" },
-  { to: "/advanced", label: "Avanzado", icon: Sparkles, tourId: "nav-advanced" },
-  { to: "/guia", label: "Ayuda", icon: BookOpen, tourId: "nav-guide" },
-  { to: "/upgrade", label: "Mi Plan", icon: Crown, tourId: "nav-plan" },
-  { to: "/admin", label: "Admin", icon: Settings, tourId: "nav-admin" },
+// Secciones de navegación con separadores
+const navSections = [
+  {
+    title: "Principal",
+    items: [
+      { to: "/", label: "Inicio", icon: LayoutDashboard, tourId: "nav-home" },
+      { to: "/workspaces", label: "Proyectos", icon: FolderKanban, tourId: "nav-workspaces" },
+    ]
+  },
+  {
+    title: "Gestión",
+    items: [
+      { to: "/agents", label: "Asistente IA", icon: Bot, tourId: "nav-agents" },
+      { to: "/tables", label: "Mis datos", icon: Database, tourId: "nav-tables" },
+      { to: "/views", label: "Vistas", icon: Layers, tourId: "nav-views" },
+      { to: "/flows", label: "Automatizar", icon: Zap, tourId: "nav-flows" },
+      { to: "/chat", label: "Chat", icon: MessageSquare, tourId: "nav-chat" },
+    ]
+  },
+  {
+    title: "Configuración",
+    items: [
+      { to: "/integrations", label: "Integraciones", icon: Plug, tourId: "nav-integrations" },
+      { to: "/advanced", label: "Avanzado", icon: Shield, tourId: "nav-advanced" },
+    ]
+  },
+  {
+    title: "Cuenta",
+    items: [
+      { to: "/guia", label: "Ayuda", icon: HelpCircle, tourId: "nav-guide" },
+      { to: "/upgrade", label: "Mi Plan", icon: Crown, tourId: "nav-plan" },
+      { to: "/admin", label: "Admin", icon: Settings, tourId: "nav-admin", adminOnly: true },
+    ]
+  }
 ];
+
+// Flat list para compatibilidad
+const navItems = navSections.flatMap(s => s.items);
 
 export default function Layout() {
   const { workspaceId, workspaceName } = useContext(WorkspaceContext);
@@ -142,221 +164,195 @@ export default function Layout() {
           </div>
         )}
 
-        {/* Navigation */}
-        <nav className="flex-1 py-4 px-3 overflow-y-auto">
-          <div className="space-y-1">
-            {navItems.map(({ to, label, icon: Icon, tourId }) => {
-              // Renderizado especial para Vistas con submenú
-              if (to === '/views') {
-                return (
-                  <div key={to}>
-                    {/* Item principal de Vistas */}
-                    <div className="flex items-center">
-                      <Link
-                        to={to}
-                        data-tour={tourId}
-                        className={`group relative flex-1 flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-300 ${collapsed ? 'justify-center px-2.5' : ''} ${
-                          isActive(to) 
-                            ? 'text-white' 
-                            : 'text-slate-400 hover:text-white hover:bg-white/5'
-                        }`}
-                        style={isActive(to) ? {
-                          background: 'linear-gradient(90deg, rgba(139, 92, 246, 0.2) 0%, rgba(99, 102, 241, 0.1) 100%)',
-                          boxShadow: '0 0 20px rgba(139, 92, 246, 0.1)'
-                        } : {}}
-                        title={collapsed ? label : undefined}
-                      >
-                        <span className={`transition-all duration-200 ${isActive(to) ? 'text-violet-400' : ''}`}>
-                          <Icon className="w-5 h-5" />
-                        </span>
-                        {!collapsed && <span>{label}</span>}
-                        {isActive(to) && (
-                          <div 
-                            className={`absolute ${collapsed ? 'left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full' : 'right-3 w-1.5 h-1.5 rounded-full'} bg-indigo-400`}
-                          />
-                        )}
-                      </Link>
-                      {/* Botón para expandir/colapsar submenú */}
-                      {!collapsed && workspaceViews.length > 0 && (
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setViewsExpanded(!viewsExpanded);
-                          }}
-                          className="p-2 rounded-lg hover:bg-white/10 text-slate-500 hover:text-white transition-all"
-                        >
-                          <span className={`transform transition-transform duration-200 block ${viewsExpanded ? 'rotate-0' : '-rotate-90'}`}>
-                            <ChevronDown className="w-4 h-4" />
-                          </span>
-                        </button>
-                      )}
-                    </div>
-                    
-                    {/* Submenú de vistas individuales */}
-                    {!collapsed && viewsExpanded && workspaceViews.length > 0 && (
-                      <div className="ml-4 mt-1 space-y-0.5 border-l border-white/10 pl-3">
-                        {workspaceViews.map((view) => (
-                          <Link
-                            key={view.id}
-                            to={`/views?selected=${view.id}`}
-                            className={`group flex items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] font-medium transition-all duration-200 ${
-                              location.search.includes(`selected=${view.id}`)
-                                ? 'text-white bg-white/10'
-                                : 'text-slate-500 hover:text-white hover:bg-white/5'
-                            }`}
-                          >
-                            <span className={`transition-colors ${location.search.includes(`selected=${view.id}`) ? 'text-violet-400' : ''}`}>
-                              {getViewIcon(view.type)}
-                            </span>
-                            <span className="truncate">{view.name}</span>
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-
-              // Renderizado normal para otros items
-              return (
-                <Link
-                  key={to}
-                  to={to}
-                  data-tour={tourId}
-                  className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-300 ${collapsed ? 'justify-center px-2.5' : ''} ${
-                    isActive(to) 
-                      ? 'text-white' 
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
-                  }`}
-                  style={isActive(to) ? {
-                    background: 'linear-gradient(90deg, rgba(139, 92, 246, 0.2) 0%, rgba(99, 102, 241, 0.1) 100%)',
-                    boxShadow: '0 0 20px rgba(139, 92, 246, 0.1)'
-                  } : {}}
-                  title={collapsed ? label : undefined}
-                >
-                  <span className={`transition-all duration-200 ${isActive(to) ? 'text-violet-400' : ''}`}>
-                    <Icon className="w-5 h-5" />
+        {/* Navigation - sin flex-1 para que el footer quede junto */}
+        <nav className="py-3 px-3">
+          {navSections.map((section, sectionIdx) => (
+            <div key={section.title} className={sectionIdx > 0 ? 'mt-3' : ''}>
+              {/* Section title */}
+              {!collapsed && (
+                <div className="px-3 mb-1.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-600">
+                    {section.title}
                   </span>
-                  {!collapsed && <span>{label}</span>}
-                  {isActive(to) && (
-                    <div 
-                      className={`absolute ${collapsed ? 'left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full' : 'right-3 w-1.5 h-1.5 rounded-full'} bg-indigo-400`}
-                    />
-                  )}
-                </Link>
-              );
-            })}
-          </div>
+                </div>
+              )}
+              {collapsed && sectionIdx > 0 && (
+                <div className="mx-2 mb-2 border-t border-white/5" />
+              )}
+              
+              <div className="space-y-0.5">
+                {section.items.map(({ to, label, icon: Icon, tourId, adminOnly }) => {
+                  // Ocultar items de admin si no es admin
+                  if (adminOnly && user?.role !== 'admin' && user?.role !== 'superadmin') {
+                    return null;
+                  }
+                  
+                  // Renderizado especial para Vistas con submenú
+                  if (to === '/views') {
+                    return (
+                      <div key={to}>
+                        <div className="flex items-center">
+                          <Link
+                            to={to}
+                            data-tour={tourId}
+                            className={`group relative flex-1 flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 ${collapsed ? 'justify-center px-2' : ''} ${
+                              isActive(to) 
+                                ? 'text-white bg-gradient-to-r from-violet-500/20 to-indigo-500/10' 
+                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                            }`}
+                            title={collapsed ? label : undefined}
+                          >
+                            <span className={`flex-shrink-0 p-1.5 rounded-md transition-all duration-200 ${isActive(to) ? 'bg-violet-500/30 text-violet-300' : 'group-hover:bg-white/10'}`}>
+                              <Icon className="w-4 h-4" />
+                            </span>
+                            {!collapsed && <span>{label}</span>}
+                            {isActive(to) && !collapsed && (
+                              <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-violet-400" />
+                            )}
+                          </Link>
+                          {!collapsed && workspaceViews.length > 0 && (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setViewsExpanded(!viewsExpanded);
+                              }}
+                              className="p-1.5 rounded-md hover:bg-white/10 text-slate-500 hover:text-white transition-all"
+                            >
+                              <span className={`transform transition-transform duration-200 block ${viewsExpanded ? 'rotate-0' : '-rotate-90'}`}>
+                                <ChevronDown className="w-3.5 h-3.5" />
+                              </span>
+                            </button>
+                          )}
+                        </div>
+                        
+                        {!collapsed && viewsExpanded && workspaceViews.length > 0 && (
+                          <div className="ml-5 mt-1 space-y-0.5 border-l border-white/10 pl-3">
+                            {workspaceViews.map((view) => (
+                              <Link
+                                key={view.id}
+                                to={`/views?selected=${view.id}`}
+                                className={`group flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-all duration-200 ${
+                                  location.search.includes(`selected=${view.id}`)
+                                    ? 'text-white bg-white/10'
+                                    : 'text-slate-500 hover:text-white hover:bg-white/5'
+                                }`}
+                              >
+                                <span className={`transition-colors ${location.search.includes(`selected=${view.id}`) ? 'text-violet-400' : ''}`}>
+                                  {getViewIcon(view.type)}
+                                </span>
+                                <span className="truncate">{view.name}</span>
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <Link
+                      key={to}
+                      to={to}
+                      data-tour={tourId}
+                      className={`group relative flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 ${collapsed ? 'justify-center px-2' : ''} ${
+                        isActive(to) 
+                          ? 'text-white bg-gradient-to-r from-violet-500/20 to-indigo-500/10' 
+                          : 'text-slate-400 hover:text-white hover:bg-white/5'
+                      }`}
+                      title={collapsed ? label : undefined}
+                    >
+                      <span className={`flex-shrink-0 p-1.5 rounded-md transition-all duration-200 ${isActive(to) ? 'bg-violet-500/30 text-violet-300' : 'group-hover:bg-white/10'}`}>
+                        <Icon className="w-4 h-4" />
+                      </span>
+                      {!collapsed && <span>{label}</span>}
+                      {isActive(to) && !collapsed && (
+                        <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-violet-400" />
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
-        {/* Footer con workspace activo y usuario - Rediseñado */}
-        <div className="p-3" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+        {/* Footer con workspace activo y usuario */}
+        <div className="p-2" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
           {collapsed ? (
             <button 
               onClick={() => setCollapsed(false)}
-              className="w-full p-2.5 rounded-xl transition-all flex items-center justify-center hover:bg-white/10 text-slate-500 hover:text-white"
+              className="w-full p-2 rounded-lg transition-all flex items-center justify-center hover:bg-white/10 text-slate-500 hover:text-white"
             >
-              <svg className="w-5 h-5 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
+              <ChevronRight className="w-4 h-4" />
             </button>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {workspaceId ? (
-                <div className="flex items-center gap-3 px-3 py-3 rounded-xl transition-all"
+                <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all"
                   style={{ 
-                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%)',
-                    border: '1px solid rgba(16, 185, 129, 0.3)'
+                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%)',
+                    border: '1px solid rgba(16, 185, 129, 0.2)'
                   }}>
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/30">
-                    <svg className="w-4.5 h-4.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
+                  <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 bg-gradient-to-br from-emerald-500 to-teal-500">
+                    <Check className="w-3 h-3 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <span className="block text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                      Activo
-                    </span>
-                    <span className="block text-sm font-semibold text-white truncate mt-0.5">
-                      {workspaceName}
-                    </span>
+                    <span className="block text-[9px] font-bold uppercase tracking-wider text-emerald-400">Activo</span>
+                    <span className="block text-xs font-semibold text-white truncate">{workspaceName}</span>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-3 px-3 py-3 rounded-xl"
+                <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg"
                   style={{ 
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(255, 255, 255, 0.06)'
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid rgba(255, 255, 255, 0.05)'
                   }}>
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/5">
-                    <div className="w-2 h-2 rounded-full animate-pulse bg-violet-400" />
+                  <div className="w-6 h-6 rounded-md flex items-center justify-center bg-white/5">
+                    <Layers className="w-3 h-3 text-slate-500" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                      Sin selección
-                    </span>
-                    <span className="block text-xs text-slate-500 mt-0.5">
-                      Selecciona un workspace
-                    </span>
+                    <span className="block text-[9px] font-medium uppercase tracking-wider text-slate-500">Sin selección</span>
+                    <span className="block text-[10px] text-slate-500">Selecciona un workspace</span>
                   </div>
                 </div>
               )}
               
-              {/* Socket status — indicador sutil de tiempo real */}
+              {/* Socket status — indicador sutil */}
               {workspaceId && (
-                <div className="flex items-center gap-1.5 px-3 py-1">
-                  <div className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
-                  <span className={`text-[10px] ${connected ? 'text-emerald-500' : 'text-slate-600'}`}>
+                <div className="flex items-center gap-1 px-2">
+                  <div className={`w-1 h-1 rounded-full ${connected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
+                  <span className={`text-[9px] ${connected ? 'text-emerald-500' : 'text-slate-600'}`}>
                     {connected ? 'En vivo' : 'Sin conexión'}
                   </span>
                 </div>
               )}
 
-              {/* Botón de mejorar plan para usuarios free */}
-              {user?.plan === 'free' && (
-                <Link
-                  to="/upgrade"
-                  className="flex items-center gap-2 mx-3 px-3 py-2.5 rounded-xl text-white text-sm font-medium transition-all hover:scale-[1.02] active:scale-[0.98]"
-                  style={{ 
-                    background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #4f46e5 100%)',
-                    boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)'
-                  }}
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>Mejorar plan</span>
-                </Link>
-              )}
-
-              {/* User info & logout - Rediseñado */}
-              <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all"
+              {/* Usuario y cerrar sesión */}
+              <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all hover:bg-white/5"
                 style={{ 
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid rgba(255, 255, 255, 0.06)'
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  border: '1px solid rgba(255, 255, 255, 0.05)'
                 }}>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
+                <div className="w-6 h-6 rounded-md flex items-center justify-center text-white text-[10px] font-bold shrink-0"
                   style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' }}>
                   {user?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="block text-xs font-semibold text-white truncate">
-                    {user?.name || 'Usuario'}
-                  </span>
-                  <span className="text-[10px] text-slate-500 truncate flex items-center gap-1">
-                    <Crown className="w-2.5 h-2.5 text-violet-400" />
-                    {user?.plan === 'free' ? 'Plan Gratuito' : 
-                     user?.plan === 'starter' ? 'Plan Inicial' :
-                     user?.plan === 'premium' ? 'Plan Premium' :
-                     user?.plan === 'enterprise' ? 'Plan Empresarial' : 'Plan'}
+                  <span className="block text-[11px] font-semibold text-white truncate">{user?.name || 'Usuario'}</span>
+                  <span className="text-[9px] text-slate-500 truncate flex items-center gap-0.5">
+                    <Crown className="w-2 h-2 text-violet-400" />
+                    {user?.plan === 'free' ? 'Gratuito' : 
+                     user?.plan === 'starter' ? 'Inicial' :
+                     user?.plan === 'premium' ? 'Premium' :
+                     user?.plan === 'enterprise' ? 'Empresarial' : 'Plan'}
                   </span>
                 </div>
                 <button 
                   onClick={handleLogout}
-                  className="p-2 rounded-lg hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-all"
+                  className="p-1 rounded-md hover:bg-red-500/15 text-slate-500 hover:text-red-400 transition-all"
                   title="Cerrar sesión"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
+                  <LogOut className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>

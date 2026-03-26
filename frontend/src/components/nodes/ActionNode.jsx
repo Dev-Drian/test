@@ -4,6 +4,7 @@
  */
 import { Handle, Position, useReactFlow } from '@xyflow/react';
 import { useCallback, useEffect } from 'react';
+import { CreditCard } from 'lucide-react';
 import { PlusIcon, EditIcon, RefreshIcon, BellIcon, CloseIcon, CheckIcon, TargetIcon, MinusIcon, MailIcon, BoltIcon, ClipboardIcon, ChatIcon, PhoneIcon, SearchIcon, SendIcon, CalendarIcon, TableIcon, TelegramIcon } from '../Icons';
 
 /**
@@ -116,7 +117,7 @@ function getActionDisplay(actionType) {
     // Integraciones Google
     'google_calendar_event': { icon: <CalendarIcon size="sm" />, label: 'Google Calendar', color: 'red' },
     'google_sheets_row': { icon: <TableIcon size="sm" />, label: 'Google Sheets', color: 'green' },
-    'generate_payment_link': { icon: <span>💳</span>, label: 'Generar link de pago', color: 'emerald' },
+    'generate_payment_link': { icon: <CreditCard className="w-4 h-4" />, label: 'Generar link de pago', color: 'emerald' },
   };
   return actions[actionType] || { icon: <BoltIcon size="sm" />, label: actionType || 'Acción', color: 'purple' };
 }
@@ -347,8 +348,8 @@ export default function ActionNode({ id, data, selected, type }) {
               <option value="increment" style={{ background: '#1e1e2a', color: '#34d399' }}>+ Sumar</option>
               <option value="send_notification" style={{ background: '#1e1e2a', color: '#a78bfa' }}>⚬ Notificar</option>
               <option disabled style={{ background: '#1e1e2a', color: '#64748b' }}>── Google ──</option>
-              <option value="google_calendar_event" style={{ background: '#1e1e2a', color: '#f87171' }}>📅 Calendar</option>
-              <option value="google_sheets_row" style={{ background: '#1e1e2a', color: '#4ade80' }}>📊 Sheets</option>
+              <option value="google_calendar_event" style={{ background: '#1e1e2a', color: '#f87171' }}>▷ Calendar</option>
+              <option value="google_sheets_row" style={{ background: '#1e1e2a', color: '#4ade80' }}>▢ Sheets</option>
             </select>
             
             {(data?.action === 'set_value' || data?.action === 'decrement' || data?.action === 'increment') && (
@@ -712,7 +713,7 @@ export default function ActionNode({ id, data, selected, type }) {
                 {/* Ayuda */}
                 <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg" style={{ background: 'rgba(239, 68, 68, 0.05)' }}>
                   <span className="text-[10px] text-zinc-400">
-                    💡 Usa <code className="bg-zinc-800 px-1 rounded text-red-400">{'{{campo}}'}</code> para insertar datos del registro
+                    Tip: Usa <code className="bg-zinc-800 px-1 rounded text-red-400">{'{{campo}}'}</code> para insertar datos del registro
                   </span>
                 </div>
               </div>

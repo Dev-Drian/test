@@ -514,7 +514,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-full">
+    <div className="min-h-full" style={{ background: 'linear-gradient(135deg, #0a0a0f 0%, #0f0f18 100%)' }}>
       <div className="max-w-6xl mx-auto px-6 py-6">
         {/* Page header */}
         <div className="mb-8 animate-fade-up">
@@ -577,8 +577,8 @@ export default function Dashboard() {
             </div>
             
             {workspaces.length === 0 ? (
-              <div className="text-center py-16 rounded-2xl" style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
-                <div className="w-16 h-16 rounded-2xl bg-slate-700/50 flex items-center justify-center mx-auto mb-4">
+              <div className="text-center py-16 rounded-2xl" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
                   {Icons.empty}
                 </div>
                 <h3 className="text-lg font-medium text-slate-100 mb-2">Crea tu primer proyecto</h3>
@@ -598,8 +598,8 @@ export default function Dashboard() {
                     onClick={() => setWorkspace(ws._id, ws.name)}
                     className="group text-left p-5 rounded-xl hover:scale-[1.02] transition-all duration-200 animate-fade-up"
                     style={{ 
-                      background: 'rgba(51, 65, 85, 0.4)', 
-                      border: '1px solid rgba(100, 116, 139, 0.3)',
+                      background: 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))', 
+                      border: '1px solid rgba(255,255,255,0.08)',
                       animationDelay: `${index * 50}ms`
                     }}
                   >
@@ -654,7 +654,7 @@ export default function Dashboard() {
             {/* Gráficos y visualizaciones */}
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-up" style={{ animationDelay: '300ms', animationFillMode: 'backwards' }}>
               {/* Registros por tabla */}
-              <div className="p-6 rounded-xl transition-all duration-300 hover:shadow-lg hover:-translate-y-1" style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
+              <div className="p-6 rounded-xl transition-all duration-300 hover:shadow-lg hover:-translate-y-1" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h3 className="text-sm font-semibold text-slate-100">Registros por tabla</h3>
@@ -687,7 +687,7 @@ export default function Dashboard() {
               </div>
 
               {/* Resumen del workspace */}
-              <div className="p-6 rounded-xl" style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
+              <div className="p-6 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h3 className="text-sm font-semibold text-slate-100">Resumen del workspace</h3>
@@ -757,7 +757,7 @@ export default function Dashboard() {
             {/* Actividad reciente y Tablas */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-up" style={{ animationDelay: '650ms', animationFillMode: 'backwards' }}>
               {/* Actividad reciente */}
-              <div className="lg:col-span-1 p-6 rounded-xl transition-all duration-300 hover:shadow-lg" style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
+              <div className="lg:col-span-1 p-6 rounded-xl transition-all duration-300 hover:shadow-lg" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-slate-100">Actividad reciente</h3>
                   {Icons.clock}
@@ -835,7 +835,7 @@ export default function Dashboard() {
                           key={table._id} 
                           to="/tables"
                           className="group p-5 rounded-xl hover:scale-[1.02] transition-all"
-                          style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}
+                          style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))', border: '1px solid rgba(255,255,255,0.08)' }}
                         >
                           <div className="flex items-start justify-between mb-3">
                             <div className="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
@@ -856,7 +856,7 @@ export default function Dashboard() {
                     </div>
                   </section>
                 ) : (
-                  <section className="text-center py-12 rounded-2xl h-full flex flex-col items-center justify-center" style={{ background: 'rgba(51, 65, 85, 0.4)', border: '1px solid rgba(100, 116, 139, 0.3)' }}>
+                  <section className="text-center py-12 rounded-2xl h-full flex flex-col items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))', border: '1px solid rgba(255,255,255,0.08)' }}>
                     <div className="w-14 h-14 rounded-xl bg-indigo-500/10 flex items-center justify-center mx-auto mb-4 text-indigo-400">
                       {Icons.tables}
                     </div>

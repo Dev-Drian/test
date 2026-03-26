@@ -91,7 +91,7 @@ export default function Tables() {
       setTimeout(() => setPaymentFlash(prev => { const n = { ...prev }; delete n[recordId]; return n; }), 8000);
     }
     const amt = amount ? `$${Number(amount).toLocaleString('es-CO')} ${currency || 'COP'}` : '';
-    toast.success(`💳 Pago confirmado${amt ? `: ${amt}` : ''}`);
+    toast.success(`Pago confirmado${amt ? `: ${amt}` : ''}`);
   });
 
   useEffect(() => {
@@ -469,22 +469,22 @@ export default function Tables() {
         </div>
       )}
 
-      <div className="p-8">
-        <div className="max-w-7xl mx-auto">
+      <div className="p-6">
+        <div className="max-w-full mx-auto">
           
           {/* Header - Rediseñado */}
-          <header className="mb-10">
+          <header className="mb-6">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-5">
+              <div className="flex items-center gap-4">
                 <div className="relative">
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 blur-lg opacity-50" />
-                  <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-xl text-white">
-                    <Table2 className="w-6 h-6" />
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 blur-lg opacity-50" />
+                  <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-xl text-white">
+                    <Table2 className="w-5 h-5" />
                   </div>
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-white tracking-tight">Tablas</h1>
-                  <p className="text-slate-400 mt-1">
+                  <h1 className="text-2xl font-bold text-white tracking-tight">Tablas</h1>
+                  <p className="text-slate-400 text-sm">
                     Gestiona los datos de <span className="text-violet-400 font-medium">{workspaceName}</span>
                   </p>
                 </div>
@@ -493,13 +493,13 @@ export default function Tables() {
               <button 
                 onClick={() => setShowBuilder(true)}
                 data-tour="tables-create"
-                className="flex items-center gap-2 px-5 py-3 rounded-xl text-white text-sm font-semibold transition-all duration-300 hover:scale-105 active:scale-95"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-all duration-300 hover:scale-105 active:scale-95"
                 style={{
                   background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
-                  boxShadow: '0 8px 30px rgba(139, 92, 246, 0.4)'
+                  boxShadow: '0 6px 20px rgba(139, 92, 246, 0.35)'
                 }}
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-4 h-4" />
                 <span>Nueva tabla</span>
               </button>
             </div>
@@ -558,23 +558,23 @@ export default function Tables() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-12 gap-8 animate-fade-up">
-              {/* Sidebar - Lista de tablas - Rediseñado */}
-              <div className="col-span-12 lg:col-span-3" data-tour="tables-list">
-                <div className="sticky top-8">
-                  <div className="rounded-2xl overflow-hidden" 
+            <div className="grid grid-cols-12 gap-5 animate-fade-up">
+              {/* Sidebar - Lista de tablas */}
+              <div className="col-span-12 lg:col-span-2" data-tour="tables-list">
+                <div className="sticky top-6">
+                  <div className="rounded-xl overflow-hidden" 
                     style={{ 
                       background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.9) 0%, rgba(30, 41, 59, 0.7) 100%)', 
                       border: '1px solid rgba(100, 116, 139, 0.2)',
                       backdropFilter: 'blur(20px)'
                     }}>
                     {/* Header del sidebar */}
-                    <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(100, 116, 139, 0.2)' }}>
+                    <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(100, 116, 139, 0.2)' }}>
                       <div className="flex items-center gap-2">
                         <Layers className="w-4 h-4 text-indigo-400" />
-                        <h3 className="text-sm font-bold text-white">Mis Tablas</h3>
+                        <h3 className="text-xs font-bold text-white">Mis Tablas</h3>
                       </div>
-                      <span className="px-2.5 py-1 rounded-lg text-xs font-bold"
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold"
                         style={{ 
                           background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
                           color: 'white'
@@ -583,18 +583,18 @@ export default function Tables() {
                       </span>
                     </div>
                     
-                    <div className="p-4">
+                    <div className="p-3">
                       {/* Barra de búsqueda de tablas */}
-                      <div className="relative mb-4">
-                        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
-                          <Search className="w-4 h-4" />
+                      <div className="relative mb-3">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                          <Search className="w-3.5 h-3.5" />
                         </div>
                         <input 
                           type="text" 
-                          placeholder="Buscar tabla..."
+                          placeholder="Buscar..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full pl-10 pr-4 py-3 rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all"
+                          className="w-full pl-9 pr-3 py-2 rounded-lg text-slate-100 placeholder-slate-500 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all"
                           style={{ 
                             background: 'rgba(15, 23, 42, 0.6)', 
                             border: '1px solid rgba(100, 116, 139, 0.2)' 
@@ -602,12 +602,12 @@ export default function Tables() {
                         />
                       </div>
                       
-                      <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
+                      <div className="space-y-1.5 max-h-[450px] overflow-y-auto pr-1 custom-scrollbar">
                         {tables.filter(t => !searchQuery.trim() || t.name.toLowerCase().includes(searchQuery.toLowerCase())).map((t, index) => (
                         <button
                           key={t._id}
                           onClick={() => setSelectedTable(t)}
-                          className={`w-full text-left p-3 rounded-xl transition-all duration-200 group flex items-center gap-3 ${
+                          className={`w-full text-left p-2.5 rounded-lg transition-all duration-200 group flex items-center gap-2.5 ${
                             selectedTable?._id === t._id
                               ? "ring-1 ring-indigo-500/50"
                               : "hover:bg-slate-700/40"
@@ -621,7 +621,7 @@ export default function Tables() {
                             opacity: 0
                           }}
                         >
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0 ${
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 shrink-0 ${
                             selectedTable?._id === t._id 
                               ? 'text-indigo-400' 
                               : 'text-slate-500 group-hover:text-slate-300'
@@ -631,20 +631,20 @@ export default function Tables() {
                               ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(139, 92, 246, 0.2) 100%)'
                               : 'rgba(51, 65, 85, 0.5)'
                           }}>
-                            <Table2 className="w-5 h-5" />
+                            <Table2 className="w-4 h-4" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <span className={`block font-medium text-sm truncate transition-colors ${
+                            <span className={`block font-medium text-xs truncate transition-colors ${
                               selectedTable?._id === t._id ? 'text-white' : 'text-slate-300 group-hover:text-white'
                             }`}>
                               {t.name}
                             </span>
-                            <span className="text-xs text-slate-500 flex items-center gap-1">
-                              <Tags className="w-3 h-3" />
+                            <span className="text-[10px] text-slate-500 flex items-center gap-1">
+                              <Tags className="w-2.5 h-2.5" />
                               {t.headers?.length || 0} campos
                             </span>
                           </div>
-                          <ChevronRight className={`w-4 h-4 transition-all duration-200 ${
+                          <ChevronRight className={`w-3.5 h-3.5 transition-all duration-200 ${
                             selectedTable?._id === t._id 
                               ? 'text-indigo-400 opacity-100' 
                               : 'text-slate-600 opacity-0 group-hover:opacity-100'
@@ -658,7 +658,7 @@ export default function Tables() {
             </div>
 
               {/* Main content - Datos de la tabla */}
-              <div className="col-span-12 lg:col-span-9" data-tour="tables-data">
+              <div className="col-span-12 lg:col-span-10" data-tour="tables-data">
                 {!selectedTable ? (
                   <div className="relative h-[500px] flex items-center justify-center rounded-2xl overflow-hidden" 
                     style={{ 
@@ -696,21 +696,21 @@ export default function Tables() {
                       border: '1px solid rgba(100, 116, 139, 0.2)',
                       backdropFilter: 'blur(20px)'
                     }}>
-                    {/* Table header - Rediseñado */}
-                    <div className="relative p-6" style={{ borderBottom: '1px solid rgba(100, 116, 139, 0.2)' }}>
-                      <div className="relative flex items-start justify-between mb-6">
-                        <div className="flex items-center gap-4">
+                    {/* Table header */}
+                    <div className="relative p-5" style={{ borderBottom: '1px solid rgba(100, 116, 139, 0.2)' }}>
+                      <div className="relative flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
                           <div className="relative">
-                            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 blur-lg opacity-40" />
-                            <div className="relative w-14 h-14 rounded-xl flex items-center justify-center text-white shadow-xl"
+                            <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 blur-md opacity-40" />
+                            <div className="relative w-11 h-11 rounded-lg flex items-center justify-center text-white shadow-lg"
                               style={{ background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' }}>
-                              <Table2 className="w-7 h-7" />
+                              <Table2 className="w-5 h-5" />
                             </div>
                           </div>
                           <div>
-                            <h3 className="text-xl font-bold text-white mb-1">{selectedTable.name}</h3>
-                            <p className="text-sm text-slate-400">
-                              {selectedTable.description || "Gestiona los registros de esta tabla"}
+                            <h3 className="text-lg font-bold text-white mb-0.5">{selectedTable.name}</h3>
+                            <p className="text-xs text-slate-400">
+                              {selectedTable.description || "Gestiona los registros"}
                             </p>
                           </div>
                         </div>
@@ -765,7 +765,7 @@ export default function Tables() {
                               setRowForm({});
                               setRowError("");
                             }}
-                            className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all ${
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${
                               showAddRow 
                                 ? 'bg-slate-600/50 text-slate-300 hover:bg-slate-600' 
                                 : 'bg-sky-500 text-white hover:bg-sky-400 shadow-lg shadow-sky-500/30'
@@ -773,12 +773,12 @@ export default function Tables() {
                           >
                             {showAddRow ? (
                               <>
-                                <X className="w-5 h-5" />
+                                <X className="w-4 h-4" />
                                 <span>Cancelar</span>
                               </>
                             ) : (
                               <>
-                                <Plus className="w-5 h-5" />
+                                <Plus className="w-4 h-4" />
                                 <span>Nuevo registro</span>
                               </>
                             )}
@@ -786,72 +786,72 @@ export default function Tables() {
                         </div>
                       </div>
                       
-                      {/* Stats cards - Rediseñados */}
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="relative p-4 rounded-xl overflow-hidden group hover:scale-[1.02] transition-transform" 
+                      {/* Stats cards */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="relative p-3 rounded-lg overflow-hidden group hover:scale-[1.02] transition-transform" 
                           style={{ 
                             background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.05) 100%)', 
                             border: '1px solid rgba(99, 102, 241, 0.2)' 
                           }}>
-                          <div className="absolute top-0 right-0 w-20 h-20 rounded-full bg-indigo-500/10 blur-2xl group-hover:bg-indigo-500/20 transition-all" />
+                          <div className="absolute top-0 right-0 w-16 h-16 rounded-full bg-indigo-500/10 blur-2xl group-hover:bg-indigo-500/20 transition-all" />
                           <div className="relative">
-                            <div className="flex items-center gap-2.5 mb-3">
-                              <div className="p-2 rounded-lg text-indigo-400" style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(99, 102, 241, 0.1) 100%)' }}>
-                                <Rows3 className="w-4 h-4" />
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="p-1.5 rounded-md text-indigo-400" style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(99, 102, 241, 0.1) 100%)' }}>
+                                <Rows3 className="w-3.5 h-3.5" />
                               </div>
-                              <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Registros</span>
+                              <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Registros</span>
                             </div>
-                            <p className="text-3xl font-bold text-white">{filteredData.length}{dataSearchQuery && <span className="text-lg text-slate-500 ml-1">/ {tableData.length}</span>}</p>
+                            <p className="text-2xl font-bold text-white">{filteredData.length}{dataSearchQuery && <span className="text-sm text-slate-500 ml-1">/ {tableData.length}</span>}</p>
                           </div>
                         </div>
                         
-                        <div className="relative p-4 rounded-xl overflow-hidden group hover:scale-[1.02] transition-transform" 
+                        <div className="relative p-3 rounded-lg overflow-hidden group hover:scale-[1.02] transition-transform" 
                           style={{ 
                             background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0.05) 100%)', 
                             border: '1px solid rgba(139, 92, 246, 0.2)' 
                           }}>
-                          <div className="absolute top-0 right-0 w-20 h-20 rounded-full bg-violet-500/10 blur-2xl group-hover:bg-violet-500/20 transition-all" />
+                          <div className="absolute top-0 right-0 w-16 h-16 rounded-full bg-violet-500/10 blur-2xl group-hover:bg-violet-500/20 transition-all" />
                           <div className="relative">
-                            <div className="flex items-center gap-2.5 mb-3">
-                              <div className="p-2 rounded-lg text-violet-400" style={{ background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(139, 92, 246, 0.1) 100%)' }}>
-                                <Tags className="w-4 h-4" />
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="p-1.5 rounded-md text-violet-400" style={{ background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(139, 92, 246, 0.1) 100%)' }}>
+                                <Tags className="w-3.5 h-3.5" />
                               </div>
-                              <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Campos</span>
+                              <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Campos</span>
                             </div>
-                            <p className="text-3xl font-bold text-white">{selectedTable.headers?.length || 0}</p>
+                            <p className="text-2xl font-bold text-white">{selectedTable.headers?.length || 0}</p>
                           </div>
                         </div>
                         
-                        <div className="relative p-4 rounded-xl overflow-hidden group hover:scale-[1.02] transition-transform" 
+                        <div className="relative p-3 rounded-lg overflow-hidden group hover:scale-[1.02] transition-transform" 
                           style={{ 
                             background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(14, 165, 233, 0.05) 100%)', 
                             border: '1px solid rgba(14, 165, 233, 0.2)' 
                           }}>
-                          <div className="absolute top-0 right-0 w-20 h-20 rounded-full bg-sky-500/10 blur-2xl group-hover:bg-sky-500/20 transition-all" />
+                          <div className="absolute top-0 right-0 w-16 h-16 rounded-full bg-sky-500/10 blur-2xl group-hover:bg-sky-500/20 transition-all" />
                           <div className="relative">
-                            <div className="flex items-center gap-2.5 mb-3">
-                              <div className="p-2 rounded-lg text-sky-400" style={{ background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.3) 0%, rgba(14, 165, 233, 0.1) 100%)' }}>
-                                <Check className="w-4 h-4" />
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="p-1.5 rounded-md text-sky-400" style={{ background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.3) 0%, rgba(14, 165, 233, 0.1) 100%)' }}>
+                                <Check className="w-3.5 h-3.5" />
                               </div>
-                              <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Requeridos</span>
+                              <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Requeridos</span>
                             </div>
-                            <p className="text-3xl font-bold text-white">{selectedTable.headers?.filter(h => h.required)?.length || 0}</p>
+                            <p className="text-2xl font-bold text-white">{selectedTable.headers?.filter(h => h.required)?.length || 0}</p>
                           </div>
                         </div>
                       </div>
                       
-                      {/* Barra de búsqueda de datos - Mejorada */}
+                      {/* Barra de búsqueda de datos */}
                       {tableData.length > 0 && (
-                        <div className="mt-5 relative">
-                          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
-                            <Search className="w-4 h-4" />
+                        <div className="mt-4 relative">
+                          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                            <Search className="w-3.5 h-3.5" />
                           </div>
                           <input 
                             type="text" 
                             placeholder="Buscar en registros..."
                             value={dataSearchQuery}
                             onChange={(e) => setDataSearchQuery(e.target.value)}
-                            className="w-full pl-11 pr-4 py-3 rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all"
+                            className="w-full pl-10 pr-4 py-2.5 rounded-lg text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all"
                             style={{ 
                               background: 'rgba(15, 23, 42, 0.6)', 
                               border: '1px solid rgba(100, 116, 139, 0.2)' 
@@ -860,9 +860,9 @@ export default function Tables() {
                           {dataSearchQuery && (
                             <button 
                               onClick={() => setDataSearchQuery("")}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-600/50 transition-all"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-slate-500 hover:text-white hover:bg-slate-600/50 transition-all"
                             >
-                              <X className="w-4 h-4" />
+                              <X className="w-3.5 h-3.5" />
                             </button>
                           )}
                         </div>
@@ -871,13 +871,13 @@ export default function Tables() {
 
                     {/* Add row form */}
                     {showAddRow && (
-                      <div className="p-5" style={{ background: 'rgba(30, 41, 59, 0.5)', borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
+                      <div className="p-4" style={{ background: 'rgba(30, 41, 59, 0.5)', borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
                         <form onSubmit={handleAddRow}>
-                          <h4 className="text-sm font-medium text-slate-300 mb-4">Nueva fila</h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                          <h4 className="text-sm font-medium text-slate-300 mb-3">Nueva fila</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
                             {getVisibleHeaders().map((header) => (
                               <div key={header.key}>
-                                <label className="text-xs text-slate-500 block mb-1.5">
+                                <label className="text-[11px] text-slate-500 block mb-1">
                                   {header.label}
                                   {header.required && <span className="text-red-400 ml-1">*</span>}
                                 </label>
@@ -1006,41 +1006,63 @@ export default function Tables() {
                       <div className="overflow-x-auto">
                         <table className="w-full" style={{ minWidth: '800px' }}>
                           <thead>
-                            <tr style={{ background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.9) 0%, rgba(30, 41, 59, 0.7) 100%)' }}>
-                              <th className="text-left py-3.5 px-4 text-slate-500 font-semibold text-[10px] uppercase tracking-wider w-14">#</th>
+                            <tr style={{ background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.9) 100%)' }}>
+                              <th className="text-center py-4 px-3 text-slate-500 font-bold text-[10px] uppercase tracking-wider w-12" style={{ borderBottom: '2px solid rgba(139, 92, 246, 0.3)' }}>#</th>
                               {Object.keys(tableData[0])
                                 .filter((k) => !k.startsWith("_") && k !== "main" && k !== "tableId" && k !== "createdAt" && k !== "updatedAt")
-                                .map((k) => (
+                                .map((k, idx) => (
                                   <th
                                     key={k}
-                                    className="text-left py-3.5 px-4 text-slate-300 font-semibold text-[11px] uppercase tracking-wider"
-                                    style={{ minWidth: '130px', borderLeft: '1px solid rgba(100, 116, 139, 0.15)' }}
+                                    className="text-left py-4 px-5 font-bold text-[11px] uppercase tracking-wider"
+                                    style={{ 
+                                      minWidth: '140px', 
+                                      color: idx === 0 ? '#a5b4fc' : '#94a3b8',
+                                      borderBottom: '2px solid rgba(139, 92, 246, 0.3)',
+                                      background: idx === 0 ? 'rgba(99, 102, 241, 0.05)' : 'transparent'
+                                    }}
                                   >
                                     {k}
                                   </th>
                                 ))}
-                              <th className="text-center py-3 px-4 text-slate-500 font-medium text-[10px] uppercase tracking-wider w-32" style={{ borderLeft: '1px solid rgba(100, 116, 139, 0.2)' }}>Acciones</th>
+                              <th className="text-center py-4 px-4 text-slate-500 font-bold text-[10px] uppercase tracking-wider w-28" style={{ borderBottom: '2px solid rgba(139, 92, 246, 0.3)' }}>Acciones</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y" style={{ borderColor: 'rgba(100, 116, 139, 0.2)' }}>
+                          <tbody>
                             {filteredData.map((row, i) => (
                               <tr
                                 key={row._id || i}
-                                className={`transition-colors group ${
+                                className={`transition-all duration-200 group cursor-pointer ${
                                   editingRow === row._id
-                                    ? 'bg-indigo-500/10'
+                                    ? 'bg-indigo-500/15 shadow-lg shadow-indigo-500/10'
                                     : paymentFlash[row._id]
-                                      ? 'bg-emerald-500/15 ring-1 ring-emerald-500/40'
-                                      : 'hover:bg-slate-700/30'
+                                      ? 'bg-emerald-500/15 ring-1 ring-emerald-500/40 animate-pulse'
+                                      : 'hover:bg-gradient-to-r hover:from-violet-500/5 hover:to-transparent'
                                 }`}
+                                style={{ borderBottom: '1px solid rgba(100, 116, 139, 0.12)' }}
                               >
-                                <td className="py-3 px-4 text-slate-500 text-xs font-mono">{i + 1}</td>
+                                <td className="py-4 px-3 text-center">
+                                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-[11px] font-bold transition-all group-hover:scale-110" 
+                                    style={{ 
+                                      background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%)',
+                                      color: '#a5b4fc'
+                                    }}>
+                                    {i + 1}
+                                  </span>
+                                </td>
                                 {Object.keys(tableData[0])
                                   .filter((k) => !k.startsWith("_") && k !== "main" && k !== "tableId" && k !== "createdAt" && k !== "updatedAt")
-                                  .map((k) => {
+                                  .map((k, idx) => {
                                     const header = selectedTable?.headers?.find(h => h.key === k);
+                                    const isFirstCol = idx === 0;
+                                    const isNumeric = header?.type === 'number' || header?.type === 'integer' || header?.type === 'currency';
+                                    const isEmail = header?.type === 'email';
                                     return (
-                                    <td key={k} className="py-3 px-4 text-slate-400 text-sm group-hover:text-slate-200 transition-colors" style={{ minWidth: '130px', borderLeft: '1px solid rgba(100, 116, 139, 0.2)' }}>
+                                    <td key={k} 
+                                      className={`py-4 px-5 text-sm transition-all duration-200 ${isFirstCol ? 'font-semibold text-white' : 'text-slate-400 group-hover:text-slate-200'}`}
+                                      style={{ 
+                                        minWidth: '140px',
+                                        background: isFirstCol ? 'rgba(99, 102, 241, 0.03)' : 'transparent'
+                                      }}>
                                       {editingRow === row._id ? (
                                         <div>
                                           <input
@@ -1066,29 +1088,33 @@ export default function Tables() {
                                           )}
                                         </div>
                                       ) : (
-                                        <span className="block truncate" title={String(row[k] ?? "-")}>{String(row[k] ?? "-")}</span>
+                                        <span className={`block truncate ${isNumeric ? 'font-mono tabular-nums' : ''} ${isEmail ? 'text-sky-400' : ''}`} title={String(row[k] ?? "-")}>
+                                          {isNumeric && row[k] != null ? Number(row[k]).toLocaleString('es-CO') : String(row[k] ?? "-")}
+                                        </span>
                                       )}
                                     </td>
                                   );})}
-                                <td className="py-3 px-3" style={{ borderLeft: '1px solid rgba(100, 116, 139, 0.2)' }}>
-                                  <div className="flex items-center justify-center gap-1">
+                                <td className="py-4 px-3">
+                                  <div className="flex items-center justify-center gap-1.5">
                                     {editingRow === row._id ? (
                                       <>
                                         <button
                                           onClick={handleSaveEdit}
                                           disabled={savingEdit}
-                                          className="p-2 rounded-lg bg-sky-500/20 text-sky-400 hover:bg-sky-500/30 transition-all disabled:opacity-50"
+                                          className="p-2.5 rounded-xl text-white transition-all duration-200 hover:scale-110 active:scale-95 disabled:opacity-50"
+                                          style={{ background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)' }}
                                           title="Guardar"
                                         >
                                           {savingEdit ? (
-                                            <div className="w-4 h-4 border-2 border-sky-400/30 border-t-sky-400 rounded-full animate-spin" />
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                           ) : (
                                             <Check className="w-4 h-4" />
                                           )}
                                         </button>
                                         <button
                                           onClick={handleCancelEdit}
-                                          className="p-2 rounded-lg bg-slate-600/50 text-slate-400 hover:bg-slate-600 transition-all"
+                                          className="p-2.5 rounded-xl text-slate-300 hover:text-white transition-all duration-200 hover:scale-110"
+                                          style={{ background: 'rgba(71, 85, 105, 0.6)', border: '1px solid rgba(100, 116, 139, 0.3)' }}
                                           title="Cancelar"
                                         >
                                           <X className="w-4 h-4" />
@@ -1098,7 +1124,10 @@ export default function Tables() {
                                       <>
                                         <button
                                           onClick={() => handleEditRow(row)}
-                                          className="p-2 rounded-lg text-slate-500 hover:bg-indigo-500/20 hover:text-indigo-400 transition-all opacity-0 group-hover:opacity-100"
+                                          className="p-2 rounded-xl text-slate-500 hover:text-indigo-400 transition-all duration-200 opacity-0 group-hover:opacity-100 hover:scale-110"
+                                          style={{ background: 'transparent' }}
+                                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.15)'}
+                                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                                           title="Editar"
                                         >
                                           <Pencil className="w-4 h-4" />
@@ -1106,7 +1135,10 @@ export default function Tables() {
                                         <button
                                           onClick={() => handleDeleteRow(row)}
                                           disabled={deletingRow === row._id}
-                                          className="p-2 rounded-lg text-slate-500 hover:bg-red-500/20 hover:text-red-400 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                                          className="p-2 rounded-xl text-slate-500 hover:text-red-400 transition-all duration-200 opacity-0 group-hover:opacity-100 hover:scale-110 disabled:opacity-50"
+                                          style={{ background: 'transparent' }}
+                                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'}
+                                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                                           title="Eliminar"
                                         >
                                           {deletingRow === row._id ? (
@@ -1125,21 +1157,30 @@ export default function Tables() {
                         </table>
                         
                         {/* Footer de la tabla */}
-                        <div className="px-5 py-3 flex items-center justify-between" style={{ background: 'rgba(30, 41, 59, 0.5)', borderTop: '1px solid rgba(100, 116, 139, 0.3)' }}>
-                          <span className="text-xs text-slate-500">
-                            Mostrando {filteredData.length}{dataSearchQuery ? ` de ${tableData.length}` : ''} registros
-                          </span>
+                        <div className="px-6 py-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.8) 100%)', borderTop: '1px solid rgba(139, 92, 246, 0.15)' }}>
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                              <Rows3 className="w-3.5 h-3.5 text-indigo-400" />
+                              <span className="text-xs font-semibold text-indigo-300">
+                                {filteredData.length}{dataSearchQuery ? <span className="text-slate-500"> / {tableData.length}</span> : ''} registros
+                              </span>
+                            </div>
+                          </div>
                           <div className="flex items-center gap-2">
                             <button 
                               onClick={exportToCSV}
-                              className="px-3 py-1.5 rounded-lg text-xs text-slate-500 hover:text-slate-200 hover:bg-slate-600/50 transition-all"
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-emerald-400 transition-all duration-200"
+                              style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)' }}
                             >
+                              <FileSpreadsheet className="w-3.5 h-3.5" />
                               Exportar CSV
                             </button>
                             <button 
                               onClick={exportToJSON}
-                              className="px-3 py-1.5 rounded-lg text-xs text-slate-500 hover:text-slate-200 hover:bg-slate-600/50 transition-all"
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-amber-400 transition-all duration-200"
+                              style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.2)' }}
                             >
+                              <FileJson className="w-3.5 h-3.5" />
                               Exportar JSON
                             </button>
                           </div>

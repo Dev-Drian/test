@@ -258,10 +258,11 @@ export default function Integrations() {
   // Si está gestionando una integración específica, mostrar esa vista
   if (managingIntegration === 'telegram') {
     return (
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="min-h-full p-6" style={{ background: 'linear-gradient(135deg, #0a0a0f 0%, #0f0f18 100%)' }}>
+        <div className="max-w-4xl mx-auto">
         <button
           onClick={() => setManagingIntegration(null)}
-          className="flex items-center gap-2 text-zinc-400 hover:text-white mb-6 transition-colors"
+          className="flex items-center gap-2 text-slate-400 hover:text-white mb-6 transition-colors"
         >
           <ArrowLeftIcon className="w-4 h-4" />
           Volver a Integraciones
@@ -269,40 +270,42 @@ export default function Integrations() {
         
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-white mb-2">Configurar Telegram Bot</h1>
-          <p className="text-zinc-400">
+          <p className="text-slate-400">
             Configura tu bot de Telegram para recibir y enviar mensajes
           </p>
         </div>
         
         <TelegramBotManager workspaceId={workspaceId} />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="min-h-full p-6" style={{ background: 'linear-gradient(135deg, #0a0a0f 0%, #0f0f18 100%)' }}>
+      <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <div className="p-2.5 rounded-xl bg-gradient-to-br from-violet-500/20 to-blue-500/20 border border-violet-500/30">
+          <div className="p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(99, 102, 241, 0.1))', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
             <LinkIcon className="w-6 h-6 text-violet-400" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">Integraciones</h1>
-            <p className="text-zinc-400">
+            <p className="text-slate-400">
               Conecta con 20+ servicios para potenciar tus automatizaciones
             </p>
           </div>
         </div>
         
         <div className="flex gap-4 mt-4 flex-wrap">
-          <div className="px-4 py-2 rounded-lg bg-green-500/10 border border-green-500/20">
-            <span className="text-green-400 font-semibold">{totalConnected}</span>
-            <span className="text-zinc-400 ml-2 text-sm">Conectadas</span>
+          <div className="px-4 py-2 rounded-lg" style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+            <span className="text-emerald-400 font-semibold">{totalConnected}</span>
+            <span className="text-slate-400 ml-2 text-sm">Conectadas</span>
           </div>
-          <div className="px-4 py-2 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
-            <span className="text-zinc-300 font-semibold">{ALL_INTEGRATIONS.filter(i => !i.native).length}</span>
-            <span className="text-zinc-400 ml-2 text-sm">Disponibles</span>
+          <div className="px-4 py-2 rounded-lg" style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+            <span className="text-slate-300 font-semibold">{ALL_INTEGRATIONS.filter(i => !i.native).length}</span>
+            <span className="text-slate-400 ml-2 text-sm">Disponibles</span>
           </div>
         </div>
       </div>
@@ -324,13 +327,14 @@ export default function Integrations() {
         <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
           {/* Search */}
           <div className="relative flex-1 w-full">
-            <MagnifyingGlassIcon className="w-5 h-5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <MagnifyingGlassIcon className="w-5 h-5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar integraciones..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-zinc-900/50 border border-zinc-700/50 text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-white placeholder:text-slate-500 focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all"
+              style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)' }}
             />
           </div>
           
@@ -343,8 +347,9 @@ export default function Integrations() {
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                   selectedCategory === cat
                     ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/25'
-                    : 'bg-zinc-800/50 text-zinc-400 hover:bg-zinc-700/50 hover:text-zinc-300'
+                    : 'text-slate-400 hover:text-slate-300'
                 }`}
+                style={selectedCategory !== cat ? { background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.06)' } : {}}
               >
                 {cat}
               </button>
@@ -357,7 +362,7 @@ export default function Integrations() {
       <div className="mb-8">
         <h2 className="text-lg font-semibold text-white mb-4">
           {selectedCategory === 'Todos' ? 'Todas las Integraciones' : selectedCategory}
-          <span className="text-zinc-500 font-normal ml-2">({filteredIntegrations.length})</span>
+          <span className="text-slate-500 font-normal ml-2">({filteredIntegrations.length})</span>
         </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -369,13 +374,15 @@ export default function Integrations() {
             return (
               <div
                 key={integration.id}
-                className={`p-4 rounded-xl border transition-all group cursor-pointer ${
-                  connected 
-                    ? 'bg-green-500/5 border-green-500/30 hover:border-green-500/50' 
-                    : comingSoon
-                      ? 'bg-zinc-900/30 border-zinc-800/50 opacity-60'
-                      : 'bg-zinc-900/50 border-zinc-700/50 hover:border-violet-500/50 hover:bg-zinc-800/50'
-                }`}
+                className={`p-4 rounded-xl transition-all group cursor-pointer ${comingSoon ? 'opacity-60' : ''}`}
+                style={{
+                  background: connected 
+                    ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(6, 182, 212, 0.04))' 
+                    : 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
+                  border: connected 
+                    ? '1px solid rgba(16, 185, 129, 0.3)' 
+                    : '1px solid rgba(255,255,255,0.08)'
+                }}
                 onClick={() => {
                   if (canManage) {
                     setManagingIntegration('telegram');
@@ -388,27 +395,27 @@ export default function Integrations() {
                   <IntegrationLogo integration={integration} size="md" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className={`font-semibold truncate ${connected ? 'text-green-400' : 'text-white'}`}>
+                      <h3 className={`font-semibold truncate ${connected ? 'text-emerald-400' : 'text-white'}`}>
                         {integration.name}
                       </h3>
-                      {connected && <CheckCircleIcon className="w-4 h-4 text-green-400 shrink-0" />}
+                      {connected && <CheckCircleIcon className="w-4 h-4 text-emerald-400 shrink-0" />}
                     </div>
-                    <span className="text-xs text-zinc-500">{integration.category}</span>
+                    <span className="text-xs text-slate-500">{integration.category}</span>
                   </div>
                 </div>
                 
-                <p className="text-sm text-zinc-400 mb-3 line-clamp-2">
+                <p className="text-sm text-slate-400 mb-3 line-clamp-2">
                   {integration.description}
                 </p>
                 
                 <div className="flex items-center justify-between">
-                  <div className="flex gap-3 text-xs text-zinc-500">
+                  <div className="flex gap-3 text-xs text-slate-500">
                     <span>{integration.actions} acciones</span>
                     {integration.triggers > 0 && <span>{integration.triggers} triggers</span>}
                   </div>
                   
                   {comingSoon ? (
-                    <span className="px-2 py-1 rounded-md text-xs font-medium bg-zinc-800 text-zinc-500">
+                    <span className="px-2 py-1 rounded-md text-xs font-medium text-slate-500" style={{ background: 'rgba(255,255,255,0.04)' }}>
                       Próximamente
                     </span>
                   ) : connected ? (
@@ -418,7 +425,7 @@ export default function Integrations() {
                         Gestionar
                       </button>
                     ) : (
-                      <span className="px-2 py-1 rounded-md text-xs font-medium bg-green-500/20 text-green-400">
+                      <span className="px-2 py-1 rounded-md text-xs font-medium bg-emerald-500/20 text-emerald-400">
                         Conectada
                       </span>
                     )
@@ -436,7 +443,7 @@ export default function Integrations() {
       </div>
 
       {/* Info adicional */}
-      <div className="p-5 rounded-xl bg-gradient-to-r from-violet-500/10 to-blue-500/10 border border-violet-500/20">
+      <div className="p-5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(99, 102, 241, 0.04))', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
         <h4 className="text-sm font-semibold text-violet-400 mb-2 flex items-center gap-2">
           <LinkIcon className="w-4 h-4" />
           ¿Cómo usar las integraciones?
@@ -450,9 +457,9 @@ export default function Integrations() {
 
       {/* Connect Modal */}
       {connectModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl w-full max-w-md">
-            <div className="p-6 border-b border-zinc-800">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="rounded-2xl shadow-2xl w-full max-w-md" style={{ background: 'linear-gradient(135deg, #12121a, #0d0d14)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="p-6" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <IntegrationLogo integration={connectModal} size="lg" />
@@ -460,25 +467,25 @@ export default function Integrations() {
                     <h3 className="text-lg font-semibold text-white">
                       Conectar {connectModal.name}
                     </h3>
-                    <p className="text-sm text-zinc-400">{connectModal.category}</p>
+                    <p className="text-sm text-slate-400">{connectModal.category}</p>
                   </div>
                 </div>
                 <button
                   onClick={() => { setConnectModal(null); setTelegramToken(''); }}
-                  className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                 >
-                  <XMarkIcon className="w-5 h-5 text-zinc-400" />
+                  <XMarkIcon className="w-5 h-5 text-slate-400" />
                 </button>
               </div>
             </div>
             
             <div className="p-6">
-              <p className="text-zinc-300 mb-4">{connectModal.description}</p>
+              <p className="text-slate-300 mb-4">{connectModal.description}</p>
               
               {/* Formulario específico para Telegram */}
               {connectModal.id === 'telegram' ? (
                 <>
-                  <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 mb-4">
+                  <div className="p-4 rounded-lg mb-4" style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
                     <p className="text-sm text-blue-200/90 mb-2">
                       <strong>¿Cómo obtener el token?</strong>
                     </p>
@@ -491,7 +498,7 @@ export default function Integrations() {
                   </div>
                   
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-zinc-300 mb-2">
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
                       Token del Bot
                     </label>
                     <input
@@ -499,14 +506,16 @@ export default function Integrations() {
                       value={telegramToken}
                       onChange={(e) => setTelegramToken(e.target.value)}
                       placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
-                      className="w-full px-4 py-2.5 rounded-lg bg-zinc-800 border border-zinc-700 text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50"
+                      className="w-full px-4 py-2.5 rounded-lg text-white placeholder:text-slate-500 focus:ring-2 focus:ring-violet-500/50"
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
                     />
                   </div>
                   
                   <div className="flex gap-3">
                     <button
                       onClick={() => { setConnectModal(null); setTelegramToken(''); }}
-                      className="flex-1 py-2.5 px-4 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors"
+                      className="flex-1 py-2.5 px-4 rounded-lg text-slate-300 hover:bg-white/10 transition-colors"
+                      style={{ background: 'rgba(255,255,255,0.05)' }}
                     >
                       Cancelar
                     </button>
@@ -521,7 +530,7 @@ export default function Integrations() {
                 </>
               ) : (
                 <>
-                  <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-4 flex items-start gap-3">
+                  <div className="p-4 rounded-lg mb-4 flex items-start gap-3" style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
                     <ExclamationTriangleIcon className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                     <p className="text-sm text-amber-200/90">
                       Esta integración requiere configuración adicional. 
@@ -532,7 +541,8 @@ export default function Integrations() {
                   <div className="flex gap-3">
                     <button
                       onClick={() => setConnectModal(null)}
-                      className="flex-1 py-2.5 px-4 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors"
+                      className="flex-1 py-2.5 px-4 rounded-lg text-slate-300 hover:bg-white/10 transition-colors"
+                      style={{ background: 'rgba(255,255,255,0.05)' }}
                     >
                       Cancelar
                     </button>
@@ -561,6 +571,7 @@ export default function Integrations() {
           onClose={() => setToast(null)}
         />
       )}
+      </div>
     </div>
   );
 }
