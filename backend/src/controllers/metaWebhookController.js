@@ -335,6 +335,16 @@ export async function receiveEvent(req, res) {
   res.sendStatus(200);
 
   const body = req.body;
+  
+  // Log de entrada para debug
+  log.info('[Meta] ═══════════════════════════════════════════════════════════');
+  log.info('[Meta] Webhook recibido', { 
+    object: body.object, 
+    entriesCount: body.entry?.length || 0,
+    params: req.params,
+    query: req.query,
+    forwardedBy: req.headers['x-forwarded-by'] || 'direct'
+  });
 
   // ── Extraer identificador de plataforma del payload ─────────────────────
   let platformMetaId = null;
@@ -362,12 +372,18 @@ export async function receiveEvent(req, res) {
     }
   }
 
-  // 2. Fallback: query param
+  // 2. Fallback: parámetro de ruta /webhooks/meta/:workspaceId
+  if (!workspaceId && req.params.workspaceId) {
+    workspaceId = req.params.workspaceId;
+    log.info('[Meta] Usando workspaceId de params', { workspaceId });
+  }
+
+  // 3. Fallback: query param ?workspaceId=xxx
   if (!workspaceId && req.query.workspaceId) {
     workspaceId = req.query.workspaceId;
   }
 
-  // 3. Fallback: variable de entorno
+  // 4. Fallback: variable de entorno
   if (!workspaceId) {
     workspaceId = process.env.META_DEFAULT_WORKSPACE_ID;
   }

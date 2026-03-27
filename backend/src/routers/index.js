@@ -186,6 +186,9 @@ router.get("/payments/record/:workspaceId/:tableId/:recordId", requireAuth, paym
 // POST: recibe mensajes entrantes — añadir ?workspaceId=<id> en la URL del dashboard
 router.get("/webhooks/meta", metaWebhook.verifyWebhook);
 router.post("/webhooks/meta", metaWebhook.receiveEvent);
+// Ruta alternativa con workspaceId en la URL (para mayor claridad)
+router.get("/webhooks/meta/:workspaceId", metaWebhook.verifyWebhook);
+router.post("/webhooks/meta/:workspaceId", metaWebhook.receiveEvent);
 
 // ============ ADVANCED FEATURES ============
 import * as advancedFeatures from "../controllers/advancedFeaturesController.js";

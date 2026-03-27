@@ -9,15 +9,24 @@ import SetupAssistantChat from "./SetupAssistantChat";
 import MetaNotificationBanner, { NotificationBell } from "./MetaNotificationBanner";
 import api from "../api/client";
 import { 
-  LayoutDashboard, FolderKanban, Bot, Database, Zap, MessageSquare, HelpCircle, Link2, Settings,
-  ChevronRight, ChevronDown, Calendar, Columns3, LayoutGrid, TableIcon, Rocket,
-  ShoppingCart, GanttChartSquare, Menu, LogOut, Check, Layers, Sparkles, Crown, Plug, Shield
+  LayoutDashboard, FolderKanban, Bot, Database, Zap, MessageSquare, Settings,
+  ChevronRight, ChevronDown, Calendar, Columns3, LayoutGrid, TableIcon,
+  ShoppingCart, GanttChartSquare, LogOut, Check, Layers, Crown, Plug, 
+  Sparkles, Workflow, PanelLeftClose, PanelLeft
 } from "lucide-react";
 
-// Logo profesional - cohete
+// Logo premium con gradiente
 const LogoIcon = () => (
-  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+  <svg className="w-7 h-7" viewBox="0 0 32 32" fill="none">
+    <defs>
+      <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#a78bfa" />
+        <stop offset="100%" stopColor="#6366f1" />
+      </linearGradient>
+    </defs>
+    <path d="M16 4L6 9v14l10 5 10-5V9L16 4z" stroke="url(#logoGrad)" strokeWidth="2" fill="none"/>
+    <path d="M16 12l-4 2v4l4 2 4-2v-4l-4-2z" fill="url(#logoGrad)" opacity="0.3"/>
+    <circle cx="16" cy="16" r="3" fill="url(#logoGrad)"/>
   </svg>
 );
 
@@ -32,37 +41,36 @@ const viewIcons = {
   timeline: GanttChartSquare,
 };
 
-// Secciones de navegación con separadores
+// Navegación simplificada - menos secciones, más intuitivo
 const navSections = [
   {
-    title: "Principal",
+    title: null, // Sin título para la sección principal
     items: [
-      { to: "/", label: "Inicio", icon: LayoutDashboard, tourId: "nav-home" },
+      { to: "/", label: "Dashboard", icon: LayoutDashboard, tourId: "nav-home" },
       { to: "/workspaces", label: "Proyectos", icon: FolderKanban, tourId: "nav-workspaces" },
     ]
   },
   {
-    title: "Gestión",
+    title: "Herramientas",
     items: [
-      { to: "/agents", label: "Asistente IA", icon: Bot, tourId: "nav-agents" },
-      { to: "/tables", label: "Mis datos", icon: Database, tourId: "nav-tables" },
+      { to: "/agents", label: "Asistente IA", icon: Sparkles, tourId: "nav-agents" },
+      { to: "/tables", label: "Datos", icon: Database, tourId: "nav-tables" },
       { to: "/views", label: "Vistas", icon: Layers, tourId: "nav-views" },
-      { to: "/flows", label: "Automatizar", icon: Zap, tourId: "nav-flows" },
-      { to: "/chat", label: "Chat", icon: MessageSquare, tourId: "nav-chat" },
+      { to: "/chat", label: "Conversaciones", icon: MessageSquare, tourId: "nav-chat" },
     ]
   },
   {
-    title: "Configuración",
+    title: "Automatización",
     items: [
+      { to: "/flows", label: "Flujos", icon: Workflow, tourId: "nav-flows" },
       { to: "/integrations", label: "Integraciones", icon: Plug, tourId: "nav-integrations" },
-      { to: "/advanced", label: "Avanzado", icon: Shield, tourId: "nav-advanced" },
     ]
   },
   {
-    title: "Cuenta",
+    title: null,
     items: [
-      { to: "/guia", label: "Ayuda", icon: HelpCircle, tourId: "nav-guide" },
-      { to: "/upgrade", label: "Mi Plan", icon: Crown, tourId: "nav-plan" },
+      { to: "/upgrade", label: "Mi Plan", icon: Crown, tourId: "nav-plan", highlight: true },
+      { to: "/advanced", label: "Configuración", icon: Settings, tourId: "nav-advanced" },
       { to: "/admin", label: "Admin", icon: Settings, tourId: "nav-admin", adminOnly: true },
     ]
   }
@@ -123,66 +131,74 @@ export default function Layout() {
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-screen" style={{ background: 'linear-gradient(135deg, #0a0a0f 0%, #0f0f18 100%)' }} data-tour="welcome">
-      {/* Sidebar - Rediseñado con glassmorphism */}
+    <div className="flex h-screen overflow-hidden" style={{ background: 'linear-gradient(135deg, #0a0a0f 0%, #0f0f18 100%)' }} data-tour="welcome">
+      {/* Sidebar - Diseño limpio y moderno */}
       <aside 
         data-tour="sidebar"
-        className={`${collapsed ? 'w-[72px]' : 'w-[260px]'} flex flex-col transition-all duration-300 ease-out`}
+        className={`${collapsed ? 'w-[72px]' : 'w-[250px]'} flex flex-col h-full shrink-0 transition-all duration-300 ease-out`}
         style={{ 
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
-          backdropFilter: 'blur(20px)',
-          borderRight: '1px solid rgba(255, 255, 255, 0.08)'
+          background: 'linear-gradient(180deg, rgba(15,15,25,0.95) 0%, rgba(10,10,18,0.98) 100%)',
+          borderRight: '1px solid rgba(255, 255, 255, 0.06)'
         }}
       >
-        {/* Logo Header */}
-        <div className="h-16 px-4 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
-          <div className={`flex items-center gap-3 ${collapsed ? 'justify-center w-full' : ''}`}>
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg"
-              style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)', boxShadow: '0 4px 20px rgba(139, 92, 246, 0.4)' }}>
+        {/* Logo Header + Notificaciones */}
+        <div className="h-14 px-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)', overflow: 'visible' }}>
+          <div className={`flex items-center gap-2.5 ${collapsed ? 'justify-center w-full' : ''}`}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(99,102,241,0.1) 100%)', border: '1px solid rgba(139,92,246,0.2)' }}>
               <LogoIcon />
             </div>
             {!collapsed && (
-              <div className="flex flex-col">
-                <span className="text-[15px] font-bold text-white">FlowAI</span>
-                <span className="text-[10px] font-medium text-slate-500">Automation Platform</span>
-              </div>
+              <span className="text-[15px] font-bold bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">FlowAI</span>
             )}
           </div>
           {!collapsed && (
+            <div className="flex items-center gap-1" style={{ position: 'relative', overflow: 'visible' }}>
+              {/* Notificaciones - Ahora visible en el header */}
+              {workspaceId && <NotificationBell collapsed={false} variant="header" />}
+              <button 
+                onClick={() => setCollapsed(true)}
+                className="p-1.5 rounded-lg transition-all hover:bg-white/8 text-slate-500 hover:text-white"
+              >
+                <PanelLeftClose className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+          {collapsed && (
             <button 
-              onClick={() => setCollapsed(true)}
-              className="p-1.5 rounded-lg transition-all hover:bg-white/10 text-slate-500 hover:text-white"
+              onClick={() => setCollapsed(false)}
+              className="absolute right-0 translate-x-1/2 p-1 rounded-full bg-slate-800 border border-white/10 hover:bg-slate-700 text-slate-400 hover:text-white transition-all shadow-lg"
             >
-              <ChevronRight className="w-4 h-4" />
+              <PanelLeft className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
 
         {/* Workspace Selector */}
         {!collapsed && (
-          <div className="px-3 py-4" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }} data-tour="workspace-selector">
+          <div className="px-3 py-3" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }} data-tour="workspace-selector">
             <WorkspaceSelector />
           </div>
         )}
 
-        {/* Navigation - sin flex-1 para que el footer quede junto */}
-        <nav className="py-3 px-3">
+        {/* Navigation - diseño más limpio */}
+        <nav className="flex-1 py-2 px-2 overflow-y-auto scrollbar-thin">
           {navSections.map((section, sectionIdx) => (
-            <div key={section.title} className={sectionIdx > 0 ? 'mt-3' : ''}>
+            <div key={section.title || sectionIdx} className={sectionIdx > 0 ? 'mt-4' : ''}>
               {/* Section title */}
-              {!collapsed && (
-                <div className="px-3 mb-1.5">
+              {!collapsed && section.title && (
+                <div className="px-3 mb-2">
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-600">
                     {section.title}
                   </span>
                 </div>
               )}
               {collapsed && sectionIdx > 0 && (
-                <div className="mx-2 mb-2 border-t border-white/5" />
+                <div className="mx-3 mb-2 border-t border-white/5" />
               )}
               
               <div className="space-y-0.5">
-                {section.items.map(({ to, label, icon: Icon, tourId, adminOnly }) => {
+                {section.items.map(({ to, label, icon: Icon, tourId, adminOnly, highlight }) => {
                   // Ocultar items de admin si no es admin
                   if (adminOnly && user?.role !== 'admin' && user?.role !== 'superadmin') {
                     return null;
@@ -196,19 +212,19 @@ export default function Layout() {
                           <Link
                             to={to}
                             data-tour={tourId}
-                            className={`group relative flex-1 flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 ${collapsed ? 'justify-center px-2' : ''} ${
+                            className={`group relative flex-1 flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 ${collapsed ? 'justify-center px-2' : ''} ${
                               isActive(to) 
-                                ? 'text-white bg-gradient-to-r from-violet-500/20 to-indigo-500/10' 
+                                ? 'text-white bg-gradient-to-r from-violet-500/15 to-indigo-500/10 shadow-lg shadow-violet-500/5' 
                                 : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                             title={collapsed ? label : undefined}
                           >
-                            <span className={`flex-shrink-0 p-1.5 rounded-md transition-all duration-200 ${isActive(to) ? 'bg-violet-500/30 text-violet-300' : 'group-hover:bg-white/10'}`}>
-                              <Icon className="w-4 h-4" />
+                            <span className={`flex-shrink-0 p-1.5 rounded-lg transition-all duration-200 ${isActive(to) ? 'bg-violet-500/25 text-violet-300' : 'group-hover:bg-white/8'}`}>
+                              <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
                             </span>
                             {!collapsed && <span>{label}</span>}
                             {isActive(to) && !collapsed && (
-                              <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-violet-400" />
+                              <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-violet-400 shadow-lg shadow-violet-400/50" />
                             )}
                           </Link>
                           {!collapsed && workspaceViews.length > 0 && (
@@ -217,7 +233,7 @@ export default function Layout() {
                                 e.preventDefault();
                                 setViewsExpanded(!viewsExpanded);
                               }}
-                              className="p-1.5 rounded-md hover:bg-white/10 text-slate-500 hover:text-white transition-all"
+                              className="p-1.5 rounded-lg hover:bg-white/8 text-slate-500 hover:text-white transition-all"
                             >
                               <span className={`transform transition-transform duration-200 block ${viewsExpanded ? 'rotate-0' : '-rotate-90'}`}>
                                 <ChevronDown className="w-3.5 h-3.5" />
@@ -227,14 +243,14 @@ export default function Layout() {
                         </div>
                         
                         {!collapsed && viewsExpanded && workspaceViews.length > 0 && (
-                          <div className="ml-5 mt-1 space-y-0.5 border-l border-white/10 pl-3">
+                          <div className="ml-5 mt-1 space-y-0.5 border-l border-white/8 pl-3">
                             {workspaceViews.map((view) => (
                               <Link
                                 key={view.id}
                                 to={`/views?selected=${view.id}`}
-                                className={`group flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-all duration-200 ${
+                                className={`group flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-200 ${
                                   location.search.includes(`selected=${view.id}`)
-                                    ? 'text-white bg-white/10'
+                                    ? 'text-white bg-white/8'
                                     : 'text-slate-500 hover:text-white hover:bg-white/5'
                                 }`}
                               >
@@ -255,19 +271,24 @@ export default function Layout() {
                       key={to}
                       to={to}
                       data-tour={tourId}
-                      className={`group relative flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 ${collapsed ? 'justify-center px-2' : ''} ${
+                      className={`group relative flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 ${collapsed ? 'justify-center px-2' : ''} ${
                         isActive(to) 
-                          ? 'text-white bg-gradient-to-r from-violet-500/20 to-indigo-500/10' 
-                          : 'text-slate-400 hover:text-white hover:bg-white/5'
+                          ? 'text-white bg-gradient-to-r from-violet-500/15 to-indigo-500/10 shadow-lg shadow-violet-500/5' 
+                          : highlight 
+                            ? 'text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/20'
+                            : 'text-slate-400 hover:text-white hover:bg-white/5'
                       }`}
                       title={collapsed ? label : undefined}
                     >
-                      <span className={`flex-shrink-0 p-1.5 rounded-md transition-all duration-200 ${isActive(to) ? 'bg-violet-500/30 text-violet-300' : 'group-hover:bg-white/10'}`}>
-                        <Icon className="w-4 h-4" />
+                      <span className={`flex-shrink-0 p-1.5 rounded-lg transition-all duration-200 ${
+                        isActive(to) ? 'bg-violet-500/25 text-violet-300' : 
+                        highlight ? 'bg-amber-500/15 text-amber-400' : 'group-hover:bg-white/8'
+                      }`}>
+                        <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
                       </span>
                       {!collapsed && <span>{label}</span>}
                       {isActive(to) && !collapsed && (
-                        <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-violet-400" />
+                        <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-violet-400 shadow-lg shadow-violet-400/50" />
                       )}
                     </Link>
                   );
@@ -277,74 +298,51 @@ export default function Layout() {
           ))}
         </nav>
 
-        {/* Footer con workspace activo y usuario */}
-        <div className="p-2" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+        {/* Footer - usuario y estado */}
+        <div className="p-2" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
           {collapsed ? (
-            <button 
-              onClick={() => setCollapsed(false)}
-              className="w-full p-2 rounded-lg transition-all flex items-center justify-center hover:bg-white/10 text-slate-500 hover:text-white"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            <div className="flex flex-col items-center gap-2">
+              {/* Notificaciones en modo colapsado */}
+              {workspaceId && <NotificationBell collapsed={true} variant="sidebar" />}
+              {/* Avatar del usuario */}
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[11px] font-bold"
+                style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' }}>
+                {user?.name?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              {/* Estado de conexión */}
+              <div className={`w-2 h-2 rounded-full ${connected ? 'bg-emerald-400' : 'bg-slate-600'}`} />
+            </div>
           ) : (
-            <div className="space-y-1.5">
-              {workspaceId ? (
-                <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all"
-                  style={{ 
-                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%)',
-                    border: '1px solid rgba(16, 185, 129, 0.2)'
-                  }}>
-                  <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 bg-gradient-to-br from-emerald-500 to-teal-500">
-                    <Check className="w-3 h-3 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="block text-[9px] font-bold uppercase tracking-wider text-emerald-400">Activo</span>
-                    <span className="block text-xs font-semibold text-white truncate">{workspaceName}</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg"
-                  style={{ 
-                    background: 'rgba(255, 255, 255, 0.02)',
-                    border: '1px solid rgba(255, 255, 255, 0.05)'
-                  }}>
-                  <div className="w-6 h-6 rounded-md flex items-center justify-center bg-white/5">
-                    <Layers className="w-3 h-3 text-slate-500" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="block text-[9px] font-medium uppercase tracking-wider text-slate-500">Sin selección</span>
-                    <span className="block text-[10px] text-slate-500">Selecciona un workspace</span>
-                  </div>
-                </div>
-              )}
-              
-              {/* Notifications bell */}
-              {workspaceId && <NotificationBell collapsed={collapsed} />}
-
-              {/* Socket status — indicador sutil */}
+            <div className="space-y-2">
+              {/* Workspace activo */}
               {workspaceId && (
-                <div className="flex items-center gap-1 px-2">
-                  <div className={`w-1 h-1 rounded-full ${connected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
-                  <span className={`text-[9px] ${connected ? 'text-emerald-500' : 'text-slate-600'}`}>
-                    {connected ? 'En vivo' : 'Sin conexión'}
-                  </span>
+                <div className="flex items-center gap-2 px-2.5 py-2 rounded-xl"
+                  style={{ 
+                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(6, 182, 212, 0.05) 100%)',
+                    border: '1px solid rgba(16, 185, 129, 0.15)'
+                  }}>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-gradient-to-br from-emerald-500/80 to-teal-500/80">
+                    <Check className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="block text-[9px] font-bold uppercase tracking-wider text-emerald-400/80">Proyecto activo</span>
+                    <span className="block text-[11px] font-semibold text-white truncate">{workspaceName}</span>
+                  </div>
+                  <div className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
                 </div>
               )}
 
-              {/* Usuario y cerrar sesión */}
-              <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all hover:bg-white/5"
-                style={{ 
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  border: '1px solid rgba(255, 255, 255, 0.05)'
-                }}>
-                <div className="w-6 h-6 rounded-md flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+              {/* Usuario */}
+              <div className="flex items-center gap-2 px-2.5 py-2 rounded-xl transition-all hover:bg-white/5"
+                style={{ border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[11px] font-bold shrink-0"
                   style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' }}>
                   {user?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <span className="block text-[11px] font-semibold text-white truncate">{user?.name || 'Usuario'}</span>
                   <span className="text-[9px] text-slate-500 truncate flex items-center gap-0.5">
-                    <Crown className="w-2 h-2 text-violet-400" />
+                    <Crown className="w-2.5 h-2.5 text-amber-400" />
                     {user?.plan === 'free' ? 'Gratuito' : 
                      user?.plan === 'starter' ? 'Inicial' :
                      user?.plan === 'premium' ? 'Premium' :
@@ -353,7 +351,7 @@ export default function Layout() {
                 </div>
                 <button 
                   onClick={handleLogout}
-                  className="p-1 rounded-md hover:bg-red-500/15 text-slate-500 hover:text-red-400 transition-all"
+                  className="p-1.5 rounded-lg hover:bg-red-500/15 text-slate-500 hover:text-red-400 transition-all"
                   title="Cerrar sesión"
                 >
                   <LogOut className="w-3.5 h-3.5" />
@@ -365,7 +363,7 @@ export default function Layout() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 h-full overflow-y-auto">
         <Outlet />
       </main>
       

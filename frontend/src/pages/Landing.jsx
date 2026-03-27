@@ -425,7 +425,7 @@ export default function Landing() {
 
   useEffect(() => {
     setMounted(true);
-    document.title = "FlowAI — CRM con IA para tu negocio";
+    document.title = "FlowAI | Automatiza tu negocio con IA";
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) metaDesc.setAttribute("content", "Crea un asistente de IA que atiende clientes, gestiona citas, lleva inventario y automatiza tu negocio. Sin código. Gratis para empezar.");
   }, []);

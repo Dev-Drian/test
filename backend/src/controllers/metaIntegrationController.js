@@ -104,7 +104,7 @@ export async function updateMetaConfig(req, res) {
         enabled: !!(messenger?.pageToken && messenger?.pageId) || current.messenger?.enabled,
       },
       appSecret: appSecret ?? current.appSecret,
-      webhookUrl: `${DOMAIN}/api/webhooks/meta`,
+      webhookUrl: `${DOMAIN}/api/webhooks/meta/${workspaceId}`,
     };
 
     await repo.updateConfig(workspaceId, {
@@ -441,7 +441,7 @@ export async function handleMetaCallback(req, res) {
     }
 
     // Guardar webhook URL
-    meta.webhookUrl = meta.webhookUrl || `${DOMAIN}/api/webhooks/meta`;
+    meta.webhookUrl = `${DOMAIN}/api/webhooks/meta/${workspaceId}`;
 
     await repo.updateConfig(workspaceId, {
       integrations: { ...config.integrations, meta },

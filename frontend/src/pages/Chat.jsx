@@ -1,10 +1,10 @@
 /**
- * Chat - Centro de Conversaciones Omnicanal
+ * Chat - Centro de Atención Omnicanal
  * Divide conversaciones por canales: Todos, Web/IA, Messenger, Instagram, WhatsApp
  */
 import { useContext, useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { BarChart3, Calendar, Plus, Search, AlertTriangle, Check, Loader2, CheckCircle, XCircle, MessageSquare, Bot, MessageCircle, Instagram, Send, Globe, Hash, Paperclip } from "lucide-react";
+import { BarChart3, Calendar, Plus, Search, AlertTriangle, Check, Loader2, CheckCircle, XCircle, MessageSquare, Bot, Globe, Hash, Paperclip, Filter, Phone, Mail, StickyNote, User, MoreHorizontal, ChevronDown, Menu, Layers } from "lucide-react";
 import { WorkspaceContext } from "../context/WorkspaceContext";
 import { useToast, useConfirm } from "../components/Toast";
 import { 
@@ -23,13 +23,41 @@ import {
 import { RobotIcon, SendIcon, PlusIcon, TrashIcon, EditIcon, ChatIcon, SparklesIcon, SearchIcon } from "../components/Icons";
 import { useSocketEvent } from "../hooks/useSocket";
 
+// ── Custom Platform Icons (SVG) ─────────────────────────────────────────────
+const WhatsAppIcon = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+  </svg>
+);
+
+const MessengerIcon = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 0C5.373 0 0 4.974 0 11.111c0 3.498 1.744 6.614 4.469 8.654V24l4.088-2.242c1.092.301 2.246.464 3.443.464 6.627 0 12-4.974 12-11.111S18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8l3.131 3.259L19.752 8l-6.561 6.963z"/>
+  </svg>
+);
+
+const InstagramIcon = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+  </svg>
+);
+
+const AllChannelsIcon = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="7" height="7" rx="1"/>
+    <rect x="14" y="3" width="7" height="7" rx="1"/>
+    <rect x="3" y="14" width="7" height="7" rx="1"/>
+    <rect x="14" y="14" width="7" height="7" rx="1"/>
+  </svg>
+);
+
 // ── Channel definitions ─────────────────────────────────────────────────────
 const CHANNELS = [
-  { id: 'all',       label: 'Todos',      Icon: Hash,          color: 'violet' },
-  { id: 'web',       label: 'Web / IA',   Icon: Bot,           color: 'indigo' },
-  { id: 'messenger', label: 'Messenger',  Icon: MessageCircle, color: 'blue'   },
-  { id: 'instagram', label: 'Instagram',  Icon: Instagram,     color: 'pink'   },
-  { id: 'whatsapp',  label: 'WhatsApp',   Icon: Send,          color: 'emerald'},
+  { id: 'all',       label: 'Todos',      Icon: AllChannelsIcon, color: 'slate',   gradient: 'from-slate-500 to-slate-600'   },
+  { id: 'web',       label: 'Web',        Icon: Bot,             color: 'indigo',  gradient: 'from-indigo-500 to-indigo-600' },
+  { id: 'messenger', label: 'Messenger',  Icon: MessengerIcon,   color: 'blue',    gradient: 'from-blue-500 to-blue-600'     },
+  { id: 'instagram', label: 'Instagram',  Icon: InstagramIcon,   color: 'pink',    gradient: 'from-pink-500 to-purple-600'   },
+  { id: 'whatsapp',  label: 'WhatsApp',   Icon: WhatsAppIcon,    color: 'green',   gradient: 'from-green-500 to-green-600'   },
 ];
 
 const CHANNEL_COLORS = {
@@ -40,19 +68,91 @@ const CHANNEL_COLORS = {
 };
 
 const CHANNEL_GRADIENTS = {
-  all:       { from: '#8b5cf6', to: '#6366f1', shadow: 'rgba(139,92,246,0.3)'  },
-  web:       { from: '#6366f1', to: '#3b82f6', shadow: 'rgba(99,102,241,0.3)'  },
-  messenger: { from: '#3b82f6', to: '#06b6d4', shadow: 'rgba(59,130,246,0.3)'  },
-  instagram: { from: '#ec4899', to: '#a855f7', shadow: 'rgba(236,72,153,0.3)'  },
-  whatsapp:  { from: '#10b981', to: '#059669', shadow: 'rgba(16,185,129,0.3)'  },
+  all:       { from: '#64748b', to: '#475569', shadow: 'rgba(100,116,139,0.3)' },
+  web:       { from: '#6366f1', to: '#4f46e5', shadow: 'rgba(99,102,241,0.3)'  },
+  messenger: { from: '#0084ff', to: '#006acd', shadow: 'rgba(0,132,255,0.3)'  },
+  instagram: { from: '#E1306C', to: '#833AB4', shadow: 'rgba(225,48,108,0.3)' },
+  whatsapp:  { from: '#25D366', to: '#128C7E', shadow: 'rgba(37,211,102,0.3)' },
 };
 
 const CHANNEL_ICONS = { 
-  web: Bot, 
-  messenger: MessageCircle, 
-  instagram: Instagram, 
-  whatsapp: Send 
+  all:       AllChannelsIcon,
+  web:       Bot, 
+  messenger: MessengerIcon, 
+  instagram: InstagramIcon, 
+  whatsapp:  WhatsAppIcon 
 };
+
+// ── Filter tabs definitions ─────────────────────────────────────────────────
+const FILTER_TABS = [
+  { id: 'inbox', label: 'Entrada' },
+  { id: 'active', label: 'Activos' },
+  { id: 'all', label: 'Todos' },
+];
+
+// ── User Avatar Component ───────────────────────────────────────────────────
+function UserAvatar({ name, profilePic, size = 'md', channel, showOnline = false, unreadCount = 0, showChannelBadge = true }) {
+  const sizes = {
+    xs: 'w-6 h-6 text-[10px]',
+    sm: 'w-8 h-8 text-xs',
+    md: 'w-10 h-10 text-sm',
+    lg: 'w-12 h-12 text-base',
+    xl: 'w-14 h-14 text-lg'
+  };
+  
+  const initials = name 
+    ? name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
+    : 'U';
+  
+  const colors = [
+    'from-blue-500 to-cyan-500',
+    'from-violet-500 to-purple-500', 
+    'from-pink-500 to-rose-500',
+    'from-amber-500 to-orange-500',
+    'from-emerald-500 to-teal-500',
+    'from-indigo-500 to-blue-500',
+  ];
+  
+  const colorIndex = name ? name.charCodeAt(0) % colors.length : 0;
+
+  const ChannelIcon = channel && CHANNEL_ICONS[channel];
+  const channelGradient = channel && CHANNEL_GRADIENTS[channel];
+
+  return (
+    <div className="relative">
+      {profilePic ? (
+        <img 
+          src={profilePic} 
+          alt={name} 
+          className={`${sizes[size]} rounded-full object-cover ring-2 ring-white/10`}
+        />
+      ) : (
+        <div className={`${sizes[size]} rounded-full bg-gradient-to-br ${colors[colorIndex]} flex items-center justify-center font-semibold text-white shadow-lg`}>
+          {initials}
+        </div>
+      )}
+      {/* Channel indicator - solo si showChannelBadge es true */}
+      {showChannelBadge && ChannelIcon && (
+        <div 
+          className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center border-2 border-slate-900 shadow-md"
+          style={{ background: `linear-gradient(135deg, ${channelGradient?.from || '#6366f1'}, ${channelGradient?.to || '#4f46e5'})` }}
+        >
+          <ChannelIcon className="w-2.5 h-2.5 text-white" />
+        </div>
+      )}
+      {/* Unread badge */}
+      {unreadCount > 0 && (
+        <div className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-blue-500 flex items-center justify-center text-[10px] font-bold text-white shadow-lg">
+          {unreadCount > 99 ? '99+' : unreadCount}
+        </div>
+      )}
+      {/* Online indicator */}
+      {showOnline && !ChannelIcon && (
+        <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-slate-900" />
+      )}
+    </div>
+  );
+}
 
 // ── Markdown renderer ───────────────────────────────────────────────────────
 function renderMarkdown(text) {
@@ -202,10 +302,18 @@ function ImportPreviewCard({ message, onConfirm, onCancel, confirming, agentName
 function ChannelBadge({ channel }) {
   const c = CHANNEL_COLORS[channel] || CHANNEL_COLORS.web;
   const labels = { web: 'Web', messenger: 'Messenger', instagram: 'Instagram', whatsapp: 'WhatsApp' };
+  const Icon = CHANNEL_ICONS[channel] || CHANNEL_ICONS.web;
+  const gradient = CHANNEL_GRADIENTS[channel] || CHANNEL_GRADIENTS.web;
+  
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium"
-      style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text }}>
-      <span className="w-1.5 h-1.5 rounded-full" style={{ background: c.dot }} />
+    <span 
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold text-white"
+      style={{ 
+        background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`,
+        boxShadow: `0 2px 8px -2px ${gradient.shadow}`
+      }}
+    >
+      <Icon className="w-3 h-3" />
       {labels[channel] || channel}
     </span>
   );
@@ -423,15 +531,16 @@ export default function Chat() {
       .finally(() => setLoading(false));
   }, [workspaceId]);
 
-  // ── Load chat list ──────────────────────────────────────────────────────
+  // ── Load chat list (todos los chats del workspace) ──────────────────────
   useEffect(() => {
-    if (!workspaceId || !selectedAgentId) { setChatList([]); return; }
+    if (!workspaceId) { setChatList([]); return; }
     setLoadingChats(true);
-    listChats(workspaceId, selectedAgentId)
+    // Cargar todos los chats - el agentId es opcional
+    listChats(workspaceId)
       .then((res) => setChatList(res.data || []))
       .catch(() => setChatList([]))
       .finally(() => setLoadingChats(false));
-  }, [workspaceId, selectedAgentId]);
+  }, [workspaceId]);
 
   // ── Load selected chat ──────────────────────────────────────────────────
   useEffect(() => {
@@ -480,6 +589,16 @@ export default function Chat() {
 
   const handleSelectChat = async (chat) => {
     setChatId(chat._id);
+    
+    // Si el chat tiene un agente asociado, seleccionarlo
+    if (chat.agentId) {
+      const agent = agents.find(a => a._id === chat.agentId);
+      if (agent) {
+        setSelectedAgentId(agent._id);
+        setSelectedAgentName(agent.name);
+      }
+    }
+    
     // Mark as read if has unread messages
     if (chat.unreadCount > 0 && workspaceId) {
       try {
@@ -577,185 +696,225 @@ export default function Chat() {
 
   // ── Render ──────────────────────────────────────────────────────────────
   const currentChannelGrad = CHANNEL_GRADIENTS[activeChannel] || CHANNEL_GRADIENTS.all;
+  const [filterTab, setFilterTab] = useState('all');
+
+  // Filter chats by filter tab
+  const tabFilteredChats = useMemo(() => {
+    let list = filteredChats;
+    if (filterTab === 'inbox') {
+      // Mostrar solo los que tienen mensajes sin leer
+      list = list.filter(c => c.unreadCount > 0);
+    } else if (filterTab === 'active') {
+      // Mostrar los que el usuario está activamente respondiendo (últimas 24h)
+      const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+      list = list.filter(c => c.lastActivityAt && new Date(c.lastActivityAt).getTime() > dayAgo);
+    }
+    // filterTab === 'all' muestra todos sin filtrar adicional
+    return list;
+  }, [filteredChats, filterTab]);
 
   return (
-    <div className="h-full flex" style={{ background: 'linear-gradient(135deg, #0a0a0f 0%, #0f0f18 100%)' }}>
+    <div className="h-full flex" style={{ background: '#0a0a0f' }}>
 
-      {/* ═══════════ SIDEBAR ═══════════ */}
-      <aside className={`${sidebarOpen ? 'w-96' : 'w-0'} shrink-0 flex flex-col transition-all duration-300 overflow-hidden`}
-        style={{ background: 'linear-gradient(180deg, #12121a 0%, #0d0d14 100%)', borderRight: '1px solid rgba(139,92,246,0.15)' }}>
-        <div className="flex flex-col h-full min-w-96">
+      {/* ═══════════ SIDEBAR - Centro de Atención ═══════════ */}
+      <aside className={`${sidebarOpen ? 'w-[340px]' : 'w-0'} shrink-0 flex flex-col transition-all duration-300 overflow-hidden bg-[#0d0d12]`}
+        style={{ borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="flex flex-col h-full min-w-[340px]">
 
-          {/* Sidebar header */}
-          <div className="p-5 pb-4">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl font-bold text-white">Conversaciones</h2>
+          {/* Header */}
+          <div className="px-5 pt-5 pb-3">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">Centro de Atención</h2>
               <button onClick={handleNewChat} disabled={!selectedAgentId}
-                className="p-2.5 rounded-xl text-white transition-all disabled:opacity-30 hover:scale-105 active:scale-95 shrink-0"
-                style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}>
-                <PlusIcon size="sm" />
+                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30">
+                <Plus className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Search */}
-            <div className="relative mb-4">
-              <SearchIcon size="sm" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
-              <input type="text" placeholder="Buscar conversación..."
-                value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 rounded-2xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none transition-all focus:ring-2 focus:ring-violet-500/30"
-                style={{ background: 'rgba(30,30,45,0.8)', border: '1px solid rgba(139,92,246,0.2)' }} />
+            {/* Filter Tabs */}
+            <div className="flex items-center gap-1 mb-4">
+              {FILTER_TABS.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setFilterTab(tab.id)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                    filterTab === tab.id
+                      ? 'text-blue-400 bg-blue-500/10'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
 
-            {/* Channel tabs - Lista vertical */}
-            <div className="space-y-1.5">
-              <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold px-1 mb-2">Canales</p>
-              <div className="flex flex-col gap-1">
-                {CHANNELS.map(ch => {
-                  const grad = CHANNEL_GRADIENTS[ch.id];
-                  const isActive = activeChannel === ch.id;
-                  const IconComp = ch.Icon;
-                  const count = channelCounts[ch.id] || 0;
-                  const channelNames = { all: 'Todos los canales', web: 'Web / IA', messenger: 'Messenger', instagram: 'Instagram', whatsapp: 'WhatsApp' };
-                  return (
-                    <button key={ch.id} onClick={() => setActiveChannel(ch.id)}
-                      className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${isActive ? 'text-white' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
-                      style={isActive ? { 
-                        backgroundImage: `linear-gradient(135deg, ${grad.from}, ${grad.to})`, 
-                        boxShadow: `0 4px 16px ${grad.shadow}`
-                      } : {}}>
-                      <IconComp className="w-5 h-5 shrink-0" />
-                      <span className="text-sm font-medium flex-1 text-left">{channelNames[ch.id]}</span>
-                      {count > 0 && (
-                        <span className={`min-w-6 h-6 flex items-center justify-center px-1.5 rounded-full text-xs font-bold ${isActive ? 'bg-white/25 text-white' : 'bg-slate-700 text-slate-300'}`}>
-                          {count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+            {/* Search with Filters */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <input 
+                  type="text" 
+                  placeholder="Buscar..."
+                  value={searchQuery} 
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 rounded-lg text-sm text-slate-200 placeholder-slate-500 bg-white/5 border border-white/10 focus:border-blue-500/50 focus:outline-none transition-all"
+                />
               </div>
+              <button 
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-white/5 border border-white/10 transition-all"
+                onClick={() => {
+                  // Mostrar dropdown de filtros (canales)
+                }}
+              >
+                <Filter className="w-4 h-4" />
+                <span>Filtros</span>
+                <span className="text-xs text-blue-400 bg-blue-500/20 px-1 rounded">
+                  {channelCounts[activeChannel] || 0}
+                </span>
+              </button>
             </div>
           </div>
 
-          {/* Agent selector - Solo visible para canales web/all */}
-          {(activeChannel === 'all' || activeChannel === 'web') && (
-            <div className="px-5 py-4" style={{ borderTop: '1px solid rgba(139,92,246,0.1)', background: 'rgba(139,92,246,0.03)' }}>
-              <p className="text-[10px] uppercase tracking-widest mb-3 text-violet-400/70 font-semibold">Agente IA</p>
-              {loading ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="w-6 h-6 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
-                </div>
-              ) : agents.length === 0 ? (
-                <Link to="/agents" className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-violet-400 text-sm font-medium hover:bg-violet-500/15 transition-all border border-dashed border-violet-500/30">
-                  <PlusIcon size="sm" /> Crear tu primer agente
-                </Link>
-              ) : (
-                <div className="space-y-2">
-                  {agents.map(agent => (
-                    <button key={agent._id} onClick={() => handleAgentChange(agent._id)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm transition-all duration-200 ${selectedAgentId === agent._id ? 'text-white' : 'text-slate-400 hover:text-white'}`}
-                      style={selectedAgentId === agent._id ? { 
-                        background: 'linear-gradient(135deg, rgba(139,92,246,0.25), rgba(99,102,241,0.2))', 
-                        border: '1px solid rgba(139,92,246,0.4)', 
-                        boxShadow: '0 4px 20px rgba(139,92,246,0.2)' 
-                      } : { 
-                        background: 'rgba(30,30,45,0.5)',
-                        border: '1px solid rgba(100,116,139,0.15)' 
-                      }}>
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform ${selectedAgentId === agent._id ? 'scale-110' : ''}`}
-                        style={selectedAgentId === agent._id ? { background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 4px 15px rgba(139,92,246,0.4)' } : { background: 'rgba(100,116,139,0.1)' }}>
-                        <RobotIcon size="sm" className={selectedAgentId === agent._id ? 'text-white' : 'text-slate-400'} />
-                      </div>
-                      <span className="truncate font-semibold">{agent.name}</span>
-                      {selectedAgentId === agent._id && <span className="ml-auto flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /><span className="text-[10px] text-emerald-400">Activo</span></span>}
-                    </button>
-                  ))}
-                </div>
-              )}
+          {/* Channel Selector - Diseño profesional con iconos oficiales */}
+          <div className="px-4 pb-4">
+            <div className="grid grid-cols-5 gap-2">
+              {CHANNELS.map(ch => {
+                const isActive = activeChannel === ch.id;
+                const count = channelCounts[ch.id] || 0;
+                const gradient = CHANNEL_GRADIENTS[ch.id];
+                
+                return (
+                  <button
+                    key={ch.id}
+                    onClick={() => setActiveChannel(ch.id)}
+                    className={`relative flex flex-col items-center justify-center p-3 rounded-xl transition-all duration-200 group ${
+                      isActive
+                        ? 'text-white shadow-lg scale-[1.02]'
+                        : 'bg-white/[0.03] text-slate-400 hover:bg-white/[0.06] hover:text-slate-200 border border-white/[0.04]'
+                    }`}
+                    style={isActive ? {
+                      background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`,
+                      boxShadow: `0 8px 24px -4px ${gradient.shadow}`
+                    } : {}}
+                  >
+                    {/* Icon */}
+                    <ch.Icon className={`w-5 h-5 mb-1.5 transition-transform ${isActive ? '' : 'group-hover:scale-110'}`} />
+                    
+                    {/* Label */}
+                    <span className="text-[10px] font-semibold tracking-wide truncate max-w-full">
+                      {ch.label}
+                    </span>
+                    
+                    {/* Count Badge */}
+                    {count > 0 && (
+                      <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full text-[9px] font-bold ${
+                        isActive 
+                          ? 'bg-white text-slate-800' 
+                          : 'bg-blue-500 text-white'
+                      }`}>
+                        {count > 99 ? '99+' : count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Agent selector (collapsed) */}
+          {(activeChannel === 'all' || activeChannel === 'web') && agents.length > 0 && (
+            <div className="px-5 py-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+              <select
+                value={selectedAgentId}
+                onChange={e => handleAgentChange(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg text-sm text-slate-200 bg-white/5 border border-white/10 focus:border-violet-500/50 focus:outline-none cursor-pointer"
+              >
+                <option value="" className="bg-slate-900">Seleccionar agente...</option>
+                {agents.map(agent => (
+                  <option key={agent._id} value={agent._id} className="bg-slate-900">
+                    {agent.name}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 
           {/* Chat list */}
-          <div className="flex-1 overflow-y-auto p-3">
+          <div className="flex-1 overflow-y-auto">
             {loadingChats ? (
               <div className="flex items-center justify-center py-12">
-                <div className="w-8 h-8 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
               </div>
-            ) : !selectedAgentId ? (
-              <div className="px-4 py-12 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(139,92,246,0.1)' }}>
-                  <RobotIcon size="md" className="text-violet-400" />
+            ) : tabFilteredChats.length === 0 ? (
+              <div className="px-5 py-12 text-center">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-white/5 flex items-center justify-center">
+                  <MessageSquare className="w-5 h-5 text-slate-500" />
                 </div>
-                <p className="text-slate-400 text-sm font-medium">Selecciona un agente</p>
-                <p className="text-slate-500 text-xs mt-1">para ver las conversaciones</p>
-              </div>
-            ) : filteredChats.length === 0 ? (
-              <div className="px-4 py-12 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(100,116,139,0.1)' }}>
-                  <MessageSquare className="w-6 h-6 text-slate-500" />
-                </div>
-                <p className="text-slate-400 text-sm font-medium">
-                  {searchQuery ? 'Sin resultados' : activeChannel !== 'all' ? `Sin chats de ${CHANNELS.find(c => c.id === activeChannel)?.label || ''}` : 'Sin conversaciones'}
+                <p className="text-sm text-slate-400">
+                  {filterTab === 'inbox' ? 'Sin mensajes nuevos' : 
+                   filterTab === 'active' ? 'Sin chats activos' : 'Sin conversaciones'}
                 </p>
-                <p className="text-slate-500 text-xs mt-1">Inicia una nueva conversación</p>
+                {activeChannel === 'web' && !selectedAgentId && agents.length > 0 && (
+                  <p className="text-xs text-slate-500 mt-2">Selecciona un agente para crear chats</p>
+                )}
               </div>
             ) : (
-              <div className="space-y-2">
-                {filteredChats.map((chat) => {
+              <div className="divide-y divide-white/5">
+                {tabFilteredChats.map((chat) => {
                   const ch = chat.channel || chat.platform || 'web';
-                  const channelColor = CHANNEL_COLORS[ch] || CHANNEL_COLORS.web;
                   const isActive = chatId === chat._id;
+                  const displayName = chat.senderName || chat.title || 'Usuario';
+                  const lastMsg = chat.lastMessage || chat.title || 'Nueva conversación';
+                  
                   return (
-                    <div key={chat._id}
-                      className={`group relative flex items-center gap-3 px-4 py-3.5 rounded-2xl cursor-pointer transition-all duration-200 ${isActive ? 'text-slate-100 scale-[1.02]' : 'text-slate-400 hover:text-slate-200'}`}
-                      style={isActive ? { 
-                        background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(99,102,241,0.1))', 
-                        border: '1px solid rgba(139,92,246,0.3)',
-                        boxShadow: '0 4px 20px rgba(139,92,246,0.15)'
-                      } : { 
-                        background: 'rgba(30,30,45,0.4)',
-                        border: '1px solid rgba(100,116,139,0.1)'
-                      }}
-                      onClick={() => handleSelectChat(chat)}>
+                    <div
+                      key={chat._id}
+                      className={`group flex items-center gap-3 px-5 py-3 cursor-pointer transition-all ${
+                        isActive 
+                          ? 'bg-blue-500/10 border-l-2 border-blue-500' 
+                          : 'hover:bg-white/[0.03] border-l-2 border-transparent'
+                      }`}
+                      onClick={() => handleSelectChat(chat)}
+                    >
+                      {/* Avatar */}
+                      <UserAvatar 
+                        name={displayName}
+                        profilePic={chat.senderProfilePic}
+                        channel={ch}
+                        size="md"
+                        unreadCount={chat.unreadCount || 0}
+                      />
 
-                      {/* Channel icon */}
-                      <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
-                        style={{ background: `linear-gradient(135deg, ${channelColor.text}20, ${channelColor.text}35)`, border: `1px solid ${channelColor.text}30` }}>
-                        {(() => {
-                          const ChannelIcon = CHANNEL_ICONS[ch] || Bot;
-                          return <ChannelIcon className="w-4 h-4" style={{ color: channelColor.text }} />;
-                        })()}
-                        {/* Unread badge */}
-                        {chat.unreadCount > 0 && (
-                          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full text-[10px] font-bold text-white bg-red-500 shadow-lg"
-                            style={{ boxShadow: '0 0 8px rgba(239,68,68,0.5)' }}>
-                            {chat.unreadCount > 9 ? '9+' : chat.unreadCount}
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className={`text-sm font-medium truncate ${isActive ? 'text-white' : 'text-slate-200'}`}>
+                            {displayName}
                           </span>
-                        )}
+                          <span className="text-[10px] text-slate-500 shrink-0">
+                            {chat.lastActivityAt ? formatTimeAgo(chat.lastActivityAt) : ''}
+                          </span>
+                        </div>
+                        <p className={`text-xs truncate ${chat.unreadCount > 0 ? 'text-slate-300 font-medium' : 'text-slate-500'}`}>
+                          {lastMsg.slice(0, 50)}{lastMsg.length > 50 ? '...' : ''}
+                        </p>
                       </div>
 
-                      {editingChatId === chat._id ? (
-                        <input type="text" value={editingTitle} onChange={e => setEditingTitle(e.target.value)}
-                          onBlur={handleSaveRename} onKeyDown={e => e.key === 'Enter' && handleSaveRename(e)}
-                          onClick={e => e.stopPropagation()} autoFocus
-                          className="flex-1 px-2 py-0.5 rounded-lg text-sm text-slate-100 focus:outline-none"
-                          style={{ background: 'rgba(71,85,105,0.5)', border: '1px solid rgba(100,116,139,0.4)' }} />
-                      ) : (
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm truncate font-semibold text-slate-200">{chat.title || chat.senderName || 'Nueva conversación'}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <ChannelBadge channel={ch} />
-                            {chat.lastMessage && <span className="text-[11px] text-slate-500 truncate max-w-32">{chat.lastMessage?.slice(0, 30)}...</span>}
-                          </div>
-                        </div>
-                      )}
-
+                      {/* Actions on hover */}
                       {editingChatId !== chat._id && (
-                        <div className="hidden group-hover:flex items-center gap-1 shrink-0">
-                          <button className="p-1.5 rounded-xl text-slate-400 hover:text-violet-400 hover:bg-violet-500/20 transition-all"
-                            onClick={e => handleStartRename(e, chat)} title="Renombrar"><EditIcon size="xs" /></button>
-                          <button className="p-1.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 transition-all"
-                            onClick={e => handleDeleteChat(e, chat._id)} title="Eliminar"><TrashIcon size="xs" /></button>
+                        <div className="hidden group-hover:flex items-center gap-0.5">
+                          <button 
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/10 transition-all"
+                            onClick={e => handleStartRename(e, chat)}
+                          >
+                            <EditIcon size="xs" />
+                          </button>
+                          <button 
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                            onClick={e => handleDeleteChat(e, chat._id)}
+                          >
+                            <TrashIcon size="xs" />
+                          </button>
                         </div>
                       )}
                     </div>
@@ -768,194 +927,205 @@ export default function Chat() {
       </aside>
 
       {/* ═══════════ MAIN AREA ═══════════ */}
-      <main className="flex-1 flex flex-col min-w-0" style={{ background: 'linear-gradient(180deg, #0a0a0f 0%, #0d0d14 50%, #0f0f18 100%)' }}>
+      <main className="flex-1 flex flex-col min-w-0" style={{ background: '#0a0a0f' }}>
 
-        {/* Top bar */}
-        {selectedAgentId && chatId && (
-          <div className="shrink-0 px-8 py-4" style={{ background: 'linear-gradient(180deg, rgba(139,92,246,0.08) 0%, transparent 100%)', borderBottom: '1px solid rgba(139,92,246,0.15)' }}>
-            <div className="max-w-4xl mx-auto flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white"
-                style={{ backgroundImage: `linear-gradient(135deg, ${currentChannelGrad.from}, ${currentChannelGrad.to})`, boxShadow: `0 8px 32px ${currentChannelGrad.shadow}` }}>
-                <RobotIcon size="md" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3">
-                  <p className="text-base font-bold text-white">{activeChatMeta?.senderName || selectedAgentName}</p>
-                  {activeChatMeta && <ChannelBadge channel={activeChatMeta.channel || activeChatMeta.platform || 'web'} />}
+        {/* Top bar with user info */}
+        {chatId && activeChatMeta && (
+          <div className="shrink-0 px-6 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(13,13,18,0.95)' }}>
+            <div className="flex items-center gap-4">
+              {/* Toggle sidebar on mobile */}
+              <button 
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 lg:hidden"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              
+              {/* User Avatar */}
+              <UserAvatar
+                name={activeChatMeta?.senderName || activeChatMeta?.title || 'Conversación'}
+                profilePic={activeChatMeta?.senderProfilePic}
+                channel={activeChatMeta?.channel || activeChatMeta?.platform || 'web'}
+                size="md"
+                showOnline
+              />
+              
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-semibold text-white truncate">
+                    {activeChatMeta?.senderName || activeChatMeta?.title || 'Conversación'}
+                  </h3>
+                  <ChannelBadge channel={activeChatMeta.channel || activeChatMeta.platform || 'web'} />
                 </div>
-                <p className="text-sm text-slate-400 truncate mt-0.5">
-                  {activeChatMeta?.externalRef ? `ID: ${activeChatMeta.externalRef}` : 'Conversación con IA'}
+                <p className="text-sm text-slate-500 truncate">
+                  {activeChatMeta?.externalRef 
+                    ? `ID: ${activeChatMeta.externalRef}` 
+                    : selectedAgentName 
+                      ? `Asistente: ${selectedAgentName}`
+                      : 'Conversación activa'}
                 </p>
               </div>
-              <span className="flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium"
-                style={{ background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399' }}>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                En línea
-              </span>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2">
+              <button className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all" title="Llamar">
+                <Phone className="w-5 h-5" />
+              </button>
+              <button className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all" title="Más opciones">
+                <MoreHorizontal className="w-5 h-5" />
+              </button>
             </div>
           </div>
         )}
 
-        {!selectedAgentId ? (
-          /* No agent */
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center max-w-lg px-6 animate-fade-up">
-              <div className="relative w-24 h-24 mx-auto mb-8">
-                <div className="absolute inset-0 rounded-3xl bg-violet-500/20 blur-2xl animate-pulse" />
-                <div className="relative w-24 h-24 rounded-3xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 8px 40px rgba(139,92,246,0.4)' }}>
-                  <RobotIcon size="xl" className="text-white" />
-                </div>
-              </div>
-              <h2 className="text-2xl font-bold text-white mb-3">Selecciona un agente</h2>
-              <p className="text-slate-400 text-base">Elige un agente de la lista izquierda para comenzar a chatear</p>
-            </div>
-          </div>
-        ) : !chatId && messages.length === 0 ? (
-          /* Empty state */
+        {!chatId || messages.length === 0 ? (
+          /* Empty state - Sin chat seleccionado */
           <div className="flex-1 flex flex-col">
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center max-w-2xl px-4">
-                <div className="relative w-24 h-24 mx-auto mb-8">
-                  <div className="absolute inset-0 rounded-3xl bg-linear-to-br from-violet-500/30 to-indigo-600/30 blur-xl animate-pulse" />
-                  <div className="relative w-24 h-24 rounded-3xl flex items-center justify-center bg-linear-to-br from-violet-500 to-indigo-600 shadow-2xl shadow-violet-500/30">
-                    <SparklesIcon size="xl" className="text-white" />
+                <div className="relative w-20 h-20 mx-auto mb-6">
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500/30 to-indigo-600/30 blur-xl animate-pulse" />
+                  <div className="relative w-20 h-20 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 8px 40px rgba(139,92,246,0.4)' }}>
+                    <MessageSquare className="w-8 h-8 text-white" />
                   </div>
                 </div>
-                <h1 className="text-3xl font-bold text-white mb-3">Centro de Conversaciones</h1>
-                <p className="text-slate-400 mb-4 text-lg">
-                  Todas tus conversaciones de{' '}
-                  <span className="text-blue-400 font-semibold">Messenger</span>,{' '}
-                  <span className="text-pink-400 font-semibold">Instagram</span>,{' '}
-                  <span className="text-emerald-400 font-semibold">WhatsApp</span> y{' '}
-                  <span className="text-indigo-400 font-semibold">Web</span> en un solo lugar
+                <h1 className="text-2xl font-bold text-white mb-2">Centro de Conversaciones</h1>
+                <p className="text-slate-400 mb-6 text-sm">
+                  Gestiona todas tus conversaciones de{' '}
+                  <span className="text-blue-400">Messenger</span>,{' '}
+                  <span className="text-pink-400">Instagram</span>,{' '}
+                  <span className="text-emerald-400">WhatsApp</span> y{' '}
+                  <span className="text-indigo-400">Web</span>
                 </p>
-                <p className="text-slate-500 mb-10 text-sm">Selecciona una conversación o inicia una nueva</p>
 
-                {/* Channel overview cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-5 max-w-3xl mx-auto mb-12">
+                {/* Stats cards compactos */}
+                <div className="flex items-center justify-center gap-4 mb-8">
                   {CHANNELS.filter(c => c.id !== 'all').map(ch => {
-                    const color = CHANNEL_COLORS[ch.id] || CHANNEL_COLORS.web;
-                    const grad = CHANNEL_GRADIENTS[ch.id];
-                    const IconComp = ch.Icon;
                     const count = channelCounts[ch.id] || 0;
+                    const IconComp = ch.Icon;
+                    const color = CHANNEL_COLORS[ch.id];
                     return (
-                      <button key={ch.id} onClick={() => setActiveChannel(ch.id)}
-                        className="group p-6 rounded-3xl text-center transition-all duration-300 hover:scale-[1.08] hover:-translate-y-2"
-                        style={{ 
-                          background: `linear-gradient(180deg, ${color.bg} 0%, rgba(10,10,15,0.8) 100%)`, 
-                          border: `1px solid ${color.border}`,
-                          boxShadow: `0 8px 32px ${grad.shadow}`
-                        }}>
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-6"
-                          style={{ background: `linear-gradient(135deg, ${grad.from}, ${grad.to})`, boxShadow: `0 8px 24px ${grad.shadow}` }}>
-                          <IconComp className="w-7 h-7 text-white" />
-                        </div>
-                        <p className="text-base font-bold text-white mb-1">{ch.label}</p>
-                        <p className="text-4xl font-black mt-3" style={{ color: color.text, textShadow: `0 4px 20px ${grad.shadow}` }}>{count}</p>
-                        <p className="text-[11px] text-slate-400 uppercase tracking-widest mt-2">conversaciones</p>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Quick suggestions */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto text-left">
-                  {[
-                    { icon: BarChart3, text: "¿Cuántos registros tengo?", desc: "Ver resumen de datos", color: '#3b82f6', gradient: 'from-blue-500/20 to-cyan-500/20' },
-                    { icon: Calendar, text: "¿Qué citas hay para hoy?", desc: "Consultar agenda", color: '#10b981', gradient: 'from-emerald-500/20 to-teal-500/20' },
-                    { icon: Plus, text: "Quiero agregar un cliente", desc: "Crear nuevo registro", color: '#8b5cf6', gradient: 'from-violet-500/20 to-purple-500/20' },
-                    { icon: Search, text: "Buscar información", desc: "Filtrar datos", color: '#f59e0b', gradient: 'from-amber-500/20 to-orange-500/20' },
-                  ].map((suggestion, idx) => {
-                    const IconComp = suggestion.icon;
-                    return (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          setInput(suggestion.text);
-                          textareaRef.current?.focus();
-                        }}
-                        className="group flex items-center gap-5 p-5 rounded-2xl text-left transition-all duration-300 hover:scale-[1.03] hover:-translate-y-1"
-                        style={{
-                          background: `linear-gradient(135deg, ${suggestion.color}15, ${suggestion.color}08)`,
-                          border: `1px solid ${suggestion.color}30`,
-                          boxShadow: `0 4px 20px ${suggestion.color}10`,
-                          animation: 'fade-up 0.5s ease-out forwards',
-                          animationDelay: `${200 + idx * 100}ms`,
-                          opacity: 0
-                        }}
+                      <button 
+                        key={ch.id} 
+                        onClick={() => setActiveChannel(ch.id)}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all hover:scale-105"
+                        style={{ background: color?.bg || 'rgba(255,255,255,0.05)', border: `1px solid ${color?.border || 'rgba(255,255,255,0.1)'}` }}
                       >
-                        <div className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-6"
-                          style={{ background: `linear-gradient(135deg, ${suggestion.color}30, ${suggestion.color}15)` }}>
-                          <IconComp className="w-6 h-6" style={{ color: suggestion.color }} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-base text-white font-semibold">{suggestion.text}</p>
-                          <p className="text-sm text-slate-400 mt-0.5">{suggestion.desc}</p>
-                        </div>
+                        <IconComp className="w-4 h-4" style={{ color: color?.text || '#fff' }} />
+                        <span className="text-lg font-bold" style={{ color: color?.text || '#fff' }}>{count}</span>
                       </button>
                     );
                   })}
                 </div>
-              </div>
-            </div>
 
-            {/* Input in empty state */}
-            <div className="p-6 pb-8">
-              <form onSubmit={handleSend} className="max-w-4xl mx-auto">
-                <div className="relative rounded-3xl transition-all duration-300 focus-within:shadow-2xl focus-within:shadow-violet-500/20"
-                  style={{ background: 'linear-gradient(180deg, rgba(30,30,45,0.9) 0%, rgba(20,20,30,0.95) 100%)', border: '1px solid rgba(139,92,246,0.2)' }}>
-                  <textarea ref={textareaRef} placeholder="¿En qué te puedo ayudar hoy?" value={input}
-                    onChange={handleTextareaChange} onKeyDown={handleKeyDown} rows={1} disabled={sending}
-                    className="w-full px-6 py-5 pr-20 bg-transparent text-white text-base placeholder-slate-500 resize-none focus:outline-none max-h-48" />
-                  <button type="submit" disabled={sending || !input.trim()}
-                    className="absolute right-4 bottom-4 p-3 rounded-2xl text-white disabled:opacity-30 transition-all duration-300 hover:scale-110 active:scale-95"
-                    style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 8px 32px rgba(139,92,246,0.4)' }}>
-                    <SendIcon size="sm" />
-                  </button>
-                </div>
-                <p className="text-center text-sm text-slate-500 mt-4">
-                  <kbd className="px-2 py-1 rounded-lg bg-slate-800/60 text-slate-400 text-xs font-mono border border-slate-700/50">Enter</kbd>
-                  <span className="mx-2">enviar</span>
-                  <kbd className="px-2 py-1 rounded-lg bg-slate-800/60 text-slate-400 text-xs font-mono border border-slate-700/50">Shift+Enter</kbd>
-                  <span className="ml-2">nueva línea</span>
+                <p className="text-slate-500 text-xs">
+                  {chatList.length > 0 
+                    ? `${chatList.length} conversaciones disponibles • Selecciona una del panel izquierdo`
+                    : 'No hay conversaciones aún'}
                 </p>
-              </form>
+              </div>
             </div>
           </div>
         ) : (
           /* Active chat */
           <>
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="max-w-4xl mx-auto py-8 px-6">
+            <div className="flex-1 overflow-y-auto px-4 lg:px-8 xl:px-12">
+              <div className="py-6 space-y-1">
                 {messages.map((m, idx) => {
                   if (m.type === 'import_preview' || m.type === 'import_done') {
                     return <ImportPreviewCard key={m.id || idx} message={m} onConfirm={() => handleConfirmImport(m)} onCancel={() => handleCancelImport(m.id)} confirming={!!(pendingImport?.msgId === m.id)} agentName={selectedAgentName} />;
                   }
+                  
                   const isUser = m.role === 'user';
+                  const isExternalChat = activeChatMeta?.channel && activeChatMeta.channel !== 'web';
+                  const prevMsg = messages[idx - 1];
+                  const nextMsg = messages[idx + 1];
+                  
+                  // Determinar si es el primer mensaje de una secuencia del mismo remitente
+                  const isFirstInGroup = !prevMsg || prevMsg.role !== m.role || prevMsg.type === 'import_preview' || prevMsg.type === 'import_done';
+                  const isLastInGroup = !nextMsg || nextMsg.role !== m.role || nextMsg.type === 'import_preview' || nextMsg.type === 'import_done';
+                  
+                  // Nombres y avatares
+                  const senderName = isUser 
+                    ? (isExternalChat ? (activeChatMeta?.senderName || 'Cliente') : 'Tú')
+                    : selectedAgentName;
+                  const senderProfilePic = isUser && isExternalChat ? activeChatMeta?.senderProfilePic : null;
+                  
+                  // El usuario local se alinea a la derecha, los demás a la izquierda
+                  const alignRight = isUser && !isExternalChat;
+                  
                   return (
-                    <div key={m.id || idx} className="py-6 animate-slide-in-message"
-                      style={{ ...(idx !== 0 ? { borderTop: '1px solid rgba(139,92,246,0.08)' } : {}), animationDelay: `${idx * 20}ms` }}>
-                      <div className="flex gap-4">
-                        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 transition-transform hover:scale-110`}
-                          style={{ 
-                            background: isUser ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'linear-gradient(135deg, #10b981, #059669)',
-                            boxShadow: isUser ? '0 4px 20px rgba(99,102,241,0.3)' : '0 4px 20px rgba(16,185,129,0.3)'
-                          }}>
-                          {isUser ? (
-                            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                            </svg>
-                          ) : <SparklesIcon size="sm" className="text-white" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-bold mb-2 ${isUser ? 'text-indigo-400' : 'text-emerald-400'}`}>
-                            {isUser ? 'Tú' : selectedAgentName}
-                          </p>
-                          <div className={`text-base leading-relaxed whitespace-pre-wrap ${isUser ? 'text-slate-200' : 'text-white'}`}>
-                            {isUser ? m.content : renderMarkdown(m.content)}
+                    <div 
+                      key={m.id || idx} 
+                      className={`flex gap-4 ${isFirstInGroup ? 'pt-5' : 'pt-1'} ${alignRight ? 'flex-row-reverse' : ''}`}
+                    >
+                      {/* Avatar - solo mostrar en el primer mensaje del grupo */}
+                      <div className={`w-10 shrink-0 ${isFirstInGroup ? '' : 'invisible'}`}>
+                        {isFirstInGroup && (
+                          isUser ? (
+                            isExternalChat ? (
+                              <UserAvatar
+                                name={activeChatMeta?.senderName || 'Cliente'}
+                                profilePic={senderProfilePic}
+                                size="md"
+                                showChannelBadge={false}
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                <User className="w-5 h-5 text-white" />
+                              </div>
+                            )
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                              <SparklesIcon size="sm" className="text-white" />
+                            </div>
+                          )
+                        )}
+                      </div>
+                      
+                      {/* Message content */}
+                      <div className={`flex-1 min-w-0 ${alignRight ? 'flex flex-col items-end' : ''}`}>
+                        {/* Nombre y tiempo - solo en primer mensaje del grupo */}
+                        {isFirstInGroup && (
+                          <div className={`flex items-center gap-3 mb-1.5 ${alignRight ? 'flex-row-reverse' : ''}`}>
+                            <span className={`text-sm font-semibold ${isUser ? 'text-blue-400' : 'text-emerald-400'}`}>
+                              {senderName}
+                            </span>
+                            {m.ts && (
+                              <span className="text-xs text-slate-500">
+                                {new Date(m.ts).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            )}
                           </div>
+                        )}
+                        
+                        {/* Burbuja del mensaje */}
+                        <div 
+                          className={`inline-block max-w-[85%] lg:max-w-[70%] xl:max-w-[60%] px-4 py-2.5 text-[15px] leading-relaxed ${
+                            alignRight 
+                              ? `bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/20 ${isFirstInGroup ? 'rounded-2xl rounded-tr-md' : isLastInGroup ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-r-md'}`
+                              : isUser
+                                ? `bg-slate-800/80 text-slate-100 backdrop-blur-sm border border-slate-700/50 ${isFirstInGroup ? 'rounded-2xl rounded-tl-md' : isLastInGroup ? 'rounded-2xl rounded-bl-md' : 'rounded-2xl rounded-l-md'}`
+                                : `bg-slate-800/60 text-slate-100 backdrop-blur-sm border border-slate-700/30 ${isFirstInGroup ? 'rounded-2xl rounded-tl-md' : isLastInGroup ? 'rounded-2xl rounded-bl-md' : 'rounded-2xl rounded-l-md'}`
+                          }`}
+                        >
+                          {isUser ? (
+                            <span className="whitespace-pre-wrap">{m.content}</span>
+                          ) : (
+                            <div className="prose prose-sm prose-invert max-w-none [&>p]:mb-2 [&>p:last-child]:mb-0 [&>ul]:my-2 [&>ol]:my-2">
+                              {renderMarkdown(m.content)}
+                            </div>
+                          )}
                         </div>
+                        
+                        {/* Timestamp inline para mensajes no agrupados */}
+                        {!isFirstInGroup && isLastInGroup && m.ts && (
+                          <span className={`text-xs text-slate-500 mt-1.5 ${alignRight ? 'text-right' : ''}`}>
+                            {new Date(m.ts).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
                       </div>
                     </div>
                   );
@@ -963,21 +1133,17 @@ export default function Chat() {
 
                 {/* Typing indicator */}
                 {sending && (
-                  <div className="py-6 animate-fade-in" style={{ borderTop: '1px solid rgba(139,92,246,0.08)' }}>
-                    <div className="flex gap-4">
-                      <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
-                        style={{ background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 4px 20px rgba(16,185,129,0.3)' }}>
-                        <SparklesIcon size="sm" className="text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-bold mb-2 text-emerald-400">{selectedAgentName}</p>
-                        <div className="inline-flex items-center gap-3 p-3 rounded-2xl" style={{ background: 'rgba(16,185,129,0.1)' }}>
-                          <div className="flex gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 typing-dot" />
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 typing-dot" />
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 typing-dot" />
-                          </div>
-                          <span className="text-sm text-emerald-400 font-medium">Pensando...</span>
+                  <div className="flex gap-4 pt-5">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20">
+                      <SparklesIcon size="sm" className="text-white" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-semibold text-emerald-400 mb-1.5 block">{selectedAgentName}</span>
+                      <div className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl rounded-tl-md bg-slate-800/60 backdrop-blur-sm border border-slate-700/30">
+                        <div className="flex gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 typing-dot" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 typing-dot" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 typing-dot" />
                         </div>
                       </div>
                     </div>
@@ -988,9 +1154,9 @@ export default function Chat() {
             </div>
 
             {/* Input bar */}
-            <div style={{ borderTop: '1px solid rgba(100,116,139,0.15)', background: 'linear-gradient(to top, rgba(10,10,15,0.98), rgba(10,10,15,0.95))', backdropFilter: 'blur(12px)' }}>
+            <div className="shrink-0 px-4 lg:px-8 xl:px-12" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'linear-gradient(to top, #0d0d12, #0a0a0f)' }}>
               {attachedFile && (
-                <div className="max-w-3xl mx-auto px-4 pt-3">
+                <div className="pt-4">
                   <div className="flex items-center gap-2.5 p-3 rounded-2xl flex-wrap" style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(56,189,248,0.06))', border: '1px solid rgba(139,92,246,0.2)', boxShadow: '0 4px 16px rgba(139,92,246,0.05)' }}>
                     <Paperclip className="w-4 h-4 text-violet-400" />
                     <span className="text-sky-300 text-sm font-medium truncate max-w-40">{attachedFile.name}</span>
@@ -1012,22 +1178,24 @@ export default function Chat() {
                   </div>
                 </div>
               )}
-              <form onSubmit={handleSend} className="max-w-3xl mx-auto p-4">
+              <form onSubmit={handleSend} className="py-4">
                 <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFileSelect} />
-                <div className="relative rounded-3xl transition-all duration-300 focus-within:shadow-xl focus-within:shadow-violet-500/15"
-                  style={{ background: 'linear-gradient(135deg, rgba(51,65,85,0.4), rgba(30,41,59,0.5))', border: '1px solid rgba(100,116,139,0.25)', boxShadow: '0 4px 24px rgba(0,0,0,0.2)' }}>
+                <div className="relative rounded-2xl transition-all duration-300 focus-within:shadow-2xl focus-within:shadow-violet-500/10"
+                  style={{ background: 'linear-gradient(135deg, rgba(30,41,59,0.8), rgba(15,23,42,0.9))', border: '1px solid rgba(100,116,139,0.2)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
                   <textarea ref={textareaRef}
                     placeholder={attachedFile ? `Enviar para analizar ${attachedFile.name}...` : "Escribe un mensaje..."}
                     value={input} onChange={handleTextareaChange} onKeyDown={handleKeyDown} rows={1} disabled={sending}
-                    className="w-full px-6 py-4 pr-28 bg-transparent text-slate-100 text-base placeholder-slate-400 resize-none focus:outline-none max-h-48" style={{ fontWeight: 450 }} />
-                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={sending}
-                    className="absolute right-16 bottom-3 p-2.5 rounded-xl text-slate-400 hover:text-violet-400 hover:bg-violet-500/10 disabled:opacity-30 transition-all duration-200" title="Adjuntar CSV/Excel">
-                    <Paperclip className="w-5 h-5" />
-                  </button>
-                  <button type="submit" disabled={sending || (!input.trim() && !attachedFile)}
-                    className="absolute right-3 bottom-3 p-2.5 rounded-xl text-white disabled:opacity-30 transition-all duration-200 hover:scale-110 active:scale-95" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 4px 16px rgba(139,92,246,0.4)' }}>
-                    <SendIcon size="sm" />
-                  </button>
+                    className="w-full px-6 py-4 pr-32 bg-transparent text-slate-100 text-base placeholder-slate-400 resize-none focus:outline-none max-h-48" style={{ fontWeight: 450 }} />
+                  <div className="absolute right-3 bottom-3 flex items-center gap-2">
+                    <button type="button" onClick={() => fileInputRef.current?.click()} disabled={sending}
+                      className="p-2.5 rounded-xl text-slate-400 hover:text-violet-400 hover:bg-violet-500/10 disabled:opacity-30 transition-all duration-200" title="Adjuntar CSV/Excel">
+                      <Paperclip className="w-5 h-5" />
+                    </button>
+                    <button type="submit" disabled={sending || (!input.trim() && !attachedFile)}
+                      className="p-3 rounded-xl text-white disabled:opacity-30 transition-all duration-200 hover:scale-105 active:scale-95" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 4px 20px rgba(139,92,246,0.5)' }}>
+                      <SendIcon size="sm" />
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>

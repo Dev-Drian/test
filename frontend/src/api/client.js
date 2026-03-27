@@ -98,8 +98,8 @@ export const getOrCreateChat = (workspaceId, agentId, chatId) =>
   api.get("/chat/get-or-create", { params: { workspaceId, agentId, chatId } });
 export const sendChatMessage = (data) => api.post("/chat/send", data);
 export const replyExternalChat = (data) => api.post("/chat/reply-external", data);
-export const listChats = (workspaceId, agentId) =>
-  api.get("/chat/list", { params: { workspaceId, agentId } });
+export const listChats = (workspaceId, agentId = null) =>
+  api.get("/chat/list", { params: { workspaceId, ...(agentId && { agentId }) } });
 export const deleteChat = (workspaceId, chatId) =>
   api.delete(`/chat/${workspaceId}/${chatId}`);
 export const renameChat = (workspaceId, chatId, title) =>

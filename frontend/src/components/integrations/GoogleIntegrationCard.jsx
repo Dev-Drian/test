@@ -1,17 +1,112 @@
 /**
  * GoogleIntegrationCard - Tarjeta para conectar/desconectar Google
  * 
- * Muestra el estado de conexión y permite al usuario conectar
- * o desconectar su cuenta de Google.
+ * Muestra el estado de conexión, calendario con eventos próximos
+ * y permite al usuario conectar o desconectar su cuenta de Google.
  */
 
-import { useState } from 'react';
-import { Calendar, Sheet, Check } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Calendar, Sheet, Check, Clock, MapPin, ExternalLink, RefreshCw, ChevronRight, Users } from 'lucide-react';
 import { useGoogleIntegration } from '../../hooks/useGoogleIntegration';
 
+// Función para formatear fecha y hora
+const formatEventTime = (dateTime, date) => {
+  if (date) {
+    // Evento de todo el día - parsear la fecha correctamente sin timezone
+    // El formato viene como "2026-03-30", parseamos manualmente para evitar desfase de timezone
+    const [year, month, day] = date.split('-').map(Number);
+    const eventDate = new Date(year, month - 1, day); // mes es 0-indexado
+    return { 
+      date: eventDate.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }), 
+      time: 'Todo el día', 
+      isAllDay: true 
+    };
+  }
+  const d = new Date(dateTime);
+  return {
+    date: d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }),
+    time: d.toLocaleTimeString('es-ES', { hour: 'numeric', minute: '2-digit', hour12: true }),
+    isAllDay: false
+  };
+};
+
+// Función para obtener color aleatorio pero consistente basado en el ID
+const getEventColor = (id) => {
+  const colors = [
+    { bg: 'bg-blue-500/20', border: 'border-blue-500/30', dot: 'bg-blue-400', text: 'text-blue-300' },
+    { bg: 'bg-emerald-500/20', border: 'border-emerald-500/30', dot: 'bg-emerald-400', text: 'text-emerald-300' },
+    { bg: 'bg-violet-500/20', border: 'border-violet-500/30', dot: 'bg-violet-400', text: 'text-violet-300' },
+    { bg: 'bg-amber-500/20', border: 'border-amber-500/30', dot: 'bg-amber-400', text: 'text-amber-300' },
+    { bg: 'bg-pink-500/20', border: 'border-pink-500/30', dot: 'bg-pink-400', text: 'text-pink-300' },
+    { bg: 'bg-cyan-500/20', border: 'border-cyan-500/30', dot: 'bg-cyan-400', text: 'text-cyan-300' },
+  ];
+  const hash = id.split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
+  return colors[hash % colors.length];
+};
+
+// Función para calcular tiempo restante
+const getTimeUntil = (dateTime) => {
+  const now = new Date();
+  const eventDate = new Date(dateTime);
+  const diffMs = eventDate - now;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 0) return 'En curso';
+  if (diffMins < 60) return `En ${diffMins} min`;
+  if (diffHours < 24) return `En ${diffHours}h`;
+  if (diffDays === 1) return 'Mañana';
+  return `En ${diffDays} días`;
+};
+
 export default function GoogleIntegrationCard() {
-  const { status, connect, disconnect, error, clearError } = useGoogleIntegration();
+  const { status, connect, disconnect, listCalendarEvents, error, clearError } = useGoogleIntegration();
   const [disconnecting, setDisconnecting] = useState(false);
+  const [events, setEvents] = useState([]);
+  const [loadingEvents, setLoadingEvents] = useState(false);
+  const [showAllEvents, setShowAllEvents] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState(null);
+
+  // Cargar eventos del calendario
+  const loadEvents = useCallback(async () => {
+    if (!status.connected) return;
+    
+    setLoadingEvents(true);
+    try {
+      // Obtener eventos de los próximos 7 días
+      const now = new Date();
+      const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      
+      const calendarEvents = await listCalendarEvents({
+        timeMin: now.toISOString(),
+        timeMax: nextWeek.toISOString(),
+        maxResults: 15,
+      });
+      
+      setEvents(calendarEvents || []);
+      setLastRefresh(new Date());
+    } catch (err) {
+      console.error('Error al cargar eventos:', err);
+    } finally {
+      setLoadingEvents(false);
+    }
+  }, [status.connected, listCalendarEvents]);
+
+  // Cargar eventos cuando se conecta
+  useEffect(() => {
+    if (status.connected && !status.loading) {
+      loadEvents();
+    }
+  }, [status.connected, status.loading, loadEvents]);
+
+  // Refrescar automáticamente cada 5 minutos
+  useEffect(() => {
+    if (!status.connected) return;
+    
+    const interval = setInterval(loadEvents, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [status.connected, loadEvents]);
 
   const handleConnect = async () => {
     try {
@@ -153,6 +248,166 @@ export default function GoogleIntegrationCard() {
           >
             {disconnecting ? 'Desconectando...' : 'Desconectar cuenta de Google'}
           </button>
+
+          {/* ═══════════════════════════════════════════════════════════════════════ */}
+          {/* CALENDARIO CON EVENTOS PRÓXIMOS */}
+          {/* ═══════════════════════════════════════════════════════════════════════ */}
+          <div className="mt-6 pt-5 border-t border-zinc-800">
+            {/* Header del calendario */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center">
+                  <Calendar className="w-4 h-4 text-red-400" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-white">Próximos eventos</h4>
+                  <p className="text-[10px] text-zinc-500">
+                    {lastRefresh ? `Actualizado ${lastRefresh.toLocaleTimeString('es-ES', { hour: 'numeric', minute: '2-digit', hour12: true })}` : 'Cargando...'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={loadEvents}
+                disabled={loadingEvents}
+                className="p-2 rounded-lg hover:bg-zinc-800/50 text-zinc-400 hover:text-white transition-all disabled:opacity-50"
+                title="Refrescar eventos"
+              >
+                <RefreshCw className={`w-4 h-4 ${loadingEvents ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+
+            {/* Lista de eventos */}
+            {loadingEvents && events.length === 0 ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="p-3 rounded-xl bg-zinc-800/30 animate-pulse">
+                    <div className="flex gap-3">
+                      <div className="w-1 h-12 bg-zinc-700 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 w-3/4 bg-zinc-700 rounded" />
+                        <div className="h-3 w-1/2 bg-zinc-700 rounded" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : events.length === 0 ? (
+              <div className="text-center py-8 px-4">
+                <div className="w-12 h-12 rounded-full bg-zinc-800/50 flex items-center justify-center mx-auto mb-3">
+                  <Calendar className="w-6 h-6 text-zinc-600" />
+                </div>
+                <p className="text-sm text-zinc-400 mb-1">No hay eventos próximos</p>
+                <p className="text-xs text-zinc-500">Los eventos de los próximos 7 días aparecerán aquí</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {(showAllEvents ? events : events.slice(0, 4)).map((event, index) => {
+                  const color = getEventColor(event.id);
+                  const startInfo = formatEventTime(event.start?.dateTime, event.start?.date);
+                  const endInfo = formatEventTime(event.end?.dateTime, event.end?.date);
+                  const timeUntil = event.start?.dateTime ? getTimeUntil(event.start.dateTime) : null;
+                  const isNext = index === 0;
+
+                  return (
+                    <div
+                      key={event.id}
+                      className={`group relative p-3 rounded-xl border transition-all hover:scale-[1.01] cursor-pointer ${
+                        isNext 
+                          ? `${color.bg} ${color.border} shadow-lg` 
+                          : 'bg-zinc-800/30 border-zinc-700/50 hover:bg-zinc-800/50'
+                      }`}
+                      onClick={() => event.htmlLink && window.open(event.htmlLink, '_blank')}
+                    >
+                      <div className="flex gap-3">
+                        {/* Barra de color */}
+                        <div className={`w-1 self-stretch rounded-full ${color.dot}`} />
+                        
+                        <div className="flex-1 min-w-0">
+                          {/* Título y badge de tiempo */}
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <h5 className={`text-sm font-medium truncate ${isNext ? color.text : 'text-white'}`}>
+                              {event.summary || 'Sin título'}
+                            </h5>
+                            {timeUntil && isNext && (
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${color.bg} ${color.text} border ${color.border} whitespace-nowrap`}>
+                                {timeUntil}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Fecha y hora */}
+                          <div className="flex items-center gap-3 text-xs text-zinc-400 mb-1">
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              <span>{startInfo.date}</span>
+                              {!startInfo.isAllDay && (
+                                <>
+                                  <span className="text-zinc-600">•</span>
+                                  <span className="text-zinc-300">{startInfo.time}</span>
+                                  {endInfo.time && !endInfo.isAllDay && (
+                                    <span className="text-zinc-500">- {endInfo.time}</span>
+                                  )}
+                                </>
+                              )}
+                              {startInfo.isAllDay && (
+                                <span className="text-zinc-500 italic ml-1">Todo el día</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Ubicación */}
+                          {event.location && (
+                            <div className="flex items-center gap-1 text-xs text-zinc-500 truncate">
+                              <MapPin className="w-3 h-3 shrink-0" />
+                              <span className="truncate">{event.location}</span>
+                            </div>
+                          )}
+
+                          {/* Asistentes */}
+                          {event.attendees && event.attendees.length > 0 && (
+                            <div className="flex items-center gap-1 mt-1 text-xs text-zinc-500">
+                              <Users className="w-3 h-3" />
+                              <span>{event.attendees.length} asistente{event.attendees.length > 1 ? 's' : ''}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Flecha */}
+                        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <ExternalLink className="w-4 h-4 text-zinc-500" />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Ver más / Ver menos */}
+                {events.length > 4 && (
+                  <button
+                    onClick={() => setShowAllEvents(!showAllEvents)}
+                    className="w-full flex items-center justify-center gap-1 py-2 text-xs text-zinc-400 hover:text-white transition-colors"
+                  >
+                    <span>{showAllEvents ? 'Ver menos' : `Ver ${events.length - 4} eventos más`}</span>
+                    <ChevronRight className={`w-3 h-3 transition-transform ${showAllEvents ? 'rotate-90' : ''}`} />
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Footer con enlace a Calendar */}
+            {events.length > 0 && (
+              <a
+                href="https://calendar.google.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-medium text-zinc-400 bg-zinc-800/30 hover:bg-zinc-800/50 hover:text-white transition-all border border-zinc-700/50"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>Abrir Google Calendar</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
