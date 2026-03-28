@@ -12,6 +12,7 @@ import fetch from 'node-fetch';
 import { connectDB } from '../config/db.js';
 import logger from '../config/logger.js';
 import { v4 as uuidv4 } from 'uuid';
+import { splitMessageForPlatform } from '../utils/messageUtils.js';
 
 const log = logger.child('TelegramService');
 
@@ -45,6 +46,7 @@ export async function getTelegramConnection(workspaceId) {
 
 /**
  * Envía un mensaje de texto a un chat de Telegram
+ * Si el mensaje es muy largo, lo divide en partes
  */
 export async function sendMessage(workspaceId, chatId, text, options = {}) {
   try {
@@ -55,41 +57,74 @@ export async function sendMessage(workspaceId, chatId, text, options = {}) {
     
     const token = connection.credentials.token;
     
-    const body = {
-      chat_id: chatId,
-      text,
-      parse_mode: options.parseMode || 'HTML',
-      ...options
-    };
+    // Dividir mensaje si es muy largo (usando utilidad global)
+    const messageParts = splitMessageForPlatform(text, 'telegram');
+    const results = [];
     
-    // Agregar botones si se especifican
-    if (options.buttons) {
-      body.reply_markup = {
-        inline_keyboard: options.buttons.map(row => 
-          row.map(btn => ({
-            text: btn.text,
-            callback_data: btn.data || btn.text,
-            url: btn.url
-          }))
-        )
+    for (let i = 0; i < messageParts.length; i++) {
+      const part = messageParts[i];
+      
+      const body = {
+        chat_id: chatId,
+        text: part,
+        parse_mode: options.parseMode || 'Markdown',
       };
+      
+      // Solo responder al mensaje original en la primera parte
+      if (i === 0 && options.replyToMessageId) {
+        body.reply_to_message_id = options.replyToMessageId;
+      }
+      
+      // Agregar botones solo en la última parte
+      if (i === messageParts.length - 1 && options.buttons) {
+        body.reply_markup = {
+          inline_keyboard: options.buttons.map(row => 
+            row.map(btn => ({
+              text: btn.text,
+              callback_data: btn.data || btn.text,
+              url: btn.url
+            }))
+          )
+        };
+      }
+      
+      const response = await fetch(`${TELEGRAM_API}${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      
+      const result = await response.json();
+      
+      if (!result.ok) {
+        log.error('Telegram API error', { error: result.description, part: i + 1 });
+        // Si falla por Markdown, intentar sin parse_mode
+        if (result.description?.includes('parse') || result.description?.includes('entities')) {
+          body.parse_mode = undefined;
+          const retryResponse = await fetch(`${TELEGRAM_API}${token}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          const retryResult = await retryResponse.json();
+          if (retryResult.ok) {
+            results.push(retryResult.result);
+            continue;
+          }
+        }
+        throw new Error(result.description);
+      }
+      
+      results.push(result.result);
+      
+      // Pequeña pausa entre mensajes para evitar rate limiting
+      if (i < messageParts.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
     }
     
-    const response = await fetch(`${TELEGRAM_API}${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    
-    const result = await response.json();
-    
-    if (!result.ok) {
-      log.error('Telegram API error', { error: result.description });
-      throw new Error(result.description);
-    }
-    
-    log.info('Message sent to Telegram', { workspaceId, chatId });
-    return result.result;
+    log.info('Message sent to Telegram', { workspaceId, chatId, parts: messageParts.length });
+    return results.length === 1 ? results[0] : results;
   } catch (error) {
     log.error('Error sending Telegram message', { error: error.message });
     throw error;
@@ -204,6 +239,32 @@ export async function setWebhook(workspaceId, webhookUrl) {
 }
 
 /**
+ * Obtiene información del webhook actual
+ */
+export async function getWebhookInfo(workspaceId) {
+  try {
+    const connection = await getTelegramConnection(workspaceId);
+    if (!connection?.credentials?.token) {
+      throw new Error('Bot de Telegram no configurado');
+    }
+    
+    const token = connection.credentials.token;
+    
+    const response = await fetch(`${TELEGRAM_API}${token}/getWebhookInfo`);
+    const result = await response.json();
+    
+    if (!result.ok) {
+      throw new Error(result.description);
+    }
+    
+    return result.result;
+  } catch (error) {
+    log.error('Error getting webhook info', { error: error.message });
+    throw error;
+  }
+}
+
+/**
  * Elimina el webhook
  */
 export async function deleteWebhook(workspaceId) {
@@ -265,6 +326,7 @@ export async function processIncomingMessage(workspaceId, update) {
       id: uuidv4(),
       source: 'telegram',
       chatId: chatId.toString(),
+      messageId: message.message_id, // ID del mensaje original para reply
       contactId: contact._id,
       content: text,
       from: {
@@ -428,6 +490,72 @@ export async function setCommands(workspaceId, commands) {
   }
 }
 
+/**
+ * Obtiene la configuración de Telegram para un workspace
+ */
+export async function getTelegramConfig(workspaceId) {
+  try {
+    const db = await connectDB(`workspace_${workspaceId}_integrations`);
+    
+    const result = await db.find({
+      selector: { 
+        type: 'telegram_config'
+      },
+      limit: 1
+    });
+    
+    if (result.docs?.length > 0) {
+      return result.docs[0];
+    }
+    
+    return null;
+  } catch (error) {
+    log.error('Error getting Telegram config', { error: error.message });
+    return null;
+  }
+}
+
+/**
+ * Guarda la configuración de Telegram para un workspace
+ */
+export async function saveTelegramConfig(workspaceId, config) {
+  try {
+    const db = await connectDB(`workspace_${workspaceId}_integrations`);
+    
+    // Buscar config existente
+    const result = await db.find({
+      selector: { type: 'telegram_config' },
+      limit: 1
+    });
+    
+    let doc;
+    if (result.docs?.length > 0) {
+      // Actualizar existente
+      doc = {
+        ...result.docs[0],
+        ...config,
+        updatedAt: new Date().toISOString()
+      };
+    } else {
+      // Crear nuevo
+      doc = {
+        _id: `telegram_config_${Date.now()}`,
+        type: 'telegram_config',
+        ...config,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    }
+    
+    await db.insert(doc);
+    log.info('Telegram config saved', { workspaceId });
+    return doc;
+  } catch (error) {
+    log.error('Error saving Telegram config', { error: error.message });
+    throw error;
+  }
+}
+
 export default {
   getTelegramConnection,
   sendMessage,
@@ -437,5 +565,7 @@ export default {
   deleteWebhook,
   processIncomingMessage,
   getBotInfo,
-  setCommands
+  setCommands,
+  getTelegramConfig,
+  saveTelegramConfig
 };

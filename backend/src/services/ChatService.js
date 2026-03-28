@@ -482,6 +482,7 @@ export class ChatService {
       const tableName = (table.name || '').toLowerCase();
       
       return normalizedRefs.some(ref => {
+        if (typeof ref !== 'string') return false;
         const refLower = ref.toLowerCase();
         // Coincide por ID exacto o por nombre (case-insensitive)
         return tableId === ref || tableName === refLower;

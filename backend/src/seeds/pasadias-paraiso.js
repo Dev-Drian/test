@@ -803,15 +803,15 @@ export async function seed() {
         fewShotExamples: [
           {
             user: 'quiero reservar un pasadía',
-            assistant: '¡Hola! 🏝️ Con gusto te ayudo a reservar tu pasadía. Tenemos destinos increíbles:\n\n🏖️ **Playa Blanca** - $89.000 adulto\n🌊 **Islas del Rosario** - $145.000 adulto\n🏔️ **Río Claro Aventura** - $175.000 adulto\n♨️ **Termales Santa Rosa** - $125.000 adulto\n\n¿Cuál te interesa? Te cuento más detalles.'
+            assistant: '¡Hola! 🏝️ Con gusto te ayudo. ¿Qué tipo de experiencia te interesa?\n\n🏖️ Playa | 🏔️ Aventura | ♨️ Relax | 👨‍👩‍👧 Familiar\n\nCuéntame y te recomiendo las mejores opciones.'
           },
           {
             user: 'cuánto cuesta playa blanca para 2 adultos y 1 niño',
-            assistant: '¡Excelente elección! 🏖️ **Playa Blanca** es uno de nuestros destinos favoritos.\n\n💰 **Precio:**\n• 2 Adultos × $89.000 = $178.000\n• 1 Niño × $59.000 = $59.000\n• **Total: $237.000**\n\n✅ **Incluye:** Transporte A/C, lancha, almuerzo típico, sillas, parasol, guía y seguro.\n\n¿Te gustaría reservar? Solo necesito tu nombre, cédula y teléfono.'
+            assistant: '🏖️ **Playa Blanca**\n\n2 Adultos × $89.000 = $178.000\n1 Niño × $59.000 = $59.000\n**Total: $237.000**\n\n✅ Incluye: transporte, lancha, almuerzo, sillas, guía.\n\n¿Reservamos? Necesito tu nombre, cédula y teléfono.'
           },
           {
             user: 'hay algún descuento',
-            assistant: '¡Sí tenemos promociones activas! 🎉\n\n🏷️ **BIENVENIDO** - $20.000 de descuento (primera reserva)\n☀️ **SUMMER2025** - 15% en destinos de playa\n👶 **FAMILIA50** - Niño gratis en Guatapé, Hacienda Nápoles y Termales\n\n¿Tienes algún código? Lo aplico a tu reserva.'
+            assistant: '¡Sí! 🎉 Tenemos promociones activas:\n\n🏷️ **BIENVENIDO** - $20.000 off\n☀️ **SUMMER2025** - 15% en playas\n\n¿Tienes algún código?'
           }
         ],
         
@@ -829,53 +829,47 @@ export async function seed() {
         
         customInstructions: `Eres el asistente de reservas de Pasadías Paraíso, una agencia de turismo de día en Colombia.
 
+REGLA CRÍTICA DE FORMATO:
+⚠️ Mantén las respuestas CORTAS y CONCISAS (máximo 500 caracteres por mensaje)
+- Si el cliente pide una lista, muestra máximo 3-4 opciones principales
+- Si necesita ver más opciones, ofrece mostrarlas en un mensaje adicional
+- Nunca listes todos los destinos de una vez
+
 PERSONALIDAD:
-- Eres amigable, entusiasta pero profesional
-- Usas emojis moderadamente (1-2 por mensaje)
-- Respondes en español colombiano
-- Eres proactivo sugiriendo destinos según intereses
+- Amigable, entusiasta pero profesional
+- Usa emojis moderadamente (1-2 por mensaje)
+- Español colombiano
+- Proactivo sugiriendo destinos según intereses
 
 PROCESO DE RESERVA:
 1. Pregunta qué tipo de experiencia busca (playa, aventura, relax, familiar)
-2. Recomienda 2-3 destinos según su interés
-3. Muestra precios detallados (adultos + niños)
-4. Solicita datos: nombre, cédula, teléfono, fecha del viaje, punto de recogida
-5. Pregunta si tiene código de descuento
-6. Confirma la reserva y explica el proceso de pago
+2. Recomienda 2-3 destinos según su interés (NO TODOS)
+3. Da precios solo del destino elegido
+4. Solicita datos: nombre, cédula, teléfono, fecha, punto de recogida
+5. Confirma reserva y proceso de pago
 
-INFORMACIÓN DE CONTACTO:
-📱 WhatsApp: 300-123-4567
-📧 Email: reservas@pasadiasparaiso.com
-📍 Oficina: Centro Comercial Plaza, Local 201
+CONTACTO:
+📱 WhatsApp: 300-123-4567 | 📧 reservas@pasadiasparaiso.com
 
-POLÍTICAS:
-- Abono mínimo: 50% del total
-- Cancelación gratis hasta 48h antes
-- Menores de 3 años: GRATIS
-- Niños: 4 a 12 años
-
-PUNTOS DE RECOGIDA: Terminal Norte, Terminal Sur, Centro Comercial Plaza, Parque Principal, Hotel zona centro, Aeropuerto`,
+POLÍTICAS: Abono 50%, cancelación gratis 48h antes, menores de 3 años GRATIS`,
         
         prompt: `Eres el asistente de ventas de ${WORKSPACE_NAME}, una agencia de pasadías turísticos en Colombia.
 
-DESTINOS PRINCIPALES:
-- Playa Blanca (Cartagena): $89.000 adulto / $59.000 niño - 12 horas
-- Islas del Rosario: $145.000 adulto / $95.000 niño - 10 horas
-- Río Claro Aventura: $175.000 adulto / $125.000 niño - 14 horas
-- Termales Santa Rosa: $125.000 adulto / $85.000 niño - 11 horas
-- San Andrés Full Day: $450.000 adulto / $380.000 niño - 15 horas
-- Guatapé: $95.000 adulto / $65.000 niño - 12 horas
+⚠️ REGLA DE FORMATO OBLIGATORIA:
+- Respuestas CORTAS (máximo 500 caracteres)
+- Máximo 3-4 destinos por mensaje
+- Si piden ver todos, ofrece "¿Quieres ver más opciones?"
 
-PROCESO:
-1. Saluda y pregunta qué experiencia busca
-2. Recomienda destinos según interés
-3. Calcula precios (adultos × precio + niños × precio niño)
-4. Recoge datos para la reserva
-5. Confirma y explica pago
+TOP DESTINOS (muestra solo los relevantes):
+🏖️ Playa Blanca: $89.000/$59.000 | 🌊 Islas del Rosario: $145.000/$95.000
+🏔️ Río Claro: $175.000/$125.000 | ♨️ Termales: $125.000/$85.000
+🚤 Guatapé: $95.000/$65.000 | ✈️ San Andrés: $450.000/$380.000
 
-DATOS PARA RESERVA: nombre, cédula, teléfono, fecha viaje, punto de recogida, número de adultos y niños
+PROCESO: Saluda → Pregunta interés → Muestra 2-3 opciones → Recoge datos → Confirma
 
-Mantén un tono amigable y usa emojis apropiados. Siempre ofrece ayuda adicional.`,
+DATOS RESERVA: nombre, cédula, teléfono, fecha, punto recogida, adultos/niños
+
+Tono amigable, emojis moderados.`,
         
         aiModel: ['gpt-4o-mini'],
         useFlows: true,
@@ -912,37 +906,26 @@ Mantén un tono amigable y usa emojis apropiados. Siempre ofrece ayuda adicional
         fewShotExamples: [
           {
             user: 'cuántas reservas hay para abril',
-            assistant: '📊 **Reservas de Abril 2025:**\n\nTotal: 5 reservas\n• Confirmadas: 3\n• Pagadas: 2\n• Pendientes: 1\n\n💰 Valor total: $2.012.000\n💵 Cobrado: $1.220.000\n📉 Pendiente por cobrar: $792.000\n\n¿Necesitas más detalles por destino?'
+            assistant: '📊 **Abril 2025:** 5 reservas\n• Confirmadas: 3 | Pagadas: 2\n💰 Total: $2.012.000 | Cobrado: $1.220.000\n\n¿Más detalles por destino?'
           },
           {
             user: 'cuál es el destino más vendido',
-            assistant: '🏆 **Top Destinos (últimos 30 días):**\n\n1. 🏖️ Playa Blanca - 45 reservas (35%)\n2. 🏔️ Guatapé - 28 reservas (22%)\n3. 🌊 Islas del Rosario - 24 reservas (19%)\n\n⭐ Mejor calificación: Islas del Rosario (4.9/5)'
+            assistant: '🏆 **Top 3 (últimos 30 días):**\n1. Playa Blanca - 45 reservas\n2. Guatapé - 28 reservas\n3. Islas del Rosario - 24 reservas'
           }
         ],
         
         enabledTools: ['query_records', 'analyze_data', 'general_conversation'],
         disabledTools: ['create_record', 'update_record'],
         
-        customInstructions: 'Presenta los datos de forma clara con tablas y estadísticas. Siempre incluye insights y tendencias.',
+        customInstructions: 'Presenta datos de forma clara y concisa. Máximo 500 caracteres por respuesta. Usa listas compactas, no tablas largas.',
         
         prompt: `Eres el analista de datos de ${WORKSPACE_NAME}.
 
-REPORTES QUE GENERAS:
-📊 Reservas por periodo (día/semana/mes)
-💰 Ingresos y pendientes de cobro
-🏆 Destinos más populares
-👥 Clientes frecuentes vs nuevos
-⭐ Calificaciones y reseñas
-🚌 Ocupación de transporte
-👤 Rendimiento de guías
+⚠️ FORMATO: Respuestas cortas (máx 500 chars). Datos clave, sin relleno.
 
-FORMATO:
-- Usa tablas para comparaciones
-- Incluye totales y porcentajes
-- Destaca tendencias positivas/negativas
-- Sugiere acciones basadas en datos
+REPORTES: Reservas, ingresos, destinos populares, clientes, reseñas.
 
-Sé analítico y objetivo. Presenta información visualmente clara.`,
+Sé conciso y objetivo. Ofrece detalles solo si los piden.`,
         
         aiModel: ['gpt-4o-mini'],
         useFlows: false,
@@ -1014,7 +997,7 @@ Sé analítico y objetivo. Presenta información visualmente clara.`,
         _id: flowConfirmacionId,
         name: 'Confirmación de Reserva',
         description: 'Envía confirmación automática cuando se crea una nueva reserva',
-        icon: '✅',
+        icon: 'check',
         color: 'emerald',
         active: true,
         workspaceId: WORKSPACE_ID,
@@ -1046,8 +1029,8 @@ Sé analítico y objetivo. Presenta información visualmente clara.`,
             type: 'message',
             position: { x: 100, y: 320 },
             data: {
-              label: 'Confirmación con abono',
-              message: `🎉 ¡Reserva Confirmada!\n\nHola {{record.cliente}},\n\n✅ Tu reserva está lista:\n📍 Destino: {{record.destino}}\n📅 Fecha: {{record.fechaViaje}}\n👥 Personas: {{record.adultos}} adultos, {{record.ninos}} niños\n📍 Recogida: {{record.puntoRecogida}}\n\n💰 Total: \${{record.totalPagar}}\n✅ Abono recibido: \${{record.abono}}\n⏳ Saldo pendiente: \${{record.saldo}}\n\n📞 ¿Dudas? Escríbenos al 300-123-4567\n\n¡Gracias por elegir Pasadías Paraíso! 🏝️`
+              label: 'Confirmacion con abono',
+              message: 'Reserva Confirmada\n\nHola {{record.cliente}},\n\nTu reserva esta lista:\n- Destino: {{record.destino}}\n- Fecha: {{record.fechaViaje}}\n- Personas: {{record.adultos}} adultos, {{record.ninos}} ninos\n- Recogida: {{record.puntoRecogida}}\n\nTotal: ${{record.totalPagar}}\nAbono recibido: ${{record.abono}}\nSaldo pendiente: ${{record.saldo}}\n\nDudas? Escribenos al 300-123-4567\n\nGracias por elegir Pasadias Paraiso.'
             }
           },
           {
@@ -1056,7 +1039,7 @@ Sé analítico y objetivo. Presenta información visualmente clara.`,
             position: { x: 400, y: 320 },
             data: {
               label: 'Reserva pendiente pago',
-              message: `⏳ Reserva en Proceso\n\nHola {{record.cliente}},\n\nTu reserva está registrada pero requiere confirmación de pago:\n\n📍 Destino: {{record.destino}}\n📅 Fecha: {{record.fechaViaje}}\n💰 Total a pagar: \${{record.totalPagar}}\n\n💳 Métodos de pago:\n• Nequi: 300-123-4567\n• Daviplata: 300-123-4567\n• Transferencia: Bancolombia 123-456789-00\n\n⚠️ Confirma tu pago en las próximas 24 horas para asegurar tu cupo.\n\n📞 ¿Dudas? Escríbenos al 300-123-4567`
+              message: 'Reserva en Proceso\n\nHola {{record.cliente}},\n\nTu reserva esta registrada pero requiere confirmacion de pago:\n\n- Destino: {{record.destino}}\n- Fecha: {{record.fechaViaje}}\n- Total a pagar: ${{record.totalPagar}}\n\nMetodos de pago:\n- Nequi: 300-123-4567\n- Daviplata: 300-123-4567\n- Transferencia: Bancolombia 123-456789-00\n\nConfirma tu pago en las proximas 24 horas para asegurar tu cupo.\n\nDudas? Escribenos al 300-123-4567'
             }
           },
           {
@@ -1066,7 +1049,7 @@ Sé analítico y objetivo. Presenta información visualmente clara.`,
             data: {
               label: 'Notificar equipo',
               channel: 'internal',
-              message: '📋 Nueva reserva registrada\n\nCliente: {{record.cliente}}\nDestino: {{record.destino}}\nFecha: {{record.fechaViaje}}\nTotal: \${{record.totalPagar}}\nEstado: {{record.estadoReserva}}'
+              message: 'Nueva reserva registrada\n\nCliente: {{record.cliente}}\nDestino: {{record.destino}}\nFecha: {{record.fechaViaje}}\nTotal: ${{record.totalPagar}}\nEstado: {{record.estadoReserva}}'
             }
           }
         ],
@@ -1088,7 +1071,7 @@ Sé analítico y objetivo. Presenta información visualmente clara.`,
         _id: flowRecordatorioId,
         name: 'Recordatorio de Pago',
         description: 'Recuerda a clientes con saldo pendiente 3 días antes del viaje',
-        icon: '🔔',
+        icon: 'bell',
         color: 'amber',
         active: true,
         workspaceId: WORKSPACE_ID,
@@ -1144,10 +1127,18 @@ Sé analítico y objetivo. Presenta información visualmente clara.`,
           {
             id: 'message-recordatorio',
             type: 'message',
-            position: { x: 250, y: 570 },
+            position: { x: 100, y: 570 },
             data: {
               label: 'Enviar recordatorio',
-              message: `⏰ Recordatorio de Pago\n\nHola {{reserva.cliente}},\n\n¡Tu pasadía a {{reserva.destino}} es en 3 días! 🏖️\n\n💰 Saldo pendiente: \${{reserva.saldo}}\n📅 Fecha del viaje: {{reserva.fechaViaje}}\n\nPara confirmar tu cupo, realiza el pago antes de mañana:\n\n💳 Nequi/Daviplata: 300-123-4567\n🏦 Bancolombia: 123-456789-00\n\n📸 Envía tu comprobante por WhatsApp.\n\n¡Te esperamos! 🌴`
+              message: 'Recordatorio de Pago\n\nHola {{reserva.cliente}},\n\nTu pasadia a {{reserva.destino}} es en 3 dias.\n\nSaldo pendiente: ${{reserva.saldo}}\nFecha del viaje: {{reserva.fechaViaje}}\n\nPara confirmar tu cupo, realiza el pago antes de manana:\n\nNequi/Daviplata: 300-123-4567\nBancolombia: 123-456789-00\n\nEnvia tu comprobante por WhatsApp.\n\nTe esperamos.'
+            }
+          },
+          {
+            id: 'skip-no-3dias',
+            type: 'end',
+            position: { x: 400, y: 570 },
+            data: {
+              label: 'Omitir (no es el momento)'
             }
           }
         ],
@@ -1155,7 +1146,8 @@ Sé analítico y objetivo. Presenta información visualmente clara.`,
           { id: 'e1', source: 'start-1', target: 'query-1' },
           { id: 'e2', source: 'query-1', target: 'loop-1' },
           { id: 'e3', source: 'loop-1', target: 'condition-fecha' },
-          { id: 'e4', source: 'condition-fecha', target: 'message-recordatorio', sourceHandle: 'true' }
+          { id: 'e4', source: 'condition-fecha', target: 'message-recordatorio', sourceHandle: 'true' },
+          { id: 'e5', source: 'condition-fecha', target: 'skip-no-3dias', sourceHandle: 'false' }
         ],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -1168,7 +1160,7 @@ Sé analítico y objetivo. Presenta información visualmente clara.`,
         _id: flowResenaId,
         name: 'Solicitar Reseña',
         description: 'Envía solicitud de reseña cuando una reserva se marca como completada',
-        icon: '⭐',
+        icon: 'star',
         color: 'yellow',
         active: true,
         workspaceId: WORKSPACE_ID,
@@ -1208,16 +1200,16 @@ Sé analítico y objetivo. Presenta información visualmente clara.`,
           {
             id: 'message-resena',
             type: 'message',
-            position: { x: 250, y: 440 },
+            position: { x: 100, y: 440 },
             data: {
-              label: 'Solicitar reseña',
-              message: `⭐ ¿Cómo estuvo tu experiencia?\n\nHola {{record.cliente}},\n\n¡Esperamos que hayas disfrutado tu pasadía a {{record.destino}}! 🏝️\n\nTu opinión nos ayuda a mejorar. ¿Podrías regalarnos una reseña?\n\n📝 Cuéntanos:\n• ¿Qué te gustó más?\n• ¿El servicio cumplió tus expectativas?\n• ¿Recomendarías este destino?\n\nResponde este mensaje con tu experiencia y una calificación del 1 al 5 ⭐\n\n¡Gracias por viajar con Pasadías Paraíso! 🌴`
+              label: 'Solicitar resena',
+              message: `Como estuvo tu experiencia?\n\nHola {{record.cliente}},\n\nEsperamos que hayas disfrutado tu pasadia a {{record.destino}}.\n\nTu opinion nos ayuda a mejorar. Podrias regalarnos una resena?\n\nCuentanos:\n- Que te gusto mas?\n- El servicio cumplio tus expectativas?\n- Recomendarias este destino?\n\nResponde este mensaje con tu experiencia y una calificacion del 1 al 5.\n\nGracias por viajar con Pasadias Paraiso.`
             }
           },
           {
             id: 'update-cliente',
             type: 'update',
-            position: { x: 250, y: 570 },
+            position: { x: 100, y: 570 },
             data: {
               label: 'Marcar cliente activo',
               tableId: clientesTableId,
@@ -1227,13 +1219,22 @@ Sé analítico y objetivo. Presenta información visualmente clara.`,
                 { key: 'ultimoViaje', value: '{{record.fechaViaje}}' }
               ]
             }
+          },
+          {
+            id: 'skip-no-completada',
+            type: 'end',
+            position: { x: 400, y: 310 },
+            data: {
+              label: 'Omitir (no completada)'
+            }
           }
         ],
         edges: [
           { id: 'e1', source: 'start-1', target: 'condition-1' },
           { id: 'e2', source: 'condition-1', target: 'delay-1', sourceHandle: 'true' },
-          { id: 'e3', source: 'delay-1', target: 'message-resena' },
-          { id: 'e4', source: 'message-resena', target: 'update-cliente' }
+          { id: 'e3', source: 'condition-1', target: 'skip-no-completada', sourceHandle: 'false' },
+          { id: 'e4', source: 'delay-1', target: 'message-resena' },
+          { id: 'e5', source: 'message-resena', target: 'update-cliente' }
         ],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -1246,7 +1247,7 @@ Sé analítico y objetivo. Presenta información visualmente clara.`,
         _id: flowBienvenidaId,
         name: 'Bienvenida Cliente',
         description: 'Envía mensaje de bienvenida y promociones a nuevos clientes',
-        icon: '👋',
+        icon: 'hand',
         color: 'blue',
         active: true,
         workspaceId: WORKSPACE_ID,
@@ -1268,7 +1269,7 @@ Sé analítico y objetivo. Presenta información visualmente clara.`,
             position: { x: 250, y: 180 },
             data: {
               label: 'Mensaje de bienvenida',
-              message: `🎉 ¡Bienvenido a Pasadías Paraíso!\n\nHola {{record.nombre}},\n\n¡Gracias por unirte a nuestra comunidad viajera! 🌴\n\n🎁 Por ser nuevo cliente, tienes un 10% de descuento en tu primera reserva.\nUsa el código: BIENVENIDO10\n\n✨ Destinos más populares:\n🏖️ Playa Blanca - $89.000\n🏔️ Guatapé - $95.000\n🌊 Islas del Rosario - $145.000\n\n📱 Síguenos en Instagram: @pasadiasparaiso\n\n¿Listo para tu próxima aventura? ¡Escríbenos! 🚀`
+              message: `Bienvenido a Pasadias Paraiso\n\nHola {{record.nombre}},\n\nGracias por unirte a nuestra comunidad viajera.\n\nPor ser nuevo cliente, tienes un 10% de descuento en tu primera reserva.\nUsa el codigo: BIENVENIDO10\n\nDestinos mas populares:\n- Playa Blanca - $89.000\n- Guatape - $95.000\n- Islas del Rosario - $145.000\n\nSiguenos en Instagram: @pasadiasparaiso\n\nListo para tu proxima aventura? Escribenos.`
             }
           },
           {
@@ -1299,10 +1300,18 @@ Sé analítico y objetivo. Presenta información visualmente clara.`,
           {
             id: 'message-promos',
             type: 'message',
-            position: { x: 250, y: 580 },
+            position: { x: 100, y: 580 },
             data: {
               label: 'Enviar promociones',
-              message: `🔥 ¡Promociones Activas!\n\n{{#each queryResult}}\n🎟️ {{nombre}}: {{valor}}% OFF\n   Código: {{codigo}}\n{{/each}}\n\n¡No te las pierdas! Vigencia limitada.`
+              message: `Promociones Activas\n\n{{#each queryResult}}\n- {{nombre}}: {{valor}}% OFF (Codigo: {{codigo}})\n{{/each}}\n\nNo te las pierdas. Vigencia limitada.`
+            }
+          },
+          {
+            id: 'skip-no-promos',
+            type: 'end',
+            position: { x: 400, y: 580 },
+            data: {
+              label: 'Sin promociones'
             }
           }
         ],
@@ -1310,7 +1319,8 @@ Sé analítico y objetivo. Presenta información visualmente clara.`,
           { id: 'e1', source: 'start-1', target: 'message-bienvenida' },
           { id: 'e2', source: 'message-bienvenida', target: 'query-promos' },
           { id: 'e3', source: 'query-promos', target: 'condition-promos' },
-          { id: 'e4', source: 'condition-promos', target: 'message-promos', sourceHandle: 'true' }
+          { id: 'e4', source: 'condition-promos', target: 'message-promos', sourceHandle: 'true' },
+          { id: 'e5', source: 'condition-promos', target: 'skip-no-promos', sourceHandle: 'false' }
         ],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -1323,7 +1333,7 @@ Sé analítico y objetivo. Presenta información visualmente clara.`,
         _id: flowDiaAnteriorId,
         name: 'Recordatorio Día Anterior',
         description: 'Envía instrucciones y recordatorio el día antes del viaje',
-        icon: '📅',
+        icon: 'calendar',
         color: 'indigo',
         active: true,
         workspaceId: WORKSPACE_ID,
@@ -1371,7 +1381,7 @@ Sé analítico y objetivo. Presenta información visualmente clara.`,
             position: { x: 250, y: 440 },
             data: {
               label: 'Enviar instrucciones',
-              message: `🌅 ¡Mañana es el gran día!\n\nHola {{reserva.cliente}},\n\n🏝️ Tu pasadía a {{reserva.destino}} es MAÑANA.\n\n📍 PUNTO DE RECOGIDA:\n{{reserva.puntoRecogida}}\n\n⏰ HORA: 5:00 AM (estar 10 min antes)\n\n🎒 QUÉ LLEVAR:\n• Documento de identidad\n• Ropa cómoda y traje de baño\n• Protector solar y gorra\n• Dinero en efectivo para extras\n• Toalla (opcional)\n\n⚠️ IMPORTANTE:\n• El bus sale puntual, no espera\n• Llevar snacks para el viaje\n• Confirmar asistencia respondiendo este mensaje\n\n📞 Emergencias: 300-123-4567\n\n¡Prepárate para una experiencia increíble! 🚀`
+              message: `Manana es el gran dia\n\nHola {{reserva.cliente}},\n\nTu pasadia a {{reserva.destino}} es MANANA.\n\nPUNTO DE RECOGIDA:\n{{reserva.puntoRecogida}}\n\nHORA: 5:00 AM (estar 10 min antes)\n\nQUE LLEVAR:\n- Documento de identidad\n- Ropa comoda y traje de bano\n- Protector solar y gorra\n- Dinero en efectivo para extras\n- Toalla (opcional)\n\nIMPORTANTE:\n- El bus sale puntual, no espera\n- Llevar snacks para el viaje\n- Confirmar asistencia respondiendo este mensaje\n\nEmergencias: 300-123-4567\n\nPreparate para una experiencia increible.`
             }
           },
           {
@@ -1379,9 +1389,9 @@ Sé analítico y objetivo. Presenta información visualmente clara.`,
             type: 'notify',
             position: { x: 250, y: 580 },
             data: {
-              label: 'Notificar logística',
+              label: 'Notificar logistica',
               channel: 'internal',
-              message: '🚌 Viaje mañana: {{reserva.destino}}\nCliente: {{reserva.cliente}}\nRecogida: {{reserva.puntoRecogida}}\nPersonas: {{reserva.adultos}} adultos + {{reserva.ninos}} niños'
+              message: 'Viaje manana: {{reserva.destino}}\nCliente: {{reserva.cliente}}\nRecogida: {{reserva.puntoRecogida}}\nPersonas: {{reserva.adultos}} adultos + {{reserva.ninos}} ninos'
             }
           }
         ],
@@ -1402,7 +1412,7 @@ Sé analítico y objetivo. Presenta información visualmente clara.`,
         _id: flowPagoId,
         name: 'Confirmación de Pago',
         description: 'Confirma el pago y actualiza el estado de la reserva',
-        icon: '💳',
+        icon: 'credit-card',
         color: 'green',
         active: true,
         workspaceId: WORKSPACE_ID,
@@ -1477,8 +1487,8 @@ Sé analítico y objetivo. Presenta información visualmente clara.`,
             type: 'message',
             position: { x: 100, y: 580 },
             data: {
-              label: 'Confirmación total',
-              message: `✅ ¡Pago Completo!\n\nHola {{queryResult.cliente}},\n\n🎉 Tu reserva está 100% pagada.\n\n📍 Destino: {{queryResult.destino}}\n📅 Fecha: {{queryResult.fechaViaje}}\n💰 Total pagado: \${{queryResult.totalPagar}}\n\n¡Solo queda disfrutar! Recibirás las instrucciones el día anterior.\n\nGracias por tu confianza 🙏`
+              label: 'Confirmacion total',
+              message: 'Pago Completo\n\nHola {{queryResult.cliente}},\n\nTu reserva esta 100% pagada.\n\nDestino: {{queryResult.destino}}\nFecha: {{queryResult.fechaViaje}}\nTotal pagado: ${{queryResult.totalPagar}}\n\nSolo queda disfrutar. Recibiras las instrucciones el dia anterior.\n\nGracias por tu confianza.'
             }
           },
           {
@@ -1486,8 +1496,8 @@ Sé analítico y objetivo. Presenta información visualmente clara.`,
             type: 'message',
             position: { x: 400, y: 580 },
             data: {
-              label: 'Confirmación abono',
-              message: `✅ Abono Recibido\n\nHola {{queryResult.cliente}},\n\nHemos recibido tu pago de \${{record.monto}}.\n\n💰 Nuevo saldo pendiente: \${{subtract queryResult.saldo record.monto}}\n📅 Fecha de viaje: {{queryResult.fechaViaje}}\n\nRecuerda completar el pago antes del viaje. ¡Gracias! 🙏`
+              label: 'Confirmacion abono',
+              message: 'Abono Recibido\n\nHola {{queryResult.cliente}},\n\nHemos recibido tu pago de ${{record.monto}}.\n\nNuevo saldo pendiente: ${{subtract queryResult.saldo record.monto}}\nFecha de viaje: {{queryResult.fechaViaje}}\n\nRecuerda completar el pago antes del viaje. Gracias.'
             }
           }
         ],

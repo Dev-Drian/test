@@ -13,16 +13,23 @@ import {
   ArrowPathIcon,
   TrashIcon,
   CommandLineIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 
 export default function TelegramBotManager({ workspaceId }) {
   const [botInfo, setBotInfo] = useState(null);
+  const [webhookInfo, setWebhookInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [webhookUrl, setWebhookUrl] = useState('');
   const [webhookConfigured, setWebhookConfigured] = useState(false);
   const [settingWebhook, setSettingWebhook] = useState(false);
+  
+  // Agentes
+  const [agents, setAgents] = useState([]);
+  const [selectedAgentId, setSelectedAgentId] = useState('');
+  const [savingAgent, setSavingAgent] = useState(false);
   
   // Test message
   const [testChatId, setTestChatId] = useState('');
@@ -46,6 +53,14 @@ export default function TelegramBotManager({ workspaceId }) {
       const res = await api.get(`/telegram/${workspaceId}/bot-info`);
       if (res.data.success) {
         setBotInfo(res.data.bot);
+        // Cargar info del webhook
+        if (res.data.webhook) {
+          setWebhookInfo(res.data.webhook);
+          if (res.data.webhook.url) {
+            setWebhookUrl(res.data.webhook.url);
+            setWebhookConfigured(true);
+          }
+        }
       }
     } catch (err) {
       console.error('Error loading bot info:', err);
@@ -55,9 +70,53 @@ export default function TelegramBotManager({ workspaceId }) {
     }
   }, [workspaceId]);
 
+  // Cargar agentes disponibles
+  const loadAgents = useCallback(async () => {
+    try {
+      const res = await api.get('/agent/list', { params: { workspaceId } });
+      setAgents(res.data || []);
+    } catch (err) {
+      console.error('Error loading agents:', err);
+    }
+  }, [workspaceId]);
+
+  // Cargar configuración de Telegram (agente seleccionado)
+  const loadTelegramConfig = useCallback(async () => {
+    try {
+      const res = await api.get(`/telegram/${workspaceId}/config`);
+      if (res.data?.defaultAgentId) {
+        setSelectedAgentId(res.data.defaultAgentId);
+      }
+    } catch (err) {
+      console.error('Error loading telegram config:', err);
+    }
+  }, [workspaceId]);
+
   useEffect(() => {
     loadBotInfo();
-  }, [loadBotInfo]);
+    loadAgents();
+    loadTelegramConfig();
+  }, [loadBotInfo, loadAgents, loadTelegramConfig]);
+
+  // Guardar agente seleccionado
+  const handleSaveAgent = async () => {
+    if (!selectedAgentId) {
+      setToast({ type: 'error', message: 'Selecciona un agente' });
+      return;
+    }
+    
+    setSavingAgent(true);
+    try {
+      await api.post(`/telegram/${workspaceId}/config`, {
+        defaultAgentId: selectedAgentId
+      });
+      setToast({ type: 'success', message: 'Agente guardado correctamente' });
+    } catch (err) {
+      setToast({ type: 'error', message: err.response?.data?.error || 'Error al guardar agente' });
+    } finally {
+      setSavingAgent(false);
+    }
+  };
 
   // Configurar webhook
   const handleSetupWebhook = async () => {
@@ -183,8 +242,8 @@ export default function TelegramBotManager({ workspaceId }) {
       {/* Bot Info Card */}
       <div className="p-6 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/30">
         <div className="flex items-start gap-4">
-          <div className="w-14 h-14 rounded-xl bg-blue-500 flex items-center justify-center text-white text-2xl font-bold">
-            🤖
+          <div className="w-14 h-14 rounded-xl bg-blue-500 flex items-center justify-center text-white">
+            <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
@@ -219,12 +278,48 @@ export default function TelegramBotManager({ workspaceId }) {
           Necesitas una URL pública (ej: ngrok o tu servidor en producción).
         </p>
         
+        {/* Estado actual del webhook */}
+        {webhookConfigured && webhookUrl && (
+          <div className="mb-4 p-4 rounded-lg bg-green-500/10 border border-green-500/30">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <CheckCircleIcon className="w-5 h-5 text-green-400" />
+                <span className="text-green-400 font-medium">Webhook Activo</span>
+              </div>
+              <button
+                onClick={handleDeleteWebhook}
+                className="text-red-400 hover:text-red-300 text-sm flex items-center gap-1"
+              >
+                <TrashIcon className="w-4 h-4" />
+                Eliminar
+              </button>
+            </div>
+            <div className="mt-2">
+              <span className="text-xs text-zinc-500 block mb-1">URL actual:</span>
+              <code className="text-xs text-green-300 bg-zinc-900/50 px-2 py-1 rounded block break-all">
+                {webhookUrl}
+              </code>
+            </div>
+            {webhookInfo?.pending_update_count > 0 && (
+              <p className="text-xs text-amber-400 mt-2">
+                {webhookInfo.pending_update_count} mensaje(s) pendiente(s)
+              </p>
+            )}
+            {webhookInfo?.last_error_message && (
+              <p className="text-xs text-red-400 mt-2">
+                Error: {webhookInfo.last_error_message}
+              </p>
+            )}
+          </div>
+        )}
+        
+        {/* Formulario para configurar/cambiar webhook */}
         <div className="flex gap-3 mb-4">
           <input
             type="text"
-            value={webhookUrl}
+            value={webhookConfigured ? '' : webhookUrl}
             onChange={(e) => setWebhookUrl(e.target.value)}
-            placeholder="https://tu-servidor.com (opcional)"
+            placeholder={webhookConfigured ? 'Nueva URL para reemplazar...' : 'https://tu-servidor.com (opcional)'}
             className="flex-1 px-4 py-2.5 rounded-lg bg-zinc-800 border border-zinc-700 text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-violet-500/50"
           />
           <button
@@ -237,24 +332,9 @@ export default function TelegramBotManager({ workspaceId }) {
             ) : (
               <LinkIcon className="w-4 h-4" />
             )}
-            Configurar
+            {webhookConfigured ? 'Actualizar' : 'Configurar'}
           </button>
         </div>
-        
-        {webhookConfigured && (
-          <div className="flex items-center justify-between p-3 rounded-lg bg-green-500/10 border border-green-500/30">
-            <div className="flex items-center gap-2">
-              <CheckCircleIcon className="w-5 h-5 text-green-400" />
-              <span className="text-green-400 text-sm">Webhook activo</span>
-            </div>
-            <button
-              onClick={handleDeleteWebhook}
-              className="text-red-400 hover:text-red-300 text-sm"
-            >
-              Eliminar
-            </button>
-          </div>
-        )}
         
         <div className="mt-4 p-3 rounded-lg bg-zinc-800/50 border border-zinc-700">
           <p className="text-xs text-zinc-400 flex items-start gap-2">
@@ -267,6 +347,49 @@ export default function TelegramBotManager({ workspaceId }) {
               para exponer tu servidor: <code className="bg-zinc-900 px-1 rounded">ngrok http 3010</code>
             </span>
           </p>
+        </div>
+      </div>
+
+      {/* Agent Selection */}
+      <div className="p-6 rounded-xl bg-zinc-900/50 border border-zinc-800">
+        <div className="flex items-center gap-2 mb-4">
+          <SparklesIcon className="w-5 h-5 text-amber-400" />
+          <h3 className="text-lg font-medium text-white">Agente de Respuesta</h3>
+        </div>
+        
+        <p className="text-sm text-zinc-400 mb-4">
+          Selecciona el agente de IA que respondera automaticamente los mensajes que lleguen a este bot de Telegram.
+        </p>
+        
+        <div className="space-y-4">
+          <select
+            value={selectedAgentId}
+            onChange={(e) => setSelectedAgentId(e.target.value)}
+            className="w-full px-4 py-3 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:ring-2 focus:ring-amber-500/50 cursor-pointer"
+          >
+            <option value="">Seleccionar agente...</option>
+            {agents.map(agent => (
+              <option key={agent._id} value={agent._id}>
+                {agent.name} {agent.active === false ? '(inactivo)' : ''}
+              </option>
+            ))}
+          </select>
+          
+          {selectedAgentId && (
+            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+              <p className="text-sm text-amber-300">
+                Los mensajes que lleguen al bot seran respondidos por este agente usando su personalidad y conocimientos configurados.
+              </p>
+            </div>
+          )}
+          
+          <button
+            onClick={handleSaveAgent}
+            disabled={savingAgent || !selectedAgentId}
+            className="w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+          >
+            {savingAgent ? 'Guardando...' : 'Guardar Agente'}
+          </button>
         </div>
       </div>
 

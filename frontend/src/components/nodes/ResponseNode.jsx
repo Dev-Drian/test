@@ -1,14 +1,31 @@
 /**
- * ResponseNode - Nodo de respuesta al usuario (Estilo n8n)
- * Color: Rosa (#ec4899)
- * Compatible con plantillas (message) y flujos del sistema (response)
+ * ResponseNode - Nodo de respuesta al usuario
+ * Diseño intuitivo para usuarios sin conocimientos técnicos
  */
 import { Handle, Position, useReactFlow } from '@xyflow/react';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { ChatIcon } from '../Icons';
+
+// Tipos de respuesta con descripciones amigables
+const RESPONSE_TYPES = [
+  { value: 'success', label: 'Confirmacion', desc: 'Todo salio bien', color: '#4ade80', bg: 'rgba(34, 197, 94, 0.1)' },
+  { value: 'info', label: 'Informacion', desc: 'Datos o detalles', color: '#60a5fa', bg: 'rgba(96, 165, 250, 0.1)' },
+  { value: 'warning', label: 'Advertencia', desc: 'Algo a considerar', color: '#fbbf24', bg: 'rgba(251, 191, 36, 0.1)' },
+  { value: 'error', label: 'Error', desc: 'Algo fallo', color: '#f87171', bg: 'rgba(239, 68, 68, 0.1)' },
+];
+
+// Plantillas de mensajes sugeridos
+const MESSAGE_TEMPLATES = [
+  '¡Perfecto! Tu solicitud fue procesada.',
+  '¡Listo! He guardado la información.',
+  'Gracias, te confirmo que todo está en orden.',
+  'Entendido, procesando tu pedido...',
+];
 
 export default function ResponseNode({ id, data, selected }) {
   const { setNodes } = useReactFlow();
+  const [showHelp, setShowHelp] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const updateNodeData = useCallback((key, value) => {
     setNodes(nodes => nodes.map(node => {
@@ -19,124 +36,207 @@ export default function ResponseNode({ id, data, selected }) {
     }));
   }, [id, setNodes]);
 
-  // Título del nodo (de plantilla o por defecto)
-  const nodeLabel = data?.label || 'Respuesta';
-  
-  // Mensaje (puede venir de plantilla o de edición)
+  const nodeLabel = data?.label || 'Responder';
   const messageText = data?.message || '';
-  
-  // Si hay mensaje configurado, es modo vista
   const hasMessage = messageText.length > 0;
+  const currentType = RESPONSE_TYPES.find(t => t.value === data?.type) || RESPONSE_TYPES[0];
 
   return (
     <div 
-      className={`min-w-[180px] max-w-[220px] rounded-2xl overflow-visible transition-all duration-300 ${
+      className={`min-w-[200px] max-w-[260px] rounded-2xl overflow-visible transition-all duration-300 ${
         selected 
-          ? 'ring-2 ring-pink-400/60 shadow-2xl shadow-pink-500/20' 
-          : 'shadow-xl shadow-black/30 hover:shadow-2xl hover:shadow-pink-500/10'
+          ? 'ring-2 ring-pink-400/60 shadow-2xl shadow-pink-500/30 scale-[1.02]' 
+          : 'shadow-xl shadow-black/30 hover:shadow-2xl hover:shadow-pink-500/15 hover:scale-[1.01]'
       }`} 
       style={{ 
-        background: 'linear-gradient(145deg, #1a1a24, #141418)',
-        border: '1px solid rgba(236, 72, 153, 0.2)'
+        background: 'linear-gradient(145deg, #1f1a24, #181418)',
+        border: `1px solid ${selected ? 'rgba(236, 72, 153, 0.4)' : 'rgba(236, 72, 153, 0.15)'}`
       }}
     >
-      {/* Handle de entrada - Estilo n8n */}
+      {/* Handle de entrada */}
       <Handle 
         type="target" 
         position={Position.Left} 
-        className="!w-3 !h-3 !rounded-full !border-2 !-left-1.5"
+        className="!w-4 !h-4 !rounded-full !border-2 !-left-2 hover:!scale-125 transition-transform"
         style={{ 
-          background: '#ec4899', 
-          borderColor: '#1a1a24',
-          boxShadow: '0 0 8px rgba(236, 72, 153, 0.5)'
+          background: 'linear-gradient(135deg, #ec4899, #db2777)', 
+          borderColor: '#1f1a24',
+          boxShadow: '0 0 12px rgba(236, 72, 153, 0.5)'
         }}
       />
       
-      {/* Header compacto estilo n8n */}
+      {/* Header */}
       <div 
-        className="px-3 py-2.5 flex items-center gap-2.5" 
+        className="px-4 py-3 flex items-center gap-3" 
         style={{ 
-          background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.12), rgba(236, 72, 153, 0.05))',
-          borderBottom: '1px solid rgba(236, 72, 153, 0.15)' 
+          background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(236, 72, 153, 0.05))',
+          borderBottom: '1px solid rgba(236, 72, 153, 0.12)' 
         }}
       >
-        <div 
-          className="w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-lg"
-          style={{ 
-            background: 'linear-gradient(135deg, #ec4899, #db2777)',
-            boxShadow: '0 4px 12px rgba(236, 72, 153, 0.4)'
-          }}
-        >
-          <ChatIcon size="sm" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <span className="text-[13px] font-semibold text-pink-300 block truncate">{nodeLabel}</span>
-          <span className="text-[10px] text-pink-500/70">Mensaje</span>
-        </div>
-      </div>
-      
-      {/* Content */}
-      <div className="p-3 space-y-2">
-        {/* Si hay mensaje configurado (de plantilla), mostrarlo */}
-        {hasMessage ? (
+        <div className="relative">
           <div 
-            className="px-2.5 py-2 rounded-xl text-[11px] leading-relaxed"
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg"
             style={{ 
-              background: 'rgba(236, 72, 153, 0.08)', 
-              border: '1px solid rgba(236, 72, 153, 0.15)',
-              color: '#f9a8d4'
+              background: 'linear-gradient(135deg, #ec4899, #db2777)',
+              boxShadow: '0 4px 15px rgba(236, 72, 153, 0.4)'
             }}
           >
-            <p className="line-clamp-3">{messageText.slice(0, 80)}{messageText.length > 80 ? '...' : ''}</p>
+            <ChatIcon size="md" />
+          </div>
+          {/* Indicador de mensaje */}
+          {hasMessage && (
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-pink-400 rounded-full border-2 border-[#1f1a24]" />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-pink-300 truncate">{nodeLabel}</span>
+            <button 
+              onClick={(e) => { e.stopPropagation(); setShowHelp(!showHelp); }}
+              className="w-4 h-4 rounded-full bg-pink-500/20 text-pink-400 text-[10px] flex items-center justify-center hover:bg-pink-500/30 transition-colors"
+            >
+              ?
+            </button>
+          </div>
+          <span className="text-[11px] text-pink-500/70">Envía mensaje al usuario</span>
+        </div>
+      </div>
+
+      {/* Tooltip */}
+      {showHelp && (
+        <div 
+          className="absolute left-full ml-2 top-0 w-52 p-3 rounded-xl text-xs z-50"
+          style={{ background: '#1e293b', border: '1px solid rgba(236, 72, 153, 0.3)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
+        >
+          <p className="text-pink-300 font-medium mb-1">Respuesta</p>
+          <p className="text-slate-400 leading-relaxed">
+            Este nodo envía un <strong className="text-white">mensaje al usuario</strong> en el chat. Úsalo para confirmar acciones, dar información o mostrar errores.
+          </p>
+        </div>
+      )}
+      
+      {/* Content */}
+      <div className="p-4 space-y-3">
+        {hasMessage ? (
+          /* Vista del mensaje configurado */
+          <div className="space-y-2">
+            <div 
+              className="flex items-center gap-2 px-2 py-1 rounded-lg w-fit"
+              style={{ background: currentType.bg }}
+            >
+              <span className="text-[11px]" style={{ color: currentType.color }}>{currentType.label}</span>
+            </div>
+            <div 
+              className="px-3 py-2.5 rounded-xl text-[12px] leading-relaxed relative"
+              style={{ 
+                background: 'rgba(236, 72, 153, 0.08)', 
+                border: '1px solid rgba(236, 72, 153, 0.15)',
+                color: '#f9a8d4'
+              }}
+            >
+              {/* Burbuja de chat */}
+              <div className="absolute -left-1.5 top-3 w-3 h-3 rotate-45" style={{ background: 'rgba(236, 72, 153, 0.08)', borderLeft: '1px solid rgba(236, 72, 153, 0.15)', borderBottom: '1px solid rgba(236, 72, 153, 0.15)' }} />
+              <p className="line-clamp-3">{messageText}</p>
+            </div>
           </div>
         ) : (
-          /* Si no hay mensaje, mostrar editor */
-          <>
-            <select 
-              className="w-full px-3 py-2 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all cursor-pointer appearance-none"
-              style={{ 
-                background: '#1e1e2a', 
-                border: '1px solid rgba(236, 72, 153, 0.3)',
-                color: '#f9a8d4',
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23ec4899'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 8px center',
-                backgroundSize: '16px',
-                paddingRight: '32px'
-              }}
-              value={data?.type || 'success'}
-              onChange={(e) => updateNodeData('type', e.target.value)}
-            >
-              <option value="success" style={{ background: '#1e1e2a', color: '#4ade80', padding: '8px' }}>✓ Éxito</option>
-              <option value="error" style={{ background: '#1e1e2a', color: '#f87171', padding: '8px' }}>✗ Error</option>
-              <option value="info" style={{ background: '#1e1e2a', color: '#60a5fa', padding: '8px' }}>ⓘ Info</option>
-            </select>
+          /* Modo edición */
+          <div className="space-y-3">
+            {/* Selector de tipo */}
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-slate-500 font-medium mb-2 block">
+                Tipo de mensaje
+              </label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {RESPONSE_TYPES.map(type => (
+                  <button
+                    key={type.value}
+                    onClick={() => updateNodeData('type', type.value)}
+                    className={`px-2 py-1.5 rounded-lg text-[10px] transition-all ${
+                      data?.type === type.value ? 'ring-1 ring-pink-500/50' : 'hover:bg-white/5'
+                    }`}
+                    style={{ 
+                      background: data?.type === type.value ? type.bg : 'rgba(255,255,255,0.02)',
+                      border: `1px solid ${data?.type === type.value ? 'rgba(236, 72, 153, 0.3)' : 'rgba(255,255,255,0.05)'}`
+                    }}
+                  >
+                    <span style={{ color: type.color }}>{type.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
             
-            <textarea 
-              className="w-full px-3 py-2 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all resize-none placeholder-slate-500"
-              style={{ 
-                background: '#1e1e2a', 
-                border: '1px solid rgba(236, 72, 153, 0.3)',
-                color: '#f1f5f9'
-              }}
-              placeholder="Escribe tu mensaje..."
-              rows={2}
-              value={data?.message || ''}
-              onChange={(e) => updateNodeData('message', e.target.value)}
-            />
-          </>
+            {/* Área de mensaje */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+                  Mensaje
+                </label>
+                <button
+                  onClick={() => setShowTemplates(!showTemplates)}
+                  className="text-[10px] text-pink-400 hover:text-pink-300 transition-colors"
+                >
+                  {showTemplates ? 'Escribir' : 'Ideas'}
+                </button>
+              </div>
+              
+              {showTemplates ? (
+                <div className="space-y-1.5">
+                  {MESSAGE_TEMPLATES.map((tpl, i) => (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        updateNodeData('message', tpl);
+                        setShowTemplates(false);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-lg text-[11px] text-slate-300 hover:bg-pink-500/10 hover:text-pink-300 transition-all"
+                      style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+                    >
+                      {tpl}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <textarea 
+                  className="w-full px-3 py-2.5 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all resize-none placeholder-slate-600"
+                  style={{ 
+                    background: '#18181f', 
+                    border: '1px solid rgba(236, 72, 153, 0.2)',
+                    color: '#f1f5f9'
+                  }}
+                  placeholder="Escribe lo que quieres decir al usuario..."
+                  rows={3}
+                  value={data?.message || ''}
+                  onChange={(e) => updateNodeData('message', e.target.value)}
+                />
+              )}
+            </div>
+          </div>
         )}
       </div>
+
+      {/* Footer indicador */}
+      <div 
+        className="px-4 py-2 flex items-center justify-between text-[10px] text-slate-500"
+        style={{ borderTop: '1px solid rgba(255,255,255,0.03)' }}
+      >
+        <span className="flex items-center gap-1">
+          <span className="text-pink-400">←</span> Desde paso anterior
+        </span>
+        <span className="flex items-center gap-1">
+          Continuar <span className="text-pink-400">→</span>
+        </span>
+      </div>
       
-      {/* Handle de salida - Estilo n8n */}
+      {/* Handle de salida */}
       <Handle 
         type="source" 
         position={Position.Right} 
-        className="!w-3 !h-3 !rounded-full !border-2 !-right-1.5"
+        className="!w-4 !h-4 !rounded-full !border-2 !-right-2 hover:!scale-125 transition-transform"
         style={{ 
-          background: '#ec4899', 
-          borderColor: '#1a1a24',
-          boxShadow: '0 0 8px rgba(236, 72, 153, 0.5)'
+          background: 'linear-gradient(135deg, #ec4899, #db2777)', 
+          borderColor: '#1f1a24',
+          boxShadow: '0 0 12px rgba(236, 72, 153, 0.5)'
         }}
       />
     </div>

@@ -307,7 +307,7 @@ export default function ActionNode({ id, data, selected, type }) {
               <div className="space-y-1.5">
                 <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px]"
                   style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                  <span className="text-emerald-400">💰</span>
+                  <svg className="w-3 h-3 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   <span className="text-emerald-300 truncate">
                     {data?.payment?.amountSource === 'fixed'
                       ? `${data.payment.amountFixed?.toLocaleString()} ${data.payment.currency || 'COP'}`
@@ -343,10 +343,10 @@ export default function ActionNode({ id, data, selected, type }) {
             >
               <option value="auto_create" style={{ background: '#1e1e2a', color: '#4ade80' }}>+ Crear</option>
               <option value="auto_assign" style={{ background: '#1e1e2a', color: '#60a5fa' }}>◎ Asignar</option>
-              <option value="set_value" style={{ background: '#1e1e2a', color: '#fcd34d' }}>✎ Establecer</option>
+              <option value="set_value" style={{ background: '#1e1e2a', color: '#fcd34d' }}>Establecer</option>
               <option value="decrement" style={{ background: '#1e1e2a', color: '#f87171' }}>− Restar</option>
               <option value="increment" style={{ background: '#1e1e2a', color: '#34d399' }}>+ Sumar</option>
-              <option value="send_notification" style={{ background: '#1e1e2a', color: '#a78bfa' }}>⚬ Notificar</option>
+              <option value="send_notification" style={{ background: '#1e1e2a', color: '#a78bfa' }}>Notificar</option>
               <option disabled style={{ background: '#1e1e2a', color: '#64748b' }}>── Google ──</option>
               <option value="google_calendar_event" style={{ background: '#1e1e2a', color: '#f87171' }}>▷ Calendar</option>
               <option value="google_sheets_row" style={{ background: '#1e1e2a', color: '#4ade80' }}>▢ Sheets</option>
@@ -773,7 +773,7 @@ export default function ActionNode({ id, data, selected, type }) {
                 {/* Ayuda */}
                 <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg" style={{ background: 'rgba(34, 197, 94, 0.05)' }}>
                   <span className="text-[10px] text-zinc-400">
-                    💡 Asegúrate de que los nombres de columna coincidan con tu Google Sheet
+                    Asegurate de que los nombres de columna coincidan con tu Google Sheet
                   </span>
                 </div>
               </div>

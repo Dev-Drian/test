@@ -1,14 +1,22 @@
 /**
- * TriggerNode - Nodo de inicio del flujo (Estilo n8n)
- * Color: Esmeralda (#10b981)
- * Compatible con plantillas (start) y flujos del sistema (trigger)
+ * TriggerNode - Nodo de inicio del flujo
+ * Diseño intuitivo para usuarios sin conocimientos técnicos
  */
 import { Handle, Position, useReactFlow } from '@xyflow/react';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { RocketIcon, ClipboardIcon } from '../Icons';
+
+// Triggers con iconos y descripciones amigables
+const TRIGGER_OPTIONS = [
+  { value: 'create', label: 'Al crear registro', desc: 'Cuando se anade un nuevo dato', color: '#4ade80' },
+  { value: 'update', label: 'Al modificar', desc: 'Cuando se edita un dato existente', color: '#60a5fa' },
+  { value: 'delete', label: 'Al eliminar', desc: 'Cuando se borra un registro', color: '#f87171' },
+  { value: 'onMessage', label: 'Al recibir mensaje', desc: 'Cuando un usuario escribe', color: '#a78bfa' },
+];
 
 export default function TriggerNode({ id, data, selected }) {
   const { setNodes } = useReactFlow();
+  const [showHelp, setShowHelp] = useState(false);
 
   const updateNodeData = useCallback((key, value) => {
     setNodes(nodes => nodes.map(node => {
@@ -19,91 +27,95 @@ export default function TriggerNode({ id, data, selected }) {
     }));
   }, [id, setNodes]);
 
-  // Obtener nombre de tabla del contexto o data
   const tableName = data?.tableName || data?.table || data?.tablePlaceholder || null;
-  
-  // Obtener keywords si vienen de plantilla
   const keywords = data?.keywords || [];
-  
-  // Detectar modo: 
-  // - Con keywords → modo palabras clave
-  // - Con trigger definido y tablePlaceholder → modo vista con trigger
-  // - Sin nada → modo edición
   const hasKeywords = keywords.length > 0;
   const hasTriggerConfig = data?.trigger && data?.tablePlaceholder;
   const isViewMode = hasKeywords || hasTriggerConfig;
-  
-  // Título del nodo
   const nodeLabel = data?.label || 'Inicio';
   
-  // Descripción según el trigger
-  const getTriggerDescription = () => {
-    if (hasKeywords) return 'Al detectar palabras';
-    const triggers = {
-      'create': 'Al crear',
-      'afterCreate': 'Después de crear',
-      'update': 'Al actualizar',
-      'afterUpdate': 'Después de actualizar',
-      'delete': 'Al eliminar',
-      'beforeCreate': 'Antes de crear',
-      'query': 'Al consultar',
-      'availability': 'Disponibilidad',
-      'onMessage': 'Al recibir mensaje',
-    };
-    return triggers[data?.trigger] || 'Trigger';
-  };
+  const currentTrigger = TRIGGER_OPTIONS.find(t => t.value === data?.trigger) || TRIGGER_OPTIONS[0];
 
   return (
     <div 
-      className={`min-w-[180px] max-w-[220px] rounded-2xl overflow-visible transition-all duration-300 ${
+      className={`min-w-[200px] max-w-[240px] rounded-2xl overflow-visible transition-all duration-300 ${
         selected 
-          ? 'ring-2 ring-emerald-400/60 shadow-2xl shadow-emerald-500/20' 
-          : 'shadow-xl shadow-black/30 hover:shadow-2xl hover:shadow-emerald-500/10'
+          ? 'ring-2 ring-emerald-400/60 shadow-2xl shadow-emerald-500/30 scale-[1.02]' 
+          : 'shadow-xl shadow-black/30 hover:shadow-2xl hover:shadow-emerald-500/15 hover:scale-[1.01]'
       }`} 
       style={{ 
-        background: 'linear-gradient(145deg, #1a1a24, #141418)',
-        border: '1px solid rgba(16, 185, 129, 0.2)'
+        background: 'linear-gradient(145deg, #1a1f2e, #141820)',
+        border: `1px solid ${selected ? 'rgba(16, 185, 129, 0.4)' : 'rgba(16, 185, 129, 0.15)'}`
       }}
     >
-      {/* Header compacto estilo n8n */}
+      {/* Header con indicador visual */}
       <div 
-        className="px-3 py-2.5 flex items-center gap-2.5" 
+        className="px-4 py-3 flex items-center gap-3" 
         style={{ 
-          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(16, 185, 129, 0.05))',
-          borderBottom: '1px solid rgba(16, 185, 129, 0.15)' 
+          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05))',
+          borderBottom: '1px solid rgba(16, 185, 129, 0.12)' 
         }}
       >
-        <div 
-          className="w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-lg"
-          style={{ 
-            background: 'linear-gradient(135deg, #10b981, #059669)',
-            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)'
-          }}
-        >
-          <RocketIcon size="sm" />
+        <div className="relative">
+          <div 
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg"
+            style={{ 
+              background: 'linear-gradient(135deg, #10b981, #059669)',
+              boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)'
+            }}
+          >
+            <RocketIcon size="md" />
+          </div>
+          {/* Indicador de activo */}
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-[#1a1f2e] animate-pulse" />
         </div>
         <div className="flex-1 min-w-0">
-          <span className="text-[13px] font-semibold text-emerald-300 block truncate">{nodeLabel}</span>
-          <span className="text-[10px] text-emerald-500/70">{getTriggerDescription()}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-emerald-300 truncate">{nodeLabel}</span>
+            <button 
+              onClick={(e) => { e.stopPropagation(); setShowHelp(!showHelp); }}
+              className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] flex items-center justify-center hover:bg-emerald-500/30 transition-colors"
+              title="¿Qué es esto?"
+            >
+              ?
+            </button>
+          </div>
+          <span className="text-[11px] text-emerald-500/70 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/60" />
+            Punto de inicio
+          </span>
         </div>
       </div>
+
+      {/* Tooltip de ayuda */}
+      {showHelp && (
+        <div 
+          className="absolute left-full ml-2 top-0 w-48 p-3 rounded-xl text-xs z-50 animate-fade-in"
+          style={{ background: '#1e293b', border: '1px solid rgba(16, 185, 129, 0.3)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
+        >
+          <p className="text-emerald-300 font-medium mb-1">Disparador</p>
+          <p className="text-slate-400 leading-relaxed">
+            Este nodo define <strong className="text-white">cuando se activa</strong> tu automatizacion. Elige el evento que la iniciara.
+          </p>
+        </div>
+      )}
       
       {/* Content */}
-      <div className="p-3 space-y-2.5">
-        {/* Si tiene keywords, mostrar keywords */}
+      <div className="p-4 space-y-3">
         {hasKeywords ? (
           <div>
-            <label className="block text-[9px] uppercase tracking-wider mb-1.5 text-slate-500 font-medium">
-              Palabras clave
+            <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider mb-2 text-slate-400 font-medium">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" /></svg>
+              Palabras que activan
             </label>
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5">
               {keywords.slice(0, 4).map((kw, i) => (
                 <span 
                   key={i}
-                  className="px-2 py-0.5 rounded-lg text-[10px] font-medium"
+                  className="px-2.5 py-1 rounded-lg text-[11px] font-medium"
                   style={{ 
-                    background: 'rgba(16, 185, 129, 0.15)', 
-                    border: '1px solid rgba(16, 185, 129, 0.25)', 
+                    background: 'rgba(16, 185, 129, 0.12)', 
+                    border: '1px solid rgba(16, 185, 129, 0.2)', 
                     color: '#34d399' 
                   }}
                 >
@@ -111,73 +123,84 @@ export default function TriggerNode({ id, data, selected }) {
                 </span>
               ))}
               {keywords.length > 4 && (
-                <span className="text-[10px] text-slate-500">+{keywords.length - 4}</span>
+                <span className="text-[11px] text-slate-500 px-2">+{keywords.length - 4} más</span>
               )}
             </div>
           </div>
-        ) : hasTriggerConfig ? (
-          /* Modo vista con trigger configurado */
+        ) : isViewMode ? (
           <div 
-            className="px-2.5 py-2 rounded-xl text-[11px] flex items-center gap-2"
+            className="px-3 py-2.5 rounded-xl text-[12px] flex items-center gap-2.5"
             style={{ 
               background: 'rgba(16, 185, 129, 0.08)', 
-              border: '1px solid rgba(16, 185, 129, 0.15)',
-              color: '#34d399'
+              border: '1px solid rgba(16, 185, 129, 0.12)',
             }}
           >
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            {getTriggerDescription()}
+            <span className="text-lg">{currentTrigger.label.split(' ')[0]}</span>
+            <span className="text-emerald-300">{currentTrigger.label.slice(2)}</span>
           </div>
         ) : (
-          /* Modo edición: Selector de Trigger */
-          <select 
-            className="w-full px-3 py-2 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all cursor-pointer appearance-none"
-            style={{ 
-              background: '#1e1e2a', 
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              color: '#6ee7b7',
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2310b981'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 8px center',
-              backgroundSize: '16px',
-              paddingRight: '32px'
-            }}
-            value={data?.trigger || 'create'}
-            onChange={(e) => updateNodeData('trigger', e.target.value)}
-          >
-            <option value="create" style={{ background: '#1e1e2a', color: '#4ade80' }}>Al CREAR</option>
-            <option value="update" style={{ background: '#1e1e2a', color: '#60a5fa' }}>Al ACTUALIZAR</option>
-            <option value="delete" style={{ background: '#1e1e2a', color: '#f87171' }}>Al ELIMINAR</option>
-            <option value="beforeCreate" style={{ background: '#1e1e2a', color: '#fcd34d' }}>ANTES de crear</option>
-            <option value="query" style={{ background: '#1e1e2a', color: '#a78bfa' }}>Al CONSULTAR</option>
-            <option value="availability" style={{ background: '#1e1e2a', color: '#2dd4bf' }}>DISPONIBILIDAD</option>
-          </select>
+          /* Modo edición con opciones visuales */
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+              ¿Cuándo se activa?
+            </label>
+            <div className="space-y-1.5">
+              {TRIGGER_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => updateNodeData('trigger', opt.value)}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all ${
+                    data?.trigger === opt.value 
+                      ? 'ring-2 ring-emerald-500/50' 
+                      : 'hover:bg-white/5'
+                  }`}
+                  style={{ 
+                    background: data?.trigger === opt.value ? 'rgba(16, 185, 129, 0.12)' : 'rgba(255,255,255,0.02)',
+                    border: `1px solid ${data?.trigger === opt.value ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.05)'}`
+                  }}
+                >
+                  <span className="font-medium" style={{ color: opt.color }}>{opt.label}</span>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{opt.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
         )}
         
-        {/* Mostrar tabla asociada si existe */}
+        {/* Tabla asociada */}
         {tableName && (
           <div 
-            className="px-2.5 py-1.5 rounded-lg text-[10px] flex items-center gap-1.5 mt-1"
+            className="px-3 py-2 rounded-xl text-[11px] flex items-center gap-2"
             style={{ 
-              background: 'rgba(16, 185, 129, 0.06)', 
-              color: '#6ee7b7'
+              background: 'rgba(16, 185, 129, 0.05)', 
+              border: '1px dashed rgba(16, 185, 129, 0.2)'
             }}
           >
-            <ClipboardIcon size="xs" /> 
-            <span className="truncate">{tableName}</span>
+            <ClipboardIcon size="xs" className="text-emerald-500" /> 
+            <span className="text-slate-400">Tabla:</span>
+            <span className="text-emerald-300 font-medium truncate">{tableName}</span>
           </div>
         )}
       </div>
+
+      {/* Indicador de flujo saliente */}
+      <div 
+        className="px-4 py-2 flex items-center justify-end gap-2 text-[10px] text-slate-500"
+        style={{ borderTop: '1px solid rgba(255,255,255,0.03)' }}
+      >
+        <span>Siguiente paso</span>
+        <span className="text-emerald-400">→</span>
+      </div>
       
-      {/* Handle de salida - Estilo n8n */}
+      {/* Handle de salida mejorado */}
       <Handle 
         type="source" 
         position={Position.Right} 
-        className="!w-3 !h-3 !rounded-full !border-2 !-right-1.5"
+        className="!w-4 !h-4 !rounded-full !border-2 !-right-2 hover:!scale-125 transition-transform"
         style={{ 
-          background: '#10b981', 
-          borderColor: '#1a1a24',
-          boxShadow: '0 0 8px rgba(16, 185, 129, 0.5)'
+          background: 'linear-gradient(135deg, #10b981, #059669)', 
+          borderColor: '#1a1f2e',
+          boxShadow: '0 0 12px rgba(16, 185, 129, 0.5)'
         }}
       />
     </div>

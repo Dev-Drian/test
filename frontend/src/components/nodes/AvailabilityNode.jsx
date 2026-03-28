@@ -125,8 +125,8 @@ export default function AvailabilityNode({ id, data, selected }) {
       
       {/* Salidas duales en la parte inferior */}
       <div className="px-3 pb-2 flex justify-between items-center text-[9px]">
-        <span className="text-emerald-400">✓ Libre</span>
-        <span className="text-red-400">✗ Ocupado</span>
+        <span className="text-emerald-400">Libre</span>
+        <span className="text-red-400">Ocupado</span>
       </div>
       
       {/* Handle Libre - 25% desde la izquierda */}

@@ -310,9 +310,10 @@ function StepResult({ result, loading, onClose }) {
 
       <button
         onClick={onClose}
-        className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-bold transition-all"
+        className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-bold transition-all flex items-center justify-center gap-2"
       >
-        ✓ Listo — ver tabla actualizada
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+        Listo — ver tabla actualizada
       </button>
     </div>
   );

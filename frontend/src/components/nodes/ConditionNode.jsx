@@ -1,14 +1,21 @@
 /**
- * ConditionNode - Nodo de condición Si/Entonces
- * Color: Ámbar (#f59e0b)
+ * ConditionNode - Nodo de decisión Si/No
+ * Diseño intuitivo para usuarios sin conocimientos técnicos
  */
 import { Handle, Position, useReactFlow } from '@xyflow/react';
-import { useCallback } from 'react';
-import { SplitIcon, CalendarIcon } from '../Icons';
+import { useCallback, useState } from 'react';
+import { SplitIcon } from '../Icons';
 
-/**
- * Convierte operador a texto legible
- */
+// Condiciones con descripciones amigables
+const CONDITION_OPTIONS = [
+  { value: 'exists', label: 'Existe', desc: 'Si el dato tiene valor', icon: 'check' },
+  { value: 'not_exists', label: 'No existe', desc: 'Si esta vacio', icon: 'x' },
+  { value: 'equals', label: 'Es igual a', desc: 'Comparar valores', icon: '=' },
+  { value: 'greater', label: 'Mayor que', desc: 'Numeros mayores', icon: '>' },
+  { value: 'less', label: 'Menor que', desc: 'Numeros menores', icon: '<' },
+  { value: 'contains', label: 'Contiene', desc: 'Buscar texto', icon: '~' },
+];
+
 function getOperatorDisplay(operator) {
   const operators = {
     '==': 'es igual a',
@@ -16,83 +23,34 @@ function getOperatorDisplay(operator) {
     '!=': 'es diferente de',
     '!==': 'es diferente de',
     '>': 'es mayor que',
-    '>=': 'es mayor o igual a',
+    '>=': 'es mayor o igual',
     '<': 'es menor que',
-    '<=': 'es menor o igual a',
+    '<=': 'es menor o igual',
+    'contains': 'contiene',
   };
   return operators[operator] || operator;
 }
 
-/**
- * Convierte nombre de campo técnico a nombre legible
- * productoData.stock -> "Stock del producto"
- * total -> "Total"
- * estadoPago -> "Estado de pago"
- */
 function getFieldDisplayName(fieldName) {
   if (!fieldName) return 'Campo';
-  
-  // Mapeo de campos conocidos
   const fieldMappings = {
-    // Campos simples
-    'total': 'Total',
-    'cantidad': 'Cantidad',
-    'precio': 'Precio',
-    'stock': 'Stock',
-    'nombre': 'Nombre',
-    'estado': 'Estado',
-    'estadoPago': 'Estado de pago',
-    'estadoTarea': 'Estado de tarea',
-    'estadoFactura': 'Estado de factura',
-    'estadoCampana': 'Estado de campaña',
-    'tipo': 'Tipo',
-    'fecha': 'Fecha',
-    'fechaVencimiento': 'Fecha de vencimiento',
-    'prioridad': 'Prioridad',
-    'cliente': 'Cliente',
-    'producto': 'Producto',
-    'email': 'Email',
-    'telefono': 'Teléfono',
-    'count': 'Cantidad de registros',
-    
-    // Campos con acceso a variable (productoData.stock)
-    'productoData.stock': 'Stock del producto',
-    'productoData.precio': 'Precio del producto',
-    'productoData.nombre': 'Nombre del producto',
-    'clienteData.tipo': 'Tipo de cliente',
-    'clienteData.nombre': 'Nombre del cliente',
-    'ventaData.total': 'Total de la venta',
+    'total': 'Total', 'cantidad': 'Cantidad', 'precio': 'Precio', 'stock': 'Stock',
+    'nombre': 'Nombre', 'estado': 'Estado', 'estadoPago': 'Estado de pago',
+    'tipo': 'Tipo', 'fecha': 'Fecha', 'prioridad': 'Prioridad',
+    'cliente': 'Cliente', 'producto': 'Producto', 'count': 'Cantidad',
   };
-  
-  // Buscar en el mapeo
-  if (fieldMappings[fieldName]) {
-    return fieldMappings[fieldName];
-  }
-  
-  // Si tiene punto, intentar hacer legible automáticamente
+  if (fieldMappings[fieldName]) return fieldMappings[fieldName];
   if (fieldName.includes('.')) {
     const parts = fieldName.split('.');
     const lastPart = parts[parts.length - 1];
-    const firstPart = parts[0].replace(/Data$/, '');
-    
-    // Convertir camelCase a palabras separadas
-    const fieldReadable = lastPart.replace(/([A-Z])/g, ' $1').toLowerCase().trim();
-    const sourceReadable = firstPart.charAt(0).toUpperCase() + firstPart.slice(1);
-    
-    return `${fieldReadable.charAt(0).toUpperCase() + fieldReadable.slice(1)} del ${sourceReadable.toLowerCase()}`;
+    return fieldMappings[lastPart] || lastPart;
   }
-  
-  // Convertir camelCase a palabras separadas
-  const readable = fieldName
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/^./, str => str.toUpperCase())
-    .trim();
-  
-  return readable;
+  return fieldName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
 }
 
 export default function ConditionNode({ id, data, selected }) {
   const { setNodes } = useReactFlow();
+  const [showHelp, setShowHelp] = useState(false);
 
   const updateNodeData = useCallback((key, value) => {
     setNodes(nodes => nodes.map(node => {
@@ -103,182 +61,199 @@ export default function ConditionNode({ id, data, selected }) {
     }));
   }, [id, setNodes]);
 
-  // Detectar si es modo vista (viene de flujo guardado con operator)
   const isViewMode = data?.operator !== undefined;
+  const currentCondition = CONDITION_OPTIONS.find(c => c.value === data?.condition) || CONDITION_OPTIONS[0];
 
   return (
     <div 
-      className={`min-w-[180px] max-w-[220px] rounded-2xl overflow-visible transition-all duration-300 ${
+      className={`min-w-[200px] max-w-[240px] rounded-2xl overflow-visible transition-all duration-300 ${
         selected 
-          ? 'ring-2 ring-amber-400/60 shadow-2xl shadow-amber-500/20' 
-          : 'shadow-xl shadow-black/30 hover:shadow-2xl hover:shadow-amber-500/10'
+          ? 'ring-2 ring-amber-400/60 shadow-2xl shadow-amber-500/30 scale-[1.02]' 
+          : 'shadow-xl shadow-black/30 hover:shadow-2xl hover:shadow-amber-500/15 hover:scale-[1.01]'
       }`} 
       style={{ 
-        background: 'linear-gradient(145deg, #1a1a24, #141418)',
-        border: '1px solid rgba(245, 158, 11, 0.2)'
+        background: 'linear-gradient(145deg, #1f1f2e, #18181f)',
+        border: `1px solid ${selected ? 'rgba(245, 158, 11, 0.4)' : 'rgba(245, 158, 11, 0.15)'}`
       }}
     >
-      {/* Handle de entrada - Estilo n8n */}
+      {/* Handle de entrada */}
       <Handle 
         type="target" 
         position={Position.Left} 
-        className="!w-3 !h-3 !rounded-full !border-2 !-left-1.5"
+        className="!w-4 !h-4 !rounded-full !border-2 !-left-2 hover:!scale-125 transition-transform"
         style={{ 
-          background: '#f59e0b', 
-          borderColor: '#1a1a24',
-          boxShadow: '0 0 8px rgba(245, 158, 11, 0.5)'
+          background: 'linear-gradient(135deg, #f59e0b, #d97706)', 
+          borderColor: '#1f1f2e',
+          boxShadow: '0 0 12px rgba(245, 158, 11, 0.5)'
         }}
       />
       
-      {/* Header compacto estilo n8n */}
+      {/* Header */}
       <div 
-        className="px-3 py-2.5 flex items-center gap-2.5" 
+        className="px-4 py-3 flex items-center gap-3" 
         style={{ 
-          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.05))',
-          borderBottom: '1px solid rgba(245, 158, 11, 0.15)' 
+          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05))',
+          borderBottom: '1px solid rgba(245, 158, 11, 0.12)' 
         }}
       >
-        <div 
-          className="w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-lg"
-          style={{ 
-            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-            boxShadow: '0 4px 12px rgba(245, 158, 11, 0.4)'
-          }}
-        >
-          <SplitIcon size="sm" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <span className="text-[13px] font-semibold text-amber-300 block truncate">
-            {data?.label || 'Decisión'}
-          </span>
-          <span className="text-[10px] text-amber-500/70">Condición</span>
-        </div>
-      </div>
-      
-      {/* Content */}
-      <div className="p-3 space-y-2">
-        {/* Modo Vista (flujo guardado) */}
-        {isViewMode ? (
+        <div className="relative">
           <div 
-            className="px-2.5 py-2 rounded-xl space-y-1"
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg"
             style={{ 
-              background: 'rgba(245, 158, 11, 0.08)', 
-              border: '1px solid rgba(245, 158, 11, 0.15)',
+              background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+              boxShadow: '0 4px 15px rgba(245, 158, 11, 0.4)'
             }}
           >
-            <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
-              <span className="text-amber-400">Si</span>
-              <span className="px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-300 truncate max-w-[60px]">
+            <SplitIcon size="md" />
+          </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-amber-300 truncate">
+              {data?.label || 'Decision'}
+            </span>
+            <button 
+              onClick={(e) => { e.stopPropagation(); setShowHelp(!showHelp); }}
+              className="w-4 h-4 rounded-full bg-amber-500/20 text-amber-400 text-[10px] flex items-center justify-center hover:bg-amber-500/30 transition-colors"
+            >
+              ?
+            </button>
+          </div>
+          <span className="text-[11px] text-amber-500/70">Bifurca el flujo</span>
+        </div>
+      </div>
+
+      {/* Tooltip */}
+      {showHelp && (
+        <div 
+          className="absolute left-full ml-2 top-0 w-52 p-3 rounded-xl text-xs z-50"
+          style={{ background: '#1e293b', border: '1px solid rgba(245, 158, 11, 0.3)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
+        >
+          <p className="text-amber-300 font-medium mb-1">Condicion</p>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            Evalua un dato y <strong className="text-white">divide el flujo</strong> en dos caminos: uno si se cumple (Si) y otro si no (No).
+          </p>
+        </div>
+      )}
+      
+      {/* Content */}
+      <div className="p-4 space-y-3">
+        {isViewMode ? (
+          /* Vista resumida */
+          <div 
+            className="px-3 py-2.5 rounded-xl"
+            style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.15)' }}
+          >
+            <div className="flex items-center gap-2 flex-wrap text-xs">
+              <span className="text-amber-400 font-medium">Si</span>
+              <span className="px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-300 font-medium">
                 {getFieldDisplayName(data.field)}
               </span>
-              <span className="text-amber-400/70">
-                {getOperatorDisplay(data.operator)}
-              </span>
-              <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 truncate max-w-[50px]">
+              <span className="text-amber-400/70">{getOperatorDisplay(data.operator)}</span>
+              <span className="px-2 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-400 font-medium">
                 {String(data.value)}
               </span>
             </div>
           </div>
         ) : (
-          /* Modo Edición */
-          <>
-            <select 
-              className="w-full px-3 py-2 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all cursor-pointer appearance-none"
-              style={{ 
-                background: '#1e1e2a', 
-                border: '1px solid rgba(251, 191, 36, 0.3)',
-                color: '#fcd34d',
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23fbbf24'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 8px center',
-                backgroundSize: '16px',
-                paddingRight: '32px'
-              }}
-              value={data?.condition || 'exists'}
-              onChange={(e) => updateNodeData('condition', e.target.value)}
-            >
-              <option value="exists" style={{ background: '#1e1e2a', color: '#4ade80' }}>✓ Si existe</option>
-              <option value="not_exists" style={{ background: '#1e1e2a', color: '#f87171' }}>✗ Si NO existe</option>
-              <option value="equals" style={{ background: '#1e1e2a', color: '#60a5fa' }}>= Es igual a</option>
-              <option value="greater" style={{ background: '#1e1e2a', color: '#a78bfa' }}>&gt; Mayor que</option>
-              <option value="less" style={{ background: '#1e1e2a', color: '#f472b6' }}>&lt; Menor que</option>
-            </select>
+          /* Modo edición intuitivo */
+          <div className="space-y-3">
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-slate-500 font-medium mb-2 block">
+                ¿Qué verificar?
+              </label>
+              <select 
+                className="w-full px-3 py-2.5 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all cursor-pointer"
+                style={{ background: '#18181f', border: '1px solid rgba(245, 158, 11, 0.2)', color: '#fcd34d' }}
+                value={data?.condition || 'exists'}
+                onChange={(e) => updateNodeData('condition', e.target.value)}
+              >
+                {CONDITION_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value} style={{ background: '#18181f' }}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             
-            <input 
-              type="text" 
-              placeholder="Campo..."
-              className="w-full px-3 py-2 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/50 placeholder-slate-500"
-              style={{ 
-                background: '#1e1e2a', 
-                border: '1px solid rgba(251, 191, 36, 0.3)',
-                color: '#f1f5f9'
-              }}
-              value={data?.field || ''}
-              onChange={(e) => updateNodeData('field', e.target.value)}
-            />
-            
-            {(data?.condition === 'equals' || data?.condition === 'greater' || data?.condition === 'less') && (
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-slate-500 font-medium mb-1.5 block">
+                Campo a evaluar
+              </label>
               <input 
                 type="text" 
-                placeholder="Valor..."
-                className="w-full px-3 py-2 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/50 placeholder-slate-500"
-                style={{ 
-                  background: '#1e1e2a', 
-                  border: '1px solid rgba(251, 191, 36, 0.3)',
-                  color: '#f1f5f9'
-                }}
-                value={data?.value || ''}
-                onChange={(e) => updateNodeData('value', e.target.value)}
+                placeholder="Ej: stock, total, estado..."
+                className="w-full px-3 py-2.5 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/50 placeholder-slate-600"
+                style={{ background: '#18181f', border: '1px solid rgba(245, 158, 11, 0.2)', color: '#f1f5f9' }}
+                value={data?.field || ''}
+                onChange={(e) => updateNodeData('field', e.target.value)}
               />
+            </div>
+            
+            {['equals', 'greater', 'less', 'contains'].includes(data?.condition) && (
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-slate-500 font-medium mb-1.5 block">
+                  Comparar con
+                </label>
+                <input 
+                  type="text" 
+                  placeholder="Escribe el valor..."
+                  className="w-full px-3 py-2.5 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/50 placeholder-slate-600"
+                  style={{ background: '#18181f', border: '1px solid rgba(245, 158, 11, 0.2)', color: '#f1f5f9' }}
+                  value={data?.value || ''}
+                  onChange={(e) => updateNodeData('value', e.target.value)}
+                />
+              </div>
             )}
-          </>
+          </div>
         )}
       </div>
       
-      {/* Salidas Sí / No */}
-      <div className="flex rounded-b-2xl overflow-hidden" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      {/* Indicadores de salida Sí/No */}
+      <div className="flex rounded-b-2xl overflow-hidden" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
         <div 
-          className="flex-1 py-2 text-center"
-          style={{ background: 'rgba(34, 197, 94, 0.1)' }}
+          className="flex-1 py-2.5 text-center flex items-center justify-center gap-1.5 group cursor-default"
+          style={{ background: 'rgba(34, 197, 94, 0.08)' }}
         >
-          <span className="text-[10px] text-emerald-400 font-medium">✓ Sí</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-400 group-hover:scale-125 transition-transform" />
+          <span className="text-[11px] text-emerald-400 font-medium">Sí, cumple</span>
         </div>
-        <div style={{ width: 1, background: 'rgba(255,255,255,0.06)' }} />
+        <div style={{ width: 1, background: 'rgba(255,255,255,0.04)' }} />
         <div 
-          className="flex-1 py-2 text-center"
-          style={{ background: 'rgba(239, 68, 68, 0.1)' }}
+          className="flex-1 py-2.5 text-center flex items-center justify-center gap-1.5 group cursor-default"
+          style={{ background: 'rgba(239, 68, 68, 0.08)' }}
         >
-          <span className="text-[10px] text-red-400 font-medium">✗ No</span>
+          <span className="w-2 h-2 rounded-full bg-red-400 group-hover:scale-125 transition-transform" />
+          <span className="text-[11px] text-red-400 font-medium">No cumple</span>
         </div>
       </div>
       
-      {/* Handle Sí (abajo izquierda) */}
+      {/* Handles de salida */}
       <Handle 
         type="source" 
         position={Position.Bottom}
         id="true"
-        className="!w-3 !h-3 !rounded-full !border-2"
+        className="!w-4 !h-4 !rounded-full !border-2 hover:!scale-125 transition-transform"
         style={{ 
-          background: '#22c55e', 
-          borderColor: '#1a1a24',
+          background: 'linear-gradient(135deg, #22c55e, #16a34a)', 
+          borderColor: '#1f1f2e',
           left: '25%',
-          bottom: -6,
-          boxShadow: '0 0 8px rgba(34, 197, 94, 0.5)'
+          bottom: -8,
+          boxShadow: '0 0 12px rgba(34, 197, 94, 0.5)'
         }}
       />
       
-      {/* Handle No (abajo derecha) */}
       <Handle 
         type="source" 
         position={Position.Bottom}
         id="false"
-        className="!w-3 !h-3 !rounded-full !border-2"
+        className="!w-4 !h-4 !rounded-full !border-2 hover:!scale-125 transition-transform"
         style={{ 
-          background: '#ef4444', 
-          borderColor: '#1a1a24',
+          background: 'linear-gradient(135deg, #ef4444, #dc2626)', 
+          borderColor: '#1f1f2e',
           left: '75%',
-          bottom: -6,
-          boxShadow: '0 0 8px rgba(239, 68, 68, 0.5)'
+          bottom: -8,
+          boxShadow: '0 0 12px rgba(239, 68, 68, 0.5)'
         }}
       />
     </div>

@@ -8,7 +8,60 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { api } from '../api/client';
 import { useToast } from '../components/Toast';
-import { Zap, AlertTriangle } from 'lucide-react';
+import { 
+  Zap, AlertTriangle, Bell, Calendar, CheckCircle, Star, Hand, 
+  CreditCard, MessageSquare, HelpCircle, Users, ShoppingCart, 
+  Clock, Mail, Gift, FileText, Tag, Settings, Send
+} from 'lucide-react';
+
+// Mapeo de iconos: soporta emojis (legacy) y nombres de iconos
+const FlowIcons = {
+  // Emojis legacy -> Lucide icons
+  '✅': CheckCircle,
+  '🔔': Bell,
+  '⭐': Star,
+  '👋': Hand,
+  '📅': Calendar,
+  '💳': CreditCard,
+  '📧': Mail,
+  '💬': MessageSquare,
+  '❓': HelpCircle,
+  '🎁': Gift,
+  '🏷️': Tag,
+  '📋': FileText,
+  '⏰': Clock,
+  '👥': Users,
+  '🛒': ShoppingCart,
+  '⚙️': Settings,
+  '📤': Send,
+  // Nombres de iconos (nuevo sistema)
+  'bell': Bell,
+  'calendar': Calendar,
+  'check': CheckCircle,
+  'star': Star,
+  'hand': Hand,
+  'credit-card': CreditCard,
+  'payment': CreditCard,
+  'message': MessageSquare,
+  'question': HelpCircle,
+  'users': Users,
+  'cart': ShoppingCart,
+  'clock': Clock,
+  'mail': Mail,
+  'gift': Gift,
+  'file': FileText,
+  'tag': Tag,
+  'settings': Settings,
+  'send': Send,
+};
+
+const getFlowIcon = (iconKey) => {
+  const IconComponent = FlowIcons[iconKey];
+  if (IconComponent) {
+    return <IconComponent className="w-5 h-5" />;
+  }
+  return <Zap className="w-5 h-5" />;
+};
 import FlowTemplatesGallery from '../components/FlowTemplatesGallery';
 import FlowWizard from '../components/FlowWizard';
 import { EVENTS } from '../utils/events';
@@ -69,7 +122,7 @@ const categoryColors = {
 export default function Flows() {
   const navigate = useNavigate();
   const { workspaceId, workspaceName } = useWorkspace();
-  const toast = useToast();
+  const { toast } = useToast();
   const [flows, setFlows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showGallery, setShowGallery] = useState(false);
@@ -316,8 +369,8 @@ export default function Flows() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4">
-                      <div className={`w-12 h-12 rounded-xl ${colors.bg} flex items-center justify-center shrink-0`}>
-                        {flow.icon ? <span className="text-xl">{flow.icon}</span> : <Zap className="w-5 h-5 text-violet-400" />}
+                      <div className={`w-12 h-12 rounded-xl ${colors.bg} flex items-center justify-center shrink-0 ${colors.text}`}>
+                        {getFlowIcon(flow.icon)}
                       </div>
                       <div>
                         <div className="flex items-center gap-3 mb-1">

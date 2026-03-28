@@ -828,7 +828,7 @@ export async function connectTelegram(req, res) {
     const botInfo = await telegramResponse.json();
     
     if (!botInfo.ok) {
-      return res.status(400).json({ error: 'Token inválido. Verifica que el token sea correcto.' });
+      return res.status(400).json({ error: 'Token invalido. Verifica que el token sea correcto.' });
     }
     
     // Guardar la conexión usando el servicio de integraciones
@@ -839,9 +839,36 @@ export async function connectTelegram(req, res) {
       botName: botInfo.result.first_name
     });
     
+    // Configurar webhook automáticamente
+    let webhookConfigured = false;
+    // URL de ngrok para desarrollo (cambiar en producción)
+    const backendUrl = process.env.BACKEND_URL || process.env.WEBHOOKS_URL || 'https://haplologic-misael-archaeologically.ngrok-free.dev';
+    if (backendUrl) {
+      try {
+        const webhookUrl = `${backendUrl}/api/telegram/webhook/${workspaceId}`;
+        const webhookResponse = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            url: webhookUrl,
+            allowed_updates: ['message', 'callback_query', 'edited_message']
+          })
+        });
+        const webhookResult = await webhookResponse.json();
+        webhookConfigured = webhookResult.ok;
+        
+        if (webhookConfigured) {
+          log.info('Telegram webhook configurado automaticamente', { workspaceId, webhookUrl });
+        }
+      } catch (webhookErr) {
+        log.warn('No se pudo configurar webhook automaticamente', { error: webhookErr.message });
+      }
+    }
+    
     log.info('Telegram bot connected', { 
       workspaceId, 
-      botUsername: botInfo.result.username 
+      botUsername: botInfo.result.username,
+      webhookConfigured
     });
     
     res.json({ 
@@ -850,7 +877,11 @@ export async function connectTelegram(req, res) {
       bot: {
         username: botInfo.result.username,
         name: botInfo.result.first_name
-      }
+      },
+      webhookConfigured,
+      webhookNote: webhookConfigured 
+        ? 'Webhook configurado automaticamente. El bot esta listo para recibir mensajes.'
+        : 'Configura el webhook manualmente con tu URL publica (ngrok en desarrollo).'
     });
   } catch (error) {
     log.error('Error conectando Telegram', { error: error.message });

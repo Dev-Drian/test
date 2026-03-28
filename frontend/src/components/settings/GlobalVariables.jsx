@@ -13,8 +13,8 @@ import HelpCollapse from '../common/HelpCollapse';
 
 const VARIABLE_TYPES = {
   text: { label: 'Texto', icon: 'Aa', color: 'blue' },
-  number: { label: 'Número', icon: '#', color: 'green' },
-  boolean: { label: 'Si/No', icon: '✓', color: 'yellow' },
+  number: { label: 'Numero', icon: '#', color: 'green' },
+  boolean: { label: 'Si/No', icon: 'Y', color: 'yellow' },
   date: { label: 'Fecha', icon: 'D', color: 'purple' },
   time: { label: 'Hora', icon: 'T', color: 'pink' },
   json: { label: 'JSON', icon: '{}', color: 'orange' },

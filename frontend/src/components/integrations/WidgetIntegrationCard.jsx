@@ -97,7 +97,7 @@ export default function WidgetIntegrationCard() {
                 onClick={copySnippet}
                 className="absolute top-2 right-2 px-2 py-1 rounded-md text-xs bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors"
               >
-                {copied ? '✓ Copiado' : 'Copiar'}
+                {copied ? 'Copiado' : 'Copiar'}
               </button>
             </div>
           </div>
@@ -106,17 +106,17 @@ export default function WidgetIntegrationCard() {
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/10">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-indigo-400">💬</span>
+                <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
                 <span className="text-sm font-medium text-indigo-300">Chat en vivo</span>
               </div>
-              <p className="text-xs text-zinc-400">Respuestas automáticas con IA</p>
+              <p className="text-xs text-zinc-400">Respuestas automaticas con IA</p>
             </div>
             <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-amber-400">🎨</span>
+                <svg className="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.098 19.902a3.75 3.75 0 005.304 0l6.401-6.402M6.75 21A3.75 3.75 0 013 17.25V4.125C3 3.504 3.504 3 4.125 3h5.25c.621 0 1.125.504 1.125 1.125v4.072M6.75 21a3.75 3.75 0 003.75-3.75V8.197M6.75 21h13.125c.621 0 1.125-.504 1.125-1.125v-5.25c0-.621-.504-1.125-1.125-1.125h-4.072M10.5 8.197l2.88-2.88c.438-.439 1.15-.439 1.59 0l3.712 3.713c.44.44.44 1.152 0 1.59l-2.879 2.88M6.75 17.25h.008v.008H6.75v-.008z" /></svg>
                 <span className="text-sm font-medium text-amber-300">Personalizable</span>
               </div>
-              <p className="text-xs text-zinc-400">Colores, posición y textos</p>
+              <p className="text-xs text-zinc-400">Colores, posicion y textos</p>
             </div>
           </div>
 
@@ -134,15 +134,15 @@ export default function WidgetIntegrationCard() {
           <div className="space-y-2">
             <p className="text-sm text-zinc-300 mb-3">Activa el widget para:</p>
             <div className="flex items-center gap-2 text-sm text-zinc-400">
-              <span className="text-emerald-400">✓</span>
+              <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
               <span>Atender visitantes 24/7 con IA</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-zinc-400">
-              <span className="text-emerald-400">✓</span>
-              <span>Instalar en cualquier sitio con 1 línea de código</span>
+              <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+              <span>Instalar en cualquier sitio con 1 linea de codigo</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-zinc-400">
-              <span className="text-emerald-400">✓</span>
+              <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
               <span>Personalizar colores y mensajes</span>
             </div>
           </div>

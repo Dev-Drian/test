@@ -205,53 +205,57 @@ const getTemplateIcon = (iconName) => {
   return icon || Icons.document;
 };
 
-// Bloques disponibles - Simplificados y organizados
+// Bloques disponibles - Organizados profesionalmente
 const blockCategories = [
   {
-    id: 'start',
-    label: 'Inicio',
-    shortLabel: '▶',
+    id: 'triggers',
+    label: 'Disparadores',
+    icon: <RocketIcon size="xs" />,
     color: '#10b981',
+    description: 'Inician la automatización',
     blocks: [
-      { type: 'trigger', icon: <RocketIcon size="sm" />, label: 'Disparador', color: '#10b981', desc: 'Inicia el flujo' },
-      { type: 'schedule', icon: <ClockIcon size="sm" />, label: 'Programar', color: '#10b981', desc: 'Por horario' },
+      { type: 'trigger', icon: <RocketIcon size="md" />, label: 'Evento', color: '#10b981', desc: 'Al crear, editar o eliminar', fullDesc: 'Se activa cuando ocurre un evento en una tabla (crear, actualizar, eliminar registro)' },
+      { type: 'schedule', icon: <ClockIcon size="md" />, label: 'Programado', color: '#0ea5e9', desc: 'Por horario', fullDesc: 'Se ejecuta automáticamente según un horario definido (diario, semanal, etc.)' },
     ]
   },
   {
     id: 'data',
     label: 'Datos',
-    shortLabel: 'DB',
+    icon: <SearchIcon size="xs" />,
     color: '#3b82f6',
+    description: 'Operaciones con registros',
     blocks: [
-      { type: 'query', icon: <SearchIcon size="sm" />, label: 'Consultar', color: '#3b82f6', desc: 'Buscar datos' },
-      { type: 'create', icon: <PlusIcon size="sm" />, label: 'Crear', color: '#22c55e', desc: 'Nuevo registro' },
-      { type: 'update', icon: <EditIcon size="sm" />, label: 'Editar', color: '#f59e0b', desc: 'Modificar' },
-      { type: 'delete', icon: <TrashIcon size="sm" />, label: 'Eliminar', color: '#ef4444', desc: 'Borrar' },
+      { type: 'query', icon: <SearchIcon size="md" />, label: 'Consultar', color: '#3b82f6', desc: 'Buscar registros', fullDesc: 'Busca y obtiene datos de una tabla según filtros' },
+      { type: 'create', icon: <PlusIcon size="md" />, label: 'Crear', color: '#22c55e', desc: 'Nuevo registro', fullDesc: 'Crea un nuevo registro en la tabla seleccionada' },
+      { type: 'update', icon: <EditIcon size="md" />, label: 'Actualizar', color: '#f59e0b', desc: 'Modificar datos', fullDesc: 'Actualiza campos de un registro existente' },
+      { type: 'delete', icon: <TrashIcon size="md" />, label: 'Eliminar', color: '#ef4444', desc: 'Borrar registro', fullDesc: 'Elimina un registro de la tabla' },
     ]
   },
   {
     id: 'logic',
-    label: 'Lógica',
-    shortLabel: 'IF',
+    label: 'Control',
+    icon: <SplitIcon size="xs" />,
     color: '#f59e0b',
+    description: 'Lógica y flujo',
     blocks: [
-      { type: 'condition', icon: <SplitIcon size="sm" />, label: 'Condición', color: '#f59e0b', desc: '¿Sí o no?' },
-      { type: 'switch', icon: <SwitchIcon size="sm" />, label: 'Switch', color: '#f59e0b', desc: 'Multi-opción' },
-      { type: 'loop', icon: <LoopIcon size="sm" />, label: 'Repetir', color: '#8b5cf6', desc: 'Por cada item' },
-      { type: 'wait', icon: <TimerIcon size="sm" />, label: 'Esperar', color: '#06b6d4', desc: 'Pausar' },
+      { type: 'condition', icon: <SplitIcon size="md" />, label: 'Condición', color: '#f59e0b', desc: 'Si/No', fullDesc: 'Evalúa una condición y toma una ruta según el resultado' },
+      { type: 'switch', icon: <SwitchIcon size="md" />, label: 'Selector', color: '#a855f7', desc: 'Múltiples rutas', fullDesc: 'Elige entre varias opciones según el valor de un campo' },
+      { type: 'loop', icon: <LoopIcon size="md" />, label: 'Bucle', color: '#8b5cf6', desc: 'Por cada elemento', fullDesc: 'Repite acciones para cada elemento de una lista' },
+      { type: 'wait', icon: <TimerIcon size="md" />, label: 'Esperar', color: '#06b6d4', desc: 'Pausar flujo', fullDesc: 'Pausa la ejecución por un tiempo determinado' },
     ]
   },
   {
-    id: 'notify',
-    label: 'Enviar',
-    shortLabel: 'TX',
+    id: 'communication',
+    label: 'Comunicación',
+    icon: <ChatIcon size="xs" />,
     color: '#ec4899',
+    description: 'Envío de mensajes',
     blocks: [
-      { type: 'response', icon: <ChatIcon size="sm" />, label: 'Responder', color: '#ec4899', desc: 'Al usuario' },
-      { type: 'email', icon: <EmailIcon size="sm" />, label: 'Email', color: '#3b82f6', desc: 'Correo' },
-      { type: 'whatsapp', icon: <WhatsAppIcon size="sm" />, label: 'WhatsApp', color: '#25d366', desc: 'Mensaje WA' },
-      { type: 'telegram', icon: <TelegramIcon size="sm" />, label: 'Telegram', color: '#0088cc', desc: 'Mensaje TG' },
-      { type: 'notification', icon: <BellIcon size="sm" />, label: 'Notificar', color: '#f59e0b', desc: 'Al equipo' },
+      { type: 'response', icon: <ChatIcon size="md" />, label: 'Responder', color: '#ec4899', desc: 'Mensaje al chat', fullDesc: 'Envía una respuesta al usuario en el chat' },
+      { type: 'email', icon: <EmailIcon size="md" />, label: 'Email', color: '#3b82f6', desc: 'Correo electrónico', fullDesc: 'Envía un correo electrónico' },
+      { type: 'whatsapp', icon: <WhatsAppIcon size="md" />, label: 'WhatsApp', color: '#25d366', desc: 'Mensaje WhatsApp', fullDesc: 'Envía mensaje por WhatsApp Business' },
+      { type: 'telegram', icon: <TelegramIcon size="md" />, label: 'Telegram', color: '#0088cc', desc: 'Mensaje Telegram', fullDesc: 'Envía mensaje por Telegram Bot' },
+      { type: 'notification', icon: <BellIcon size="md" />, label: 'Notificar', color: '#f59e0b', desc: 'Al equipo', fullDesc: 'Envía notificación interna al equipo' },
     ]
   },
 ];
@@ -493,9 +497,9 @@ export default function FlowEditor() {
         // Fallback: plantilla vacía
         setFlowTemplates([{
           _id: 'empty',
-          name: 'Flujo vacío',
+          name: 'Flujo vacio',
           description: 'Empieza desde cero',
-          icon: '✨',
+          icon: 'sparkles',
           color: 'zinc',
           nodes: [],
           edges: [],
@@ -919,103 +923,161 @@ export default function FlowEditor() {
     <div className="h-[calc(100vh-60px)] flex" style={{ background: '#0a0a0f' }} data-tour="flow-welcome">
       {/* Sidebar izquierdo - Lista de flujos */}
       <aside 
-        className="w-64 flex flex-col backdrop-blur-xl" 
+        className="w-72 flex flex-col" 
         style={{ 
-          background: 'linear-gradient(180deg, rgba(20, 20, 30, 0.95), rgba(10, 10, 15, 0.98))',
+          background: '#0c0c10',
           borderRight: '1px solid rgba(255, 255, 255, 0.06)'
         }}
         data-tour="flow-templates"
       >
-        {/* Header */}
-        <div className="p-4" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 blur-lg opacity-50" />
-              <div className="relative w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg bg-gradient-to-br from-amber-500 to-orange-600">
-                {Icons.flow}
+        {/* Header profesional */}
+        <div className="p-4" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)', background: 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%)' }}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white" style={{ background: 'linear-gradient(135deg, #f59e0b, #ea580c)' }}>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-white">Automatizaciones</h2>
+                <p className="text-[11px] text-slate-500 truncate max-w-[140px]">{workspaceName}</p>
               </div>
             </div>
-            <div>
-              <h2 className="text-sm font-semibold text-white">Flujos</h2>
-              <p className="text-xs text-slate-500 truncate max-w-[140px]">{workspaceName}</p>
-            </div>
+            <span className="text-[10px] text-slate-600 bg-slate-800/50 px-2 py-1 rounded-md font-mono">
+              {flows.length}
+            </span>
           </div>
           
           <button
             onClick={() => setShowTemplates(true)}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium hover:shadow-lg hover:shadow-amber-500/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-white text-sm font-medium transition-all hover:scale-[1.02] active:scale-[0.98]"
+            style={{ 
+              background: 'linear-gradient(135deg, #f59e0b, #ea580c)',
+              boxShadow: '0 4px 20px rgba(245, 158, 11, 0.25)'
+            }}
           >
-            {Icons.plus}
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
             Nuevo flujo
           </button>
         </div>
 
         {/* Lista de flujos */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-1">
+        <div className="flex-1 overflow-y-auto p-3">
           {flows.length === 0 ? (
-            <div className="text-center py-8">
+            <div className="text-center py-12">
               <div 
-                className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 text-slate-500" 
-                style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.06)' }}
+                className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" 
+                style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)' }}
               >
-                {Icons.folder}
+                <svg className="w-7 h-7 text-amber-500/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
               </div>
-              <p className="text-sm text-slate-300 mb-1">Sin flujos</p>
-              <p className="text-xs text-slate-500">Crea tu primer flujo</p>
+              <p className="text-sm text-white font-medium mb-1">Sin flujos aún</p>
+              <p className="text-xs text-slate-500 mb-4">Crea tu primera automatización</p>
+              <button
+                onClick={() => setShowTemplates(true)}
+                className="text-xs text-amber-400 hover:text-amber-300 transition-colors"
+              >
+                + Crear flujo →
+              </button>
             </div>
           ) : (
-            <div className="space-y-1.5">
-              {flows.map(flow => (
-                <button
-                  key={flow._id}
-                  onClick={() => handleSelectFlow(flow)}
-                  className={`w-full text-left px-3 py-3 rounded-xl transition-all duration-300 flex items-center gap-3 group ${
-                    selectedFlow?._id === flow._id
-                      ? 'text-amber-300'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                  style={{ 
-                    background: selectedFlow?._id === flow._id 
-                      ? 'linear-gradient(90deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05))' 
-                      : 'transparent',
-                    border: selectedFlow?._id === flow._id 
-                      ? '1px solid rgba(245, 158, 11, 0.2)' 
-                      : '1px solid transparent'
-                  }}
-                >
-                  <div 
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 transition-all duration-300 ${
-                      selectedFlow?._id === flow._id 
-                        ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/30' 
-                        : 'bg-white/5 text-slate-500 group-hover:bg-white/10 group-hover:text-slate-300'
+            <div className="space-y-2">
+              {flows.map((flow, index) => {
+                const isSelected = selectedFlow?._id === flow._id;
+                const nodeCount = flow.nodes?.length || 0;
+                const isActive = flow.isActive !== false;
+                
+                return (
+                  <button
+                    key={flow._id}
+                    onClick={() => handleSelectFlow(flow)}
+                    className={`w-full text-left p-3 rounded-xl transition-all duration-200 group relative overflow-hidden ${
+                      isSelected ? 'ring-1 ring-amber-500/50' : 'hover:bg-white/[0.03]'
                     }`}
+                    style={{ 
+                      background: isSelected 
+                        ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(234, 88, 12, 0.06))' 
+                        : 'rgba(255,255,255,0.01)',
+                      border: `1px solid ${isSelected ? 'rgba(245, 158, 11, 0.25)' : 'rgba(255,255,255,0.04)'}`
+                    }}
                   >
-                    <BoltIcon size="sm" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{flow.name}</p>
-                    <p className="text-[10px] text-slate-500">
-                      {flow.nodes?.length || 0} bloques
-                    </p>
-                  </div>
-                  {selectedFlow?._id === flow._id && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                  )}
-                </button>
-              ))}
+                    <div className="flex items-start gap-3">
+                      {/* Icono con estado */}
+                      <div 
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${
+                          isSelected 
+                            ? 'text-white shadow-lg' 
+                            : 'text-slate-400 group-hover:text-slate-300'
+                        }`}
+                        style={{ 
+                          background: isSelected 
+                            ? 'linear-gradient(135deg, #f59e0b, #ea580c)' 
+                            : 'rgba(255,255,255,0.04)',
+                          boxShadow: isSelected ? '0 4px 12px rgba(245, 158, 11, 0.3)' : 'none'
+                        }}
+                      >
+                        <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                      </div>
+                      
+                      {/* Contenido */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <p className={`text-sm font-medium truncate ${isSelected ? 'text-white' : 'text-slate-300 group-hover:text-white'}`}>
+                            {flow.name}
+                          </p>
+                          {isSelected && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-[11px]">
+                          <span className={`${isSelected ? 'text-amber-400/70' : 'text-slate-500'}`}>
+                            {nodeCount} {nodeCount === 1 ? 'nodo' : 'nodos'}
+                          </span>
+                          <span className="text-slate-700">•</span>
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                            isActive 
+                              ? 'bg-emerald-500/15 text-emerald-400' 
+                              : 'bg-slate-500/15 text-slate-500'
+                          }`}>
+                            {isActive ? 'Activo' : 'Inactivo'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Indicador de selección */}
+                    {isSelected && (
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full bg-amber-500" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* Ayuda */}
-        <div className="p-3" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
+        {/* Footer con ayuda y atajos */}
+        <div className="p-3 space-y-2" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.04)', background: 'linear-gradient(0deg, rgba(255,255,255,0.01) 0%, transparent 100%)' }}>
           <button
             onClick={() => setShowHelp(true)}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-slate-400 text-sm hover:text-amber-400 hover:bg-amber-500/10 transition-all duration-300"
-            style={{ border: '1px solid rgba(255, 255, 255, 0.04)' }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 text-sm hover:text-white hover:bg-white/[0.04] transition-all group"
           >
-            {Icons.help}
-            ¿Cómo funciona?
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-800/50 group-hover:bg-amber-500/20 group-hover:text-amber-400 transition-all">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+              </svg>
+            </div>
+            <div className="text-left">
+              <p className="text-sm">Guía rápida</p>
+              <p className="text-[10px] text-slate-600">Aprende a crear flujos</p>
+            </div>
           </button>
         </div>
       </aside>
@@ -1073,25 +1135,6 @@ export default function FlowEditor() {
                   {nodes.length} bloques · {edges.length} conexiones
                 </span>
                 <button 
-                  onClick={() => {
-                    setTestMode(true);
-                    setTestMessages([{
-                      type: 'system',
-                      text: '🧪 Modo de prueba activado. Simula una conversación para ver cómo funciona tu flujo.',
-                    }]);
-                    setTestStep(0);
-                    setHighlightedNode(null);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-violet-300 text-sm font-medium hover:shadow-lg hover:shadow-violet-500/20 transition-all"
-                  style={{ background: 'rgba(139, 92, 246, 0.15)', border: '1px solid rgba(139, 92, 246, 0.3)' }}
-                  title="Probar flujo"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
-                  </svg>
-                  Probar
-                </button>
-                <button 
                   onClick={handleSaveFlow} 
                   disabled={isSaving}
                   data-tour="flow-save"
@@ -1145,23 +1188,23 @@ export default function FlowEditor() {
                 <div className="p-4 space-y-3 max-h-80 overflow-y-auto">
                   {nodes.length === 0 ? (
                     <>
-                      <TipCard icon="►" title="Empieza con un Trigger" text="Arrastra un bloque 'Inicio' desde el panel derecho para definir qué inicia tu flujo." />
-                      <TipCard icon="✦" title="Usa plantillas" text="Haz clic en 'Plantillas' para usar flujos predefinidos y ahorrarte tiempo." />
+                      <TipCard icon=">" title="Empieza con un Disparador" text="Arrastra un bloque 'Evento' o 'Programado' desde el panel derecho para definir que inicia tu flujo." />
+                      <TipCard icon="*" title="Usa plantillas" text="Haz clic en 'Plantillas' para usar flujos predefinidos y ahorrarte tiempo." />
                     </>
                   ) : nodes.length === 1 ? (
                     <>
-                      <TipCard icon="→" title="Conecta bloques" text="Ahora arrastra otro bloque y conéctalo haciendo clic y arrastrando desde el punto de conexión." />
-                      <TipCard icon="⚡" title="Define acciones" text="Usa bloques de 'Acción' para guardar datos, enviar mensajes o notificaciones." />
+                      <TipCard icon=">" title="Conecta bloques" text="Ahora arrastra otro bloque y conectalo haciendo clic y arrastrando desde el punto de conexion." />
+                      <TipCard icon="!" title="Define acciones" text="Usa bloques de 'Datos' para guardar registros o 'Comunicacion' para enviar mensajes." />
                     </>
                   ) : edges.length === 0 ? (
                     <>
-                      <TipCard icon="→" title="¡Conecta tus bloques!" text="Haz clic en un punto de salida (abajo del bloque) y arrastra hasta el punto de entrada de otro bloque." />
+                      <TipCard icon=">" title="Conecta tus bloques" text="Haz clic en un punto de salida (abajo del bloque) y arrastra hasta el punto de entrada de otro bloque." />
                     </>
                   ) : (
                     <>
-                      <TipCard icon="✓" title="¡Bien hecho!" text="Tu flujo está tomando forma. Usa el modo 'Probar' para simular cómo funcionará." />
-                      <TipCard icon="↕" title="Guarda tu trabajo" text="No olvides guardar con Ctrl+S o el botón 'Guardar' para no perder tus cambios." />
-                      <TipCard icon="⇄" title="Undo/Redo" text="Si te equivocas, usa Ctrl+Z para deshacer o Ctrl+Y para rehacer." />
+                      <TipCard icon="+" title="Bien hecho" text="Tu flujo esta tomando forma. Guarda tus cambios y el flujo se ejecutara automaticamente cuando se active." />
+                      <TipCard icon="S" title="Guarda tu trabajo" text="No olvides guardar con Ctrl+S o el boton 'Guardar' para no perder tus cambios." />
+                      <TipCard icon="Z" title="Undo/Redo" text="Si te equivocas, usa Ctrl+Z para deshacer o Ctrl+Y para rehacer." />
                     </>
                   )}
                 </div>
@@ -1222,25 +1265,62 @@ export default function FlowEditor() {
                   style={{ background: '#0a0a0f' }}
                 />
 
-                {/* Instrucciones si está vacío */}
+                {/* Guía interactiva si está vacío */}
                 {nodes.length === 0 && (
                   <Panel position="top-center">
                     <div 
-                      className="px-8 py-6 rounded-2xl text-center mt-20 backdrop-blur-xl shadow-2xl"
+                      className="px-10 py-8 rounded-3xl text-center mt-16 backdrop-blur-xl shadow-2xl max-w-md"
                       style={{ 
-                        background: 'linear-gradient(135deg, rgba(30, 30, 45, 0.9), rgba(20, 20, 30, 0.95))', 
-                        border: '1px solid rgba(255, 255, 255, 0.1)' 
+                        background: 'linear-gradient(145deg, rgba(30, 30, 50, 0.95), rgba(15, 15, 25, 0.98))', 
+                        border: '1px solid rgba(255, 255, 255, 0.08)' 
                       }}
                     >
-                      <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-gradient-to-br from-amber-500/20 to-orange-500/20 text-amber-400">
-                        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                      {/* Header animado */}
+                      <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-5 bg-gradient-to-br from-violet-500/30 to-fuchsia-500/30 text-violet-300 animate-pulse">
+                        <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
                         </svg>
                       </div>
-                      <p className="text-white font-semibold mb-1 text-lg">¡Empieza a crear!</p>
-                      <p className="text-sm text-slate-400">
-                        Arrastra bloques desde el panel derecho →
+                      
+                      <h2 className="text-white font-bold text-xl mb-2">¡Crea tu primer flujo!</h2>
+                      <p className="text-slate-400 text-sm mb-6">
+                        Es muy fácil, solo sigue estos pasos:
                       </p>
+                      
+                      {/* Pasos guiados */}
+                      <div className="space-y-3 text-left mb-6">
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                          <div className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">1</div>
+                          <div>
+                            <p className="text-emerald-300 font-medium text-sm">Arrastra un Disparador</p>
+                            <p className="text-slate-500 text-xs">Es lo que inicia tu flujo automático</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                          <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">2</div>
+                          <div>
+                            <p className="text-blue-300 font-medium text-sm">Agrega acciones</p>
+                            <p className="text-slate-500 text-xs">Consultas, condiciones, respuestas...</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-violet-500/10 border border-violet-500/20">
+                          <div className="w-7 h-7 rounded-full bg-violet-500 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">3</div>
+                          <div>
+                            <p className="text-violet-300 font-medium text-sm">Conecta los bloques</p>
+                            <p className="text-slate-500 text-xs">Arrastra desde los puntos de conexión</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Indicador visual */}
+                      <div className="flex items-center justify-center gap-2 text-amber-400">
+                        <span className="text-sm">Mira el panel</span>
+                        <svg className="w-5 h-5 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
+                        </svg>
+                      </div>
                     </div>
                   </Panel>
                 )}
@@ -1349,7 +1429,7 @@ export default function FlowEditor() {
                                 setHighlightedNode(triggerNode.id);
                                 setTestMessages(prev => [...prev, { 
                                   type: 'node', 
-                                  text: `📍 Ejecutando: ${triggerNode.data?.label || triggerNode.type}`
+                                  text: `Ejecutando: ${triggerNode.data?.label || triggerNode.type}`
                                 }]);
                               }
                               setTimeout(() => {
@@ -1387,7 +1467,7 @@ export default function FlowEditor() {
                                 setHighlightedNode(nextNode.id);
                                 setTestMessages(prev => [...prev, { 
                                   type: 'node', 
-                                  text: `📍 Ejecutando: ${nextNode.data?.label || nextNode.type}`
+                                  text: `Ejecutando: ${nextNode.data?.label || nextNode.type}`
                                 }]);
                               }
                               setTimeout(() => {
@@ -1424,7 +1504,7 @@ export default function FlowEditor() {
                         onClick={() => {
                           setTestMessages([{
                             type: 'system',
-                            text: '🔄 Conversación reiniciada',
+                            text: 'Conversacion reiniciada',
                           }]);
                           setHighlightedNode(null);
                         }}
@@ -1437,119 +1517,173 @@ export default function FlowEditor() {
                 </div>
               )}
 
-              {/* Panel de edición de nodo */}
+              {/* Panel de edición de nodo - Diseño intuitivo */}
               {selectedNode && (
                 <div 
-                  className="absolute right-4 top-4 w-80 rounded-xl overflow-hidden shadow-2xl z-40"
-                  style={{ background: '#1e293b', border: '1px solid rgba(100, 116, 139, 0.3)' }}
+                  className="absolute right-4 top-4 w-96 rounded-2xl overflow-hidden shadow-2xl z-40 animate-slide-in"
+                  style={{ background: 'linear-gradient(180deg, #1e293b, #0f172a)', border: '1px solid rgba(100, 116, 139, 0.2)' }}
                 >
-                  <div className="px-4 py-3 flex items-center justify-between" style={{ background: 'rgba(30, 41, 59, 0.8)', borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">
+                  {/* Header mejorado */}
+                  <div 
+                    className="px-5 py-4 flex items-center justify-between" 
+                    style={{ 
+                      background: `linear-gradient(135deg, ${availableBlocks.find(b => b.type === selectedNode.type)?.color || '#3b82f6'}15, transparent)`,
+                      borderBottom: '1px solid rgba(100, 116, 139, 0.15)' 
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="w-11 h-11 rounded-xl flex items-center justify-center text-white shadow-lg"
+                        style={{ 
+                          background: `linear-gradient(135deg, ${availableBlocks.find(b => b.type === selectedNode.type)?.color || '#3b82f6'}, ${availableBlocks.find(b => b.type === selectedNode.type)?.color || '#3b82f6'}dd)`,
+                          boxShadow: `0 4px 15px ${availableBlocks.find(b => b.type === selectedNode.type)?.color || '#3b82f6'}40`
+                        }}
+                      >
                         {availableBlocks.find(b => b.type === selectedNode.type)?.icon || <BoltIcon size="md" />}
-                      </span>
-                      <span className="text-sm font-medium text-slate-100">
-                        Editar {availableBlocks.find(b => b.type === selectedNode.type)?.label || 'Nodo'}
-                      </span>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-white">
+                          Configurar {availableBlocks.find(b => b.type === selectedNode.type)?.label || 'Nodo'}
+                        </h3>
+                        <p className="text-[11px] text-slate-400">
+                          {availableBlocks.find(b => b.type === selectedNode.type)?.fullDesc?.slice(0, 50) || 'Personaliza este bloque'}
+                        </p>
+                      </div>
                     </div>
                     <button
                       onClick={() => setSelectedNode(null)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-600/50 transition-all"
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-600/50 transition-all"
                     >
-                      ✕
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                   </div>
                   
-                  <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
-                    {/* Etiqueta */}
+                  <div className="p-5 space-y-5 max-h-[65vh] overflow-y-auto">
+                    {/* Etiqueta con descripción */}
                     <div>
-                      <label className="block text-xs text-zinc-500 mb-1.5">Etiqueta</label>
+                      <label className="flex items-center justify-between text-xs text-slate-400 mb-2 font-medium">
+                        <span>Nombre del bloque</span>
+                        <span className="text-[10px] text-slate-600">Opcional</span>
+                      </label>
                       <input
                         type="text"
                         value={selectedNode.data?.label || ''}
                         onChange={(e) => updateSelectedNodeData('label', e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                        style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
-                        placeholder="Nombre descriptivo"
+                        className="w-full px-4 py-3 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all placeholder:text-slate-600"
+                        style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.08)' }}
+                        placeholder="Ej: Verificar stock, Enviar confirmacion..."
                       />
+                      <p className="text-[10px] text-slate-500 mt-1.5">Un nombre descriptivo te ayuda a identificar este paso</p>
                     </div>
 
                     {/* Campos específicos por tipo de nodo */}
                     {selectedNode.type === 'trigger' && (
-                      <>
-                        <div>
-                          <label className="block text-xs text-zinc-500 mb-1.5">Evento</label>
-                          <select
-                            value={selectedNode.data?.triggerType || ''}
-                            onChange={(e) => updateSelectedNodeData('triggerType', e.target.value)}
-                            className="w-full px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer"
-                            style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
-                          >
-                            <option value="">Seleccionar evento...</option>
-                            <option value="create">Cuando se crea un registro</option>
-                            <option value="update">Cuando se actualiza</option>
-                            <option value="delete">Cuando se elimina</option>
-                            <option value="message">Cuando llega un mensaje</option>
-                          </select>
+                      <div className="space-y-4">
+                        <div 
+                          className="p-4 rounded-xl space-y-4"
+                          style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.15)' }}
+                        >
+                          <div className="flex items-center gap-2 text-emerald-400 mb-2">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                            <span className="text-xs font-semibold">Configuracion del disparador</span>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-xs text-slate-400 mb-2 font-medium">Cuando se activa?</label>
+                            <select
+                              value={selectedNode.data?.triggerType || ''}
+                              onChange={(e) => updateSelectedNodeData('triggerType', e.target.value)}
+                              className="w-full px-4 py-3 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer"
+                              style={{ background: '#0f172a', border: '1px solid rgba(16, 185, 129, 0.2)' }}
+                            >
+                              <option value="">Selecciona un evento...</option>
+                              <option value="create">Cuando se CREA un registro</option>
+                              <option value="update">Cuando se ACTUALIZA</option>
+                              <option value="delete">Cuando se ELIMINA</option>
+                              <option value="message">Cuando llega un MENSAJE</option>
+                            </select>
+                            <p className="text-[10px] text-slate-500 mt-1.5">Esto define que accion inicia el flujo automaticamente</p>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-xs text-slate-400 mb-2 font-medium">En que tabla?</label>
+                            <select
+                              value={selectedNode.data?.table || ''}
+                              onChange={(e) => {
+                                const tableId = e.target.value;
+                                const tableName = tables.find(t => t._id === tableId)?.name || '';
+                                updateSelectedNodeData('table', tableId);
+                                updateSelectedNodeData('tableName', tableName);
+                              }}
+                              className="w-full px-4 py-3 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer"
+                              style={{ background: '#0f172a', border: '1px solid rgba(16, 185, 129, 0.2)' }}
+                            >
+                              <option value="">Selecciona una tabla...</option>
+                              {tables.map(t => (
+                                <option key={t._id} value={t._id}>{t.name}</option>
+                              ))}
+                            </select>
+                            <p className="text-[10px] text-slate-500 mt-1.5">El flujo se activara cuando haya cambios en esta tabla</p>
+                          </div>
                         </div>
-                        <div>
-                          <label className="block text-xs text-zinc-500 mb-1.5">Tabla</label>
-                          <select
-                            value={selectedNode.data?.table || ''}
-                            onChange={(e) => {
-                              const tableId = e.target.value;
-                              const tableName = tables.find(t => t._id === tableId)?.name || '';
-                              updateSelectedNodeData('table', tableId);
-                              updateSelectedNodeData('tableName', tableName);
-                            }}
-                            className="w-full px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer"
-                            style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
-                          >
-                            <option value="">Seleccionar tabla...</option>
-                            {tables.map(t => (
-                              <option key={t._id} value={t._id}>{t.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </>
+                      </div>
                     )}
 
                     {selectedNode.type === 'query' && (
-                      <>
-                        {/* Paso 1: Seleccionar tabla donde buscar */}
-                        <div>
-                          <label className="block text-xs text-zinc-400 mb-1.5 font-medium flex items-center gap-1"><ClipboardIcon size="xs" /> Buscar en tabla</label>
-                          <select
-                            value={selectedNode.data?.targetTable || ''}
-                            onChange={(e) => {
-                              const tableId = e.target.value;
-                              const table = tables.find(t => t._id === tableId);
-                              const tableName = table?.name || '';
-                              const autoVarName = tableName 
-                                ? tableName.toLowerCase().replace(/s$/, '') + 'Data'
-                                : '';
-                              updateSelectedNodeData('targetTable', tableId);
-                              updateSelectedNodeData('targetTableName', tableName);
-                              updateSelectedNodeData('outputVar', autoVarName);
-                              updateSelectedNodeData('filterField', '');
-                              updateSelectedNodeData('filterValueType', 'trigger');
-                              updateSelectedNodeData('filterValueField', '');
-                              updateSelectedNodeData('filterValueFixed', '');
-                            }}
-                            className="w-full px-3 py-2.5 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer"
-                            style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)' }}
-                          >
-                            <option value="">Seleccionar tabla...</option>
-                            {tables.map(t => (
-                              <option key={t._id} value={t._id}>{t.name}</option>
-                            ))}
-                          </select>
+                      <div className="space-y-4">
+                        <div 
+                          className="p-4 rounded-xl space-y-4"
+                          style={{ background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.15)' }}
+                        >
+                          <div className="flex items-center gap-2 text-blue-400 mb-2">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                            <span className="text-xs font-semibold">Configurar busqueda</span>
+                          </div>
+                          
+                          {/* Paso 1: Seleccionar tabla */}
+                          <div>
+                            <label className="flex items-center gap-2 text-xs text-slate-400 mb-2 font-medium">
+                              <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] flex items-center justify-center">1</span>
+                              ¿Dónde buscar?
+                            </label>
+                            <select
+                              value={selectedNode.data?.targetTable || ''}
+                              onChange={(e) => {
+                                const tableId = e.target.value;
+                                const table = tables.find(t => t._id === tableId);
+                                const tableName = table?.name || '';
+                                const autoVarName = tableName 
+                                  ? tableName.toLowerCase().replace(/s$/, '') + 'Data'
+                                  : '';
+                                updateSelectedNodeData('targetTable', tableId);
+                                updateSelectedNodeData('targetTableName', tableName);
+                                updateSelectedNodeData('outputVar', autoVarName);
+                                updateSelectedNodeData('filterField', '');
+                                updateSelectedNodeData('filterValueType', 'trigger');
+                                updateSelectedNodeData('filterValueField', '');
+                                updateSelectedNodeData('filterValueFixed', '');
+                              }}
+                              className="w-full px-4 py-3 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+                              style={{ background: '#0f172a', border: '1px solid rgba(59, 130, 246, 0.2)' }}
+                            >
+                              <option value="">Selecciona una tabla...</option>
+                              {tables.map(t => (
+                                <option key={t._id} value={t._id}>{t.name}</option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
                         
-                        {/* Paso 2: Filtro simple */}
+                        {/* Paso 2: Filtro */}
                         {selectedNode.data?.targetTable && (
-                          <div className="p-3 rounded-lg space-y-3" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                            <label className="block text-xs text-zinc-400 font-medium flex items-center gap-1"><SearchIcon size="xs" /> Buscar donde</label>
+                          <div 
+                            className="p-4 rounded-xl space-y-4"
+                            style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.15)' }}
+                          >
+                            <div className="flex items-center gap-2 text-amber-400 mb-2">
+                              <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] flex items-center justify-center">2</span>
+                              <span className="text-xs font-semibold">¿Qué buscar?</span>
+                            </div>
                             
                             {/* Campo de la tabla a buscar */}
                             <div>
@@ -1653,13 +1787,13 @@ export default function FlowEditor() {
                         {/* Resultado */}
                         {selectedNode.data?.targetTable && (
                           <div className="space-y-2">
-                            <label className="block text-xs text-zinc-400 font-medium">📤 Resultado</label>
+                            <label className="block text-xs text-zinc-400 font-medium">Resultado</label>
                             <div className="flex gap-2">
                               <div className="flex-1 p-2 rounded-lg text-center" style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-                                <span className="text-xs text-emerald-400">✓ Sí encuentra</span>
+                                <span className="text-xs text-emerald-400">Si encuentra</span>
                               </div>
                               <div className="flex-1 p-2 rounded-lg text-center" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-                                <span className="text-xs text-red-400">✗ No encuentra</span>
+                                <span className="text-xs text-red-400">No encuentra</span>
                               </div>
                             </div>
                             <p className="text-[10px] text-zinc-500">
@@ -1667,7 +1801,7 @@ export default function FlowEditor() {
                             </p>
                           </div>
                         )}
-                      </>
+                      </div>
                     )}
 
                     {selectedNode.type === 'condition' && (
@@ -1831,7 +1965,7 @@ export default function FlowEditor() {
                                     }}
                                     className="p-1 text-red-400 hover:bg-red-500/20 rounded"
                                   >
-                                    ✕
+                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                                   </button>
                                 </div>
                               ))}
@@ -1908,7 +2042,7 @@ export default function FlowEditor() {
                                     }}
                                     className="p-1 text-red-400 hover:bg-red-500/20 rounded"
                                   >
-                                    ✕
+                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                                   </button>
                                 </div>
                               ))}
@@ -2211,23 +2345,40 @@ export default function FlowEditor() {
             borderLeft: '1px solid rgba(255,255,255,0.08)' 
           }}
         >
-          {/* Header minimalista */}
-          <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}>
-                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16m-7 6h7" />
-                </svg>
+          {/* Header profesional */}
+          <div className="px-4 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}>
+                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-white">Nodos</h3>
+                  <p className="text-[10px] text-slate-500">{blockCategories.reduce((acc, cat) => acc + cat.blocks.length, 0)} disponibles</p>
+                </div>
               </div>
-              <span className="text-sm font-medium text-white">Nodos</span>
             </div>
-            <span className="text-[10px] text-slate-500 font-mono">
-              {blockCategories.reduce((acc, cat) => acc + cat.blocks.length, 0)}
-            </span>
+            
+            {/* Búsqueda */}
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={blockSearch}
+                onChange={(e) => setBlockSearch(e.target.value)}
+                placeholder="Buscar nodos..."
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40 transition-all"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+              />
+            </div>
           </div>
 
-          {/* Tabs de categorías */}
-          <div className="px-2 py-2 flex gap-1" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+          {/* Tabs de categorías - Pill design */}
+          <div className="px-3 py-3 flex flex-wrap gap-1.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
             {blockCategories.map(cat => (
               <button
                 key={cat.id}
@@ -2236,100 +2387,99 @@ export default function FlowEditor() {
                   blockCategories.forEach(c => newState[c.id] = c.id !== cat.id);
                   return newState;
                 })}
-                className={`flex-1 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                   !collapsedCategories[cat.id] 
-                    ? 'text-white shadow-sm' 
-                    : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+                    ? 'text-white shadow-lg' 
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
                 style={!collapsedCategories[cat.id] ? { 
-                  background: `linear-gradient(135deg, ${cat.color}30, ${cat.color}15)`,
-                  border: `1px solid ${cat.color}40`
+                  background: `linear-gradient(135deg, ${cat.color}, ${cat.color}cc)`,
+                  boxShadow: `0 4px 12px ${cat.color}40`
                 } : {}}
               >
+                <span className="opacity-80">{cat.icon}</span>
                 {cat.label}
               </button>
             ))}
           </div>
 
-          {/* Búsqueda compacta */}
-          <div className="px-3 py-2">
-            <div className="relative">
-              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                type="text"
-                value={blockSearch}
-                onChange={(e) => setBlockSearch(e.target.value)}
-                placeholder="Buscar..."
-                className="w-full pl-8 pr-3 py-1.5 rounded-md text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-violet-500/50"
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
-              />
-            </div>
-          </div>
-
-          {/* Grid de bloques */}
-          <div className="flex-1 overflow-y-auto px-3 pb-3">
+          {/* Grid de bloques - Diseño profesional */}
+          <div className="flex-1 overflow-y-auto px-3 py-3">
             {blockCategories.map(category => {
               const filteredBlocks = blockSearch
                 ? category.blocks.filter(b => 
                     b.label.toLowerCase().includes(blockSearch.toLowerCase()) ||
-                    b.desc?.toLowerCase().includes(blockSearch.toLowerCase())
+                    b.desc?.toLowerCase().includes(blockSearch.toLowerCase()) ||
+                    b.fullDesc?.toLowerCase().includes(blockSearch.toLowerCase())
                   )
                 : category.blocks;
               
               if (filteredBlocks.length === 0 || collapsedCategories[category.id]) return null;
               
               return (
-                <div key={category.id} className="mb-3">
-                  {/* Label de categoría */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-1 h-3 rounded-full" style={{ background: category.color }} />
-                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{category.label}</span>
+                <div key={category.id} className="mb-4">
+                  {/* Header de categoría */}
+                  <div className="flex items-center gap-2 mb-2.5 px-1">
+                    <div className="w-1.5 h-4 rounded-full" style={{ background: category.color }} />
+                    <span className="text-xs font-semibold text-slate-300 uppercase tracking-wide">{category.label}</span>
+                    <span className="text-[10px] text-slate-600 ml-auto">{filteredBlocks.length}</span>
                   </div>
                   
-                  {/* Grid 2x2 */}
-                  <div className="grid grid-cols-2 gap-1.5">
+                  {/* Cards de bloques */}
+                  <div className="space-y-2">
                     {filteredBlocks.map(block => (
                       <div
                         key={block.type}
                         draggable
                         onDragStart={(e) => onDragStart(e, block.type)}
-                        className="group relative p-2.5 rounded-lg cursor-grab active:scale-95 active:cursor-grabbing transition-all duration-150 hover:ring-1"
+                        className="group relative flex items-center gap-3 p-3 rounded-xl cursor-grab active:scale-[0.98] active:cursor-grabbing transition-all duration-200"
                         style={{ 
-                          background: 'rgba(255,255,255,0.03)',
+                          background: 'rgba(255,255,255,0.02)',
                           border: '1px solid rgba(255,255,255,0.06)',
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background = `${block.color}15`;
-                          e.currentTarget.style.borderColor = `${block.color}40`;
+                          e.currentTarget.style.background = `linear-gradient(135deg, ${block.color}12, ${block.color}05)`;
+                          e.currentTarget.style.borderColor = `${block.color}50`;
+                          e.currentTarget.style.boxShadow = `0 4px 20px ${block.color}15`;
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                          e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
                           e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                          e.currentTarget.style.boxShadow = 'none';
                         }}
                       >
-                        {/* Icono */}
+                        {/* Icono grande */}
                         <div 
-                          className="w-8 h-8 rounded-md flex items-center justify-center text-white mb-1.5 mx-auto"
+                          className="w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0 transition-transform group-hover:scale-105"
                           style={{ 
                             background: `linear-gradient(135deg, ${block.color}, ${block.color}bb)`,
-                            boxShadow: `0 2px 8px ${block.color}40`
+                            boxShadow: `0 4px 12px ${block.color}40`
                           }}
                         >
                           {block.icon}
                         </div>
                         
                         {/* Texto */}
-                        <p className="text-[11px] font-medium text-white text-center leading-tight">{block.label}</p>
-                        <p className="text-[9px] text-slate-500 text-center mt-0.5">{block.desc}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-white leading-tight">{block.label}</p>
+                          <p className="text-[11px] text-slate-500 mt-0.5 truncate">{block.desc}</p>
+                        </div>
                         
                         {/* Drag indicator */}
-                        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <svg className="w-3 h-3 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16M4 16h16" />
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                           </svg>
                         </div>
+                        
+                        {/* Tooltip con descripción completa */}
+                        {block.fullDesc && (
+                          <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 w-48 p-3 rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none"
+                            style={{ background: '#1a1a1f', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
+                            <p className="text-xs text-slate-300 leading-relaxed">{block.fullDesc}</p>
+                            <div className="absolute right-full top-1/2 -translate-y-1/2 border-8 border-transparent border-r-[#1a1a1f]"></div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -2344,27 +2494,34 @@ export default function FlowEditor() {
                 b.desc?.toLowerCase().includes(blockSearch.toLowerCase())
               )
             ) && (
-              <div className="text-center py-6">
-                <div className="w-10 h-10 rounded-full bg-slate-800/50 flex items-center justify-center mx-auto mb-2">
-                  <svg className="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <div className="text-center py-10">
+                <div className="w-14 h-14 rounded-2xl bg-slate-800/50 flex items-center justify-center mx-auto mb-3">
+                  <svg className="w-7 h-7 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
-                <p className="text-xs text-slate-500">Sin resultados</p>
+                <p className="text-sm text-slate-400 font-medium">Sin resultados</p>
+                <p className="text-xs text-slate-600 mt-1">Intenta con otro término</p>
               </div>
             )}
           </div>
 
-          {/* Footer - Tip compacto */}
-          <div className="p-3" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-            <div className="flex items-center justify-between text-[10px] text-slate-500">
-              <span className="flex items-center gap-1">
-                <LightBulbIcon size="xs" className="text-amber-500" />
-                <span>Arrastra para añadir</span>
-              </span>
-              <div className="flex items-center gap-2">
-                <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono text-[9px]">Del</kbd>
-                <span>eliminar</span>
+          {/* Footer - Atajos */}
+          <div className="p-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'linear-gradient(0deg, rgba(255,255,255,0.02) 0%, transparent 100%)' }}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                <LightBulbIcon size="sm" className="text-amber-500" />
+                <span>Arrastra al canvas</span>
+              </div>
+              <div className="flex items-center gap-3 text-[10px] text-slate-600">
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-400 font-mono">Del</kbd>
+                  eliminar
+                </span>
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-400 font-mono">⌘S</kbd>
+                  guardar
+                </span>
               </div>
             </div>
           </div>
@@ -2408,7 +2565,7 @@ export default function FlowEditor() {
                       </div>
                       <div>
                         <p className="text-sm text-white font-medium">{block.label}</p>
-                        <p className="text-xs text-zinc-500">{block.description}</p>
+                        <p className="text-xs text-zinc-500">{block.fullDesc || block.desc}</p>
                       </div>
                     </div>
                   ))}
@@ -2418,11 +2575,11 @@ export default function FlowEditor() {
               <div className="p-4 rounded-xl" style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
                 <h3 className="text-emerald-400 font-medium mb-2 flex items-center gap-2"><SparklesIcon size="sm" /> Pasos para crear un flujo</h3>
                 <ol className="text-sm text-emerald-400/80 space-y-2 list-decimal list-inside">
-                  <li>Arrastra un bloque "Inicio" al canvas</li>
+                  <li>Arrastra un <strong>Disparador</strong> al canvas (Evento o Programado)</li>
                   <li>Agrega los bloques que necesites</li>
                   <li>Conecta los bloques arrastrando desde los puntos</li>
-                  <li>Configura cada bloque según necesites</li>
-                  <li>Guarda tu flujo</li>
+                  <li>Configura cada bloque seleccionándolo</li>
+                  <li>Guarda tu flujo con <kbd className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-xs">⌘S</kbd></li>
                 </ol>
               </div>
             </div>

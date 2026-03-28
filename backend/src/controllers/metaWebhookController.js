@@ -35,6 +35,7 @@ import { executeFlowsForTrigger } from '../services/FlowExecutor.js';
 import { WorkspaceConfigRepository } from '../config/WorkspaceConfigRepository.js';
 import { getWorkspacesDbName } from '../config/db.js';
 import logger from '../config/logger.js';
+import { splitMessageForPlatform } from '../utils/messageUtils.js';
 
 const log = logger.child('MetaWebhook');
 
@@ -212,16 +213,25 @@ export async function replyWhatsApp(toNumber, text, creds = {}) {
     return;
   }
   try {
-    await axios.post(
-      `${META_GRAPH_URL}/${phoneId}/messages`,
-      {
-        messaging_product: 'whatsapp',
-        to: toNumber,
-        type: 'text',
-        text: { body: text },
-      },
-      { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
-    );
+    // Dividir mensaje si es muy largo
+    const messageParts = splitMessageForPlatform(text, 'whatsapp');
+    
+    for (const part of messageParts) {
+      await axios.post(
+        `${META_GRAPH_URL}/${phoneId}/messages`,
+        {
+          messaging_product: 'whatsapp',
+          to: toNumber,
+          type: 'text',
+          text: { body: part },
+        },
+        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+      );
+      // Pausa entre mensajes para evitar rate limiting
+      if (messageParts.length > 1) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
   } catch (err) {
     log.error('[WhatsApp] Error enviando mensaje', { error: err.response?.data || err.message });
   }
@@ -234,11 +244,19 @@ export async function replyMessenger(recipientId, text, creds = {}) {
     return;
   }
   try {
-    await axios.post(
-      `${META_GRAPH_URL}/me/messages`,
-      { recipient: { id: recipientId }, message: { text } },
-      { params: { access_token: token } }
-    );
+    // Dividir mensaje si es muy largo (Messenger: 2000 chars)
+    const messageParts = splitMessageForPlatform(text, 'messenger');
+    
+    for (const part of messageParts) {
+      await axios.post(
+        `${META_GRAPH_URL}/me/messages`,
+        { recipient: { id: recipientId }, message: { text: part } },
+        { params: { access_token: token } }
+      );
+      if (messageParts.length > 1) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
   } catch (err) {
     log.error('[Messenger] Error enviando mensaje', { error: err.response?.data || err.message });
   }
@@ -251,11 +269,19 @@ export async function replyInstagram(recipientId, text, creds = {}) {
     return;
   }
   try {
-    await axios.post(
-      `${META_GRAPH_URL}/me/messages`,
-      { recipient: { id: recipientId }, message: { text } },
-      { params: { access_token: token } }
-    );
+    // Dividir mensaje si es muy largo (Instagram: 1000 chars)
+    const messageParts = splitMessageForPlatform(text, 'instagram');
+    
+    for (const part of messageParts) {
+      await axios.post(
+        `${META_GRAPH_URL}/me/messages`,
+        { recipient: { id: recipientId }, message: { text: part } },
+        { params: { access_token: token } }
+      );
+      if (messageParts.length > 1) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
   } catch (err) {
     log.error('[Instagram] Error enviando mensaje', { error: err.response?.data || err.message });
   }

@@ -129,7 +129,7 @@ const DEMO_MESSAGES = [
   { from: "user", text: "Hola, ¿tienen mesa para 2 el sábado a las 8pm?" },
   { from: "bot",  text: "¡Hola! Sí tenemos disponibilidad para el sábado. ¿A qué nombre hago la reserva?" },
   { from: "user", text: "Para Juan García" },
-  { from: "bot",  text: "✅ ¡Listo, Juan! Reserva confirmada: sábado 8pm, mesa para 2. ¡Te esperamos!" },
+  { from: "bot",  text: "Listo, Juan! Reserva confirmada: sabado 8pm, mesa para 2. Te esperamos!" },
 ];
 
 function DemoChat() {
@@ -334,7 +334,7 @@ function PlanCard({ plan, onGetStarted, delay = 0 }) {
       style={{ opacity: inView ? 1 : 0, transform: inView ? "translateY(0)" : "translateY(28px)", transition: `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms, border-color 0.3s, box-shadow 0.3s` }}>
       {isPop && (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-lg shadow-violet-900/40 whitespace-nowrap">
-          ✦ Más popular
+          Mas popular
         </div>
       )}
       <div className="p-6 flex-1">

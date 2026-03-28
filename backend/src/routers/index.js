@@ -161,6 +161,8 @@ router.post("/telegram/:workspaceId/send-photo", requireAuth, validateWorkspace,
 router.post("/telegram/:workspaceId/setup-webhook", requireAuth, validateWorkspace, telegram.setupWebhook);
 router.delete("/telegram/:workspaceId/webhook", requireAuth, validateWorkspace, telegram.deleteWebhook);
 router.post("/telegram/:workspaceId/set-commands", requireAuth, validateWorkspace, telegram.setCommands);
+router.get("/telegram/:workspaceId/config", requireAuth, validateWorkspace, telegram.getConfig);
+router.post("/telegram/:workspaceId/config", requireAuth, validateWorkspace, telegram.saveConfig);
 
 // ============ SUPER ADMIN ============
 router.get("/admin/status", requireAuth, admin.getSystemStatus);

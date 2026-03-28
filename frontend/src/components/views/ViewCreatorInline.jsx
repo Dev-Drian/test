@@ -990,37 +990,37 @@ export default function ViewCreatorInline({
                   const viewInfo = {
                     calendar: { 
                       desc: 'Eventos y citas en calendario mensual',
-                      icon: '📅',
+                      icon: 'calendar',
                       useCases: ['Citas', 'Eventos', 'Reservas', 'Deadlines']
                     },
                     kanban: { 
                       desc: 'Tablero de columnas por estado',
-                      icon: '📊',
+                      icon: 'kanban',
                       useCases: ['Proyectos', 'Tareas', 'Pipeline', 'Flujos']
                     },
                     timeline: { 
-                      desc: 'Línea temporal con rangos de fechas',
-                      icon: '📈',
-                      useCases: ['Planificación', 'Sprints', 'Proyectos']
+                      desc: 'Linea temporal con rangos de fechas',
+                      icon: 'timeline',
+                      useCases: ['Planificacion', 'Sprints', 'Proyectos']
                     },
                     cards: { 
-                      desc: 'Tarjetas visuales con imágenes',
-                      icon: '🃏',
-                      useCases: ['Productos', 'Perfiles', 'Catálogos']
+                      desc: 'Tarjetas visuales con imagenes',
+                      icon: 'cards',
+                      useCases: ['Productos', 'Perfiles', 'Catalogos']
                     },
                     table: { 
                       desc: 'Datos en filas y columnas',
-                      icon: '📋',
+                      icon: 'table',
                       useCases: ['Listas', 'Inventarios', 'Registros']
                     },
                     floorplan: { 
-                      desc: 'Distribución espacial interactiva',
-                      icon: '🏪',
+                      desc: 'Distribucion espacial interactiva',
+                      icon: 'floorplan',
                       useCases: ['Mesas', 'Asientos', 'Espacios']
                     },
                     pos: { 
                       desc: 'Sistema de punto de venta',
-                      icon: '💳',
+                      icon: 'pos',
                       useCases: ['Ventas', 'Pedidos', 'Cobros']
                     },
                   };
