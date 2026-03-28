@@ -1113,14 +1113,29 @@ export class QueryHandler extends ActionHandler {
     
     const msgNorm = this._normalizeForComparison(message);
     
+    // ═══ PASO 1: Buscar nombres de tablas directamente en el mensaje (PRIORIDAD MÁXIMA) ═══
+    // Esto evita extraer palabras erróneas como "disponible" cuando el usuario dice "destinos disponibles"
+    for (const table of tables) {
+      const tableNorm = this._normalizeForComparison(table.name);
+      if (msgNorm.includes(tableNorm)) {
+        return table.name;
+      }
+      // También verificar singular
+      const tableSingular = tableNorm.replace(/s$/, '');
+      if (tableSingular.length > 3 && msgNorm.includes(tableSingular)) {
+        return table.name;
+      }
+    }
+    
+    // ═══ PASO 2: Patrones de extracción (solo si no se encontró tabla directa) ═══
     // Palabras clave que indican consulta de datos
     const queryPatterns = [
+      /(?:qu[eé])\s+(\w+)\s+(?:tienen|tienes|hay|existen)/, // "qué destinos tienen" (IMPORTANTE: antes de otros)
       /cuantos?\s+(\w+)/,      // "cuántos empleados", "cuantas ventas"
       /lista(?:r|me)?\s+(?:los?|las?)?\s*(\w+)/,  // "lista los empleados", "listame clientes"
       /muestrame?\s+(?:los?|las?)?\s*(\w+)/,      // "muestrame empleados"
       /ver\s+(?:los?|las?)?\s*(\w+)/,             // "ver los empleados"
       /busca(?:r)?\s+(?:al?|los?|las?)?\s*(\w+)/, // "buscar al empleado", "busca clientes"
-      /(?:hay|tiene[ns]?)\s+(\w+)/,               // "hay empleados", "tienes clientes"
       /(\w+)\s+(?:que\s+)?(?:hay|tiene|existen)/, // "empleados que hay"
       /datos?\s+de\s+(?:los?|las?)?\s*(\w+)/,     // "datos de empleados"
       /informacion\s+(?:de|sobre)\s+(?:los?|las?)?\s*(\w+)/, // "información sobre empleados"
@@ -1141,14 +1156,6 @@ export class QueryHandler extends ActionHandler {
         
         // Si no coincide con ninguna tabla, devolver el término para reportar el error
         return extractedTerm;
-      }
-    }
-    
-    // Búsqueda directa de nombres de tablas en el mensaje
-    for (const table of tables) {
-      const tableNorm = this._normalizeForComparison(table.name);
-      if (msgNorm.includes(tableNorm)) {
-        return table.name;
       }
     }
     

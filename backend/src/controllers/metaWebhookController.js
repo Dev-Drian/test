@@ -295,9 +295,35 @@ async function dispatchToAgent({ workspaceId, senderId, senderName, text, platfo
     },
   });
 
+  const responseText = result?.response || result?.message || null;
+  const finalChatId = result?.chatId || chatId;
+
+  // Emitir mensajes al socket para actualización en tiempo real
+  const socketSvc = getSocketService();
+  
+  // Emitir mensaje del usuario
+  socketSvc.emitNewMessage(workspaceId, finalChatId, {
+    id: `user_${Date.now()}`,
+    role: 'user',
+    content: text,
+    senderName: senderName || senderId,
+    platform,
+    ts: Date.now(),
+  });
+
+  // Emitir respuesta del asistente (si hay)
+  if (responseText) {
+    socketSvc.emitNewMessage(workspaceId, finalChatId, {
+      id: `assistant_${Date.now()}`,
+      role: 'assistant',
+      content: responseText,
+      ts: Date.now(),
+    });
+  }
+
   return {
-    response: result?.response || result?.message || null,
-    chatId: result?.chatId || null,
+    response: responseText,
+    chatId: finalChatId,
     agentId,
   };
 }

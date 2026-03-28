@@ -344,6 +344,7 @@ export default function Chat() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeChannel, setActiveChannel] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterTab, setFilterTab] = useState('all');
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -408,6 +409,18 @@ export default function Chat() {
     }
     return list;
   }, [chatList, activeChannel, searchQuery]);
+
+  // Filter chats by filter tab (inbox, active, all)
+  const tabFilteredChats = useMemo(() => {
+    let list = filteredChats;
+    if (filterTab === 'inbox') {
+      list = list.filter(c => c.unreadCount > 0);
+    } else if (filterTab === 'active') {
+      const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+      list = list.filter(c => c.lastActivityAt && new Date(c.lastActivityAt).getTime() > dayAgo);
+    }
+    return list;
+  }, [filteredChats, filterTab]);
 
   // Channel counts
   const channelCounts = useMemo(() => {
@@ -696,22 +709,6 @@ export default function Chat() {
 
   // ── Render ──────────────────────────────────────────────────────────────
   const currentChannelGrad = CHANNEL_GRADIENTS[activeChannel] || CHANNEL_GRADIENTS.all;
-  const [filterTab, setFilterTab] = useState('all');
-
-  // Filter chats by filter tab
-  const tabFilteredChats = useMemo(() => {
-    let list = filteredChats;
-    if (filterTab === 'inbox') {
-      // Mostrar solo los que tienen mensajes sin leer
-      list = list.filter(c => c.unreadCount > 0);
-    } else if (filterTab === 'active') {
-      // Mostrar los que el usuario está activamente respondiendo (últimas 24h)
-      const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
-      list = list.filter(c => c.lastActivityAt && new Date(c.lastActivityAt).getTime() > dayAgo);
-    }
-    // filterTab === 'all' muestra todos sin filtrar adicional
-    return list;
-  }, [filteredChats, filterTab]);
 
   return (
     <div className="h-full flex" style={{ background: '#0a0a0f' }}>
