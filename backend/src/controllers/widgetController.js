@@ -17,13 +17,11 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import { ChatService } from '../services/ChatService.js';
+import { getChatService } from '../services/ChatServiceFactory.js';
 import { ChatRepository } from '../repositories/ChatRepository.js';
 import { AgentRepository } from '../repositories/AgentRepository.js';
 import { WorkspaceConfigRepository } from '../config/WorkspaceConfigRepository.js';
 import { getSocketService } from '../realtime/SocketService.js';
-import { EVENTS } from '../core/EventEmitter.js';
-import { executeFlowsForTrigger } from '../services/FlowExecutor.js';
 import { getWorkspacesDbName } from '../config/db.js';
 import logger from '../config/logger.js';
 
@@ -57,24 +55,6 @@ setInterval(() => {
     if (now > val.resetAt) rateLimits.delete(key);
   }
 }, 5 * 60 * 1000);
-
-// ── ChatService cache por workspace ──────────────────────────────────────────
-const serviceCache = new Map();
-
-async function getService(workspaceId) {
-  if (serviceCache.has(workspaceId)) return serviceCache.get(workspaceId);
-  const svc = new ChatService();
-  svc.on(EVENTS.RECORD_CREATED, async ({ workspaceId: wid, tableId, record }) => {
-    if (wid) getSocketService().emitRecordCreated(wid, tableId, record);
-    if (wid && tableId && record) await executeFlowsForTrigger(wid, 'create', tableId, record).catch(() => {});
-  });
-  svc.on(EVENTS.RECORD_UPDATED, async ({ workspaceId: wid, tableId, record }) => {
-    if (wid) getSocketService().emitRecordUpdated(wid, tableId, record);
-    if (wid && tableId && record) await executeFlowsForTrigger(wid, 'update', tableId, record).catch(() => {});
-  });
-  serviceCache.set(workspaceId, svc);
-  return svc;
-}
 
 // ── Resolver token → workspace info ──────────────────────────────────────────
 
@@ -189,7 +169,7 @@ export async function sendMessage(req, res) {
       return res.status(429).json({ error: 'Demasiados mensajes. Intenta en un minuto.' });
     }
 
-    const svc = await getService(resolved.workspaceId);
+    const svc = getChatService(resolved.workspaceId);
     const result = await svc.processMessage({
       workspaceId: resolved.workspaceId,
       chatId: chatId || null,

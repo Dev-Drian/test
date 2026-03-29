@@ -64,6 +64,22 @@ export const getWorkspace = (id) => api.get(`/workspace/${id}`);
 export const updateWorkspace = (id, data) => api.put(`/workspace/${id}`, data);
 export const deleteWorkspace = (id) => api.delete(`/workspace/${id}`);
 
+/** Subida multipart para columnas tipo file (campo formulario: file) */
+export async function uploadWorkspaceFile(workspaceId, file) {
+  const fd = new FormData();
+  fd.append("file", file);
+  const token = localStorage.getItem("migracion_token");
+  const base = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
+  const res = await fetch(`${base}/workspace/${workspaceId}/upload`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: fd,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+  return data;
+}
+
 // Agents
 export const createAgent = (data) => api.post("/agent/create", data);
 export const listAgents = (workspaceId) => api.get("/agent/list", { params: { workspaceId } });

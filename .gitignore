@@ -26,3 +26,6 @@ Thumbs.db
 # Temp files
 *.tmp
 check-db.js
+
+# Uploads locales (MVP; en prod usar volumen o S3)
+backend/uploads/

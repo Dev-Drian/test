@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { WorkspaceContext } from "../context/WorkspaceContext";
-import { listTables, createTable, updateTable, getTableData, addTableRow, updateTableRow, deleteTableRow } from "../api/client";
+import { listTables, createTable, updateTable, getTableData, addTableRow, updateTableRow, deleteTableRow, uploadWorkspaceFile } from "../api/client";
 import TableBuilder from "../components/TableBuilder";
 import ImportModal from "../components/ImportModal";
 import { useToast, useConfirm } from "../components/Toast";
@@ -13,6 +13,106 @@ import {
   Database, Settings, Upload, FileJson, FileSpreadsheet, MoreVertical,
   ChevronRight, Sparkles, Layers
 } from "lucide-react";
+
+function toAbsoluteApiUrl(rel) {
+  if (!rel) return "";
+  if (rel.startsWith("http")) return rel;
+  const base = import.meta.env.VITE_API_URL || "";
+  if (base.startsWith("http")) {
+    return base.replace(/\/$/, "") + (rel.startsWith("/") ? rel : `/${rel}`);
+  }
+  return rel;
+}
+
+function parseFileCell(raw) {
+  if (raw === null || raw === undefined) return null;
+  if (typeof raw === "string") {
+    const t = raw.trim();
+    if (!t) return null;
+    try {
+      const j = JSON.parse(t);
+      if (j && typeof j === "object" && j.url) return j;
+    } catch {
+      /* no JSON */
+    }
+    if (t.startsWith("http") || t.startsWith("/api/")) {
+      const name = t.split("/").pop() || "archivo";
+      return { url: t, filename: decodeURIComponent(name), mimeType: "", size: 0, extension: "" };
+    }
+    return null;
+  }
+  if (typeof raw === "object" && raw.url) return raw;
+  return null;
+}
+
+function FileFieldControl({ workspaceId, value, onChange, disabled }) {
+  const { toast } = useToast();
+  const [uploading, setUploading] = useState(false);
+  const parsed = parseFileCell(value);
+  const handlePick = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !workspaceId) return;
+    setUploading(true);
+    try {
+      const meta = await uploadWorkspaceFile(workspaceId, file);
+      onChange(meta);
+    } catch (err) {
+      toast.error(err.message || "Error al subir");
+    } finally {
+      setUploading(false);
+    }
+  };
+  return (
+    <div className="space-y-2">
+      {parsed?.url && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {parsed.mimeType?.startsWith("image/") ? (
+            <img
+              src={toAbsoluteApiUrl(parsed.url)}
+              alt=""
+              className="h-10 w-10 rounded object-cover border border-slate-600/50"
+            />
+          ) : null}
+          <a
+            href={toAbsoluteApiUrl(parsed.url)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sky-400 text-xs truncate max-w-[200px] hover:underline"
+          >
+            {parsed.filename || "Archivo"}
+          </a>
+          {parsed.size ? (
+            <span className="text-[10px] text-slate-500">{(parsed.size / 1024).toFixed(1)} KB</span>
+          ) : null}
+          <button
+            type="button"
+            disabled={disabled || uploading}
+            onClick={() => onChange(null)}
+            className="text-[10px] text-red-400 hover:text-red-300"
+          >
+            Quitar
+          </button>
+        </div>
+      )}
+      <label
+        className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border border-slate-500/40 text-slate-200 ${
+          disabled || uploading || !workspaceId ? "opacity-50 cursor-not-allowed" : "cursor-pointer bg-slate-600/40 hover:bg-slate-600/60"
+        }`}
+      >
+        <Upload className="w-3.5 h-3.5" />
+        <input
+          type="file"
+          className="hidden"
+          accept="image/jpeg,image/png,image/gif,image/webp,.pdf,.doc,.docx"
+          disabled={disabled || uploading || !workspaceId}
+          onChange={handlePick}
+        />
+        {uploading ? "Subiendo…" : parsed ? "Cambiar archivo" : "Subir archivo"}
+      </label>
+    </div>
+  );
+}
 
 export default function Tables() {
   const { workspaceId, workspaceName } = useContext(WorkspaceContext);
@@ -881,6 +981,29 @@ export default function Tables() {
                                   {header.label}
                                   {header.required && <span className="text-red-400 ml-1">*</span>}
                                 </label>
+                                {header.type === "file" ? (
+                                  <div
+                                    className={`rounded-lg px-2 py-2 ${
+                                      fieldErrors[header.key] ? "ring-2 ring-red-500/50" : ""
+                                    }`}
+                                    style={{
+                                      background: "rgba(71, 85, 105, 0.4)",
+                                      border: fieldErrors[header.key]
+                                        ? "1px solid rgba(239, 68, 68, 0.5)"
+                                        : "1px solid rgba(100, 116, 139, 0.3)",
+                                    }}
+                                  >
+                                    <FileFieldControl
+                                      workspaceId={workspaceId}
+                                      value={rowForm[header.key]}
+                                      onChange={(v) => {
+                                        setRowForm({ ...rowForm, [header.key]: v });
+                                        validateField(header.key, v);
+                                      }}
+                                      disabled={addingRow}
+                                    />
+                                  </div>
+                                ) : (
                                 <input
                                   type={header.type === "number" || header.type === "integer" || header.type === "currency" ? "number" : header.type === "date" ? "date" : header.type === "time" ? "time" : header.type === "email" ? "email" : "text"}
                                   value={rowForm[header.key] || ""}
@@ -903,6 +1026,7 @@ export default function Tables() {
                                   max={header.type === "number" && header.validation?.max !== undefined ? header.validation.max : undefined}
                                   step={header.type === "integer" ? "1" : header.type === "currency" ? "0.01" : undefined}
                                 />
+                                )}
                                 {fieldErrors[header.key] && (
                                   <p className="text-xs text-red-400 mt-1">{fieldErrors[header.key]}</p>
                                 )}
@@ -1056,6 +1180,7 @@ export default function Tables() {
                                     const isFirstCol = idx === 0;
                                     const isNumeric = header?.type === 'number' || header?.type === 'integer' || header?.type === 'currency';
                                     const isEmail = header?.type === 'email';
+                                    const fileMeta = header?.type === 'file' ? parseFileCell(row[k]) : null;
                                     return (
                                     <td key={k} 
                                       className={`py-4 px-5 text-sm transition-all duration-200 ${isFirstCol ? 'font-semibold text-white' : 'text-slate-400 group-hover:text-slate-200'}`}
@@ -1065,6 +1190,17 @@ export default function Tables() {
                                       }}>
                                       {editingRow === row._id ? (
                                         <div>
+                                          {header?.type === 'file' ? (
+                                            <FileFieldControl
+                                              workspaceId={workspaceId}
+                                              value={editForm[k]}
+                                              onChange={(v) => {
+                                                setEditForm({ ...editForm, [k]: v });
+                                                if (header) validateEditField(k, v);
+                                              }}
+                                              disabled={savingEdit}
+                                            />
+                                          ) : (
                                           <input
                                             type={header?.type === "number" || header?.type === "integer" || header?.type === "currency" ? "number" : header?.type === "date" ? "date" : header?.type === "time" ? "time" : header?.type === "email" ? "email" : "text"}
                                             value={editForm[k] ?? ""}
@@ -1083,10 +1219,20 @@ export default function Tables() {
                                             min={header?.type === "number" && header?.validation?.min !== undefined ? header.validation.min : undefined}
                                             max={header?.type === "number" && header?.validation?.max !== undefined ? header.validation.max : undefined}
                                           />
+                                          )}
                                           {editFieldErrors[k] && (
                                             <p className="text-xs text-red-400 mt-1 truncate" title={editFieldErrors[k]}>{editFieldErrors[k]}</p>
                                           )}
                                         </div>
+                                      ) : fileMeta?.url ? (
+                                        <span className="flex items-center gap-2 min-w-0">
+                                          {fileMeta.mimeType?.startsWith('image/') ? (
+                                            <img src={toAbsoluteApiUrl(fileMeta.url)} alt="" className="h-8 w-8 rounded object-cover shrink-0 border border-slate-600/50" />
+                                          ) : null}
+                                          <a href={toAbsoluteApiUrl(fileMeta.url)} target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline truncate text-xs" title={fileMeta.filename}>
+                                            {fileMeta.filename || 'Archivo'}
+                                          </a>
+                                        </span>
                                       ) : (
                                         <span className={`block truncate ${isNumeric ? 'font-mono tabular-nums' : ''} ${isEmail ? 'text-sky-400' : ''}`} title={String(row[k] ?? "-")}>
                                           {isNumeric && row[k] != null ? Number(row[k]).toLocaleString('es-CO') : String(row[k] ?? "-")}

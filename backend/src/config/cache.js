@@ -56,14 +56,45 @@ class CacheService {
       deletes: 0,
     };
     
+    // Índice auxiliar por namespace para invalidación eficiente O(1)
+    this.namespaceIndex = new Map();
+    
     // Eventos
     this.cache.on('expired', (key) => {
       log.debug(`Key expired: ${key}`);
+      this._removeFromNamespaceIndex(key);
     });
     
     this.cache.on('del', (key) => {
       log.debug(`Key deleted: ${key}`);
     });
+  }
+  
+  /**
+   * Remueve una key del índice de namespace
+   * @private
+   */
+  _removeFromNamespaceIndex(key) {
+    const namespace = key.split(':')[0];
+    const keys = this.namespaceIndex.get(namespace);
+    if (keys) {
+      keys.delete(key);
+      if (keys.size === 0) {
+        this.namespaceIndex.delete(namespace);
+      }
+    }
+  }
+  
+  /**
+   * Agrega una key al índice de namespace
+   * @private
+   */
+  _addToNamespaceIndex(key) {
+    const namespace = key.split(':')[0];
+    if (!this.namespaceIndex.has(namespace)) {
+      this.namespaceIndex.set(namespace, new Set());
+    }
+    this.namespaceIndex.get(namespace).add(key);
   }
   
   /**
@@ -104,6 +135,7 @@ class CacheService {
     const success = this.cache.set(key, value, ttl);
     if (success) {
       this.stats.sets++;
+      this._addToNamespaceIndex(key);
       log.debug(`Cache SET: ${key} (TTL: ${ttl}s)`);
     }
     return success;
@@ -136,8 +168,29 @@ class CacheService {
    */
   del(key) {
     const count = this.cache.del(key);
-    this.stats.deletes += count;
+    if (count > 0) {
+      this.stats.deletes += count;
+      this._removeFromNamespaceIndex(key);
+    }
     return count;
+  }
+  
+  /**
+   * Invalida todas las claves de un namespace específico (O(1) lookup)
+   * @param {string} namespace - Namespace a invalidar (ej: "tables", "agents")
+   * @returns {number} - Número de claves eliminadas
+   */
+  invalidateNamespace(namespace) {
+    const keys = this.namespaceIndex.get(namespace);
+    if (keys && keys.size > 0) {
+      const keysArray = [...keys];
+      this.cache.del(keysArray);
+      this.stats.deletes += keys.size;
+      this.namespaceIndex.delete(namespace);
+      log.info(`Invalidated namespace: ${namespace} (${keys.size} keys)`);
+      return keys.size;
+    }
+    return 0;
   }
   
   /**
@@ -153,6 +206,8 @@ class CacheService {
     if (toDelete.length > 0) {
       this.cache.del(toDelete);
       this.stats.deletes += toDelete.length;
+      // Limpiar del índice
+      toDelete.forEach(k => this._removeFromNamespaceIndex(k));
       log.info(`Invalidated ${toDelete.length} keys matching: ${pattern}`);
     }
     

@@ -20,6 +20,35 @@ export class FieldValidator {
   static validate(fieldKey, value, fieldConfig = {}) {
     const label = fieldConfig.label || fieldKey;
     const validation = fieldConfig.validation || {};
+    
+    if (fieldConfig.type === 'file') {
+      const has =
+        value &&
+        typeof value === 'object' &&
+        String(value.url || '').trim().length > 0;
+      if (fieldConfig.required && !has && !fieldConfig._skipRequired) {
+        return { valid: false, error: `${label} es obligatorio` };
+      }
+      if (!has) {
+        return { valid: true };
+      }
+      const u = String(value.url).trim();
+      if (!/^https?:\/\//i.test(u) && !u.startsWith('/api/')) {
+        return { valid: false, error: `${label}: URL de archivo inválida (https://... o /api/...)` };
+      }
+      return {
+        valid: true,
+        normalizedValue: {
+          url: u,
+          filename: value.filename || u.split('/').pop() || 'archivo',
+          mimeType: value.mimeType || '',
+          size: typeof value.size === 'number' ? value.size : 0,
+          extension: value.extension || '',
+          storedName: value.storedName || '',
+        },
+      };
+    }
+
     const isEmptyValue = value === undefined || value === null || value === '';
     
     // 1. Validar campo requerido (saltar si _skipRequired)
@@ -160,6 +189,10 @@ export class FieldValidator {
         } catch {
           return { valid: false, error: `${label} debe ser una URL válida (ej: https://ejemplo.com)` };
         }
+      }
+      
+      case 'file': {
+        return { valid: true };
       }
       
       case 'boolean': {

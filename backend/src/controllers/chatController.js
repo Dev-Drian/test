@@ -282,9 +282,11 @@ export async function listChats(req, res) {
         lastMessage: c.messages?.slice(-1)[0]?.content?.slice(0, 50) || null,
         createdAt: c.createdAt,
         updatedAt: c.updatedAt,
+        lastActivityAt: c.updatedAt || c.createdAt,
         ...(c.channel && { channel: c.channel }),
         ...(c.externalRef && { externalRef: c.externalRef }),
         ...(c.senderName && { senderName: c.senderName }),
+        ...(c.senderProfilePic && { senderProfilePic: c.senderProfilePic }),
       };
     });
     

@@ -362,9 +362,11 @@ export default function Layout() {
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-1 h-full overflow-y-auto">
-        <Outlet />
+      {/* Main Content Area — min-h-0 para que páginas con h-full (Chat, tablas) calculen bien la altura */}
+      <main className="flex-1 h-full min-h-0 overflow-hidden flex flex-col">
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <Outlet />
+        </div>
       </main>
       
       {/* Botón de ayuda flotante */}

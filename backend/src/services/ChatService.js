@@ -26,6 +26,21 @@ import logger from '../config/logger.js';
 
 const log = logger.child('ChatService');
 
+/**
+ * Filas de muestra por tabla que se cargan en cada mensaje (context.tablesData).
+ * El routing por tools usa sobre todo esquema (tablas/columnas); las filas solo enriquecen
+ * FallbackHandler (muestra hasta 10) y coste en BD/tokens si son muchas.
+ * Por defecto 0: no se envían filas de muestra al LLM (solo esquema vía tablas/headers).
+ * Si quieres ejemplos en conversación: CHAT_CONTEXT_TABLE_ROWS=10 (máx. 500).
+ */
+function getContextTableRowLimit() {
+  const raw = process.env.CHAT_CONTEXT_TABLE_ROWS;
+  if (raw === undefined || raw === '') return 0;
+  const n = parseInt(String(raw).trim(), 10);
+  if (Number.isNaN(n)) return 0;
+  return Math.max(0, Math.min(n, 500));
+}
+
 export class ChatService {
   constructor() {
     // Repositories - usan workspaceId en cada llamada
@@ -173,6 +188,20 @@ export class ChatService {
       pendingTableId: context.pendingCreate?.tableId,
       collectedFields: Object.keys(context.collectedFields || {}),
     });
+
+    if (metadata?.incomingFile?.url) {
+      const ingested = context.ingestIncomingFile(metadata.incomingFile);
+      if (ingested.merged) {
+        log.info('processMessage:incomingFile merged into pending create', {
+          requestId,
+          fieldKey: ingested.key,
+        });
+      }
+      const f = metadata.incomingFile;
+      const line = `📎 ${f.filename || 'archivo'}: ${f.url}`;
+      const base = message && String(message).trim() ? String(message).trim() : '';
+      message = base ? `${base}\n${line}` : `Archivo recibido.\n${line}`;
+    }
     
     // Actualizar mensaje actual
     context.setCurrentMessage(message);
@@ -183,19 +212,23 @@ export class ChatService {
     context.tablesInfo = tables;
     
     // Cargar datos de cada tabla para que el LLM pueda responder preguntas
+    const rowLimit = getContextTableRowLimit();
     const tablesDataWithContent = await Promise.all(tables.map(async (t) => {
       try {
-        const data = await this.tableDataRepo.findAll(workspaceId, t._id, { limit: 50 });
-        return { 
-          tableName: t.name, 
+        const data =
+          rowLimit === 0
+            ? []
+            : await this.tableDataRepo.findAll(workspaceId, t._id, { limit: rowLimit });
+        return {
+          tableName: t.name,
           tableId: t._id,
           headers: (t.headers || []).map(h => h.key || h.label),
           data: data || [],
         };
       } catch (e) {
         log.warn('Error loading table data', { table: t.name, error: e.message });
-        return { 
-          tableName: t.name, 
+        return {
+          tableName: t.name,
           tableId: t._id,
           headers: (t.headers || []).map(h => h.key || h.label),
           data: [],
@@ -482,7 +515,6 @@ export class ChatService {
       const tableName = (table.name || '').toLowerCase();
       
       return normalizedRefs.some(ref => {
-        if (typeof ref !== 'string') return false;
         const refLower = ref.toLowerCase();
         // Coincide por ID exacto o por nombre (case-insensitive)
         return tableId === ref || tableName === refLower;

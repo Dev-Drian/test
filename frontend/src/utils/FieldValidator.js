@@ -16,6 +16,25 @@ export class FieldValidator {
   static validate(fieldKey, value, fieldConfig = {}) {
     const label = fieldConfig.label || fieldKey;
     const validation = fieldConfig.validation || {};
+    
+    if (fieldConfig.type === 'file') {
+      const hasFile =
+        value &&
+        typeof value === 'object' &&
+        String(value.url || '').trim().length > 0;
+      if (fieldConfig.required && !hasFile) {
+        return { valid: false, error: `${label} es obligatorio` };
+      }
+      if (!hasFile) {
+        return { valid: true };
+      }
+      const u = String(value.url);
+      if (!/^https?:\/\//.test(u) && !u.startsWith('/api/')) {
+        return { valid: false, error: `${label}: URL de archivo inválida` };
+      }
+      return { valid: true };
+    }
+
     const isEmptyValue = value === undefined || value === null || value === '';
     
     // 1. Validar campo requerido
@@ -364,6 +383,9 @@ export class FieldValidator {
       .filter(h => h.required)
       .filter(h => {
         const value = data[h.key];
+        if (h.type === 'file') {
+          return !value || typeof value !== 'object' || !String(value.url || '').trim();
+        }
         return value === undefined || value === null || value === '';
       })
       .map(h => h.label || h.key);

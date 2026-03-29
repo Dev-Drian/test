@@ -82,6 +82,8 @@ export class ResponseBuilder {
           return `¿Cuál ${label.toLowerCase()} prefieres? (${opts})`;
         }
         return `¿Cuál es el ${label.toLowerCase()}?`;
+      case 'file':
+        return `📎 Para **${label}**, envíame un enlace público (https://…) o la URL /api/… si ya subiste el archivo en Tablas.`;
       default:
         return `¿Cuál es el ${label.toLowerCase()}?`;
     }
@@ -291,6 +293,9 @@ export class ResponseBuilder {
   }
   
   _formatValue(key, value, config) {
+    if (config?.type === 'file' && value && typeof value === 'object' && value.url) {
+      return value.filename || value.url;
+    }
     if (config?.type === 'time' || key === 'hora') {
       return this.formatTo12Hour(value);
     }

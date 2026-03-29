@@ -11,6 +11,7 @@
 import fetch from 'node-fetch';
 import { connectDB } from '../config/db.js';
 import logger from '../config/logger.js';
+import { ingestTelegramFileToWorkspace } from './channelMediaIngest.js';
 import { v4 as uuidv4 } from 'uuid';
 import { splitMessageForPlatform } from '../utils/messageUtils.js';
 
@@ -309,8 +310,38 @@ export async function processIncomingMessage(workspaceId, update) {
     
     const chatId = message.chat.id;
     const userId = message.from.id;
-    const text = message.text || '';
+    let text = message.text || message.caption || '';
     const userName = message.from.first_name || message.from.username || 'Usuario';
+
+    const connection = await getTelegramConnection(workspaceId);
+    const botToken = connection?.credentials?.token;
+    let incomingFile = null;
+
+    if (botToken && message.photo?.length) {
+      const largest = message.photo[message.photo.length - 1];
+      incomingFile = await ingestTelegramFileToWorkspace({
+        workspaceId,
+        botToken,
+        fileId: largest.file_id,
+        originalFilename: 'foto.jpg',
+      });
+    } else if (botToken && message.document) {
+      const doc = message.document;
+      incomingFile = await ingestTelegramFileToWorkspace({
+        workspaceId,
+        botToken,
+        fileId: doc.file_id,
+        originalFilename: doc.file_name || 'documento',
+      });
+    }
+
+    if (!String(text).trim() && incomingFile) {
+      text = `[Archivo recibido: ${incomingFile.filename}]`;
+    }
+
+    if (!String(text).trim() && !incomingFile) {
+      return null;
+    }
     
     // Guardar/actualizar contacto de Telegram
     const contact = await saveOrUpdateContact(workspaceId, {
@@ -329,6 +360,7 @@ export async function processIncomingMessage(workspaceId, update) {
       messageId: message.message_id, // ID del mensaje original para reply
       contactId: contact._id,
       content: text,
+      incomingFile: incomingFile || undefined,
       from: {
         id: userId.toString(),
         name: userName,

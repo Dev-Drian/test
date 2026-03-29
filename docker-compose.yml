@@ -13,5 +13,21 @@ services:
       - couchdb_data:/opt/couchdb/data
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis_queues
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   couchdb_data:
+  redis_data:

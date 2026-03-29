@@ -4,7 +4,7 @@
  */
 import { useContext, useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { BarChart3, Calendar, Plus, Search, AlertTriangle, Check, Loader2, CheckCircle, XCircle, MessageSquare, Bot, Globe, Hash, Paperclip, Filter, Phone, Mail, StickyNote, User, MoreHorizontal, ChevronDown, Menu, Layers } from "lucide-react";
+import { BarChart3, Plus, Search, AlertTriangle, Check, Loader2, CheckCircle, MessageSquare, Bot, Paperclip, Filter, Phone, User, MoreHorizontal, PanelLeftClose, PanelLeft, Sparkles, Database } from "lucide-react";
 import { WorkspaceContext } from "../context/WorkspaceContext";
 import { useToast, useConfirm } from "../components/Toast";
 import { 
@@ -20,8 +20,9 @@ import {
   importFileViaChat,
   previewImportViaChat,
 } from "../api/client";
-import { RobotIcon, SendIcon, PlusIcon, TrashIcon, EditIcon, ChatIcon, SparklesIcon, SearchIcon } from "../components/Icons";
+import { SendIcon, TrashIcon, EditIcon, ChatIcon, SparklesIcon } from "../components/Icons";
 import { useSocketEvent } from "../hooks/useSocket";
+import { NewConversationModal, ChatContextPanel } from "../components/chat/ChatSidePanels.jsx";
 
 // ── Custom Platform Icons (SVG) ─────────────────────────────────────────────
 const WhatsAppIcon = ({ className }) => (
@@ -308,6 +309,18 @@ function ImportPreviewCard({ message, onConfirm, onCancel, confirming, agentName
   );
 }
 
+function formatTimeAgo(iso) {
+  if (!iso) return "";
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return "";
+  const sec = Math.floor((Date.now() - t) / 1000);
+  if (sec < 45) return "ahora";
+  if (sec < 3600) return `${Math.floor(sec / 60)}m`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}h`;
+  if (sec < 604800) return `${Math.floor(sec / 86400)}d`;
+  return new Date(iso).toLocaleDateString("es", { day: "numeric", month: "short" });
+}
+
 // ── Channel Badge ───────────────────────────────────────────────────────────
 function ChannelBadge({ channel }) {
   const c = CHANNEL_COLORS[channel] || CHANNEL_COLORS.web;
@@ -355,6 +368,9 @@ export default function Chat() {
   const [activeChannel, setActiveChannel] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTab, setFilterTab] = useState('all');
+  const [newConvOpen, setNewConvOpen] = useState(false);
+  const [creatingWebChat, setCreatingWebChat] = useState(false);
+  const [contextPanelOpen, setContextPanelOpen] = useState(true);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -370,6 +386,19 @@ export default function Chat() {
   const activeChatMeta = useMemo(() => {
     return chatList.find(c => c._id === chatId) || null;
   }, [chatList, chatId]);
+
+  const headerMeta = useMemo(() => {
+    if (!chatId) return null;
+    return (
+      activeChatMeta || {
+        _id: chatId,
+        title: "Conversación",
+        channel: "web",
+        platform: "web",
+        senderName: null,
+      }
+    );
+  }, [chatId, activeChatMeta]);
 
   // WebSocket
   useSocketEvent('chat:message', ({ chatId: incomingChatId, message }) => {
@@ -434,7 +463,7 @@ export default function Chat() {
 
   // Channel counts
   const channelCounts = useMemo(() => {
-    const counts = { all: chatList.length, web: 0, messenger: 0, instagram: 0, whatsapp: 0 };
+    const counts = { all: chatList.length, web: 0, telegram: 0, messenger: 0, instagram: 0, whatsapp: 0 };
     chatList.forEach(c => {
       const ch = c.channel || c.platform || 'web';
       if (counts[ch] !== undefined) counts[ch]++;
@@ -596,6 +625,7 @@ export default function Chat() {
 
   const handleNewChat = async () => {
     if (!workspaceId || !selectedAgentId) return;
+    setCreatingWebChat(true);
     try {
       const res = await getOrCreateChat(workspaceId, selectedAgentId);
       const newChat = res.data.chat || res.data;
@@ -604,9 +634,13 @@ export default function Chat() {
       setMessages([]);
       setChatList(prev => [{ _id: newChat._id, title: "Nueva conversación", messageCount: 0, createdAt: newChat.createdAt, channel: 'web' }, ...prev]);
       setActiveChannel('all');
+      setNewConvOpen(false);
+      setContextPanelOpen(true);
     } catch (err) {
       console.error("Error creating chat:", err);
       toast.error('Error al crear conversación');
+    } finally {
+      setCreatingWebChat(false);
     }
   };
 
@@ -718,10 +752,18 @@ export default function Chat() {
   }
 
   // ── Render ──────────────────────────────────────────────────────────────
-  const currentChannelGrad = CHANNEL_GRADIENTS[activeChannel] || CHANNEL_GRADIENTS.all;
+  const isExternalThread =
+    headerMeta?.channel && headerMeta.channel !== "web";
+  const externalChannelLabels = {
+    whatsapp: "WhatsApp",
+    messenger: "Messenger",
+    instagram: "Instagram",
+    telegram: "Telegram",
+    web: "Web",
+  };
 
   return (
-    <div className="h-full flex" style={{ background: '#0a0a0f' }}>
+    <div className="h-full flex min-h-0" style={{ background: '#0a0a0f' }}>
 
       {/* ═══════════ SIDEBAR - Centro de Atención ═══════════ */}
       <aside className={`${sidebarOpen ? 'w-[340px]' : 'w-0'} shrink-0 flex flex-col transition-all duration-300 overflow-hidden bg-[#0d0d12]`}
@@ -730,24 +772,38 @@ export default function Chat() {
 
           {/* Header */}
           <div className="px-5 pt-5 pb-3">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">Centro de Atención</h2>
-              <button onClick={handleNewChat} disabled={!selectedAgentId}
-                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h2 className="text-lg font-semibold text-white tracking-tight">Conversaciones</h2>
+                <p className="text-[11px] text-slate-500 mt-0.5">Inbox omnicanal · un solo lugar</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!selectedAgentId && agents.length > 0) {
+                    toast.error("Selecciona un agente primero");
+                    return;
+                  }
+                  setNewConvOpen(true);
+                }}
+                disabled={agents.length === 0}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30 border border-transparent hover:border-white/10"
+                title="Nueva conversación (tipo y agente)"
+              >
                 <Plus className="w-5 h-5" />
               </button>
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex items-center gap-1 mb-4">
+            <div className="flex items-center gap-1 mb-4 p-0.5 rounded-xl bg-black/20 border border-white/[0.06]">
               {FILTER_TABS.map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setFilterTab(tab.id)}
-                  className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                  className={`flex-1 px-2 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                     filterTab === tab.id
-                      ? 'text-blue-400 bg-blue-500/10'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                      ? 'text-white bg-white/10 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-300'
                   }`}
                 >
                   {tab.label}
@@ -761,23 +817,24 @@ export default function Chat() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <input 
                   type="text" 
-                  placeholder="Buscar..."
+                  placeholder="Buscar por nombre o referencia..."
                   value={searchQuery} 
                   onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-lg text-sm text-slate-200 placeholder-slate-500 bg-white/5 border border-white/10 focus:border-blue-500/50 focus:outline-none transition-all"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-xl text-sm text-slate-200 placeholder-slate-500 bg-white/[0.04] border border-white/[0.08] focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 focus:outline-none transition-all"
                 />
               </div>
               <button 
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-white/5 border border-white/10 transition-all"
+                type="button"
+                className="flex flex-col items-center justify-center px-2.5 py-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 border border-white/[0.08] transition-all min-w-[3.25rem]"
+                title="Restablecer filtros y canal"
                 onClick={() => {
-                  // Mostrar dropdown de filtros (canales)
+                  setFilterTab("all");
+                  setSearchQuery("");
+                  setActiveChannel("all");
                 }}
               >
-                <Filter className="w-4 h-4" />
-                <span>Filtros</span>
-                <span className="text-xs text-blue-400 bg-blue-500/20 px-1 rounded">
-                  {channelCounts[activeChannel] || 0}
-                </span>
+                <Filter className="w-4 h-4 mb-0.5 opacity-80" />
+                <span className="text-[10px] font-bold text-violet-400 tabular-nums">{channelCounts[activeChannel] ?? 0}</span>
               </button>
             </div>
           </div>
@@ -934,119 +991,191 @@ export default function Chat() {
       </aside>
 
       {/* ═══════════ MAIN AREA ═══════════ */}
-      <main className="flex-1 flex flex-col min-w-0" style={{ background: '#0a0a0f' }}>
+      <main className="flex-1 flex flex-col min-w-0 min-h-0 relative" style={{ background: '#0a0a0f' }}>
+        <div
+          className="pointer-events-none absolute inset-0 z-0 opacity-90"
+          style={{
+            background:
+              'radial-gradient(ellipse 85% 55% at 50% -15%, rgba(139,92,246,0.11), transparent 55%), radial-gradient(ellipse 50% 40% at 100% 100%, rgba(99,102,241,0.07), transparent 50%)',
+          }}
+        />
 
-        {/* Top bar with user info */}
-        {chatId && activeChatMeta && (
-          <div className="shrink-0 px-6 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(13,13,18,0.95)' }}>
-            <div className="flex items-center gap-4">
-              {/* Toggle sidebar on mobile */}
-              <button 
+        {/* Top bar */}
+        {chatId && headerMeta && (
+          <div
+            className="relative z-[1] shrink-0 px-4 sm:px-6 py-3 flex items-center justify-between gap-3 backdrop-blur-md"
+            style={{
+              borderBottom: '1px solid rgba(255,255,255,0.06)',
+              background: 'linear-gradient(180deg, rgba(14,14,22,0.92) 0%, rgba(10,10,15,0.88) 100%)',
+            }}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <button
+                type="button"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 lg:hidden"
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 border border-white/[0.06] transition-all shrink-0"
+                title={sidebarOpen ? 'Ocultar lista' : 'Mostrar lista'}
               >
-                <Menu className="w-5 h-5" />
+                {sidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeft className="w-5 h-5" />}
               </button>
-              
-              {/* User Avatar */}
+
               <UserAvatar
-                name={activeChatMeta?.senderName || activeChatMeta?.title || 'Conversación'}
-                profilePic={activeChatMeta?.senderProfilePic}
-                channel={activeChatMeta?.channel || activeChatMeta?.platform || 'web'}
+                name={headerMeta?.senderName || headerMeta?.title || 'Conversación'}
+                profilePic={headerMeta?.senderProfilePic}
+                channel={headerMeta?.channel || headerMeta?.platform || 'web'}
                 size="md"
-                showOnline
+                showOnline={!isExternalThread}
               />
-              
+
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-base font-semibold text-white truncate">
-                    {activeChatMeta?.senderName || activeChatMeta?.title || 'Conversación'}
+                    {headerMeta?.senderName || headerMeta?.title || 'Conversación'}
                   </h3>
-                  <ChannelBadge channel={activeChatMeta.channel || activeChatMeta.platform || 'web'} />
+                  <ChannelBadge channel={headerMeta.channel || headerMeta.platform || 'web'} />
                 </div>
-                <p className="text-sm text-slate-500 truncate">
-                  {activeChatMeta?.externalRef 
-                    ? `ID: ${activeChatMeta.externalRef}` 
-                    : selectedAgentName 
-                      ? `Asistente: ${selectedAgentName}`
-                      : 'Conversación activa'}
+                <p className="text-xs text-slate-500 truncate mt-0.5">
+                  {isExternalThread ? (
+                    <>
+                      <span className="text-amber-400/90 font-medium">Operador</span>
+                      {' · '}
+                      {headerMeta?.externalRef || 'Cliente externo'}
+                    </>
+                  ) : selectedAgentName ? (
+                    <>Asistente: <span className="text-slate-400">{selectedAgentName}</span></>
+                  ) : (
+                    'Chat web con IA'
+                  )}
                 </p>
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-2">
-              <button className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all" title="Llamar">
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => setContextPanelOpen((o) => !o)}
+                className={`p-2 rounded-xl transition-all ${
+                  contextPanelOpen
+                    ? "text-violet-300 bg-violet-500/15 border border-violet-500/25"
+                    : "text-slate-500 hover:text-slate-300 hover:bg-white/5 border border-transparent"
+                }`}
+                title={contextPanelOpen ? "Ocultar contexto y tablas" : "Mostrar contexto (tipo + contactos)"}
+              >
+                <Database className="w-5 h-5" />
+              </button>
+              <button
+                type="button"
+                className="p-2 rounded-xl text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-all"
+                title="Próximamente"
+                disabled
+              >
                 <Phone className="w-5 h-5" />
               </button>
-              <button className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all" title="Más opciones">
+              <button
+                type="button"
+                className="p-2 rounded-xl text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-all"
+                title="Próximamente"
+                disabled
+              >
                 <MoreHorizontal className="w-5 h-5" />
               </button>
             </div>
           </div>
         )}
 
-        {!chatId || messages.length === 0 ? (
-          /* Empty state - Sin chat seleccionado */
-          <div className="flex-1 flex flex-col">
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center max-w-2xl px-4">
-                <div className="relative w-20 h-20 mx-auto mb-6">
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500/30 to-indigo-600/30 blur-xl animate-pulse" />
-                  <div className="relative w-20 h-20 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 8px 40px rgba(139,92,246,0.4)' }}>
-                    <MessageSquare className="w-8 h-8 text-white" />
+        {!chatId ? (
+          <div className="relative z-[1] flex-1 flex flex-col min-h-0">
+            <div className="flex-1 flex items-center justify-center p-6">
+              <div className="text-center max-w-lg px-4">
+                <div className="relative w-[4.5rem] h-[4.5rem] mx-auto mb-6">
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500/25 to-indigo-600/20 blur-2xl" />
+                  <div
+                    className="relative w-[4.5rem] h-[4.5rem] rounded-2xl flex items-center justify-center ring-1 ring-white/10"
+                    style={{
+                      background: 'linear-gradient(145deg, rgba(139,92,246,0.9), rgba(79,70,229,0.95))',
+                      boxShadow: '0 12px 40px rgba(99,102,241,0.35)',
+                    }}
+                  >
+                    <MessageSquare className="w-8 h-8 text-white" strokeWidth={1.75} />
                   </div>
                 </div>
-                <h1 className="text-2xl font-bold text-white mb-2">Centro de Conversaciones</h1>
-                <p className="text-slate-400 mb-6 text-sm">
-                  Gestiona todas tus conversaciones de{' '}
-                  <span className="text-blue-400">Messenger</span>,{' '}
-                  <span className="text-pink-400">Instagram</span>,{' '}
-                  <span className="text-emerald-400">WhatsApp</span> y{' '}
-                  <span className="text-indigo-400">Web</span>
+                <h1 className="text-2xl font-bold text-white tracking-tight mb-2">Elige una conversación</h1>
+                <p className="text-slate-400 text-sm leading-relaxed mb-8">
+                  WhatsApp, Instagram, Messenger, Telegram y web en un solo inbox. Selecciona un chat a la izquierda o crea uno nuevo con tu agente.
                 </p>
-
-                {/* Stats cards compactos */}
-                <div className="flex items-center justify-center gap-4 mb-8">
-                  {CHANNELS.filter(c => c.id !== 'all').map(ch => {
+                <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
+                  {CHANNELS.filter((c) => c.id !== 'all').map((ch) => {
                     const count = channelCounts[ch.id] || 0;
                     const IconComp = ch.Icon;
                     const color = CHANNEL_COLORS[ch.id];
                     return (
-                      <button 
-                        key={ch.id} 
+                      <button
+                        key={ch.id}
+                        type="button"
                         onClick={() => setActiveChannel(ch.id)}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all hover:scale-105"
-                        style={{ background: color?.bg || 'rgba(255,255,255,0.05)', border: `1px solid ${color?.border || 'rgba(255,255,255,0.1)'}` }}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        style={{
+                          background: color?.bg || 'rgba(255,255,255,0.05)',
+                          border: `1px solid ${color?.border || 'rgba(255,255,255,0.1)'}`,
+                          color: color?.text || '#e2e8f0',
+                        }}
                       >
-                        <IconComp className="w-4 h-4" style={{ color: color?.text || '#fff' }} />
-                        <span className="text-lg font-bold" style={{ color: color?.text || '#fff' }}>{count}</span>
+                        <IconComp className="w-4 h-4 opacity-90" />
+                        <span className="tabular-nums font-bold">{count}</span>
                       </button>
                     );
                   })}
                 </div>
-
-                <p className="text-slate-500 text-xs">
-                  {chatList.length > 0 
-                    ? `${chatList.length} conversaciones disponibles • Selecciona una del panel izquierdo`
-                    : 'No hay conversaciones aún'}
+                <p className="text-slate-600 text-xs">
+                  {chatList.length > 0
+                    ? `${chatList.length} conversación${chatList.length !== 1 ? 'es' : ''} en este proyecto`
+                    : 'Aún no hay conversaciones en este proyecto'}
                 </p>
               </div>
             </div>
           </div>
         ) : (
-          /* Active chat */
-          <>
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 lg:px-8 xl:px-12">
-              <div className="py-6 space-y-1">
+          <div className="relative z-[1] flex-1 flex flex-col min-h-0 min-w-0">
+            <div className="flex-1 flex min-h-0 min-w-0">
+              <div className="flex-1 flex flex-col min-w-0 min-h-0">
+                {contextPanelOpen && (
+                  <div className="lg:hidden shrink-0 px-4 py-2.5 border-b border-white/[0.06] bg-black/20 flex flex-wrap items-center gap-2 text-[11px]">
+                    <span className="text-slate-500">Canal</span>
+                    <ChannelBadge channel={headerMeta?.channel || headerMeta?.platform || "web"} />
+                    {isExternalThread && headerMeta?.externalRef && (
+                      <span className="text-slate-600 font-mono truncate max-w-[200px]">{headerMeta.externalRef}</span>
+                    )}
+                    <Link
+                      to="/tables"
+                      className="ml-auto text-violet-400 font-medium hover:underline"
+                    >
+                      Ver tablas / contactos
+                    </Link>
+                  </div>
+                )}
+                <div className="flex-1 overflow-y-auto px-4 lg:px-8 xl:px-12 scrollbar-thin min-h-0">
+              <div className="py-5 space-y-1 max-w-4xl mx-auto">
+                {messages.length === 0 && !sending ? (
+                  <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+                    <div className="w-14 h-14 rounded-2xl bg-violet-500/10 ring-1 ring-violet-500/20 flex items-center justify-center mb-4">
+                      <Sparkles className="w-7 h-7 text-violet-400" />
+                    </div>
+                    <p className="text-slate-200 font-semibold">Aún no hay mensajes</p>
+                    <p className="text-sm text-slate-500 mt-2 max-w-sm leading-relaxed">
+                      {isExternalThread
+                        ? `Escribe abajo para responder al cliente por ${externalChannelLabels[headerMeta?.channel] || 'su canal'}.`
+                        : 'Escribe para chatear con tu asistente. Puedes adjuntar CSV o Excel para importar datos.'}
+                    </p>
+                  </div>
+                ) : null}
+
                 {messages.map((m, idx) => {
                   if (m.type === 'import_preview' || m.type === 'import_done') {
                     return <ImportPreviewCard key={m.id || idx} message={m} onConfirm={() => handleConfirmImport(m)} onCancel={() => handleCancelImport(m.id)} confirming={!!(pendingImport?.msgId === m.id)} agentName={selectedAgentName} />;
                   }
                   
                   const isUser = m.role === 'user';
-                  const isExternalChat = activeChatMeta?.channel && activeChatMeta.channel !== 'web';
+                  const isExternalChat = headerMeta?.channel && headerMeta.channel !== 'web';
                   const prevMsg = messages[idx - 1];
                   const nextMsg = messages[idx + 1];
                   
@@ -1056,9 +1185,9 @@ export default function Chat() {
                   
                   // Nombres y avatares
                   const senderName = isUser 
-                    ? (isExternalChat ? (activeChatMeta?.senderName || 'Cliente') : 'Tú')
+                    ? (isExternalChat ? (headerMeta?.senderName || 'Cliente') : 'Tú')
                     : selectedAgentName;
-                  const senderProfilePic = isUser && isExternalChat ? activeChatMeta?.senderProfilePic : null;
+                  const senderProfilePic = isUser && isExternalChat ? headerMeta?.senderProfilePic : null;
                   
                   // El usuario local se alinea a la derecha, los demás a la izquierda
                   const alignRight = isUser && !isExternalChat;
@@ -1074,7 +1203,7 @@ export default function Chat() {
                           isUser ? (
                             isExternalChat ? (
                               <UserAvatar
-                                name={activeChatMeta?.senderName || 'Cliente'}
+                                name={headerMeta?.senderName || 'Cliente'}
                                 profilePic={senderProfilePic}
                                 size="md"
                                 showChannelBadge={false}
@@ -1110,12 +1239,12 @@ export default function Chat() {
                         
                         {/* Burbuja del mensaje */}
                         <div 
-                          className={`inline-block max-w-[85%] lg:max-w-[70%] xl:max-w-[60%] px-4 py-2.5 text-[15px] leading-relaxed ${
+                          className={`inline-block max-w-[85%] lg:max-w-[70%] xl:max-w-[60%] px-4 py-2.5 text-[15px] leading-relaxed ring-1 ring-white/[0.04] ${
                             alignRight 
-                              ? `bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/20 ${isFirstInGroup ? 'rounded-2xl rounded-tr-md' : isLastInGroup ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-r-md'}`
+                              ? `bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25 ${isFirstInGroup ? 'rounded-2xl rounded-tr-md' : isLastInGroup ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-r-md'}`
                               : isUser
-                                ? `bg-slate-800/80 text-slate-100 backdrop-blur-sm border border-slate-700/50 ${isFirstInGroup ? 'rounded-2xl rounded-tl-md' : isLastInGroup ? 'rounded-2xl rounded-bl-md' : 'rounded-2xl rounded-l-md'}`
-                                : `bg-slate-800/60 text-slate-100 backdrop-blur-sm border border-slate-700/30 ${isFirstInGroup ? 'rounded-2xl rounded-tl-md' : isLastInGroup ? 'rounded-2xl rounded-bl-md' : 'rounded-2xl rounded-l-md'}`
+                                ? `bg-slate-800/90 text-slate-100 backdrop-blur-sm border border-slate-600/40 ${isFirstInGroup ? 'rounded-2xl rounded-tl-md' : isLastInGroup ? 'rounded-2xl rounded-bl-md' : 'rounded-2xl rounded-l-md'}`
+                                : `bg-gradient-to-br from-slate-800/90 to-slate-900/80 text-slate-100 backdrop-blur-sm border border-violet-500/15 ${isFirstInGroup ? 'rounded-2xl rounded-tl-md' : isLastInGroup ? 'rounded-2xl rounded-bl-md' : 'rounded-2xl rounded-l-md'}`
                           }`}
                         >
                           {isUser ? (
@@ -1158,12 +1287,43 @@ export default function Chat() {
                 )}
                 <div ref={messagesEndRef} />
               </div>
+                </div>
+              </div>
+
+              {contextPanelOpen && (
+                <aside className="hidden lg:flex w-[min(100%,300px)] xl:w-[320px] shrink-0 min-h-0">
+                  <ChatContextPanel
+                    workspaceId={workspaceId}
+                    channel={headerMeta?.channel || headerMeta?.platform || "web"}
+                    externalRef={headerMeta?.externalRef}
+                    senderName={headerMeta?.senderName}
+                    isExternal={isExternalThread}
+                  />
+                </aside>
+              )}
             </div>
 
+            {isExternalThread && (
+              <div className="shrink-0 px-4 lg:px-8 xl:px-12 pt-3">
+                <div className="max-w-4xl mx-auto flex items-start gap-3 rounded-xl px-4 py-2.5 bg-amber-500/[0.07] border border-amber-500/25 text-xs text-amber-100/90 leading-relaxed">
+                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
+                  <p>
+                    <span className="font-semibold text-amber-200">Modo operador</span>
+                    {' — '}
+                    Tu mensaje se envía al cliente por{' '}
+                    <span className="font-medium text-amber-100">
+                      {externalChannelLabels[headerMeta?.channel] || 'canal externo'}
+                    </span>
+                    .
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Input bar */}
-            <div className="shrink-0 px-4 lg:px-8 xl:px-12" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'linear-gradient(to top, #0d0d12, #0a0a0f)' }}>
+            <div className="shrink-0 px-4 lg:px-8 xl:px-12 backdrop-blur-sm" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'linear-gradient(to top, rgba(13,13,18,0.98), rgba(10,10,15,0.95))' }}>
               {attachedFile && (
-                <div className="pt-4">
+                <div className="pt-4 max-w-4xl mx-auto">
                   <div className="flex items-center gap-2.5 p-3 rounded-2xl flex-wrap" style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(56,189,248,0.06))', border: '1px solid rgba(139,92,246,0.2)', boxShadow: '0 4px 16px rgba(139,92,246,0.05)' }}>
                     <Paperclip className="w-4 h-4 text-violet-400" />
                     <span className="text-sky-300 text-sm font-medium truncate max-w-40">{attachedFile.name}</span>
@@ -1185,30 +1345,50 @@ export default function Chat() {
                   </div>
                 </div>
               )}
-              <form onSubmit={handleSend} className="py-4">
+              <form onSubmit={handleSend} className="py-4 max-w-4xl mx-auto w-full">
                 <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFileSelect} />
-                <div className="relative rounded-2xl transition-all duration-300 focus-within:shadow-2xl focus-within:shadow-violet-500/10"
-                  style={{ background: 'linear-gradient(135deg, rgba(30,41,59,0.8), rgba(15,23,42,0.9))', border: '1px solid rgba(100,116,139,0.2)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
+                <div className="relative rounded-2xl transition-all duration-300 focus-within:ring-2 focus-within:ring-violet-500/25 focus-within:border-violet-500/30"
+                  style={{ background: 'linear-gradient(145deg, rgba(30,41,59,0.85), rgba(15,23,42,0.95))', border: '1px solid rgba(100,116,139,0.22)', boxShadow: '0 12px 40px rgba(0,0,0,0.35)' }}>
                   <textarea ref={textareaRef}
-                    placeholder={attachedFile ? `Enviar para analizar ${attachedFile.name}...` : "Escribe un mensaje..."}
+                    placeholder={
+                      attachedFile
+                        ? `Enviar para analizar ${attachedFile.name}...`
+                        : isExternalThread
+                          ? 'Escribe la respuesta al cliente…'
+                          : 'Mensaje al asistente · Enter envía, Shift+Enter salto de línea'
+                    }
                     value={input} onChange={handleTextareaChange} onKeyDown={handleKeyDown} rows={1} disabled={sending}
-                    className="w-full px-6 py-4 pr-32 bg-transparent text-slate-100 text-base placeholder-slate-400 resize-none focus:outline-none max-h-48" style={{ fontWeight: 450 }} />
-                  <div className="absolute right-3 bottom-3 flex items-center gap-2">
+                    className="w-full px-5 py-4 pr-[7.5rem] bg-transparent text-slate-100 text-[15px] placeholder-slate-500 resize-none focus:outline-none max-h-48 leading-relaxed" style={{ fontWeight: 450 }} />
+                  <div className="absolute right-2.5 bottom-2.5 flex items-center gap-1">
                     <button type="button" onClick={() => fileInputRef.current?.click()} disabled={sending}
-                      className="p-2.5 rounded-xl text-slate-400 hover:text-violet-400 hover:bg-violet-500/10 disabled:opacity-30 transition-all duration-200" title="Adjuntar CSV/Excel">
+                      className="p-2.5 rounded-xl text-slate-400 hover:text-violet-300 hover:bg-violet-500/10 disabled:opacity-30 transition-all duration-200" title="Adjuntar CSV o Excel">
                       <Paperclip className="w-5 h-5" />
                     </button>
                     <button type="submit" disabled={sending || (!input.trim() && !attachedFile)}
-                      className="p-3 rounded-xl text-white disabled:opacity-30 transition-all duration-200 hover:scale-105 active:scale-95" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 4px 20px rgba(139,92,246,0.5)' }}>
+                      className="p-3 rounded-xl text-white disabled:opacity-30 transition-all duration-200 hover:scale-[1.03] active:scale-[0.97]" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 4px 24px rgba(139,92,246,0.45)' }}>
                       <SendIcon size="sm" />
                     </button>
                   </div>
                 </div>
               </form>
             </div>
-          </>
+          </div>
         )}
       </main>
+
+      <NewConversationModal
+        open={newConvOpen}
+        onClose={() => setNewConvOpen(false)}
+        agents={agents}
+        selectedAgentId={selectedAgentId}
+        onAgentChange={(id) => {
+          setSelectedAgentId(id);
+          const agent = agents.find((a) => a._id === id);
+          setSelectedAgentName(agent?.name || "");
+        }}
+        onCreateWeb={handleNewChat}
+        creating={creatingWebChat}
+      />
 
       {ConfirmModal}
     </div>

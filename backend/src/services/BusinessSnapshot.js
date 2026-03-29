@@ -69,6 +69,7 @@ export class BusinessSnapshot {
 
   /**
    * Construye el snapshot consultando todas las tablas del workspace
+   * OPTIMIZADO: Procesa tablas en paralelo con límite de concurrencia
    * @private
    */
   async _build(workspaceId, maxTables) {
@@ -88,12 +89,23 @@ export class BusinessSnapshot {
     const alertLines = [];
     const agendaLines = [];
 
-    // 2. Por cada tabla, analizar registros usando sus headers como guía
-    for (const table of dataTables) {
-      try {
-        const analysis = await this._analyzeTable(table, workspaceId, todayStr);
-        if (!analysis) continue;
-
+    // 2. Procesar tablas en paralelo con límite de concurrencia
+    const CONCURRENCY = 5;
+    for (let i = 0; i < dataTables.length; i += CONCURRENCY) {
+      const batch = dataTables.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(
+        batch.map(table => 
+          this._analyzeTable(table, workspaceId, todayStr).catch(err => {
+            log.warn('Error analyzing table', { workspaceId, tableId: table._id, error: err.message });
+            return null;
+          })
+        )
+      );
+      
+      results.forEach((analysis, idx) => {
+        if (!analysis) return;
+        const table = batch[idx];
+        
         // Sección de estado por tabla
         const tableSection = this._buildTableSection(table, analysis);
         if (tableSection) sections.push(tableSection);
@@ -103,10 +115,7 @@ export class BusinessSnapshot {
 
         // Acumular agenda del día
         agendaLines.push(...analysis.todayItems);
-
-      } catch (err) {
-        log.warn('Error analyzing table', { workspaceId, tableId: table._id, error: err.message });
-      }
+      });
     }
 
     // 3. Armar el texto final

@@ -91,3 +91,31 @@ export function splitMessageForPlatform(text, platform) {
   const limit = getMessageLimit(platform);
   return splitMessage(text, limit);
 }
+
+/** URL https con extensión de imagen típica (para enviar a Meta por link). */
+const TRAILING_IMAGE_URL =
+  /^https:\/\/[^\s]+\.(jpe?g|png|gif|webp)(\?[^\s]*)?$/i;
+
+/**
+ * Si la última línea del mensaje es una URL HTTPS pública de imagen, la separa.
+ * Así el bot puede responder: texto del producto + línea final con la URL guardada en la tabla.
+ *
+ * @returns {{ body: string, imageUrl: string | null }}
+ */
+export function splitTextAndTrailingPublicImageUrl(text) {
+  const raw = (text || '').trimEnd();
+  if (!raw) return { body: '', imageUrl: null };
+
+  const lines = raw.split('\n');
+  const last = (lines[lines.length - 1] || '').trim();
+  if (!TRAILING_IMAGE_URL.test(last)) {
+    return { body: raw, imageUrl: null };
+  }
+
+  if (lines.length <= 1) {
+    return { body: '', imageUrl: last };
+  }
+
+  const body = lines.slice(0, -1).join('\n').trimEnd();
+  return { body, imageUrl: last };
+}

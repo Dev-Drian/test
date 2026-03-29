@@ -22,6 +22,7 @@
 
 import { Server as SocketIOServer } from 'socket.io';
 import logger from '../config/logger.js';
+import { throttle } from '../utils/throttle.js';
 
 const log = logger.child('SocketService');
 
@@ -33,6 +34,8 @@ export class SocketService {
     this.widgetNs = null;
     // workspaceId → Set de socket ids (para saber qué clientes hay conectados)
     this._rooms = new Map();
+    // Throttled typing emitters por chatId
+    this._throttledTyping = new Map();
   }
 
   /**
@@ -79,6 +82,14 @@ export class SocketService {
 
       socket.on('disconnect', (reason) => {
         log.info('Cliente desconectado', { socketId: socket.id, reason });
+        
+        // Limpiar referencias del socket de las rooms internas
+        for (const [roomId, sockets] of this._rooms.entries()) {
+          sockets.delete(socket.id);
+          if (sockets.size === 0) {
+            this._rooms.delete(roomId);
+          }
+        }
       });
 
       socket.on('error', (err) => {
@@ -147,9 +158,17 @@ export class SocketService {
     this.toChat(chatId, 'chat:message', { message });
   }
 
+  /**
+   * Emite typing indicator con throttling (500ms) para evitar spam
+   */
   emitTyping(workspaceId, chatId, isTyping) {
-    this.toChat(chatId, 'chat:typing', { isTyping });
-    this.toWorkspace(workspaceId, 'chat:typing', { chatId, isTyping });
+    if (!this._throttledTyping.has(chatId)) {
+      this._throttledTyping.set(chatId, throttle((ws, cid, typing) => {
+        this.toChat(cid, 'chat:typing', { isTyping: typing });
+        this.toWorkspace(ws, 'chat:typing', { chatId: cid, isTyping: typing });
+      }, 500));
+    }
+    this._throttledTyping.get(chatId)(workspaceId, chatId, isTyping);
   }
 
   emitRecordCreated(workspaceId, tableId, record) {

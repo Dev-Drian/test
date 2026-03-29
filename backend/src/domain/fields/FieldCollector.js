@@ -31,7 +31,13 @@ export class FieldCollector {
   async validateExtractedField(fieldKey, value, fieldConfig, pendingCreate) {
     // 1. Verificar que el campo realmente esté faltante
     const currentValue = pendingCreate.fields?.[fieldKey];
-    if (currentValue !== undefined && currentValue !== null && currentValue !== '') {
+    const alreadyFilled =
+      fieldConfig.type === 'file'
+        ? currentValue &&
+          typeof currentValue === 'object' &&
+          String(currentValue.url || '').trim().length > 0
+        : currentValue !== undefined && currentValue !== null && currentValue !== '';
+    if (alreadyFilled) {
       return {
         valid: false,
         error: 'Campo ya tiene valor',
@@ -121,10 +127,19 @@ export class FieldCollector {
     
     // Campos ya recolectados (con label para contexto)
     const collectedFields = Object.entries(pendingCreate.fields || {})
-      .filter(([k, v]) => v !== undefined && v !== null && v !== '')
+      .filter(([k, v]) => {
+        const cfg = fieldsConfig.find(f => f.key === k);
+        if (cfg?.type === 'file') {
+          return v && typeof v === 'object' && String(v.url || '').trim();
+        }
+        return v !== undefined && v !== null && v !== '';
+      })
       .map(([k, v]) => {
         const cfg = fieldsConfig.find(f => f.key === k);
         const label = cfg?.label || k;
+        if (cfg?.type === 'file' && v && typeof v === 'object' && v.url) {
+          return `${k} (${label}): ${v.filename || v.url} → ${v.url}`;
+        }
         return `${k} (${label}): ${v}`;
       })
       .join('\n');
@@ -132,6 +147,10 @@ export class FieldCollector {
     // Campos que faltan
     const missingFields = (pendingCreate.requiredFields || []).filter(k => {
       const v = pendingCreate.fields?.[k];
+      const cfg = fieldsConfig.find(f => f.key === k);
+      if (cfg?.type === 'file') {
+        return !(v && typeof v === 'object' && String(v.url || '').trim());
+      }
       return v === undefined || v === null || v === '';
     });
     
@@ -289,6 +308,20 @@ export class FieldCollector {
       if (lower.includes('servicio') && (key.includes('servicio') || key.includes('service'))) {
         return fc.key;
       }
+      if (
+        type === 'file' &&
+        (lower.includes('archivo') ||
+          lower.includes('adjunto') ||
+          lower.includes('enlace') ||
+          lower.includes('link') ||
+          lower.includes('url') ||
+          lower.includes('imagen') ||
+          lower.includes('foto') ||
+          lower.includes('documento') ||
+          lower.includes('pdf'))
+      ) {
+        return fc.key;
+      }
     }
     
     // 4. Si solo falta un campo, asumir que se pregunta por ese
@@ -345,6 +378,9 @@ IMPORTANTE: Si el usuario responde con un valor simple, asígnalo al campo "${cu
       if (type === 'email') desc += '. Debe ser email válido';
       if (type === 'select' && cfg.options?.length > 0) desc += `. Opciones: ${cfg.options.join(', ')}`;
       if (type === 'relation') desc += `. Es una referencia (acepta nombre o texto libre)`;
+      if (type === 'file') {
+        desc += '. Por chat NO hay adjunto binario: el usuario puede pegar una URL pública (https://...) de imagen o PDF, o una ruta /api/... si ya subió el archivo desde el panel. Extrae en extractedFields un OBJETO: {"url":"...","filename":"nombre.ext"} — no uses string suelto.';
+      }
       
       return desc;
     }).join('\n');
@@ -371,7 +407,7 @@ MENSAJE DEL USUARIO:
 Responde SOLO con JSON válido:
 {
   "isDataResponse": true/false,
-  "extractedFields": { "campo_key": "valor" },
+  "extractedFields": { "campo_key": "valor" o para tipo file: { "url": "https://...", "filename": "doc.pdf" } },
   "wantsToChangeFlow": true/false,
   "newIntent": null o "query" o "cancel" o "thanks",
   "wantsToChangeField": null o { "field": "campo_key", "newValue": "nuevo_valor" },
@@ -421,6 +457,11 @@ REGLAS CONTRA TEXTO BASURA:
 29. Mensajes como "cambia X por Y", "el producto por el cliente" son INSTRUCCIONES, no datos → isDataResponse: false
 30. VERBOS DE INTENCIÓN PROHIBIDOS como valores: quiero, necesito, dame, compro, pido, solicito, requiero, deseo. Estos NUNCA son nombres de cliente/producto.
 
+REGLAS CAMPOS file (archivo / imagen / documento):
+31. Si el campo es tipo "file", el valor en extractedFields DEBE ser un objeto con "url" (y preferiblemente "filename"). Ejemplo: usuario dice "te paso el comprobante https://ejemplo.com/c.pdf" → { "comprobante": { "url": "https://ejemplo.com/c.pdf", "filename": "c.pdf" } }.
+32. Si preguntas por un archivo y el usuario responde sin ninguna URL → isDataResponse: false, clarificationNeeded: pide un enlace público o indica que puede subir el archivo desde el panel Tablas del sistema.
+33. No inventes URLs. Solo acepta URLs que el usuario escriba explícitamente en el mensaje.
+
 REGLA FINAL - EXTRACCIÓN MÚLTIPLE:
 - Si el usuario proporciona VARIOS datos en un mensaje, EXTRÁELOS TODOS.
 - Ejemplo: "quiero registrar venta para Juan Pérez del producto CRM Pro, 3 unidades" → { "cliente": "Juan Pérez", "producto": "CRM Pro", "cantidad": 3 }
@@ -465,6 +506,36 @@ REGLA FINAL - EXTRACCIÓN MÚLTIPLE:
         
       case 'time':
         return value; // Ya debería estar en HH:MM
+      
+      case 'file': {
+        if (value && typeof value === 'object' && value.url) {
+          const url = String(value.url).trim();
+          const fn = value.filename || url.split('/').pop() || 'archivo';
+          const ext = fn.includes('.') ? fn.split('.').pop() : '';
+          return {
+            url,
+            filename: fn,
+            mimeType: value.mimeType || '',
+            size: typeof value.size === 'number' ? value.size : 0,
+            extension: ext || '',
+            storedName: value.storedName || '',
+          };
+        }
+        const s = String(value || '').trim();
+        if (/^https?:\/\//i.test(s) || s.startsWith('/api/')) {
+          const name = s.split('/').pop() || 'archivo';
+          const ext = name.includes('.') ? name.split('.').pop() : '';
+          return {
+            url: s,
+            filename: decodeURIComponent(name),
+            mimeType: '',
+            size: 0,
+            extension: ext || '',
+            storedName: '',
+          };
+        }
+        return value;
+      }
         
       default:
         return value;

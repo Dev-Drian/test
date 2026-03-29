@@ -5,6 +5,15 @@
  * de un mensaje: datos del workspace, agente, chat, campos recolectados, etc.
  */
 
+/** Valor considerado “presente” para completitud de campo (incluye tipo file = objeto con url) */
+export function isFieldValuePresent(value, fieldType) {
+  if (value === undefined || value === null || value === '') return false;
+  if (fieldType === 'file') {
+    return typeof value === 'object' && String(value.url || '').trim().length > 0;
+  }
+  return true;
+}
+
 export class Context {
   constructor(options = {}) {
     // Identificadores
@@ -191,9 +200,11 @@ export class Context {
     });
     
     // Determinar qué campos realmente faltan
+    const cfgByKey = Object.fromEntries(fieldsConfig.map(fc => [fc.key, fc]));
     const currentMissing = requiredFields.filter(k => {
       const v = this.collectedFields[k];
-      return v === undefined || v === null || v === '';
+      const t = cfgByKey[k]?.type;
+      return !isFieldValuePresent(v, t);
     });
     
     const accepted = [];
@@ -206,13 +217,12 @@ export class Context {
         continue;
       }
       
-      // Verificar que tenga valor válido
-      if (value === undefined || value === null || value === '') {
+      const config = configMap[key];
+      if (!isFieldValuePresent(value, config?.type)) {
         rejected.push({ key, reason: 'Valor vacío' });
         continue;
       }
       
-      const config = configMap[key];
       let finalValue = value;
       
       // Validar si está habilitado
@@ -246,6 +256,40 @@ export class Context {
   }
   
   /**
+   * Alias de mergeFields (compatibilidad con CreateHandler)
+   */
+  addFields(fields) {
+    return this.mergeFields(fields, { validate: true, normalize: true });
+  }
+
+  /**
+   * Archivo ya guardado en disco (URL /api/...) desde WhatsApp, Telegram, etc.
+   * Rellena el primer campo tipo file visible que siga vacío en pendingCreate.
+   */
+  ingestIncomingFile(incomingFile) {
+    if (!this.pendingCreate || !incomingFile?.url) {
+      return { merged: false };
+    }
+    const fieldsConfig = this.pendingCreate.fieldsConfig || [];
+    const target = fieldsConfig.find((fc) => {
+      if (fc.type !== 'file' || fc.hiddenFromChat === true) return false;
+      return !isFieldValuePresent(this.collectedFields[fc.key], 'file');
+    });
+    if (!target) {
+      return { merged: false };
+    }
+    const validation = this._validateField(target.key, incomingFile, target);
+    if (!validation.valid) {
+      return { merged: false, error: validation.error };
+    }
+    const finalValue = this._normalizeField(target.key, incomingFile, target);
+    this.collectedFields[target.key] = finalValue;
+    this.pendingCreate.fields = this.collectedFields;
+    this.updateMissingFields();
+    return { merged: true, key: target.key };
+  }
+  
+  /**
    * Cambia el valor de un campo ya recolectado
    * Permite al usuario corregir datos durante el flujo de creación
    * @param {string} fieldKey - Clave del campo a cambiar
@@ -269,8 +313,7 @@ export class Context {
       return { success: false, error: `Campo "${fieldKey}" no existe en la configuración` };
     }
     
-    // Verificar que tenga valor válido
-    if (newValue === undefined || newValue === null || newValue === '') {
+    if (!isFieldValuePresent(newValue, config?.type)) {
       return { success: false, error: 'Valor vacío' };
     }
     
@@ -402,11 +445,22 @@ export class Context {
    * @private
    */
   _validateField(fieldKey, value, fieldConfig) {
-    if (value === undefined || value === null || value === '') {
+    if (!isFieldValuePresent(value, fieldConfig?.type)) {
       return { valid: false, error: `${fieldConfig?.label || fieldKey} es requerido`, code: 'REQUIRED' };
     }
     
     const fieldType = fieldConfig?.type;
+    
+    if (fieldType === 'file') {
+      const u = typeof value === 'object' && value?.url != null ? String(value.url).trim() : '';
+      if (!u) {
+        return { valid: false, error: `${fieldConfig?.label || fieldKey}: falta la URL del archivo` };
+      }
+      if (!/^https?:\/\//i.test(u) && !u.startsWith('/api/')) {
+        return { valid: false, error: `${fieldConfig?.label || fieldKey}: URL no válida (usa https://... o ruta /api/...)` };
+      }
+      return { valid: true };
+    }
     
     // Solo aplicar garbage check a tipos textuales (NO por nombre de campo)
     const textualTypes = ['text', 'relation', 'string'];
@@ -517,6 +571,29 @@ export class Context {
         
       case 'time':
         return value; // Ya debería estar en HH:MM
+      
+      case 'file': {
+        if (value && typeof value === 'object' && value.url) {
+          const url = String(value.url).trim();
+          const fn = value.filename || url.split('/').pop() || 'archivo';
+          const ext = (fn.includes('.') ? fn.split('.').pop() : '') || '';
+          return {
+            url,
+            filename: fn,
+            mimeType: value.mimeType || '',
+            size: typeof value.size === 'number' ? value.size : 0,
+            extension: ext,
+            storedName: value.storedName || '',
+          };
+        }
+        const s = String(value || '').trim();
+        if (/^https?:\/\//i.test(s) || s.startsWith('/api/')) {
+          const name = s.split('/').pop() || 'archivo';
+          const ext = name.includes('.') ? name.split('.').pop() : '';
+          return { url: s, filename: decodeURIComponent(name), mimeType: '', size: 0, extension: ext || '', storedName: '' };
+        }
+        return value;
+      }
         
       default:
         return value;
@@ -528,9 +605,12 @@ export class Context {
    */
   updateMissingFields() {
     const requiredFields = this.pendingCreate?.requiredFields || [];
+    const fieldsConfig = this.pendingCreate?.fieldsConfig || [];
+    const cfgByKey = Object.fromEntries(fieldsConfig.map(fc => [fc.key, fc]));
     this.missingFields = requiredFields.filter(k => {
       const v = this.collectedFields[k];
-      return v === undefined || v === null || v === '';
+      const t = cfgByKey[k]?.type;
+      return !isFieldValuePresent(v, t);
     });
   }
   
@@ -627,8 +707,14 @@ export class Context {
     // Si hay campos recolectados, agregarlos
     if (Object.keys(this.collectedFields).length > 0) {
       const collected = Object.entries(this.collectedFields)
-        .filter(([k, v]) => v !== undefined && v !== null && v !== '')
-        .map(([k, v]) => `${k}: ${v}`)
+        .filter(([k, v]) => isFieldValuePresent(v, this.pendingCreate?.fieldsConfig?.find(f => f.key === k)?.type))
+        .map(([k, v]) => {
+          const t = this.pendingCreate?.fieldsConfig?.find(f => f.key === k)?.type;
+          if (t === 'file' && v && typeof v === 'object' && v.url) {
+            return `${k}: ${v.filename || v.url}`;
+          }
+          return `${k}: ${v}`;
+        })
         .join(', ');
       context += `\n\nDATOS YA RECOLECTADOS: ${collected}`;
       context += '\n(No pedir estos datos nuevamente)';

@@ -85,7 +85,7 @@ async function getOrCreateExternalChatId(workspaceId, senderId) {
 /**
  * Rutea el mensaje al agente del workspace y devuelve la respuesta.
  */
-async function dispatchToAgent({ workspaceId, senderId, senderName, text }) {
+async function dispatchToAgent({ workspaceId, senderId, senderName, text, incomingFile }) {
   const agentId = await getDefaultAgentId(workspaceId);
   if (!agentId) {
     log.warn('[Telegram] No hay agente activo en workspace', { workspaceId });
@@ -99,12 +99,13 @@ async function dispatchToAgent({ workspaceId, senderId, senderName, text }) {
     workspaceId,
     chatId,
     agentId,
-    message: text,
+    message: text || '',
     metadata: {
       platform: 'telegram',
       senderId,
       senderName: senderName || senderId,
       externalRef: `telegram:${senderId}`,
+      incomingFile: incomingFile || undefined,
     },
   });
 
@@ -160,14 +161,15 @@ export async function handleWebhook(req, res) {
       try {
         const message = await TelegramService.processIncomingMessage(workspaceId, update);
         
-        if (message && message.content) {
+        if (message && (message.content || message.incomingFile)) {
           const senderName = message.from?.name || 'Usuario de Telegram';
+          const preview = (message.content || message.incomingFile?.filename || '').toString();
           
           log.info('[Telegram] Procesando mensaje', { 
             workspaceId, 
             chatId: message.chatId,
             from: senderName,
-            content: message.content?.substring(0, 50) 
+            content: preview.slice(0, 50) 
           });
           
           // Emitir notificación de nuevo mensaje
@@ -176,7 +178,7 @@ export async function handleWebhook(req, res) {
             id: `telegram_msg_${Date.now()}`,
             type: 'telegram_message',
             title: 'Nuevo mensaje de Telegram',
-            message: `${senderName}: ${message.content.substring(0, 100)}${message.content.length > 100 ? '...' : ''}`,
+            message: `${senderName}: ${preview.slice(0, 100)}${preview.length > 100 ? '...' : ''}`,
             channel: 'telegram',
             senderName,
             chatId: message.chatId,
@@ -190,6 +192,7 @@ export async function handleWebhook(req, res) {
             senderId: message.chatId,
             senderName,
             text: message.content,
+            incomingFile: message.incomingFile,
           });
           
           // Si hay respuesta, enviarla por Telegram (usando reply al mensaje original)

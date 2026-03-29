@@ -16,6 +16,7 @@ import * as metaWebhook from "../controllers/metaWebhookController.js";
 import * as telegram from "../controllers/telegramController.js";
 import * as metaIntegration from "../controllers/metaIntegrationController.js";
 import * as widget from "../controllers/widgetController.js";
+import * as workspaceUpload from "../controllers/workspaceUploadController.js";
 import { requireAuth, optionalAuth, requireWorkspaceMember } from "../middleware/index.js";
 import { validateWorkspace } from "../middleware/index.js";
 import { loginLimiter, registerLimiter, forgotPasswordLimiter } from "../middleware/index.js";
@@ -62,6 +63,21 @@ router.post("/workspace/create", requireAuth, checkCanCreateWorkspace, workspace
 router.get("/workspace/list", requireAuth, workspaces.listWorkspaces);
 router.get("/workspace/:workspaceId", requireAuth, validateWorkspace, workspaces.getWorkspaceById);
 router.put("/workspace/:workspaceId", requireAuth, validateWorkspace, workspaces.updateWorkspace);
+router.post(
+  "/workspace/:workspaceId/upload",
+  requireAuth,
+  validateWorkspace,
+  workspaceUpload.wrapUpload(workspaceUpload.uploadFile)
+);
+// GET archivo: con auth por defecto. Si PUBLIC_WORKSPACE_UPLOADS_READ=true, Meta/WhatsApp puede descargar la URL sin JWT.
+const publicUploadRead =
+  process.env.PUBLIC_WORKSPACE_UPLOADS_READ === "true" ||
+  process.env.PUBLIC_WORKSPACE_UPLOADS_READ === "1";
+router.get(
+  "/workspace/:workspaceId/uploads/:fileName",
+  ...(publicUploadRead ? [validateWorkspace] : [requireAuth, validateWorkspace]),
+  workspaceUpload.downloadFile
+);
 
 // ============ AGENTS ============
 router.post("/agent/create", requireAuth, checkCanCreateAgent, agents.createAgent);
@@ -161,8 +177,6 @@ router.post("/telegram/:workspaceId/send-photo", requireAuth, validateWorkspace,
 router.post("/telegram/:workspaceId/setup-webhook", requireAuth, validateWorkspace, telegram.setupWebhook);
 router.delete("/telegram/:workspaceId/webhook", requireAuth, validateWorkspace, telegram.deleteWebhook);
 router.post("/telegram/:workspaceId/set-commands", requireAuth, validateWorkspace, telegram.setCommands);
-router.get("/telegram/:workspaceId/config", requireAuth, validateWorkspace, telegram.getConfig);
-router.post("/telegram/:workspaceId/config", requireAuth, validateWorkspace, telegram.saveConfig);
 
 // ============ SUPER ADMIN ============
 router.get("/admin/status", requireAuth, admin.getSystemStatus);

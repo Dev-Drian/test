@@ -17,6 +17,7 @@ import { TablePermissions } from '../../services/TablePermissions.js';
 import { getOpenAIProvider } from '../../integrations/ai/OpenAIProvider.js';
 import { getIntentClassifier, INTENTS } from '../../services/IntentClassifier.js';
 import { executeBeforeCreateFlows, executeFlowsForTrigger, executePendingActions } from '../../services/FlowExecutor.js';
+import { isFieldValuePresent } from '../../core/Context.js';
 
 export class CreateHandler extends ActionHandler {
   constructor(dependencies = {}) {
@@ -633,11 +634,12 @@ export class CreateHandler extends ActionHandler {
     
     // Ordenar por prioridad
     const sortedConfig = fieldsConfig.sort((a, b) => (a.priority || 99) - (b.priority || 99));
+    const cfgByKey = Object.fromEntries(sortedConfig.map(fc => [fc.key, fc]));
     
-    // Campos recolectados
+    // Campos recolectados (incluye tipo file = objeto con url)
     const collectedCount = Object.keys(context.collectedFields || {}).filter(k => {
       const v = context.collectedFields[k];
-      return v !== undefined && v !== null && v !== '';
+      return isFieldValuePresent(v, cfgByKey[k]?.type);
     }).length;
     
     // Si es la primera pregunta (ningún campo recolectado), pedir TODOS los campos requeridos
@@ -760,6 +762,8 @@ export class CreateHandler extends ActionHandler {
           return `¿Cuál ${label} prefieres? (${opts})`;
         }
         return `¿Cuál es el ${label}?`;
+      case 'file':
+        return `📎 Para **${label}**: envíame el **enlace público** (https://…) del archivo si ya está en internet, o súbelo en **Tablas** del panel y pega aquí la URL que empiece por /api/… ¿Cuál es el enlace?`;
       default:
         return `¿Cuál es el ${label}?`;
     }
@@ -797,7 +801,9 @@ export class CreateHandler extends ActionHandler {
       
       // Formatear valor según tipo
       let displayValue = value;
-      if (config.type === 'time' || key === 'hora') {
+      if (config.type === 'file' && value && typeof value === 'object' && value.url) {
+        displayValue = value.filename || value.url;
+      } else if (config.type === 'time' || key === 'hora') {
         displayValue = this._formatTo12Hour(value);
       }
       

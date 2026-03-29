@@ -135,30 +135,36 @@ export class TableRepository extends BaseRepository {
   
   /**
    * Obtiene información resumida de múltiples tablas (para el LLM)
+   * OPTIMIZADO: Una sola query para todas las tablas en lugar de N+1
    * @param {string} workspaceId 
    * @param {string[]} tableIds 
    * @returns {Promise<object[]>}
    */
   async getTablesInfo(workspaceId, tableIds) {
-    const tablesInfo = [];
+    if (!tableIds || tableIds.length === 0) return [];
     
-    for (const tableId of tableIds) {
-      const table = await this.findById(tableId, workspaceId);
-      if (table) {
+    // Una sola consulta para obtener todas las tablas del workspace
+    const allTables = await this.findAll(workspaceId);
+    const tableMap = new Map(allTables.map(t => [t._id, t]));
+    
+    // Filtrar solo las que necesitamos
+    return tableIds
+      .map(tableId => {
+        const table = tableMap.get(tableId);
+        if (!table) return null;
+        
         const requiredFields = (table.headers || [])
           .filter(h => h.required === true)
           .map(h => h.key || h.label);
         
-        tablesInfo.push({
+        return {
           _id: table._id,
           name: table.name,
           type: table.type,
           fields: requiredFields,
-        });
-      }
-    }
-    
-    return tablesInfo;
+        };
+      })
+      .filter(Boolean);
   }
   
   /**

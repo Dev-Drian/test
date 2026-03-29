@@ -39,6 +39,11 @@ const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
     </svg>
   ),
+  file: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.625h-7.5m0 0l3-3m-3 3l3 3M3 19.5V6.375A2.625 2.625 0 015.625 3.75h4.5a2.25 2.25 0 012.25 2.25v1.5a2.25 2.25 0 002.25 2.25h1.125A2.625 2.625 0 0121 12.375v6.75" />
+    </svg>
+  ),
   plus: (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -81,6 +86,7 @@ const FIELD_TYPES = [
   { value: "phone", label: "Teléfono", icon: Icons.phone, color: "purple", desc: "Número telefónico", help: "Se valida formato telefónico. Ej: 55 1234 5678" },
   { value: "select", label: "Selección", icon: Icons.select, color: "pink", desc: "Opciones predefinidas", help: "El usuario elige de una lista. Ej: Estado → Pendiente, Confirmado, Cancelado" },
   { value: "relation", label: "Relación", icon: Icons.relation, color: "orange", desc: "Enlace a otra tabla", help: "Conecta con registros de otra tabla. Ej: Cliente → Tabla de Clientes" },
+  { value: "file", label: "Archivo", icon: Icons.file, color: "slate", desc: "Imagen o documento", help: "Guarda URL + nombre + tipo MIME + tamaño. Formatos: JPG, PNG, GIF, WebP, PDF, DOC, DOCX (subida desde la tabla)." },
   { value: "formula", label: "Calculado", icon: Icons.formula || (() => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>), color: "violet", desc: "Fórmula automática", help: "Calcula valores automáticamente. Ej: Total = Precio × Cantidad, Edad = Hoy - Fecha_nacimiento" },
 ];
 
@@ -1059,7 +1065,7 @@ export default function TableBuilder({ onSave, onCancel, availableTables = [], l
                         )}
 
                         {/* Validaciones avanzadas */}
-                        {field.type !== 'formula' && field.type !== 'relation' && field.type !== 'select' && (
+                        {field.type !== 'formula' && field.type !== 'relation' && field.type !== 'select' && field.type !== 'file' && (
                           <div className="space-y-3 pt-3 border-t border-white/[0.04]">
                             <div className="flex items-center justify-between">
                               <label className="text-sm text-zinc-400 flex items-center gap-2">

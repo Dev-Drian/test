@@ -38,13 +38,15 @@ export function SocketProvider({ workspaceId, children }) {
       return;
     }
 
-    // Crear conexión
+    // Crear conexión con backoff exponencial
     const socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 2000,
-      timeout: 10000,
+      reconnectionAttempts: 10,        // Más intentos
+      reconnectionDelay: 1000,         // Empezar con 1s
+      reconnectionDelayMax: 30000,     // Máximo 30s (backoff exponencial automático)
+      randomizationFactor: 0.5,        // Jitter para evitar thundering herd
+      timeout: 15000,
     });
 
     socketRef.current = socket;

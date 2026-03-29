@@ -131,6 +131,12 @@ export class ExportService {
       case 'boolean':
         return value ? 'Sí' : 'No';
 
+      case 'file':
+        if (value && typeof value === 'object' && value.url) {
+          return [value.filename || '', value.url, value.mimeType || ''].filter(Boolean).join(' | ');
+        }
+        return value == null ? '' : String(value);
+
       default:
         return String(value);
     }
