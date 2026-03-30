@@ -278,6 +278,7 @@ export class ChatService {
     // Procesar con LLM-First (Function Calling)
     log.debug('Processing message with engine...');
     const result = await engine.process(context);
+    console.log(`✅ [Respuesta] ${(result?.response || '').substring(0, 150)}${(result?.response || '').length > 150 ? '...' : ''}`);
     log.info('Engine result', { 
       handled: result.handled, 
       handler: result.handler,
@@ -385,6 +386,7 @@ export class ChatService {
     handlers.forEach(h => engine.addHandler(h));
     
     const result = await engine.process(context);
+    console.log(`✅ [Respuesta] ${(result?.response || '').substring(0, 150)}${(result?.response || '').length > 150 ? '...' : ''}`);
     
     // Guardar mensajes
     await this.chatRepo.addMessage(workspaceId, chatId, 'user', message);

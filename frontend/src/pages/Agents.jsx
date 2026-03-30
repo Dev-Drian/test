@@ -195,8 +195,19 @@ export default function Agents() {
     });
   };
 
-  const toggleFullAccess = (tableId) => {
-    setSelectedTables((prev) => prev.map(t => t.tableId === tableId ? { ...t, fullAccess: !t.fullAccess } : t));
+  const togglePermission = (tableId, perm) => {
+    setSelectedTables((prev) => prev.map(t => {
+      if (t.tableId !== tableId) return t;
+      const newPerms = { ...t.permissions, [perm]: !t.permissions[perm] };
+      const fullAccess = newPerms.query && newPerms.create && newPerms.update && newPerms.delete;
+      return { ...t, permissions: newPerms, fullAccess };
+    }));
+  };
+
+  const toggleScope = (tableId) => {
+    setSelectedTables((prev) => prev.map(t =>
+      t.tableId === tableId ? { ...t, fullAccess: !t.fullAccess } : t
+    ));
   };
 
   const isTableSelected = (tableId) => selectedTables.some(t => t.tableId === tableId);
@@ -416,13 +427,24 @@ export default function Agents() {
                         <div className="flex flex-wrap gap-1.5">
                           {agent.tables.slice(0, 4).map((tableConfig, idx) => {
                             const tableId = typeof tableConfig === 'object' ? tableConfig.tableId : tableConfig;
-                            const fullAccess = typeof tableConfig === 'object' ? tableConfig.fullAccess : true;
+                            const perms = typeof tableConfig === 'object' ? tableConfig.permissions : null;
                             const tableInfo = tables.find(t => t._id === tableId);
+                            const permLabels = perms ? [
+                              perms.query && { label: 'Ver', color: 'text-sky-400' },
+                              perms.create && { label: 'Crear', color: 'text-emerald-400' },
+                              perms.update && { label: 'Editar', color: 'text-amber-400' },
+                              perms.delete && { label: 'Eliminar', color: 'text-red-400' },
+                            ].filter(Boolean) : [];
                             return (
-                              <span key={tableId || idx} className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${fullAccess ? "bg-sky-500/10 text-sky-400 border border-sky-500/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"}`}>
-                                {fullAccess ? <LockOpenIcon className="w-3 h-3" /> : <LockClosedIcon className="w-3 h-3" />}
-                                {tableInfo?.name || 'Tabla'}
-                              </span>
+                              <div key={tableId || idx} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/4 border border-white/8">
+                                <DatabaseIcon className="w-3 h-3 text-violet-400 shrink-0" />
+                                <span className="text-xs font-medium text-slate-300">{tableInfo?.name || 'Tabla'}</span>
+                                {permLabels.length > 0 && (
+                                  <span className="text-[10px] text-slate-600 ml-0.5">
+                                    · {permLabels.map(p => <span key={p.label} className={p.color}>{p.label}</span>).reduce((acc, el, i) => i === 0 ? [el] : [...acc, <span key={`sep-${i}`} className="text-slate-700"> · </span>, el], [])}
+                                  </span>
+                                )}
+                              </div>
                             );
                           })}
                           {agent.tables.length > 4 && <span className="px-2 py-1 rounded-lg text-xs font-medium bg-slate-700/50 text-slate-400">+{agent.tables.length - 4} más</span>}
@@ -449,16 +471,12 @@ export default function Agents() {
 
         {/* Leyenda */}
         {agents.length > 0 && (
-          <div className="mt-6 p-4 rounded-xl flex flex-wrap items-center gap-4 text-xs" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <span className="text-slate-500">Acceso a tablas:</span>
-            <div className="flex items-center gap-1.5">
-              <span className="flex items-center gap-1 px-2 py-1 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20"><LockOpenIcon className="w-3 h-3" /> Todo</span>
-              <span className="text-slate-500">Ve todos los registros</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="flex items-center gap-1 px-2 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20"><LockClosedIcon className="w-3 h-3" /> Filtrado</span>
-              <span className="text-slate-500">Solo datos del usuario</span>
-            </div>
+          <div className="mt-6 p-4 rounded-xl flex flex-wrap items-center gap-x-5 gap-y-2 text-xs" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <span className="text-slate-500">Permisos en tarjetas:</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-sky-400"/>Ver</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400"/>Crear</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400"/>Editar</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400"/>Eliminar</span>
           </div>
         )}
       </div>
@@ -535,29 +553,85 @@ export default function Agents() {
                       <Link to="/tables" className="text-xs text-amber-400 hover:text-amber-300 font-medium flex items-center gap-1">Ir a Tablas <ArrowRightIcon className="w-3 h-3" /></Link>
                     </div>
                   ) : (
-                    <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                      {tables.map((t) => (
-                        <div key={t._id} className={`flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer ${isTableSelected(t._id) ? 'bg-violet-500/10 ring-1 ring-violet-500/30' : 'hover:bg-white/5'}`} style={{ border: isTableSelected(t._id) ? 'none' : '1px solid rgba(255,255,255,0.05)' }} onClick={() => toggleTable(t._id, t.name)}>
-                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${isTableSelected(t._id) ? 'bg-violet-500 border-violet-500' : 'border-slate-600'}`}>
-                            {isTableSelected(t._id) && <CheckIcon className="w-3 h-3 text-white" />}
+                    <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                      {tables.map((t) => {
+                        const selected = isTableSelected(t._id);
+                        const tableState = selectedTables.find(st => st.tableId === t._id);
+                        const perms = tableState?.permissions || {};
+                        const fullAccess = tableState?.fullAccess !== false;
+                        const PERMS = [
+                          { key: 'query',  label: 'Ver',      activeClass: 'bg-sky-500/20 text-sky-300 border-sky-500/40' },
+                          { key: 'create', label: 'Crear',    activeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+                          { key: 'update', label: 'Editar',   activeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
+                          { key: 'delete', label: 'Eliminar', activeClass: 'bg-red-500/20 text-red-300 border-red-500/40' },
+                        ];
+                        return (
+                          <div key={t._id} className={`rounded-xl transition-all ${selected ? 'ring-1 ring-violet-500/30' : ''}`} style={{ background: selected ? 'rgba(139,92,246,0.07)' : 'rgba(255,255,255,0.02)', border: selected ? '1px solid rgba(139,92,246,0.2)' : '1px solid rgba(255,255,255,0.05)' }}>
+                            {/* Fila de selección */}
+                            <div className="flex items-center gap-3 p-3 cursor-pointer" onClick={() => toggleTable(t._id, t.name)}>
+                              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all shrink-0 ${selected ? 'bg-violet-500 border-violet-500' : 'border-slate-600 hover:border-slate-400'}`}>
+                                {selected && <CheckIcon className="w-3 h-3 text-white" />}
+                              </div>
+                              <DatabaseIcon className={`w-4 h-4 shrink-0 ${selected ? 'text-violet-400' : 'text-slate-500'}`} />
+                              <div className="flex-1 min-w-0">
+                                <span className={`text-sm font-medium ${selected ? 'text-violet-200' : 'text-slate-400'}`}>{t.name}</span>
+                                <span className="text-xs text-slate-600 ml-2">{t.headers?.length || 0} campos</span>
+                              </div>
+                              {selected && (
+                                <span className="text-[10px] text-slate-500 shrink-0">
+                                  {Object.values(perms).filter(Boolean).length}/4 permisos
+                                </span>
+                              )}
+                            </div>
+                            {/* Toggles de permisos */}
+                            {selected && (
+                              <div className="px-3 pb-3 space-y-2">
+                                <div className="flex items-center gap-2">
+                                  {PERMS.map(({ key, label, activeClass }) => (
+                                    <button
+                                      key={key}
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); togglePermission(t._id, key); }}
+                                      className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                                        perms[key] ? activeClass : 'bg-white/3 text-slate-600 border-white/8 hover:border-slate-500 hover:text-slate-400'
+                                      }`}
+                                    >
+                                      {label}
+                                    </button>
+                                  ))}
+                                </div>
+                                {/* Scope — solo visible si Ver está activo */}
+                                {perms.query && (
+                                  <div
+                                    className="flex items-center justify-between px-2.5 py-2 rounded-lg cursor-pointer transition-all"
+                                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                                    onClick={(e) => { e.stopPropagation(); toggleScope(t._id); }}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <div className={`w-3.5 h-3.5 rounded-full transition-all ${fullAccess ? 'bg-violet-500' : 'bg-slate-600'}`} />
+                                      <span className="text-[11px] text-slate-400">
+                                        {fullAccess
+                                          ? <><span className="text-violet-300 font-medium">Todos los registros</span> — el bot ve toda la tabla</>
+                                          : <><span className="text-amber-300 font-medium">Solo los suyos</span> — solo ve datos de quien escribe</>
+                                        }
+                                      </span>
+                                    </div>
+                                    <span className="text-[10px] text-slate-600">{fullAccess ? 'Global' : 'Filtrado'}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          <DatabaseIcon className={`w-4 h-4 ${isTableSelected(t._id) ? 'text-violet-400' : 'text-slate-500'}`} />
-                          <div className="flex-1 min-w-0">
-                            <span className={`text-sm font-medium ${isTableSelected(t._id) ? 'text-violet-300' : 'text-slate-400'}`}>{t.name}</span>
-                            <span className="text-xs text-slate-600 ml-2">{t.headers?.length || 0} campos</span>
-                          </div>
-                          {isTableSelected(t._id) && (
-                            <button type="button" onClick={(e) => { e.stopPropagation(); toggleFullAccess(t._id); }} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${hasFullAccess(t._id) ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'}`}>
-                              {hasFullAccess(t._id) ? <><LockOpenIcon className="w-3 h-3" /> Todo</> : <><LockClosedIcon className="w-3 h-3" /> Filtrado</>}
-                            </button>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
-                  <div className="flex items-center gap-4 mt-3 text-xs text-slate-600">
-                    <span className="flex items-center gap-1"><LockOpenIcon className="w-3 h-3" /> Todo = ve todos los registros</span>
-                    <span className="flex items-center gap-1"><LockClosedIcon className="w-3 h-3" /> Filtrado = solo sus datos</span>
+                  <div className="mt-3 flex flex-wrap gap-3 text-[11px] text-slate-600">
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-sky-400 inline-block"/>Ver</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block"/>Crear</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block"/>Editar</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400 inline-block"/>Eliminar — actívalo solo si el bot debe poder borrar
+                    </span>
                   </div>
                 </div>
               </div>

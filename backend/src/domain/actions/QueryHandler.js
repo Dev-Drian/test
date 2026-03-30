@@ -60,7 +60,6 @@ export class QueryHandler extends ActionHandler {
         
         if (correctTable) {
           // Redirigir a la tabla correcta
-          console.log('[QueryHandler] Corrigiendo tabla:', tableSchema.name, '->', correctTable.name);
           context.analysis.tableId = correctTable.id || correctTable._id;
           return await this.execute(context); // Re-ejecutar con tabla correcta
         } else {
@@ -121,13 +120,11 @@ export class QueryHandler extends ActionHandler {
       
       // Parsear consulta con QueryParser para filtros avanzados
       const parsedQuery = this.queryParser.parse(message, tableSchema);
-      console.log('[QueryHandler] ParsedQuery:', JSON.stringify(parsedQuery, null, 2));
       
       // Normalizar nombres de campos de los filtros del LLM para que coincidan con la tabla
       let llmFilters = this._normalizeFilters(analysis.query?.filters || {}, tableSchema);
       // Normalizar valores de estado/tipo para que coincidan con opciones reales
       llmFilters = this._normalizeFilterValues(llmFilters, tableSchema);
-      console.log('[QueryHandler] LLM filters normalized:', JSON.stringify(llmFilters, null, 2));
       
       // ═══ FALLBACK: Extraer filtros si el LLM falló ═══
       if (Object.keys(llmFilters).length === 0) {
@@ -135,7 +132,6 @@ export class QueryHandler extends ActionHandler {
         // IMPORTANTE: También normalizar valores de fallback (activo→En Curso, etc.)
         fallbackFilters = this._normalizeFilterValues(fallbackFilters, tableSchema);
         if (Object.keys(fallbackFilters).length > 0) {
-          console.log('[QueryHandler] FALLBACK filters extracted:', JSON.stringify(fallbackFilters, null, 2));
           llmFilters = fallbackFilters;
         }
       }
@@ -155,9 +151,8 @@ export class QueryHandler extends ActionHandler {
       const hasFullAccess = typeof tableConfig === 'object' ? tableConfig.fullAccess !== false : true;
       
       if (hasFullAccess) {
-        console.log('[QueryHandler] Table has fullAccess, showing all data');
+        // fullAccess: all data shown
       } else {
-        console.log('[QueryHandler] Table has restricted access (fullAccess: false)');
         // TODO: Implementar filtrado cuando haya sistema de autenticación
       }
       
@@ -180,11 +175,9 @@ export class QueryHandler extends ActionHandler {
         
         // Si el LLM devolvió un campo y es válido, usarlo
         if (llmField && realFields.includes(llmField.toLowerCase())) {
-          console.log(`[QueryHandler] Using LLM field for aggregation: ${llmField} (parser had: ${parsedQuery.aggregation.field})`);
           parsedQuery.aggregation.field = llmField;
         } else if (!parserFieldIsValid) {
           // Si ni el LLM ni el parser tienen un campo válido, usar smart analysis
-          console.log('[QueryHandler] No valid aggregation field, falling through to smart analysis');
           // Fall through to smart analysis below
         } else {
           return await this._handleAggregation(context, combinedFilters, parsedQuery.aggregation);
@@ -201,14 +194,11 @@ export class QueryHandler extends ActionHandler {
       // ═══ V3: ANÁLISIS ESTADÍSTICO INTELIGENTE ═══
       // Si el LLM detectó analyze_data o hay patrones analíticos en el mensaje
       if (analysis.isAnalysis || this._isAnalyticalQuestion(message)) {
-        console.log('[QueryHandler] Detected analytical question, using smart analysis');
         return await this._handleSmartAnalysis(context, combinedFilters, tableSchema, analysis);
       }
       
       // Separar filtros: exactos van a CouchDB, texto se filtra en JS
       const { dbFilters, textFilters } = this._separateFilters(combinedFilters);
-      console.log('[QueryHandler] DB filters:', JSON.stringify(dbFilters));
-      console.log('[QueryHandler] Text filters:', JSON.stringify(textFilters));
       
       // Query con filtros exactos (más registros si hay filtros de texto)
       const queryLimit = Object.keys(textFilters).length > 0 ? Math.max(limit * 10, 100) : limit;
@@ -224,7 +214,6 @@ export class QueryHandler extends ActionHandler {
       if (Object.keys(textFilters).length > 0) {
         const beforeCount = rows.length;
         rows = this._applyTextFilters(rows, textFilters);
-        console.log(`[QueryHandler] Text filter applied: ${beforeCount} → ${rows.length} rows`);
         
         // Aplicar límite después del filtrado
         if (rows.length > limit) {
@@ -441,9 +430,7 @@ export class QueryHandler extends ActionHandler {
       const finalKey = matchedField || filterKey;
       normalizedFilters[finalKey] = filterValue;
       
-      if (matchedField && matchedField !== filterKey) {
-        console.log(`[QueryHandler] Filter normalized: "${filterKey}" → "${matchedField}"`);
-      }
+      // matchedField already assigned above
     }
     
     return normalizedFilters;
@@ -549,7 +536,6 @@ export class QueryHandler extends ActionHandler {
           );
           
           if (match) {
-            console.log(`[QueryHandler] Filter value normalized: "${value}" → "${match}"`);
             normalizedFilters[key] = match;
             break;
           }
@@ -634,6 +620,15 @@ export class QueryHandler extends ActionHandler {
     fieldsConfig.forEach(fc => {
       configMap[fc.key] = fc;
     });
+
+    // Helper: detectar si un valor es una URL de imagen
+    const isImageUrl = (val) => {
+      if (!val || typeof val !== 'string') return false;
+      if (!val.startsWith('http')) return false;
+      return /\.(jpg|jpeg|png|webp|gif|avif)(\?|$)/i.test(val) ||
+        val.includes('unsplash.com') || val.includes('picsum.photos') ||
+        val.includes('images.') || val.includes('/uploads/');
+    };
     
     // Si hay rango de fecha, mencionarlo
     let header = `📋 Encontré ${rows.length} resultado(s)`;
@@ -646,9 +641,27 @@ export class QueryHandler extends ActionHandler {
     
     rows.slice(0, 10).forEach((row, i) => {
       // Obtener el campo principal (usualmente 'nombre')
-      const mainField = row.nombre || row.nombre || row.title || Object.values(row).find(v => typeof v === 'string' && v.length > 0);
+      const mainField = row.nombre || row.title || Object.values(row).find(v => typeof v === 'string' && v.length > 0);
       
+      // Detectar imagen antes de iterar campos — ponerla justo después del título
+      let imageUrl = null;
+      for (const [key, value] of Object.entries(row)) {
+        const fieldConfig = configMap[key] || {};
+        if (fieldConfig.hiddenFromChat) continue;
+        if (isImageUrl(value)) {
+          imageUrl = value;
+          break;
+        }
+      }
+
       response += `${i + 1}. **${mainField || 'Sin nombre'}**\n`;
+      if (imageUrl) {
+        // 1 resultado → imagen real vía Meta (el canal la enviará como adjunto)
+        // >1 resultados → URL plana (WhatsApp genera preview automático, sin spam de imágenes)
+        response += rows.length === 1
+          ? `![foto](${imageUrl})\n`
+          : `${imageUrl}\n`;
+      }
       
       // Agregar detalles
       const details = [];
@@ -667,6 +680,9 @@ export class QueryHandler extends ActionHandler {
         
         // Respetar hiddenFromChat - campos sensibles que no se muestran
         if (fieldConfig.hiddenFromChat) continue;
+
+        // Las URLs de imagen ya se mostraron arriba como imagen — omitirlas aquí
+        if (isImageUrl(value)) continue;
         
         const emoji = fieldConfig.emoji || '•';
         const label = fieldConfig.label || key.charAt(0).toUpperCase() + key.slice(1);
@@ -679,7 +695,7 @@ export class QueryHandler extends ActionHandler {
           // Números sin símbolo de moneda (stock, cantidad, etc.)
           displayValue = Number(value).toLocaleString('es-CO');
         } else if (key === 'duracion') {
-          displayValue = `${value} min`;
+          displayValue = `${value}`;
         }
         
         details.push(`   ${emoji} ${label}: ${displayValue}`);
@@ -741,7 +757,6 @@ export class QueryHandler extends ActionHandler {
       const searchMatch = message.match(searchPattern);
       if (searchMatch) {
         filters[nameField] = searchMatch[1].trim();
-        console.log('[QueryHandler] Extracted name from search pattern:', filters[nameField]);
       }
     }
     
@@ -803,18 +818,10 @@ export class QueryHandler extends ActionHandler {
         // Ignorar si es una frase común o el nombre de la tabla
         if (!commonPhrases.test(candidate) && !tableName.toLowerCase().includes(candidate.toLowerCase())) {
           filters[nameField] = candidate;
-          console.log('[QueryHandler] Extracted direct name:', candidate);
           break;
         }
       }
     }
-    
-    console.log('[QueryHandler] Fallback extraction:', { 
-      message: message.substring(0, 50),
-      nameField,
-      statusField,
-      filters 
-    });
     
     return filters;
   }
@@ -863,11 +870,6 @@ export class QueryHandler extends ActionHandler {
         if (msgLower.includes(keyword) && (fieldKey.includes(keyword) || aliases.some(a => fieldKey.includes(a)))) {
           const label = fieldConfig.label || fieldConfig.key || keyword;
           const emoji = fieldConfig.emoji || '📋';
-          
-          console.log('[QueryHandler] Field options question detected:', {
-            field: fieldKey,
-            options
-          });
           
           return {
             handled: true,
@@ -937,7 +939,6 @@ export class QueryHandler extends ActionHandler {
                 );
                 if (match) {
                   effectiveFilters[statusField.key] = match;
-                  console.log(`[QueryHandler] Smart analysis extracted filter: ${statusField.key}="${match}"`);
                   break;
                 }
               }
@@ -948,14 +949,12 @@ export class QueryHandler extends ActionHandler {
       }
       
       // Obtener TODOS los datos para análisis (máximo 1000)
-      console.log('[QueryHandler] Smart analysis query:', { tableId: analysis.tableId, effectiveFilters });
       let allRows = await this.tableDataRepository.query(
         workspaceId,
         analysis.tableId,
         effectiveFilters,
         { limit: 1000 }
       );
-      console.log('[QueryHandler] Smart analysis rows found:', allRows.length);
       
       if (allRows.length === 0) {
         return { handled: true, response: 'No hay datos disponibles para analizar.' };

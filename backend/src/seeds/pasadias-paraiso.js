@@ -121,7 +121,8 @@ export async function seed() {
           { key: 'disponible', label: 'Disponible', type: 'select', required: true, emoji: '📊', options: ['Sí', 'No', 'Temporada'], defaultValue: 'Sí' },
           { key: 'categoria', label: 'Categoría', type: 'select', required: true, emoji: '🏷️', options: ['Playa', 'Río', 'Montaña', 'Aventura', 'Familiar', 'Romántico'] },
           { key: 'puntuacion', label: 'Puntuación', type: 'number', required: false, emoji: '⭐', validation: { min: 0, max: 5 }, defaultValue: 4.5 },
-          { key: 'imagen', label: 'Imagen URL', type: 'text', required: false, emoji: '🖼️', hiddenFromChat: true }
+          { key: 'imagen', label: 'Imagen', type: 'file', required: false, emoji: '🖼️', hiddenFromChat: true },
+          { key: 'imagenUrl', label: 'Foto', type: 'text', required: false, emoji: '📷', hiddenFromChat: false }
         ],
         createdAt: new Date().toISOString()
       };
@@ -186,13 +187,14 @@ export async function seed() {
             required: true, 
             emoji: '👤', 
             priority: 2,
+            askMessage: '¿A nombre de quién va la reserva?',
             relation: {
               tableName: 'Clientes',
               displayField: 'nombre',
               searchField: 'nombre',
               confirmOnMatch: true,
               autoCreate: true,
-              autoCreateFields: ['nombre', 'cedula', 'telefono'],
+              autoCreateFields: ['nombre', 'telefono'],
               validateOnInput: false
             }
           },
@@ -219,10 +221,15 @@ export async function seed() {
           { key: 'totalPagar', label: 'Total a Pagar', type: 'number', required: false, emoji: '💰', priority: 8, hiddenFromChat: true, autoCalculate: true },
           { key: 'abono', label: 'Abono', type: 'number', required: false, emoji: '💵', validation: { min: 0 }, defaultValue: 0 },
           { key: 'saldo', label: 'Saldo Pendiente', type: 'number', required: false, emoji: '💳', hiddenFromChat: true },
-          { key: 'estadoReserva', label: 'Estado', type: 'select', required: true, emoji: '📊', options: ['Pendiente', 'Confirmada', 'Pagada', 'En curso', 'Completada', 'Cancelada'], defaultValue: 'Pendiente' },
+          { key: 'estadoReserva', label: 'Estado', type: 'select', required: true, emoji: '📊', options: ['Pendiente', 'Confirmada', 'Pagada', 'En curso', 'Completada', 'Cancelada'], defaultValue: 'Pendiente', hiddenFromChat: true },
           { key: 'metodoPago', label: 'Método Pago', type: 'select', required: false, emoji: '💳', options: ['Efectivo', 'Transferencia', 'Nequi', 'Daviplata', 'Tarjeta', 'PayU'] },
+          { key: 'codigoPromo', label: 'Código Promo', type: 'text', required: false, emoji: '🎟️' },
           { key: 'notasEspeciales', label: 'Notas Especiales', type: 'text', required: false, emoji: '📝' },
-          { key: 'fechaReserva', label: 'Fecha Reserva', type: 'date', required: false, emoji: '📅', defaultValue: 'today', hiddenFromChat: true }
+          { key: 'fechaReserva', label: 'Fecha Reserva', type: 'date', required: false, emoji: '📅', defaultValue: 'today', hiddenFromChat: true },
+          { key: 'guiaAsignado', label: 'Guía Asignado', type: 'text', required: false, emoji: '🧑‍🦯', hiddenFromChat: true },
+          { key: 'telefonoGuia', label: 'Tel. Guía', type: 'phone', required: false, emoji: '📱', hiddenFromChat: true },
+          { key: 'transporteAsignado', label: 'Transporte', type: 'text', required: false, emoji: '🚌', hiddenFromChat: true },
+          { key: 'conductorAsignado', label: 'Conductor', type: 'text', required: false, emoji: '👨‍✈️', hiddenFromChat: true }
         ],
         createdAt: new Date().toISOString()
       };
@@ -445,6 +452,7 @@ export async function seed() {
           disponible: 'Sí',
           categoria: 'Playa',
           puntuacion: 4.8,
+          imagenUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=350&fit=crop',
           createdAt: new Date().toISOString()
         },
         {
@@ -463,6 +471,7 @@ export async function seed() {
           disponible: 'Sí',
           categoria: 'Playa',
           puntuacion: 4.9,
+          imagenUrl: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=600&h=350&fit=crop',
           createdAt: new Date().toISOString()
         },
         {
@@ -481,6 +490,7 @@ export async function seed() {
           disponible: 'Sí',
           categoria: 'Aventura',
           puntuacion: 4.7,
+          imagenUrl: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=600&h=350&fit=crop',
           createdAt: new Date().toISOString()
         },
         {
@@ -499,6 +509,7 @@ export async function seed() {
           disponible: 'Sí',
           categoria: 'Familiar',
           puntuacion: 4.6,
+          imagenUrl: 'https://images.unsplash.com/photo-1596178060671-7a9bc86b89e3?w=600&h=350&fit=crop',
           createdAt: new Date().toISOString()
         },
         {
@@ -517,6 +528,7 @@ export async function seed() {
           disponible: 'Sí',
           categoria: 'Playa',
           puntuacion: 4.9,
+          imagenUrl: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=600&h=350&fit=crop',
           createdAt: new Date().toISOString()
         },
         {
@@ -535,6 +547,7 @@ export async function seed() {
           disponible: 'Sí',
           categoria: 'Familiar',
           puntuacion: 4.8,
+          imagenUrl: 'https://images.unsplash.com/photo-1590393801942-6ec49bb73b12?w=600&h=350&fit=crop',
           createdAt: new Date().toISOString()
         },
         {
@@ -553,6 +566,7 @@ export async function seed() {
           disponible: 'Sí',
           categoria: 'Aventura',
           puntuacion: 4.9,
+          imagenUrl: 'https://images.unsplash.com/photo-1533227268428-f9ed0900fb3b?w=600&h=350&fit=crop',
           createdAt: new Date().toISOString()
         },
         {
@@ -571,6 +585,7 @@ export async function seed() {
           disponible: 'Sí',
           categoria: 'Familiar',
           puntuacion: 4.5,
+          imagenUrl: 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=600&h=350&fit=crop',
           createdAt: new Date().toISOString()
         },
         {
@@ -589,6 +604,7 @@ export async function seed() {
           disponible: 'Sí',
           categoria: 'Playa',
           puntuacion: 4.6,
+          imagenUrl: 'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=600&h=350&fit=crop',
           createdAt: new Date().toISOString()
         },
         {
@@ -607,6 +623,7 @@ export async function seed() {
           disponible: 'Sí',
           categoria: 'Montaña',
           puntuacion: 4.4,
+          imagenUrl: 'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=600&h=350&fit=crop',
           createdAt: new Date().toISOString()
         }
       ];
@@ -780,97 +797,158 @@ export async function seed() {
       console.log('  ✅ Datos de Pagos insertados');
 
       // ════════════════════════════════════════════════════════════════════
-      // AGENTE 1: ASISTENTE DE RESERVAS
+      // AGENTE 1: ASISTENTE DE RESERVAS (Bot de clientes — WhatsApp / Web)
       // ════════════════════════════════════════════════════════════════════
       const agenteReservasId = uuidv4();
       const agenteReservas = {
         _id: agenteReservasId,
         type: 'agent',
         name: 'Asistente de Reservas',
-        description: 'Especializado en reservas de pasadías, consulta de destinos y atención al cliente',
+        description: 'Bot de atención al cliente: reservas, pagos, cancelaciones, estado de reserva y reseñas',
         tables: [
-          { tableId: destinosTableId, tableName: 'Destinos', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } },
-          { tableId: clientesTableId, tableName: 'Clientes', fullAccess: true, permissions: { query: true, create: true, update: true, delete: false } },
-          { tableId: reservasTableId, tableName: 'Reservas', fullAccess: true, permissions: { query: true, create: true, update: true, delete: false } },
-          { tableId: pagosTableId, tableName: 'Pagos', fullAccess: true, permissions: { query: true, create: true, update: false, delete: false } },
-          { tableId: promocionesTableId, tableName: 'Promociones', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } },
+          { tableId: destinosTableId,    tableName: 'Destinos',    fullAccess: true, permissions: { query: true,  create: false, update: false, delete: false } },
+          { tableId: clientesTableId,    tableName: 'Clientes',    fullAccess: true, permissions: { query: false, create: true,  update: true,  delete: false } },
+          { tableId: reservasTableId,    tableName: 'Reservas',    fullAccess: true, permissions: { query: true,  create: true,  update: true,  delete: false } },
+          { tableId: pagosTableId,       tableName: 'Pagos',       fullAccess: true, permissions: { query: true,  create: true,  update: false, delete: false } },
+          { tableId: promocionesTableId, tableName: 'Promociones', fullAccess: true, permissions: { query: true,  create: false, update: false, delete: false } },
+          { tableId: resenasTableId,     tableName: 'Reseñas',     fullAccess: true, permissions: { query: true,  create: true,  update: true,  delete: false } },
         ],
-        
+
         engineMode: 'llm-first',
         vertical: 'tourism',
         toneStyle: 'friendly',
-        
+
         fewShotExamples: [
           {
             user: 'quiero reservar un pasadía',
-            assistant: '¡Hola! 🏝️ Con gusto te ayudo. ¿Qué tipo de experiencia te interesa?\n\n🏖️ Playa | 🏔️ Aventura | ♨️ Relax | 👨‍👩‍👧 Familiar\n\nCuéntame y te recomiendo las mejores opciones.'
+            assistant: '¡Hola! 🏝️ Con gusto te ayudo. ¿Qué tipo de experiencia buscas?\n\n🏖️ Playa | 🏔️ Aventura | ♨️ Relax | 👨‍👩‍👧 Familiar\n\nCuéntame y te recomiendo las mejores opciones.'
           },
           {
             user: 'cuánto cuesta playa blanca para 2 adultos y 1 niño',
-            assistant: '🏖️ **Playa Blanca**\n\n2 Adultos × $89.000 = $178.000\n1 Niño × $59.000 = $59.000\n**Total: $237.000**\n\n✅ Incluye: transporte, lancha, almuerzo, sillas, guía.\n\n¿Reservamos? Necesito tu nombre, cédula y teléfono.'
+            assistant: '🏖️ *Playa Blanca* — Isla Barú, Cartagena\n\n2 adultos × $89.000 = $178.000\n1 niño × $59.000 = $59.000\n*Total: $237.000*\n\n✅ Incluye transporte A/C, lancha, almuerzo, sillas y guía.\n\n¿Reservamos? Dime tu nombre, cédula, teléfono y la fecha del viaje.'
           },
           {
-            user: 'hay algún descuento',
-            assistant: '¡Sí! 🎉 Tenemos promociones activas:\n\n🏷️ **BIENVENIDO** - $20.000 off\n☀️ **SUMMER2025** - 15% en playas\n\n¿Tienes algún código?'
+            user: 'cómo está mi reserva RES-00234',
+            assistant: 'Déjame verificar tu reserva...\n\n📋 *RES-00234*\n🏝️ Destino: Playa Blanca\n📅 Fecha: 2025-04-12\n💰 Total: $237.000 | Abono: $118.500 | Saldo: $118.500\n📌 Estado: Confirmada\n\n¿Quieres pagar el saldo restante o tienes alguna pregunta?'
+          },
+          {
+            user: 'quiero cancelar mi reserva',
+            assistant: 'Claro, puedo ayudarte con eso. ¿Me das el código de tu reserva?\n\nRecuerda que las cancelaciones son *gratis hasta 48 horas antes* del viaje. Después se cobra el 30% del total como penalización. 🙏'
+          },
+          {
+            user: 'tengo un código de descuento VERANO25',
+            assistant: 'Perfecto, déjame verificar ese código...\n\nSi es válido, lo aplico directamente al crear tu reserva. ¿Ya tienes destino y fecha en mente, o quieres que te muestre las opciones disponibles?'
+          },
+          {
+            user: 'qué debo llevar al pasadía',
+            assistant: '🎒 *Para tu pasadía lleva:*\n\n• Documento de identidad\n• Ropa cómoda + traje de baño\n• Protector solar y gorra\n• Toalla (opcional, hay para alquilar)\n• Dinero en efectivo para extras\n• Snacks para el camino\n\n⏰ El bus sale puntual. Llega 10 min antes al punto de recogida. ¿Algo más?'
+          },
+          {
+            user: 'quiero dejar una reseña del pasadía a guatapé',
+            assistant: '¡Qué bueno que te acompañamos! 🌟 Cuéntame:\n\n1. ¿Del 1 al 5, qué calificación le darías?\n2. ¿Qué fue lo que más disfrutaste?\n3. ¿Lo recomendarías a un amigo?\n\nCon eso registro tu reseña. ¡Gracias por confiar en Pasadías Paraíso!'
           }
         ],
-        
+
+        responseTemplates: {
+          createSuccess: '✅ ¡Reserva registrada! Tu código es *{{codigoReserva}}*. Te llegará confirmación en un momento.',
+          createConfirm: '¿Confirmo la reserva?\n\n🏝️ {{destino}} — {{fechaViaje}}\n👥 {{adultos}} adultos, {{ninos}} niños\n📍 {{puntoRecogida}}\n💰 Total: ${{totalPagar}}\n\n¿Está todo correcto?',
+          updateSuccess: '✅ Listo, tu reserva ha sido actualizada.',
+          notFound: 'No encontré esa información. ¿Puedes verificar el dato e intentarlo de nuevo? También puedes escribirnos al 300-123-4567.',
+          error: '😅 Tuve un pequeño inconveniente. Vuelve a intentarlo o escríbenos directo al 300-123-4567.'
+        },
+
         enabledTools: ['create_record', 'query_records', 'update_record', 'general_conversation'],
         disabledTools: ['analyze_data'],
-        
+
         businessHours: {
           timezone: 'America/Bogota',
           schedule: {
-            'lunes_sabado': '07:00-20:00',
-            'domingo': '08:00-18:00'
+            lunes_sabado: '07:00-20:00',
+            domingo: '08:00-18:00'
           },
-          outsideHoursMessage: '¡Hola! 🌙 Estamos fuera de horario. Te atendemos mañana a partir de las 7am. Mientras tanto, puedes explorar nuestros destinos en pasadiasparaiso.com'
+          outsideHoursMessage: '¡Hola! 🌙 Estamos fuera de horario (7am-8pm L-S, 8am-6pm dom). Te respondemos pronto. También puedes dejar tu mensaje y te contactamos mañana. 🙏'
         },
-        
-        customInstructions: `Eres el asistente de reservas de Pasadías Paraíso, una agencia de turismo de día en Colombia.
 
-REGLA CRÍTICA DE FORMATO:
-⚠️ Mantén las respuestas CORTAS y CONCISAS (máximo 500 caracteres por mensaje)
-- Si el cliente pide una lista, muestra máximo 3-4 opciones principales
-- Si necesita ver más opciones, ofrece mostrarlas en un mensaje adicional
-- Nunca listes todos los destinos de una vez
+        customInstructions: `Eres el asistente virtual de *Pasadías Paraíso*, agencia de turismo de día en Colombia. Atiendes por WhatsApp y chat web.
 
-PERSONALIDAD:
-- Amigable, entusiasta pero profesional
-- Usa emojis moderadamente (1-2 por mensaje)
-- Español colombiano
-- Proactivo sugiriendo destinos según intereses
+═══ FORMATO (MUY IMPORTANTE) ═══
+• Respuestas CORTAS — máximo 500 caracteres
+• Máximo 3 opciones por lista (ofrece "¿quieres ver más?" si hay más)
+• Nunca listes todos los destinos a la vez
+• Usa *negrita* para destacar datos clave
+• 1-2 emojis por mensaje, no más
 
-PROCESO DE RESERVA:
-1. Pregunta qué tipo de experiencia busca (playa, aventura, relax, familiar)
-2. Recomienda 2-3 destinos según su interés (NO TODOS)
-3. Da precios solo del destino elegido
-4. Solicita datos: nombre, cédula, teléfono, fecha, punto de recogida
-5. Confirma reserva y proceso de pago
+═══ PERSONALIDAD ═══
+• Amigable, cálida, entusiasta pero sin exagerar
+• Español colombiano natural
+• Proactiva: si detectas interés por playas, sugiere opciones de playa directamente
 
-CONTACTO:
-📱 WhatsApp: 300-123-4567 | 📧 reservas@pasadiasparaiso.com
+═══ FLUJOS PRINCIPALES ═══
 
-POLÍTICAS: Abono 50%, cancelación gratis 48h antes, menores de 3 años GRATIS`,
-        
-        prompt: `Eres el asistente de ventas de ${WORKSPACE_NAME}, una agencia de pasadías turísticos en Colombia.
+🗓️ NUEVA RESERVA:
+1. Pregunta categoría (playa / aventura / relax / familiar)
+2. Recomienda 2-3 destinos con precio y destacado
+3. Al elegir: pide nombre completo, cédula, teléfono, fecha del viaje, punto de recogida, adultos, niños
+4. Confirma resumen y crea la reserva
+5. Informa que recibirá confirmación y pasos del pago
 
-⚠️ REGLA DE FORMATO OBLIGATORIA:
-- Respuestas CORTAS (máximo 500 caracteres)
-- Máximo 3-4 destinos por mensaje
-- Si piden ver todos, ofrece "¿Quieres ver más opciones?"
+💳 PAGO / ABONO:
+Cuando el cliente quiera pagar:
+1. Pide el código de reserva
+2. Verifica el saldo pendiente (consulta la reserva)
+3. Registra el pago en tabla Pagos con: reserva (código), monto, metodoPago
+4. Informa el nuevo saldo
 
-TOP DESTINOS (muestra solo los relevantes):
-🏖️ Playa Blanca: $89.000/$59.000 | 🌊 Islas del Rosario: $145.000/$95.000
-🏔️ Río Claro: $175.000/$125.000 | ♨️ Termales: $125.000/$85.000
-🚤 Guatapé: $95.000/$65.000 | ✈️ San Andrés: $450.000/$380.000
+🔍 CONSULTAR RESERVA:
+1. Pide el código de reserva o nombre del cliente
+2. Muestra: destino, fecha, estado, total, saldo pendiente, guía asignado
+3. Ofrece ayuda adicional
 
-PROCESO: Saluda → Pregunta interés → Muestra 2-3 opciones → Recoge datos → Confirma
+❌ CANCELACIÓN:
+1. Pide código de reserva
+2. Informa la política: gratis hasta 48h antes, 30% penalización después
+3. Con confirmación explícita: actualiza estadoReserva a "Cancelada"
 
-DATOS RESERVA: nombre, cédula, teléfono, fecha, punto recogida, adultos/niños
+⭐ RESEÑA:
+Al terminar un viaje o si el cliente la ofrece:
+1. Pide calificación del 1 al 5 y comentario
+2. Pregunta si recomendaría el destino
+3. Crea registro en tabla Reseñas con: cliente, destino, calificacion, comentario, fecha, recomendaria
 
-Tono amigable, emojis moderados.`,
-        
+🎟️ CÓDIGO PROMO:
+Si el cliente menciona un código:
+1. Verifica en tabla Promociones que el código exista y esté Activa
+2. Si es válido: informa el descuento y aplica al crear la reserva con campo codigoPromo
+3. Si es inválido: informa amablemente y continúa sin código
+
+═══ POLÍTICA DE PRECIOS ═══
+• Niños menores de 3 años: GRATIS
+• Abono mínimo: 50% del total para confirmar cupo
+• Pago completo: hasta el día anterior al viaje
+
+═══ PREGUNTAS FRECUENTES ═══
+Qué llevar: doc de identidad, ropa cómoda, traje de baño, protector solar, gorra, toalla, efectivo para extras
+Horario: salida 5am (10 min antes al punto de recogida), el bus sale puntual
+Cancelación: gratis hasta 48h antes
+Contacto: 300-123-4567 | reservas@pasadiasparaiso.com`,
+
+        prompt: `Eres el asistente virtual de Pasadías Paraíso (turismo de día, Colombia).
+
+⚠️ FORMATO: Respuestas cortas (máx 500 chars). Máximo 3 opciones en listas. Usa *negrita* para datos clave.
+
+ACCIONES DISPONIBLES:
+→ Crear reserva (tabla Reservas: cliente, destino, fechaViaje, adultos, ninos, puntoRecogida, abono, codigoPromo)
+→ Registrar pago (tabla Pagos: reserva=codigoReserva, monto, metodoPago)
+→ Consultar/actualizar reserva por codigoReserva o cliente
+→ Verificar código promo (tabla Promociones, campo codigo)
+→ Registrar reseña (tabla Reseñas: cliente, destino, calificacion 1-5, comentario, recomendaria)
+
+PRECIOS CLAVE (adulto/niño):
+🏖️ Playa Blanca $89k/$59k | 🌊 Islas Rosario $145k/$95k | 🏔️ Río Claro $175k/$125k
+♨️ Termales $125k/$85k | 🚤 Guatapé $95k/$65k | 🌿 Tayrona $160k/$110k
+
+FLUJO: Saluda → Pregunta interés → 2-3 opciones → Recoge datos → Confirma → Crea registro`,
+
         aiModel: ['gpt-4o-mini'],
         useFlows: true,
         hasFlows: true,
@@ -881,52 +959,95 @@ Tono amigable, emojis moderados.`,
       console.log('  ✅ Agente de Reservas creado');
 
       // ════════════════════════════════════════════════════════════════════
-      // AGENTE 2: ANALISTA DE VENTAS
+      // AGENTE 2: ANALISTA OPERATIVO (Admin — Web)
       // ════════════════════════════════════════════════════════════════════
       const agenteAnalistaId = uuidv4();
       const agenteAnalista = {
         _id: agenteAnalistaId,
         type: 'agent',
-        name: 'Analista de Ventas',
-        description: 'Especializado en reportes, estadísticas y análisis de reservas',
+        name: 'Panel Operativo',
+        description: 'Agente para el equipo interno: reportes, gestión de reservas, guías, transporte y operaciones del día',
         tables: [
-          { tableId: destinosTableId, tableName: 'Destinos', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } },
-          { tableId: clientesTableId, tableName: 'Clientes', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } },
-          { tableId: reservasTableId, tableName: 'Reservas', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } },
-          { tableId: pagosTableId, tableName: 'Pagos', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } },
-          { tableId: resenasTableId, tableName: 'Reseñas', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } },
-          { tableId: transporteTableId, tableName: 'Transporte', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } },
-          { tableId: guiasTableId, tableName: 'Guías', fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } },
+          { tableId: destinosTableId,    tableName: 'Destinos',    fullAccess: true, permissions: { query: true, create: false, update: true,  delete: false } },
+          { tableId: clientesTableId,    tableName: 'Clientes',    fullAccess: true, permissions: { query: true, create: true,  update: true,  delete: false } },
+          { tableId: reservasTableId,    tableName: 'Reservas',    fullAccess: true, permissions: { query: true, create: true,  update: true,  delete: false } },
+          { tableId: pagosTableId,       tableName: 'Pagos',       fullAccess: true, permissions: { query: true, create: true,  update: true,  delete: false } },
+          { tableId: resenasTableId,     tableName: 'Reseñas',     fullAccess: true, permissions: { query: true, create: false, update: false, delete: false } },
+          { tableId: transporteTableId,  tableName: 'Transporte',  fullAccess: true, permissions: { query: true, create: false, update: true,  delete: false } },
+          { tableId: guiasTableId,       tableName: 'Guías',       fullAccess: true, permissions: { query: true, create: false, update: true,  delete: false } },
+          { tableId: promocionesTableId, tableName: 'Promociones', fullAccess: true, permissions: { query: true, create: true,  update: true,  delete: false } },
         ],
-        
+
         engineMode: 'llm-first',
         vertical: 'analytics',
         toneStyle: 'professional',
-        
+
         fewShotExamples: [
           {
-            user: 'cuántas reservas hay para abril',
-            assistant: '📊 **Abril 2025:** 5 reservas\n• Confirmadas: 3 | Pagadas: 2\n💰 Total: $2.012.000 | Cobrado: $1.220.000\n\n¿Más detalles por destino?'
+            user: 'reservas para esta semana',
+            assistant: '📅 *Esta semana:* 8 reservas\nConfirmadas: 5 | Pagadas: 3 | Pendientes: 0\n💰 Ingresado: $1.840.000\n\n¿Quieres el detalle por día o por destino?'
           },
           {
-            user: 'cuál es el destino más vendido',
-            assistant: '🏆 **Top 3 (últimos 30 días):**\n1. Playa Blanca - 45 reservas\n2. Guatapé - 28 reservas\n3. Islas del Rosario - 24 reservas'
+            user: 'qué guías están activos hoy',
+            assistant: 'Consultando guías activos...\n\nEncontré 4 guías con estado Activo. ¿Quieres ver cuáles tienen reservas asignadas para hoy?'
+          },
+          {
+            user: 'cambiar estado de reserva RES-00128 a Completada',
+            assistant: 'Actualicé la reserva RES-00128 a *Completada*. Esto también disparará el flujo de solicitud de reseña al cliente. ✅'
+          },
+          {
+            user: 'cuánto hay pendiente de cobro este mes',
+            assistant: 'Revisando saldos pendientes de marzo...\n\nTe doy el total de reservas activas con saldo > 0. Un momento.'
+          },
+          {
+            user: 'marcar vehículo TMX-002 como disponible',
+            assistant: 'Actualicé el estado del vehículo TMX-002 a *Disponible*. ✅'
           }
         ],
-        
-        enabledTools: ['query_records', 'analyze_data', 'general_conversation'],
-        disabledTools: ['create_record', 'update_record'],
-        
-        customInstructions: 'Presenta datos de forma clara y concisa. Máximo 500 caracteres por respuesta. Usa listas compactas, no tablas largas.',
-        
-        prompt: `Eres el analista de datos de ${WORKSPACE_NAME}.
 
-⚠️ FORMATO: Respuestas cortas (máx 500 chars). Datos clave, sin relleno.
+        enabledTools: ['query_records', 'analyze_data', 'update_record', 'create_record', 'general_conversation'],
+        disabledTools: [],
 
-REPORTES: Reservas, ingresos, destinos populares, clientes, reseñas.
+        customInstructions: `Eres el asistente operativo interno de Pasadías Paraíso. Solo lo usan los administradores y coordinadores.
 
-Sé conciso y objetivo. Ofrece detalles solo si los piden.`,
-        
+FORMATO:
+• Respuestas directas y concisas (máx 600 chars)
+• Datos numéricos con formato claro
+• Sin saludos largos — ve al grano
+• Usa tablas compactas solo cuando sean necesarias
+
+CAPACIDADES:
+➤ Reportes y estadísticas (reservas, ingresos, destinos populares, tasa de cancelación)
+➤ Consultar y actualizar reservas (estado, guía asignado, transporte)
+➤ Gestión de guías (consultar disponibilidad, cambiar estado: Activo/Vacaciones/Inactivo)
+➤ Gestión de transporte (consultar disponibilidad, cambiar estado: Disponible/En ruta/Mantenimiento)
+➤ Revisar reseñas y calificaciones
+➤ Crear y actualizar promociones
+➤ Registrar pagos manuales
+
+OPERACIONES FRECUENTES:
+• "reservas del [fecha]" → listado del día con estado y guía asignado
+• "saldos pendientes" → reservas con saldo > 0
+• "guías disponibles" → guías con estado Activo
+• "vehículos disponibles" → transporte con estado Disponible
+• "cambiar estado de [reserva] a [estado]" → actualiza directamente
+• "marcar [vehículo] como disponible/en ruta" → actualiza transporte
+• "reporte de [mes]" → resumen de reservas, ingresos y métricas
+
+Tono: profesional, eficiente. Sin emojis excesivos.`,
+
+        prompt: `Eres el panel operativo interno de Pasadías Paraíso para el equipo admin.
+
+⚠️ FORMATO: Respuestas cortas y concretas. Datos clave sin relleno.
+
+ACCIONES: Consultar/actualizar reservas, guías, transporte · Reportes de ventas e ingresos · Gestionar promociones · Registrar pagos · Ver reseñas
+
+ESTADOS DE RESERVA: Pendiente → Confirmada → Pagada → En curso → Completada → Cancelada
+ESTADOS GUÍA: Activo | Vacaciones | Inactivo
+ESTADOS TRANSPORTE: Disponible | En ruta | Mantenimiento | Fuera de servicio
+
+REGLA: Si actualizas un campo de estado, confirma el cambio con el nuevo valor.`,
+
         aiModel: ['gpt-4o-mini'],
         useFlows: false,
         hasFlows: false,
@@ -990,8 +1111,11 @@ Sé conciso y objetivo. Ofrece detalles solo si los piden.`,
       // FLUJOS AUTOMATIZADOS
       // ════════════════════════════════════════════════════════════════════
       const flowsDb = await connectDB(getFlowsDbName(WORKSPACE_ID));
-      
-      // FLUJO 1: Confirmación automática de nueva reserva
+
+      // ─────────────────────────────────────────────────────────────────────
+      // FLUJO 1: Confirmación de Reserva  (afterCreate → Reservas)
+      // Envía al cliente confirmación con o sin abono, notifica al equipo
+      // ─────────────────────────────────────────────────────────────────────
       const flowConfirmacionId = uuidv4();
       const flowConfirmacion = {
         _id: flowConfirmacionId,
@@ -1000,433 +1124,206 @@ Sé conciso y objetivo. Ofrece detalles solo si los piden.`,
         icon: 'check',
         color: 'emerald',
         active: true,
+        triggerType: 'create',
+        triggerTable: reservasTableId,
         workspaceId: WORKSPACE_ID,
         nodes: [
           {
-            id: 'start-1',
-            type: 'start',
+            id: 'trigger-1',
+            type: 'trigger',
             position: { x: 250, y: 50 },
-            data: {
-              label: 'Nueva Reserva',
-              trigger: 'afterCreate',
-              tableId: reservasTableId,
-              tableName: 'Reservas'
-            }
+            data: { label: 'Nueva Reserva', trigger: 'afterCreate', tableId: reservasTableId, tableName: 'Reservas' }
           },
           {
-            id: 'condition-1',
+            id: 'cond-abono',
             type: 'condition',
             position: { x: 250, y: 180 },
+            data: { label: '¿Tiene abono?', field: 'abono', operator: '>', value: '0' }
+          },
+          {
+            id: 'msg-con-abono',
+            type: 'action',
+            position: { x: 80, y: 320 },
             data: {
-              label: '¿Tiene abono?',
-              field: 'record.abono',
-              operator: 'greaterThan',
-              value: 0
+              actionType: 'send_message',
+              targetType: 'origin_chat',
+              channel: 'chat',
+              label: 'Confirmación con abono',
+              message: '✅ *Reserva Confirmada*\n\nHola {{cliente}}, tu reserva está lista:\n\n🏝️ Destino: {{destino}}\n📅 Fecha: {{fechaViaje}}\n👥 {{adultos}} adultos, {{ninos}} niños\n📍 Recogida: {{puntoRecogida}}\n\n💰 Total: ${{totalPagar}}\n✔️ Abono recibido: ${{abono}}\n💳 Saldo pendiente: ${{saldo}}\n\n¿Dudas? Escríbenos al 300-123-4567'
             }
           },
           {
-            id: 'message-con-abono',
-            type: 'message',
-            position: { x: 100, y: 320 },
+            id: 'msg-sin-abono',
+            type: 'action',
+            position: { x: 420, y: 320 },
             data: {
-              label: 'Confirmacion con abono',
-              message: 'Reserva Confirmada\n\nHola {{record.cliente}},\n\nTu reserva esta lista:\n- Destino: {{record.destino}}\n- Fecha: {{record.fechaViaje}}\n- Personas: {{record.adultos}} adultos, {{record.ninos}} ninos\n- Recogida: {{record.puntoRecogida}}\n\nTotal: ${{record.totalPagar}}\nAbono recibido: ${{record.abono}}\nSaldo pendiente: ${{record.saldo}}\n\nDudas? Escribenos al 300-123-4567\n\nGracias por elegir Pasadias Paraiso.'
-            }
-          },
-          {
-            id: 'message-sin-abono',
-            type: 'message',
-            position: { x: 400, y: 320 },
-            data: {
+              actionType: 'send_message',
+              targetType: 'origin_chat',
+              channel: 'chat',
               label: 'Reserva pendiente pago',
-              message: 'Reserva en Proceso\n\nHola {{record.cliente}},\n\nTu reserva esta registrada pero requiere confirmacion de pago:\n\n- Destino: {{record.destino}}\n- Fecha: {{record.fechaViaje}}\n- Total a pagar: ${{record.totalPagar}}\n\nMetodos de pago:\n- Nequi: 300-123-4567\n- Daviplata: 300-123-4567\n- Transferencia: Bancolombia 123-456789-00\n\nConfirma tu pago en las proximas 24 horas para asegurar tu cupo.\n\nDudas? Escribenos al 300-123-4567'
+              message: '⏳ *Reserva Registrada*\n\nHola {{cliente}}, tu reserva requiere confirmación de pago:\n\n🏝️ {{destino}} — {{fechaViaje}}\n💰 Total a pagar: ${{totalPagar}}\n\nMétodos de pago:\n• Nequi/Daviplata: 300-123-4567\n• Bancolombia: 123-456789-00\n\nConfirma tu pago en las próximas 24h para asegurar tu cupo. ¡Gracias!'
             }
           },
           {
-            id: 'notify-team',
-            type: 'notify',
-            position: { x: 250, y: 460 },
-            data: {
-              label: 'Notificar equipo',
-              channel: 'internal',
-              message: 'Nueva reserva registrada\n\nCliente: {{record.cliente}}\nDestino: {{record.destino}}\nFecha: {{record.fechaViaje}}\nTotal: ${{record.totalPagar}}\nEstado: {{record.estadoReserva}}'
-            }
+            id: 'notif-equipo',
+            type: 'notification',
+            position: { x: 250, y: 470 },
+            data: { label: 'Notificar equipo', message: '📋 Nueva reserva: {{cliente}} → {{destino}} el {{fechaViaje}} | Total ${{totalPagar}} | Estado: {{estadoReserva}}' }
           }
         ],
         edges: [
-          { id: 'e1', source: 'start-1', target: 'condition-1' },
-          { id: 'e2', source: 'condition-1', target: 'message-con-abono', sourceHandle: 'true' },
-          { id: 'e3', source: 'condition-1', target: 'message-sin-abono', sourceHandle: 'false' },
-          { id: 'e4', source: 'message-con-abono', target: 'notify-team' },
-          { id: 'e5', source: 'message-sin-abono', target: 'notify-team' }
+          { id: 'e1', source: 'trigger-1', target: 'cond-abono' },
+          { id: 'e2', source: 'cond-abono', target: 'msg-con-abono', label: 'Sí' },
+          { id: 'e3', source: 'cond-abono', target: 'msg-sin-abono', label: 'No' },
+          { id: 'e4', source: 'msg-con-abono', target: 'notif-equipo' },
+          { id: 'e5', source: 'msg-sin-abono', target: 'notif-equipo' }
         ],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
       await flowsDb.insert(flowConfirmacion);
-      
-      // FLUJO 2: Recordatorio de pago pendiente
-      const flowRecordatorioId = uuidv4();
-      const flowRecordatorio = {
-        _id: flowRecordatorioId,
-        name: 'Recordatorio de Pago',
-        description: 'Recuerda a clientes con saldo pendiente 3 días antes del viaje',
-        icon: 'bell',
-        color: 'amber',
-        active: true,
-        workspaceId: WORKSPACE_ID,
-        nodes: [
-          {
-            id: 'start-1',
-            type: 'start',
-            position: { x: 250, y: 50 },
-            data: {
-              label: 'Verificación diaria',
-              trigger: 'schedule',
-              schedule: {
-                type: 'daily',
-                time: '09:00',
-                timezone: 'America/Bogota'
-              }
-            }
-          },
-          {
-            id: 'query-1',
-            type: 'query',
-            position: { x: 250, y: 180 },
-            data: {
-              label: 'Buscar reservas con saldo',
-              tableId: reservasTableId,
-              tableName: 'Reservas',
-              filters: [
-                { field: 'saldo', operator: 'greaterThan', value: 0 },
-                { field: 'estadoReserva', operator: 'notEquals', value: 'Cancelada' }
-              ]
-            }
-          },
-          {
-            id: 'loop-1',
-            type: 'loop',
-            position: { x: 250, y: 310 },
-            data: {
-              label: 'Por cada reserva',
-              variable: 'reserva'
-            }
-          },
-          {
-            id: 'condition-fecha',
-            type: 'condition',
-            position: { x: 250, y: 440 },
-            data: {
-              label: '¿Viaje en 3 días?',
-              field: 'reserva.fechaViaje',
-              operator: 'daysUntil',
-              value: 3
-            }
-          },
-          {
-            id: 'message-recordatorio',
-            type: 'message',
-            position: { x: 100, y: 570 },
-            data: {
-              label: 'Enviar recordatorio',
-              message: 'Recordatorio de Pago\n\nHola {{reserva.cliente}},\n\nTu pasadia a {{reserva.destino}} es en 3 dias.\n\nSaldo pendiente: ${{reserva.saldo}}\nFecha del viaje: {{reserva.fechaViaje}}\n\nPara confirmar tu cupo, realiza el pago antes de manana:\n\nNequi/Daviplata: 300-123-4567\nBancolombia: 123-456789-00\n\nEnvia tu comprobante por WhatsApp.\n\nTe esperamos.'
-            }
-          },
-          {
-            id: 'skip-no-3dias',
-            type: 'end',
-            position: { x: 400, y: 570 },
-            data: {
-              label: 'Omitir (no es el momento)'
-            }
-          }
-        ],
-        edges: [
-          { id: 'e1', source: 'start-1', target: 'query-1' },
-          { id: 'e2', source: 'query-1', target: 'loop-1' },
-          { id: 'e3', source: 'loop-1', target: 'condition-fecha' },
-          { id: 'e4', source: 'condition-fecha', target: 'message-recordatorio', sourceHandle: 'true' },
-          { id: 'e5', source: 'condition-fecha', target: 'skip-no-3dias', sourceHandle: 'false' }
-        ],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      await flowsDb.insert(flowRecordatorio);
-      
-      // FLUJO 3: Solicitar reseña post-viaje
-      const flowResenaId = uuidv4();
-      const flowResena = {
-        _id: flowResenaId,
-        name: 'Solicitar Reseña',
-        description: 'Envía solicitud de reseña cuando una reserva se marca como completada',
-        icon: 'star',
-        color: 'yellow',
-        active: true,
-        workspaceId: WORKSPACE_ID,
-        nodes: [
-          {
-            id: 'start-1',
-            type: 'start',
-            position: { x: 250, y: 50 },
-            data: {
-              label: 'Reserva actualizada',
-              trigger: 'afterUpdate',
-              tableId: reservasTableId,
-              tableName: 'Reservas'
-            }
-          },
-          {
-            id: 'condition-1',
-            type: 'condition',
-            position: { x: 250, y: 180 },
-            data: {
-              label: '¿Estado = Completada?',
-              field: 'record.estadoReserva',
-              operator: 'equals',
-              value: 'Completada'
-            }
-          },
-          {
-            id: 'delay-1',
-            type: 'delay',
-            position: { x: 250, y: 310 },
-            data: {
-              label: 'Esperar 1 día',
-              duration: 1,
-              unit: 'days'
-            }
-          },
-          {
-            id: 'message-resena',
-            type: 'message',
-            position: { x: 100, y: 440 },
-            data: {
-              label: 'Solicitar resena',
-              message: `Como estuvo tu experiencia?\n\nHola {{record.cliente}},\n\nEsperamos que hayas disfrutado tu pasadia a {{record.destino}}.\n\nTu opinion nos ayuda a mejorar. Podrias regalarnos una resena?\n\nCuentanos:\n- Que te gusto mas?\n- El servicio cumplio tus expectativas?\n- Recomendarias este destino?\n\nResponde este mensaje con tu experiencia y una calificacion del 1 al 5.\n\nGracias por viajar con Pasadias Paraiso.`
-            }
-          },
-          {
-            id: 'update-cliente',
-            type: 'update',
-            position: { x: 100, y: 570 },
-            data: {
-              label: 'Marcar cliente activo',
-              tableId: clientesTableId,
-              tableName: 'Clientes',
-              filters: [{ field: 'nombre', equals: '{{record.cliente}}' }],
-              fields: [
-                { key: 'ultimoViaje', value: '{{record.fechaViaje}}' }
-              ]
-            }
-          },
-          {
-            id: 'skip-no-completada',
-            type: 'end',
-            position: { x: 400, y: 310 },
-            data: {
-              label: 'Omitir (no completada)'
-            }
-          }
-        ],
-        edges: [
-          { id: 'e1', source: 'start-1', target: 'condition-1' },
-          { id: 'e2', source: 'condition-1', target: 'delay-1', sourceHandle: 'true' },
-          { id: 'e3', source: 'condition-1', target: 'skip-no-completada', sourceHandle: 'false' },
-          { id: 'e4', source: 'delay-1', target: 'message-resena' },
-          { id: 'e5', source: 'message-resena', target: 'update-cliente' }
-        ],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      await flowsDb.insert(flowResena);
-      
-      // FLUJO 4: Bienvenida nuevo cliente
+
+      // ─────────────────────────────────────────────────────────────────────
+      // FLUJO 2: Bienvenida Cliente  (afterCreate → Clientes)
+      // Busca una promo activa y envía bienvenida personalizada
+      // ─────────────────────────────────────────────────────────────────────
       const flowBienvenidaId = uuidv4();
       const flowBienvenida = {
         _id: flowBienvenidaId,
         name: 'Bienvenida Cliente',
-        description: 'Envía mensaje de bienvenida y promociones a nuevos clientes',
+        description: 'Envía mensaje de bienvenida con promo activa a nuevos clientes',
         icon: 'hand',
         color: 'blue',
         active: true,
+        triggerType: 'create',
+        triggerTable: clientesTableId,
         workspaceId: WORKSPACE_ID,
         nodes: [
           {
-            id: 'start-1',
-            type: 'start',
+            id: 'trigger-1',
+            type: 'trigger',
             position: { x: 250, y: 50 },
-            data: {
-              label: 'Nuevo Cliente',
-              trigger: 'afterCreate',
-              tableId: clientesTableId,
-              tableName: 'Clientes'
-            }
+            data: { label: 'Nuevo Cliente', trigger: 'afterCreate', tableId: clientesTableId, tableName: 'Clientes' }
           },
           {
-            id: 'message-bienvenida',
-            type: 'message',
+            id: 'query-promo',
+            type: 'query',
             position: { x: 250, y: 180 },
             data: {
-              label: 'Mensaje de bienvenida',
-              message: `Bienvenido a Pasadias Paraiso\n\nHola {{record.nombre}},\n\nGracias por unirte a nuestra comunidad viajera.\n\nPor ser nuevo cliente, tienes un 10% de descuento en tu primera reserva.\nUsa el codigo: BIENVENIDO10\n\nDestinos mas populares:\n- Playa Blanca - $89.000\n- Guatape - $95.000\n- Islas del Rosario - $145.000\n\nSiguenos en Instagram: @pasadiasparaiso\n\nListo para tu proxima aventura? Escribenos.`
+              label: 'Buscar promo activa',
+              targetTable: promocionesTableId,
+              filterField: 'estado',
+              filterValueType: 'fixed',
+              filterValueFixed: 'Activa',
+              outputVar: 'promo'
             }
           },
           {
-            id: 'query-promos',
-            type: 'query',
-            position: { x: 250, y: 320 },
+            id: 'msg-con-promo',
+            type: 'action',
+            position: { x: 80, y: 330 },
             data: {
-              label: 'Buscar promos activas',
-              tableId: promocionesTableId,
-              tableName: 'Promociones',
-              filters: [
-                { field: 'estado', operator: 'equals', value: 'Activa' }
-              ],
-              limit: 3
+              actionType: 'send_message',
+              targetType: 'origin_chat',
+              channel: 'chat',
+              label: 'Bienvenida con promo',
+              message: '🎉 *¡Bienvenido a Pasadías Paraíso, {{nombre}}!*\n\nGracias por unirte a nuestra comunidad viajera.\n\n🎟️ Tenemos una oferta especial para ti:\n*{{promo.nombre}}* — usa el código *{{promo.codigo}}* y obtén {{promo.valor}}% de descuento en tu primera reserva.\n\nEscríbenos para elegir tu destino favorito. ¡Te esperamos!'
             }
           },
           {
-            id: 'condition-promos',
-            type: 'condition',
-            position: { x: 250, y: 450 },
+            id: 'msg-sin-promo',
+            type: 'action',
+            position: { x: 420, y: 330 },
             data: {
-              label: '¿Hay promociones?',
-              field: 'queryResult.length',
-              operator: 'greaterThan',
-              value: 0
-            }
-          },
-          {
-            id: 'message-promos',
-            type: 'message',
-            position: { x: 100, y: 580 },
-            data: {
-              label: 'Enviar promociones',
-              message: `Promociones Activas\n\n{{#each queryResult}}\n- {{nombre}}: {{valor}}% OFF (Codigo: {{codigo}})\n{{/each}}\n\nNo te las pierdas. Vigencia limitada.`
-            }
-          },
-          {
-            id: 'skip-no-promos',
-            type: 'end',
-            position: { x: 400, y: 580 },
-            data: {
-              label: 'Sin promociones'
+              actionType: 'send_message',
+              targetType: 'origin_chat',
+              channel: 'chat',
+              label: 'Bienvenida sin promo',
+              message: '🎉 *¡Bienvenido a Pasadías Paraíso, {{nombre}}!*\n\nGracias por unirte a nuestra comunidad viajera.\n\nNuestros destinos más populares:\n🏖️ Playa Blanca — $89.000\n🏝️ Islas del Rosario — $145.000\n🌊 Río Claro Aventura — $175.000\n\nEscríbenos para reservar. ¡Te esperamos!'
             }
           }
         ],
         edges: [
-          { id: 'e1', source: 'start-1', target: 'message-bienvenida' },
-          { id: 'e2', source: 'message-bienvenida', target: 'query-promos' },
-          { id: 'e3', source: 'query-promos', target: 'condition-promos' },
-          { id: 'e4', source: 'condition-promos', target: 'message-promos', sourceHandle: 'true' },
-          { id: 'e5', source: 'condition-promos', target: 'skip-no-promos', sourceHandle: 'false' }
+          { id: 'e1', source: 'trigger-1', target: 'query-promo' },
+          { id: 'e2', source: 'query-promo', target: 'msg-con-promo', sourceHandle: 'yes' },
+          { id: 'e3', source: 'query-promo', target: 'msg-sin-promo', sourceHandle: 'no' }
         ],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
       await flowsDb.insert(flowBienvenida);
-      
-      // FLUJO 5: Notificación día anterior al viaje
-      const flowDiaAnteriorId = uuidv4();
-      const flowDiaAnterior = {
-        _id: flowDiaAnteriorId,
-        name: 'Recordatorio Día Anterior',
-        description: 'Envía instrucciones y recordatorio el día antes del viaje',
-        icon: 'calendar',
-        color: 'indigo',
+
+      // ─────────────────────────────────────────────────────────────────────
+      // FLUJO 3: Solicitar Reseña  (afterUpdate → Reservas)
+      // Cuando la reserva se marca Completada, pide reseña al cliente
+      // ─────────────────────────────────────────────────────────────────────
+      const flowResenaId = uuidv4();
+      const flowResena = {
+        _id: flowResenaId,
+        name: 'Solicitar Reseña',
+        description: 'Pide reseña al cliente cuando su reserva se marca como Completada',
+        icon: 'star',
+        color: 'yellow',
         active: true,
+        triggerType: 'update',
+        triggerTable: reservasTableId,
         workspaceId: WORKSPACE_ID,
         nodes: [
           {
-            id: 'start-1',
-            type: 'start',
+            id: 'trigger-1',
+            type: 'trigger',
             position: { x: 250, y: 50 },
-            data: {
-              label: 'Verificación 6pm',
-              trigger: 'schedule',
-              schedule: {
-                type: 'daily',
-                time: '18:00',
-                timezone: 'America/Bogota'
-              }
-            }
+            data: { label: 'Reserva actualizada', trigger: 'afterUpdate', tableId: reservasTableId, tableName: 'Reservas' }
           },
           {
-            id: 'query-1',
-            type: 'query',
+            id: 'cond-completada',
+            type: 'condition',
             position: { x: 250, y: 180 },
-            data: {
-              label: 'Reservas para mañana',
-              tableId: reservasTableId,
-              tableName: 'Reservas',
-              filters: [
-                { field: 'fechaViaje', operator: 'equals', value: '{{tomorrow}}' },
-                { field: 'estadoReserva', operator: 'in', value: ['Confirmada', 'Pagada'] }
-              ]
-            }
+            data: { label: '¿Estado = Completada?', field: 'estadoReserva', operator: '==', value: 'Completada' }
           },
           {
-            id: 'loop-1',
-            type: 'loop',
-            position: { x: 250, y: 310 },
+            id: 'msg-resena',
+            type: 'action',
+            position: { x: 250, y: 330 },
             data: {
-              label: 'Por cada reserva',
-              variable: 'reserva'
-            }
-          },
-          {
-            id: 'message-instrucciones',
-            type: 'message',
-            position: { x: 250, y: 440 },
-            data: {
-              label: 'Enviar instrucciones',
-              message: `Manana es el gran dia\n\nHola {{reserva.cliente}},\n\nTu pasadia a {{reserva.destino}} es MANANA.\n\nPUNTO DE RECOGIDA:\n{{reserva.puntoRecogida}}\n\nHORA: 5:00 AM (estar 10 min antes)\n\nQUE LLEVAR:\n- Documento de identidad\n- Ropa comoda y traje de bano\n- Protector solar y gorra\n- Dinero en efectivo para extras\n- Toalla (opcional)\n\nIMPORTANTE:\n- El bus sale puntual, no espera\n- Llevar snacks para el viaje\n- Confirmar asistencia respondiendo este mensaje\n\nEmergencias: 300-123-4567\n\nPreparate para una experiencia increible.`
-            }
-          },
-          {
-            id: 'notify-team',
-            type: 'notify',
-            position: { x: 250, y: 580 },
-            data: {
-              label: 'Notificar logistica',
-              channel: 'internal',
-              message: 'Viaje manana: {{reserva.destino}}\nCliente: {{reserva.cliente}}\nRecogida: {{reserva.puntoRecogida}}\nPersonas: {{reserva.adultos}} adultos + {{reserva.ninos}} ninos'
+              actionType: 'send_message',
+              targetType: 'origin_chat',
+              channel: 'chat',
+              label: 'Pedir reseña',
+              message: '⭐ *¿Cómo estuvo tu experiencia, {{cliente}}?*\n\nEsperamos que hayas disfrutado tu pasadía a {{destino}}.\n\nTu opinión nos ayuda a mejorar. ¿Puedes compartir:\n1. ¿Qué fue lo que más te gustó?\n2. Del 1 al 5, ¿cómo calificarías el servicio?\n3. ¿Recomendarías este destino a un amigo?\n\nGracias por viajar con Pasadías Paraíso 🙏'
             }
           }
         ],
         edges: [
-          { id: 'e1', source: 'start-1', target: 'query-1' },
-          { id: 'e2', source: 'query-1', target: 'loop-1' },
-          { id: 'e3', source: 'loop-1', target: 'message-instrucciones' },
-          { id: 'e4', source: 'message-instrucciones', target: 'notify-team' }
+          { id: 'e1', source: 'trigger-1', target: 'cond-completada' },
+          { id: 'e2', source: 'cond-completada', target: 'msg-resena', label: 'Sí' }
         ],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
-      await flowsDb.insert(flowDiaAnterior);
-      
-      // FLUJO 6: Registro de pago recibido
+      await flowsDb.insert(flowResena);
+
+      // ─────────────────────────────────────────────────────────────────────
+      // FLUJO 4: Confirmación de Pago  (afterCreate → Pagos)
+      // Actualiza la reserva y notifica si el pago está completo o parcial
+      // ─────────────────────────────────────────────────────────────────────
       const flowPagoId = uuidv4();
       const flowPago = {
         _id: flowPagoId,
         name: 'Confirmación de Pago',
-        description: 'Confirma el pago y actualiza el estado de la reserva',
+        description: 'Confirma el pago, actualiza saldo de la reserva y notifica al cliente',
         icon: 'credit-card',
         color: 'green',
         active: true,
+        triggerType: 'create',
+        triggerTable: pagosTableId,
         workspaceId: WORKSPACE_ID,
         nodes: [
           {
-            id: 'start-1',
-            type: 'start',
+            id: 'trigger-1',
+            type: 'trigger',
             position: { x: 250, y: 50 },
-            data: {
-              label: 'Nuevo Pago',
-              trigger: 'afterCreate',
-              tableId: pagosTableId,
-              tableName: 'Pagos'
-            }
+            data: { label: 'Nuevo Pago', trigger: 'afterCreate', tableId: pagosTableId, tableName: 'Pagos' }
           },
           {
             id: 'query-reserva',
@@ -1434,87 +1331,502 @@ Sé conciso y objetivo. Ofrece detalles solo si los piden.`,
             position: { x: 250, y: 180 },
             data: {
               label: 'Buscar reserva',
-              tableId: reservasTableId,
-              tableName: 'Reservas',
-              filters: [
-                { field: 'codigoReserva', operator: 'equals', value: '{{record.reserva}}' }
-              ],
-              single: true
+              targetTable: reservasTableId,
+              filterField: 'codigoReserva',
+              filterValueType: 'trigger',
+              filterValueField: 'reserva',
+              outputVar: 'reservaData'
             }
           },
           {
-            id: 'condition-completo',
+            id: 'cond-pago-completo',
             type: 'condition',
-            position: { x: 250, y: 310 },
-            data: {
-              label: '¿Pago completo?',
-              expression: '{{queryResult.saldo}} - {{record.monto}} <= 0'
-            }
+            position: { x: 250, y: 320 },
+            data: { label: '¿Pago completa el saldo?', field: 'reservaData.saldo', operator: '<=', value: '{{monto}}' }
           },
           {
             id: 'update-pagada',
-            type: 'update',
-            position: { x: 100, y: 440 },
+            type: 'action',
+            position: { x: 80, y: 470 },
             data: {
-              label: 'Marcar como Pagada',
-              tableId: reservasTableId,
-              tableName: 'Reservas',
-              filters: [{ field: 'codigoReserva', equals: '{{record.reserva}}' }],
-              fields: [
-                { key: 'estadoReserva', value: 'Pagada' },
-                { key: 'saldo', value: 0 },
-                { key: 'abono', value: '{{queryResult.totalPagar}}' }
-              ]
+              actionType: 'update',
+              targetTable: reservasTableId,
+              targetTableName: 'Reservas',
+              filterField: 'codigoReserva',
+              filterValueType: 'trigger',
+              filterValueField: 'reserva',
+              fields: { estadoReserva: 'Pagada', saldo: '0', abono: '{{reservaData.totalPagar}}' }
+            }
+          },
+          {
+            id: 'msg-pago-completo',
+            type: 'action',
+            position: { x: 80, y: 620 },
+            data: {
+              actionType: 'send_message',
+              targetType: 'origin_chat',
+              channel: 'chat',
+              label: 'Pago 100% confirmado',
+              message: '🎉 *¡Reserva 100% Pagada!*\n\nHola {{reservaData.cliente}}, tu reserva está completamente pagada.\n\n🏝️ {{reservaData.destino}}\n📅 {{reservaData.fechaViaje}}\n💰 Total pagado: ${{reservaData.totalPagar}}\n\nSolo queda disfrutar. Recibirás instrucciones el día anterior.\n¡Gracias por tu confianza!'
             }
           },
           {
             id: 'update-abono',
-            type: 'update',
-            position: { x: 400, y: 440 },
+            type: 'action',
+            position: { x: 420, y: 470 },
             data: {
-              label: 'Actualizar abono',
-              tableId: reservasTableId,
-              tableName: 'Reservas',
-              filters: [{ field: 'codigoReserva', equals: '{{record.reserva}}' }],
-              fields: [
-                { key: 'abono', value: '{{add queryResult.abono record.monto}}' },
-                { key: 'saldo', value: '{{subtract queryResult.saldo record.monto}}' }
-              ]
+              actionType: 'update',
+              targetTable: reservasTableId,
+              targetTableName: 'Reservas',
+              filterField: 'codigoReserva',
+              filterValueType: 'trigger',
+              filterValueField: 'reserva',
+              fields: {
+                abono: '{{reservaData.abono + monto}}',
+                saldo: '{{reservaData.saldo - monto}}'
+              }
             }
           },
           {
-            id: 'message-pago-completo',
-            type: 'message',
-            position: { x: 100, y: 580 },
+            id: 'msg-abono',
+            type: 'action',
+            position: { x: 420, y: 620 },
             data: {
-              label: 'Confirmacion total',
-              message: 'Pago Completo\n\nHola {{queryResult.cliente}},\n\nTu reserva esta 100% pagada.\n\nDestino: {{queryResult.destino}}\nFecha: {{queryResult.fechaViaje}}\nTotal pagado: ${{queryResult.totalPagar}}\n\nSolo queda disfrutar. Recibiras las instrucciones el dia anterior.\n\nGracias por tu confianza.'
+              actionType: 'send_message',
+              targetType: 'origin_chat',
+              channel: 'chat',
+              label: 'Abono recibido',
+              message: '✅ *Abono Recibido*\n\nHola {{reservaData.cliente}}, hemos registrado tu pago de ${{monto}}.\n\n🏝️ {{reservaData.destino}} — {{reservaData.fechaViaje}}\n💳 Saldo pendiente: ${{reservaData.saldo - monto}}\n\nRecuerda completar el pago antes del viaje. ¡Gracias!'
             }
           },
           {
-            id: 'message-abono',
-            type: 'message',
-            position: { x: 400, y: 580 },
-            data: {
-              label: 'Confirmacion abono',
-              message: 'Abono Recibido\n\nHola {{queryResult.cliente}},\n\nHemos recibido tu pago de ${{record.monto}}.\n\nNuevo saldo pendiente: ${{subtract queryResult.saldo record.monto}}\nFecha de viaje: {{queryResult.fechaViaje}}\n\nRecuerda completar el pago antes del viaje. Gracias.'
-            }
+            id: 'notif-sin-reserva',
+            type: 'notification',
+            position: { x: 250, y: 470 },
+            data: { label: 'Reserva no encontrada', message: '⚠️ Pago {{codigoPago}} registrado pero no se encontró la reserva {{reserva}}. Verificar manualmente.' }
           }
         ],
         edges: [
-          { id: 'e1', source: 'start-1', target: 'query-reserva' },
-          { id: 'e2', source: 'query-reserva', target: 'condition-completo' },
-          { id: 'e3', source: 'condition-completo', target: 'update-pagada', sourceHandle: 'true' },
-          { id: 'e4', source: 'condition-completo', target: 'update-abono', sourceHandle: 'false' },
-          { id: 'e5', source: 'update-pagada', target: 'message-pago-completo' },
-          { id: 'e6', source: 'update-abono', target: 'message-abono' }
+          { id: 'e1', source: 'trigger-1', target: 'query-reserva' },
+          { id: 'e2', source: 'query-reserva', target: 'cond-pago-completo', sourceHandle: 'yes' },
+          { id: 'e3', source: 'query-reserva', target: 'notif-sin-reserva', sourceHandle: 'no' },
+          { id: 'e4', source: 'cond-pago-completo', target: 'update-pagada', label: 'Sí' },
+          { id: 'e5', source: 'cond-pago-completo', target: 'update-abono', label: 'No' },
+          { id: 'e6', source: 'update-pagada', target: 'msg-pago-completo' },
+          { id: 'e7', source: 'update-abono', target: 'msg-abono' }
         ],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
       await flowsDb.insert(flowPago);
-      
-      console.log('  ✅ 6 Flujos automatizados creados');
+
+      // ─────────────────────────────────────────────────────────────────────
+      // FLUJO 5: Asignar Guía Disponible  (afterCreate → Reservas)
+      // Busca el primer guía Activo y lo asigna a la reserva
+      // ─────────────────────────────────────────────────────────────────────
+      const flowAsignarGuiaId = uuidv4();
+      const flowAsignarGuia = {
+        _id: flowAsignarGuiaId,
+        name: 'Asignar Guía Disponible',
+        description: 'Asigna automáticamente un guía activo a cada nueva reserva',
+        icon: 'user-check',
+        color: 'teal',
+        active: true,
+        triggerType: 'create',
+        triggerTable: reservasTableId,
+        workspaceId: WORKSPACE_ID,
+        nodes: [
+          {
+            id: 'trigger-1',
+            type: 'trigger',
+            position: { x: 250, y: 50 },
+            data: { label: 'Nueva Reserva', trigger: 'afterCreate', tableId: reservasTableId, tableName: 'Reservas' }
+          },
+          {
+            id: 'query-guia',
+            type: 'query',
+            position: { x: 250, y: 180 },
+            data: {
+              label: 'Buscar guía activo',
+              targetTable: guiasTableId,
+              filterField: 'estado',
+              filterValueType: 'fixed',
+              filterValueFixed: 'Activo',
+              outputVar: 'guia'
+            }
+          },
+          {
+            id: 'update-reserva-guia',
+            type: 'action',
+            position: { x: 80, y: 330 },
+            data: {
+              actionType: 'update',
+              targetTable: reservasTableId,
+              targetTableName: 'Reservas',
+              fields: { guiaAsignado: '{{guia.nombre}}', telefonoGuia: '{{guia.telefono}}' }
+            }
+          },
+          {
+            id: 'notif-guia-ok',
+            type: 'notification',
+            position: { x: 80, y: 470 },
+            data: { label: 'Guía asignado', message: '✅ Guía {{guia.nombre}} (📱 {{guia.telefono}}) asignado a reserva {{codigoReserva}} — {{cliente}} el {{fechaViaje}}' }
+          },
+          {
+            id: 'notif-sin-guia',
+            type: 'notification',
+            position: { x: 420, y: 330 },
+            data: { label: 'Sin guía disponible', message: '⚠️ Sin guías activos disponibles para la reserva {{codigoReserva}} — {{cliente}} / {{destino}} el {{fechaViaje}}. Asignar manualmente.' }
+          }
+        ],
+        edges: [
+          { id: 'e1', source: 'trigger-1', target: 'query-guia' },
+          { id: 'e2', source: 'query-guia', target: 'update-reserva-guia', sourceHandle: 'yes' },
+          { id: 'e3', source: 'query-guia', target: 'notif-sin-guia', sourceHandle: 'no' },
+          { id: 'e4', source: 'update-reserva-guia', target: 'notif-guia-ok' }
+        ],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      await flowsDb.insert(flowAsignarGuia);
+
+      // ─────────────────────────────────────────────────────────────────────
+      // FLUJO 6: Asignar Transporte  (afterCreate → Reservas)
+      // Busca el primer vehículo disponible y lo asigna a la reserva
+      // ─────────────────────────────────────────────────────────────────────
+      const flowAsignarTransporteId = uuidv4();
+      const flowAsignarTransporte = {
+        _id: flowAsignarTransporteId,
+        name: 'Asignar Transporte',
+        description: 'Asigna automáticamente el primer vehículo disponible a cada nueva reserva',
+        icon: 'truck',
+        color: 'indigo',
+        active: true,
+        triggerType: 'create',
+        triggerTable: reservasTableId,
+        workspaceId: WORKSPACE_ID,
+        nodes: [
+          {
+            id: 'trigger-1',
+            type: 'trigger',
+            position: { x: 250, y: 50 },
+            data: { label: 'Nueva Reserva', trigger: 'afterCreate', tableId: reservasTableId, tableName: 'Reservas' }
+          },
+          {
+            id: 'query-vehiculo',
+            type: 'query',
+            position: { x: 250, y: 180 },
+            data: {
+              label: 'Buscar vehículo disponible',
+              targetTable: transporteTableId,
+              filterField: 'estado',
+              filterValueType: 'fixed',
+              filterValueFixed: 'Disponible',
+              outputVar: 'vehiculo'
+            }
+          },
+          {
+            id: 'update-reserva-transporte',
+            type: 'action',
+            position: { x: 80, y: 330 },
+            data: {
+              actionType: 'update',
+              targetTable: reservasTableId,
+              targetTableName: 'Reservas',
+              fields: { transporteAsignado: '{{vehiculo.placa}}', conductorAsignado: '{{vehiculo.conductor}}' }
+            }
+          },
+          {
+            id: 'notif-transporte-ok',
+            type: 'notification',
+            position: { x: 80, y: 470 },
+            data: { label: 'Transporte asignado', message: '🚌 Vehículo {{vehiculo.placa}} ({{vehiculo.tipo}}, {{vehiculo.capacidad}} pasajeros) — conductor {{vehiculo.conductor}} asignado a reserva {{codigoReserva}}' }
+          },
+          {
+            id: 'notif-sin-transporte',
+            type: 'notification',
+            position: { x: 420, y: 330 },
+            data: { label: 'Sin transporte disponible', message: '⚠️ Sin vehículos disponibles para reserva {{codigoReserva}} — {{cliente}} / {{destino}} el {{fechaViaje}}. Asignar manualmente.' }
+          }
+        ],
+        edges: [
+          { id: 'e1', source: 'trigger-1', target: 'query-vehiculo' },
+          { id: 'e2', source: 'query-vehiculo', target: 'update-reserva-transporte', sourceHandle: 'yes' },
+          { id: 'e3', source: 'query-vehiculo', target: 'notif-sin-transporte', sourceHandle: 'no' },
+          { id: 'e4', source: 'update-reserva-transporte', target: 'notif-transporte-ok' }
+        ],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      await flowsDb.insert(flowAsignarTransporte);
+
+      // ─────────────────────────────────────────────────────────────────────
+      // FLUJO 7: Validar Código Promo  (beforeCreate → Reservas)
+      // Si se ingresa un codigoPromo, verifica que exista y esté Activa
+      // ─────────────────────────────────────────────────────────────────────
+      const flowValidarPromoId = uuidv4();
+      const flowValidarPromo = {
+        _id: flowValidarPromoId,
+        name: 'Validar Código Promo',
+        description: 'Verifica que el código de descuento sea válido y esté activo antes de crear la reserva',
+        icon: 'shield-check',
+        color: 'orange',
+        active: true,
+        triggerType: 'beforeCreate',
+        triggerTable: reservasTableId,
+        workspaceId: WORKSPACE_ID,
+        nodes: [
+          {
+            id: 'trigger-1',
+            type: 'trigger',
+            position: { x: 250, y: 50 },
+            data: { label: 'Antes de crear Reserva', trigger: 'beforeCreate', tableId: reservasTableId, tableName: 'Reservas' }
+          },
+          {
+            id: 'cond-tiene-promo',
+            type: 'condition',
+            position: { x: 250, y: 180 },
+            data: { label: '¿Código promo ingresado?', field: 'codigoPromo', operator: '!=', value: '' }
+          },
+          {
+            id: 'query-promo',
+            type: 'query',
+            position: { x: 80, y: 330 },
+            data: {
+              label: 'Buscar código en Promociones',
+              targetTable: promocionesTableId,
+              filterField: 'codigo',
+              filterValueType: 'trigger',
+              filterValueField: 'codigoPromo',
+              outputVar: 'promo'
+            }
+          },
+          {
+            id: 'cond-promo-activa',
+            type: 'condition',
+            position: { x: 80, y: 480 },
+            data: { label: '¿Promo Activa?', field: 'promo.estado', operator: '==', value: 'Activa' }
+          },
+          {
+            id: 'error-promo-inactiva',
+            type: 'action',
+            position: { x: 80, y: 630 },
+            data: {
+              actionType: 'error',
+              message: '❌ El código "{{codigoPromo}}" está vencido o inactivo. Verifica el código e intenta de nuevo, o reserva sin código de descuento.'
+            }
+          },
+          {
+            id: 'error-promo-invalida',
+            type: 'action',
+            position: { x: 350, y: 480 },
+            data: {
+              actionType: 'error',
+              message: '❌ El código de descuento "{{codigoPromo}}" no existe. Por favor verifica el código e intenta de nuevo.'
+            }
+          }
+        ],
+        edges: [
+          { id: 'e1', source: 'trigger-1', target: 'cond-tiene-promo' },
+          { id: 'e2', source: 'cond-tiene-promo', target: 'query-promo', label: 'Sí' },
+          { id: 'e3', source: 'query-promo', target: 'cond-promo-activa', sourceHandle: 'yes' },
+          { id: 'e4', source: 'query-promo', target: 'error-promo-invalida', sourceHandle: 'no' },
+          { id: 'e5', source: 'cond-promo-activa', target: 'error-promo-inactiva', label: 'No' }
+        ],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      await flowsDb.insert(flowValidarPromo);
+
+      // ─────────────────────────────────────────────────────────────────────
+      // FLUJO 8: Cancelación de Reserva  (afterUpdate → Reservas)
+      // Cuando se cancela una reserva, notifica al cliente y al equipo
+      // ─────────────────────────────────────────────────────────────────────
+      const flowCancelacionId = uuidv4();
+      const flowCancelacion = {
+        _id: flowCancelacionId,
+        name: 'Cancelación de Reserva',
+        description: 'Notifica al cliente y al equipo cuando se cancela una reserva',
+        icon: 'x-circle',
+        color: 'red',
+        active: true,
+        triggerType: 'update',
+        triggerTable: reservasTableId,
+        workspaceId: WORKSPACE_ID,
+        nodes: [
+          {
+            id: 'trigger-1',
+            type: 'trigger',
+            position: { x: 250, y: 50 },
+            data: { label: 'Reserva actualizada', trigger: 'afterUpdate', tableId: reservasTableId, tableName: 'Reservas' }
+          },
+          {
+            id: 'cond-cancelada',
+            type: 'condition',
+            position: { x: 250, y: 180 },
+            data: { label: '¿Estado = Cancelada?', field: 'estadoReserva', operator: '==', value: 'Cancelada' }
+          },
+          {
+            id: 'msg-cancelacion',
+            type: 'action',
+            position: { x: 250, y: 330 },
+            data: {
+              actionType: 'send_message',
+              targetType: 'origin_chat',
+              channel: 'chat',
+              label: 'Notificar cancelación',
+              message: '❌ *Reserva Cancelada*\n\nHola {{cliente}}, tu reserva a {{destino}} del {{fechaViaje}} ha sido cancelada.\n\nSi tienes alguna pregunta sobre tu reembolso o quieres reprogramar, escríbenos al 300-123-4567.\n\n¡Esperamos verte pronto!'
+            }
+          },
+          {
+            id: 'notif-equipo-cancelacion',
+            type: 'notification',
+            position: { x: 250, y: 480 },
+            data: { label: 'Alerta equipo', message: '🔴 Reserva CANCELADA: {{codigoReserva}} | {{cliente}} / {{destino}} el {{fechaViaje}} | Total: ${{totalPagar}}' }
+          }
+        ],
+        edges: [
+          { id: 'e1', source: 'trigger-1', target: 'cond-cancelada' },
+          { id: 'e2', source: 'cond-cancelada', target: 'msg-cancelacion', label: 'Sí' },
+          { id: 'e3', source: 'msg-cancelacion', target: 'notif-equipo-cancelacion' }
+        ],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      await flowsDb.insert(flowCancelacion);
+
+      // ─────────────────────────────────────────────────────────────────────
+      // FLUJO 9: Generar Factura Electrónica  (afterCreate → Pagos)
+      // Cuando el pago completa el saldo → dispara API de Alegra (demo mock)
+      // Guarda número de factura y CUFE en la reserva.
+      // En producción: configurar credenciales reales en Integraciones → Alegra
+      // ─────────────────────────────────────────────────────────────────────
+      const flowFacturaId = uuidv4();
+      const flowFactura = {
+        _id: flowFacturaId,
+        name: 'Generar Factura Electrónica',
+        description: 'Cuando el pago queda completo, genera la factura electrónica en Alegra y notifica al cliente con el PDF',
+        icon: 'file-text',
+        color: 'purple',
+        active: false, // inactivo hasta que el cliente configure sus credenciales de Alegra
+        triggerType: 'create',
+        triggerTable: pagosTableId,
+        workspaceId: WORKSPACE_ID,
+        nodes: [
+          {
+            id: 'trigger-1',
+            type: 'trigger',
+            position: { x: 250, y: 50 },
+            data: { label: 'Nuevo Pago', trigger: 'afterCreate', tableId: pagosTableId, tableName: 'Pagos' }
+          },
+          {
+            id: 'query-reserva',
+            type: 'query',
+            position: { x: 250, y: 180 },
+            data: {
+              label: 'Buscar reserva',
+              targetTable: reservasTableId,
+              filterField: 'codigoReserva',
+              filterValueType: 'trigger',
+              filterValueField: 'reserva',
+              outputVar: 'reservaData'
+            }
+          },
+          {
+            id: 'cond-pago-completo',
+            type: 'condition',
+            position: { x: 250, y: 320 },
+            data: { label: '¿Pago completa el saldo?', field: 'reservaData.saldo', operator: '<=', value: '{{monto}}' }
+          },
+          {
+            // Aplica el fieldMapping guardado en workspace.integrations.externalApis
+            // para transformar los datos de la reserva al formato que espera Alegra
+            id: 'apply-mapping',
+            type: 'action',
+            position: { x: 250, y: 470 },
+            data: {
+              actionType: 'apply_mapping',
+              // Mapeo inline de demostración (en producción viene de workspace.integrations)
+              mapping: {
+                'client.name':           'reservaData.cliente',
+                'client.identification': 'reservaData.cedula',
+                'client.email':          'reservaData.email',
+                'items[0].description':  'reservaData.destino',
+                'items[0].price':        'reservaData.totalPagar',
+                'items[0].quantity':     '1',
+                'date':                  'reservaData.fechaViaje',
+                'observations':          'reservaData.codigoReserva',
+              },
+              outputVar: 'alegraPayload'
+            }
+          },
+          {
+            // ⚠️  URL DE DEMOSTRACIÓN — Cambiar por https://api.alegra.com/api/v1/invoices
+            // en producción. Las credenciales van en workspace.integrations.externalApis
+            id: 'http-alegra',
+            type: 'action',
+            position: { x: 250, y: 620 },
+            data: {
+              actionType: 'http_request',
+              method: 'POST',
+              url: 'https://httpbin.org/post', // ← mock: devuelve lo que recibe
+              headers: {
+                'Content-Type': 'application/json',
+                // En producción: 'Authorization': 'Basic {{workspace.integrations.alegra.credentials}}'
+              },
+              body: '{{alegraPayload}}',
+              outputVar: 'facturaAlegra',
+              onError: 'continue', // no romper el flujo si falla la factura
+              timeout: 12000
+            }
+          },
+          {
+            id: 'notif-factura',
+            type: 'notification',
+            position: { x: 250, y: 770 },
+            data: {
+              label: 'Factura generada',
+              message: '🧾 Factura generada para reserva {{reservaData.codigoReserva}} — {{reservaData.cliente}}. Estado HTTP: {{facturaAlegra.success}}'
+            }
+          },
+          {
+            id: 'msg-factura-cliente',
+            type: 'action',
+            position: { x: 250, y: 920 },
+            data: {
+              actionType: 'send_message',
+              targetType: 'origin_chat',
+              channel: 'chat',
+              label: 'Enviar factura al cliente',
+              message: '🧾 *¡Factura lista, {{reservaData.cliente}}!*\n\nTu pago de ${{monto}} quedó registrado y tu factura electrónica fue generada.\n\n📋 Reserva: {{reservaData.codigoReserva}}\n🏝️ Destino: {{reservaData.destino}}\n📅 Fecha: {{reservaData.fechaViaje}}\n💰 Total: ${{reservaData.totalPagar}}\n\n¿Necesitas el PDF por email? Escríbenos tu correo. ¡Gracias!'
+            }
+          },
+          {
+            id: 'skip-notif',
+            type: 'notification',
+            position: { x: 500, y: 470 },
+            data: {
+              label: 'Pago parcial — sin factura',
+              message: '💳 Abono de ${{monto}} recibido para reserva {{reserva}}. Factura se generará al completar el pago total.'
+            }
+          }
+        ],
+        edges: [
+          { id: 'e1', source: 'trigger-1',       target: 'query-reserva' },
+          { id: 'e2', source: 'query-reserva',    target: 'cond-pago-completo', sourceHandle: 'yes' },
+          { id: 'e3', source: 'query-reserva',    target: 'skip-notif',         sourceHandle: 'no' },
+          { id: 'e4', source: 'cond-pago-completo', target: 'apply-mapping',    label: 'Sí' },
+          { id: 'e5', source: 'cond-pago-completo', target: 'skip-notif',       label: 'No' },
+          { id: 'e6', source: 'apply-mapping',    target: 'http-alegra' },
+          { id: 'e7', source: 'http-alegra',      target: 'notif-factura' },
+          { id: 'e8', source: 'notif-factura',    target: 'msg-factura-cliente' }
+        ],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      await flowsDb.insert(flowFactura);
+
+      console.log('  ✅ 9 Flujos automatizados creados');
     }
     
     // ════════════════════════════════════════════════════════════════════

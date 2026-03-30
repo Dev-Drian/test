@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { WorkspaceContext } from "../context/WorkspaceContext";
 import { listTables, createTable, updateTable, getTableData, addTableRow, updateTableRow, deleteTableRow, uploadWorkspaceFile } from "../api/client";
@@ -11,7 +11,7 @@ import {
   Table2, Plus, X, Check, Rows3, Tags, Inbox, HelpCircle, Lightbulb, 
   Search, Download, Code2, Pencil, Trash2, AlertCircle, ArrowLeft,
   Database, Settings, Upload, FileJson, FileSpreadsheet, MoreVertical,
-  ChevronRight, Sparkles, Layers
+  ChevronRight, ChevronLeft, Sparkles, Layers, Eye, ZoomIn
 } from "lucide-react";
 
 function toAbsoluteApiUrl(rel) {
@@ -19,7 +19,13 @@ function toAbsoluteApiUrl(rel) {
   if (rel.startsWith("http")) return rel;
   const base = import.meta.env.VITE_API_URL || "";
   if (base.startsWith("http")) {
-    return base.replace(/\/$/, "") + (rel.startsWith("/") ? rel : `/${rel}`);
+    // Use only the origin (strip /api path) to avoid double /api/api/
+    try {
+      const origin = new URL(base).origin;
+      return origin + (rel.startsWith("/") ? rel : `/${rel}`);
+    } catch {
+      return base.replace(/\/api$/, "").replace(/\/$/, "") + (rel.startsWith("/") ? rel : `/${rel}`);
+    }
   }
   return rel;
 }
@@ -45,71 +51,137 @@ function parseFileCell(raw) {
   return null;
 }
 
+const ALLOWED_FILE_TYPES = [
+  { ext: 'JPG', mime: 'image/jpeg' },
+  { ext: 'PNG', mime: 'image/png' },
+  { ext: 'WEBP', mime: 'image/webp' },
+  { ext: 'GIF', mime: 'image/gif' },
+  { ext: 'PDF', mime: 'application/pdf' },
+  { ext: 'DOC', mime: 'application/msword' },
+  { ext: 'DOCX', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+];
+const ACCEPT_STRING = ALLOWED_FILE_TYPES.map(t => t.mime).join(',');
+
 function FileFieldControl({ workspaceId, value, onChange, disabled }) {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const parsed = parseFileCell(value);
-  const handlePick = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
+  const isImage = parsed?.mimeType?.startsWith('image/');
+  const inputRef = useRef(null);
+
+  const handleFile = async (file) => {
     if (!file || !workspaceId) return;
     setUploading(true);
     try {
       const meta = await uploadWorkspaceFile(workspaceId, file);
       onChange(meta);
     } catch (err) {
-      toast.error(err.message || "Error al subir");
+      toast.error(err.message || 'Error al subir');
     } finally {
       setUploading(false);
     }
   };
-  return (
-    <div className="space-y-2">
-      {parsed?.url && (
-        <div className="flex items-center gap-2 flex-wrap">
-          {parsed.mimeType?.startsWith("image/") ? (
+
+  const handlePick = (e) => { const f = e.target.files?.[0]; e.target.value = ''; handleFile(f); };
+  const handleDrop = (e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files?.[0]); };
+
+  if (parsed?.url) {
+    return (
+      <div className="flex items-center gap-3">
+        {/* Thumbnail / icono */}
+        <div className="relative shrink-0 group">
+          {isImage ? (
             <img
               src={toAbsoluteApiUrl(parsed.url)}
               alt=""
-              className="h-10 w-10 rounded object-cover border border-slate-600/50"
+              className="w-12 h-12 rounded-xl object-cover"
+              style={{ border: '1px solid rgba(100,116,139,0.3)' }}
             />
-          ) : null}
+          ) : (
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center"
+              style={{ background: 'rgba(51,65,85,0.7)', border: '1px solid rgba(100,116,139,0.3)' }}>
+              <Upload className="w-5 h-5 text-slate-400" />
+            </div>
+          )}
+          {/* Overlay cambiar */}
+          {!disabled && !uploading && (
+            <label className="absolute inset-0 rounded-xl flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+              <Pencil className="w-4 h-4 text-white" />
+              <input type="file" className="hidden" accept={ACCEPT_STRING} disabled={disabled} onChange={handlePick} />
+            </label>
+          )}
+        </div>
+        {/* Info */}
+        <div className="flex-1 min-w-0">
           <a
             href={toAbsoluteApiUrl(parsed.url)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sky-400 text-xs truncate max-w-[200px] hover:underline"
+            className="block text-xs font-medium text-slate-200 truncate hover:text-indigo-300 transition-colors"
+            title={parsed.filename}
           >
-            {parsed.filename || "Archivo"}
+            {parsed.filename || 'Archivo'}
           </a>
-          {parsed.size ? (
+          {parsed.size > 0 && (
             <span className="text-[10px] text-slate-500">{(parsed.size / 1024).toFixed(1)} KB</span>
-          ) : null}
+          )}
+        </div>
+        {/* Quitar */}
+        {!disabled && !uploading && (
           <button
             type="button"
-            disabled={disabled || uploading}
             onClick={() => onChange(null)}
-            className="text-[10px] text-red-400 hover:text-red-300"
+            className="shrink-0 p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
+            title="Quitar"
           >
-            Quitar
+            <X className="w-3.5 h-3.5" />
           </button>
-        </div>
-      )}
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div>
       <label
-        className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border border-slate-500/40 text-slate-200 ${
-          disabled || uploading || !workspaceId ? "opacity-50 cursor-not-allowed" : "cursor-pointer bg-slate-600/40 hover:bg-slate-600/60"
-        }`}
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
+        className={`flex flex-col items-center justify-center gap-1.5 w-full py-3 rounded-xl transition-all cursor-pointer ${
+          disabled || uploading || !workspaceId ? 'opacity-40 cursor-not-allowed' : ''
+        } ${dragOver ? 'scale-[1.02]' : ''}`}
+        style={{
+          background: dragOver ? 'rgba(99,102,241,0.12)' : 'rgba(15,23,42,0.4)',
+          border: dragOver ? '1.5px dashed rgba(99,102,241,0.6)' : '1.5px dashed rgba(100,116,139,0.3)',
+        }}
       >
-        <Upload className="w-3.5 h-3.5" />
         <input
+          ref={inputRef}
           type="file"
           className="hidden"
-          accept="image/jpeg,image/png,image/gif,image/webp,.pdf,.doc,.docx"
+          accept={ACCEPT_STRING}
           disabled={disabled || uploading || !workspaceId}
           onChange={handlePick}
         />
-        {uploading ? "Subiendo…" : parsed ? "Cambiar archivo" : "Subir archivo"}
+        {uploading ? (
+          <div className="w-5 h-5 border-2 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin" />
+        ) : (
+          <Upload className={`w-4 h-4 ${dragOver ? 'text-indigo-400' : 'text-slate-500'}`} />
+        )}
+        <span className="text-[11px] text-slate-400 font-medium">
+          {uploading ? 'Subiendo...' : 'Subir o arrastrar'}
+        </span>
       </label>
+      {/* Tipos permitidos */}
+      <div className="flex flex-wrap gap-1 mt-1.5">
+        {ALLOWED_FILE_TYPES.map(t => (
+          <span key={t.ext} className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide"
+            style={{ background: 'rgba(51,65,85,0.7)', color: '#94a3b8' }}>
+            {t.ext}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -138,6 +210,8 @@ export default function Tables() {
   // Search & Edit state
   const [searchQuery, setSearchQuery] = useState("");
   const [dataSearchQuery, setDataSearchQuery] = useState("");
+  const [tableSearchQuery, setTableSearchQuery] = useState("");
+  const [previewImage, setPreviewImage] = useState(null); // { url, filename }
   const [editingRow, setEditingRow] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [savingEdit, setSavingEdit] = useState(false);
@@ -150,6 +224,10 @@ export default function Tables() {
 
   // Import modal state
   const [showImportModal, setShowImportModal] = useState(false);
+
+  // Carrusel de tablas
+  const CARDS_PER_PAGE = 4;
+  const [carouselPage, setCarouselPage] = useState(0);
 
   // Payment flash: { [recordId]: { amount, currency, ts } } — resalta la fila 8s al confirmar pago
   const [paymentFlash, setPaymentFlash] = useState({});
@@ -373,14 +451,22 @@ export default function Tables() {
   };
 
   // Filtrar datos por búsqueda
-  const filteredData = tableData.filter(row => {
-    if (!dataSearchQuery.trim()) return true;
-    const query = dataSearchQuery.toLowerCase();
-    return Object.entries(row).some(([key, value]) => {
-      if (key.startsWith('_') || key === 'tableId') return false;
-      return String(value).toLowerCase().includes(query);
+  const _firstSortKey = selectedTable?.headers?.find(h => !h.hiddenFromChat)?.key;
+  const filteredData = tableData
+    .filter(row => {
+      if (!dataSearchQuery.trim()) return true;
+      const query = dataSearchQuery.toLowerCase();
+      return Object.entries(row).some(([key, value]) => {
+        if (key.startsWith('_') || key === 'tableId') return false;
+        return String(value).toLowerCase().includes(query);
+      });
+    })
+    .sort((a, b) => {
+      if (!_firstSortKey) return 0;
+      const av = String(a[_firstSortKey] ?? '').toLowerCase();
+      const bv = String(b[_firstSortKey] ?? '').toLowerCase();
+      return av.localeCompare(bv, 'es');
     });
-  });
 
   // Exportar a CSV
   const exportToCSV = () => {
@@ -537,6 +623,189 @@ export default function Tables() {
         </div>
       )}
       
+      {/* ══ LIGHTBOX PREVIEW IMAGEN ══ */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(12px)' }}
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="relative max-w-3xl w-full flex flex-col items-center gap-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between w-full px-1">
+              <span className="text-sm text-slate-300 font-medium truncate max-w-xs">{previewImage.filename}</span>
+              <div className="flex items-center gap-2">
+                <a
+                  href={previewImage.url}
+                  download={previewImage.filename || true}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all hover:scale-105"
+                  style={{ background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Download className="w-3.5 h-3.5" />Descargar
+                </a>
+                <button
+                  onClick={() => setPreviewImage(null)}
+                  className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <img
+              src={previewImage.url}
+              alt={previewImage.filename}
+              className="max-h-[75vh] rounded-2xl object-contain shadow-2xl"
+              style={{ border: '1px solid rgba(255,255,255,0.08)' }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ══ MODAL: NUEVO REGISTRO ══ */}
+      {showAddRow && selectedTable && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) { setShowAddRow(false); setRowForm({}); setFieldErrors({}); setRowError(''); } }}
+        >
+          <div
+            className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl overflow-hidden shadow-2xl"
+            style={{
+              background: 'linear-gradient(180deg, #0f172a 0%, #0a0f1e 100%)',
+              border: '1px solid rgba(99,102,241,0.25)',
+              boxShadow: '0 30px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(99,102,241,0.1)',
+            }}
+          >
+            {/* Header del modal */}
+            <div className="flex items-center justify-between px-6 py-4 shrink-0"
+              style={{ borderBottom: '1px solid rgba(99,102,241,0.15)' }}>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.3), rgba(139,92,246,0.2))', border: '1px solid rgba(99,102,241,0.3)' }}>
+                  <Plus className="w-4 h-4 text-indigo-300" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white leading-tight">Nuevo registro</h2>
+                  <p className="text-[11px] text-slate-500 mt-0.5">{selectedTable.name}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setShowAddRow(false); setRowForm({}); setFieldErrors({}); setRowError(''); }}
+                className="p-2 rounded-xl text-slate-500 hover:text-white hover:bg-white/8 transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Cuerpo del formulario */}
+            <form onSubmit={handleAddRow} className="flex flex-col flex-1 overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-6 py-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {getVisibleHeaders().map((header) => (
+                    <div key={header.key} className={header.type === 'text' && !header.options ? '' : ''}>
+                      <label className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                        {header.emoji && <span>{header.emoji}</span>}
+                        {header.label}
+                        {header.required && <span className="text-red-400">*</span>}
+                      </label>
+
+                      {header.type === 'file' ? (
+                        <FileFieldControl
+                          workspaceId={workspaceId}
+                          value={rowForm[header.key]}
+                          onChange={(v) => { setRowForm({ ...rowForm, [header.key]: v }); validateField(header.key, v); }}
+                          disabled={addingRow}
+                        />
+                      ) : header.type === 'select' && header.options ? (
+                        <select
+                          value={rowForm[header.key] || header.defaultValue || ''}
+                          onChange={(e) => { setRowForm({ ...rowForm, [header.key]: e.target.value }); validateField(header.key, e.target.value); }}
+                          className="w-full px-3 py-2.5 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all"
+                          style={{ background: 'rgba(30,41,59,0.8)', border: fieldErrors[header.key] ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(100,116,139,0.25)' }}
+                        >
+                          <option value="">— Seleccionar —</option>
+                          {header.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                      ) : (
+                        <input
+                          type={
+                            header.type === 'number' || header.type === 'integer' || header.type === 'currency' ? 'number'
+                            : header.type === 'date' ? 'date'
+                            : header.type === 'time' ? 'time'
+                            : header.type === 'email' ? 'email'
+                            : header.type === 'phone' ? 'tel'
+                            : 'text'
+                          }
+                          value={rowForm[header.key] ?? ''}
+                          onChange={(e) => { setRowForm({ ...rowForm, [header.key]: e.target.value }); validateField(header.key, e.target.value); }}
+                          onBlur={(e) => validateField(header.key, e.target.value)}
+                          placeholder={header.placeholder || ''}
+                          min={header.validation?.min}
+                          max={header.validation?.max}
+                          step={header.type === 'integer' ? '1' : header.type === 'currency' ? '0.01' : undefined}
+                          className="w-full px-3 py-2.5 rounded-xl text-slate-100 placeholder-slate-600 text-sm focus:outline-none focus:ring-2 transition-all"
+                          style={{
+                            background: 'rgba(30,41,59,0.8)',
+                            border: fieldErrors[header.key] ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(100,116,139,0.25)',
+                          }}
+                        />
+                      )}
+
+                      {fieldErrors[header.key] && (
+                        <p className="text-[11px] text-red-400 mt-1 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3 shrink-0" />{fieldErrors[header.key]}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {rowError && (
+                  <div className="mt-4 p-3 rounded-xl flex items-start gap-2"
+                    style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-300">{rowError}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer del modal */}
+              <div className="shrink-0 px-6 py-4 flex items-center justify-between gap-3"
+                style={{ borderTop: '1px solid rgba(100,116,139,0.15)', background: 'rgba(15,23,42,0.6)' }}>
+                <p className="text-[11px] text-slate-600">
+                  {selectedTable.headers?.filter(h => h.required).length || 0} campos requeridos
+                </p>
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => { setShowAddRow(false); setRowForm({}); setFieldErrors({}); setRowError(''); }}
+                    className="px-4 py-2 rounded-xl text-sm text-slate-400 hover:text-white transition-all"
+                    style={{ border: '1px solid rgba(100,116,139,0.2)' }}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={addingRow}
+                    className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    style={{
+                      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                      boxShadow: '0 4px 14px rgba(99,102,241,0.35)',
+                    }}
+                  >
+                    {addingRow ? (
+                      <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /><span>Guardando...</span></>
+                    ) : (
+                      <><Check className="w-4 h-4" /><span>Guardar registro</span></>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Modal para EDITAR tabla existente - Rediseñado */}
       {editingTableConfig && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in">
@@ -658,134 +927,81 @@ export default function Tables() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-12 gap-5 animate-fade-up">
-              {/* Sidebar - Lista de tablas */}
-              <div className="col-span-12 lg:col-span-2" data-tour="tables-list">
-                <div className="sticky top-6">
-                  <div className="rounded-xl overflow-hidden" 
-                    style={{ 
-                      background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.9) 0%, rgba(30, 41, 59, 0.7) 100%)', 
-                      border: '1px solid rgba(100, 116, 139, 0.2)',
-                      backdropFilter: 'blur(20px)'
-                    }}>
-                    {/* Header del sidebar */}
-                    <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(100, 116, 139, 0.2)' }}>
-                      <div className="flex items-center gap-2">
-                        <Layers className="w-4 h-4 text-indigo-400" />
-                        <h3 className="text-xs font-bold text-white">Mis Tablas</h3>
-                      </div>
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold"
-                        style={{ 
-                          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                          color: 'white'
-                        }}>
-                        {tables.length}
-                      </span>
-                    </div>
-                    
-                    <div className="p-3">
-                      {/* Barra de búsqueda de tablas */}
-                      <div className="relative mb-3">
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-                          <Search className="w-3.5 h-3.5" />
-                        </div>
-                        <input 
-                          type="text" 
-                          placeholder="Buscar..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full pl-9 pr-3 py-2 rounded-lg text-slate-100 placeholder-slate-500 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all"
-                          style={{ 
-                            background: 'rgba(15, 23, 42, 0.6)', 
-                            border: '1px solid rgba(100, 116, 139, 0.2)' 
-                          }}
-                        />
-                      </div>
-                      
-                      <div className="space-y-1.5 max-h-[450px] overflow-y-auto pr-1 custom-scrollbar">
-                        {tables.filter(t => !searchQuery.trim() || t.name.toLowerCase().includes(searchQuery.toLowerCase())).map((t, index) => (
-                        <button
-                          key={t._id}
-                          onClick={() => setSelectedTable(t)}
-                          className={`w-full text-left p-2.5 rounded-lg transition-all duration-200 group flex items-center gap-2.5 ${
-                            selectedTable?._id === t._id
-                              ? "ring-1 ring-indigo-500/50"
-                              : "hover:bg-slate-700/40"
-                          }`}
-                          style={{ 
-                            background: selectedTable?._id === t._id 
-                              ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%)'
-                              : 'transparent',
-                            animation: 'fade-up 0.3s ease-out forwards',
-                            animationDelay: `${index * 40}ms`,
-                            opacity: 0
-                          }}
-                        >
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 shrink-0 ${
-                            selectedTable?._id === t._id 
-                              ? 'text-indigo-400' 
-                              : 'text-slate-500 group-hover:text-slate-300'
-                          }`}
-                          style={{
-                            background: selectedTable?._id === t._id 
-                              ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(139, 92, 246, 0.2) 100%)'
-                              : 'rgba(51, 65, 85, 0.5)'
-                          }}>
-                            <Table2 className="w-4 h-4" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <span className={`block font-medium text-xs truncate transition-colors ${
-                              selectedTable?._id === t._id ? 'text-white' : 'text-slate-300 group-hover:text-white'
-                            }`}>
-                              {t.name}
-                            </span>
-                            <span className="text-[10px] text-slate-500 flex items-center gap-1">
-                              <Tags className="w-2.5 h-2.5" />
-                              {t.headers?.length || 0} campos
-                            </span>
-                          </div>
-                          <ChevronRight className={`w-3.5 h-3.5 transition-all duration-200 ${
-                            selectedTable?._id === t._id 
-                              ? 'text-indigo-400 opacity-100' 
-                              : 'text-slate-600 opacity-0 group-hover:opacity-100'
-                          }`} />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <div className="flex flex-col gap-5 animate-fade-up">
 
-              {/* Main content - Datos de la tabla */}
-              <div className="col-span-12 lg:col-span-10" data-tour="tables-data">
+              {/* ══ SELECTOR DE TABLAS: tab pills horizontales ══ */}
+              <div className="flex flex-col gap-2">
+              {tables.length > 4 && (
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Buscar tabla..."
+                    value={tableSearchQuery}
+                    onChange={(e) => setTableSearchQuery(e.target.value)}
+                    className="w-full sm:w-56 pl-8 pr-3 py-2 rounded-xl text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all"
+                    style={{ background: 'rgba(30,41,59,0.8)', border: '1px solid rgba(100,116,139,0.2)' }}
+                  />
+                </div>
+              )}
+              <div data-tour="tables-list"
+                className="flex items-center gap-2 overflow-x-auto pb-0.5"
+                style={{ scrollbarWidth: 'none' }}
+              >
+                {tables.filter(t => !tableSearchQuery.trim() || t.name.toLowerCase().includes(tableSearchQuery.toLowerCase())).filter(t => !tableSearchQuery.trim() || t.name.toLowerCase().includes(tableSearchQuery.toLowerCase())).map((t) => {
+                  const active = selectedTable?._id === t._id;
+                  return (
+                    <button
+                      key={t._id}
+                      onClick={() => { setSelectedTable(t); setTableSearchQuery(''); }}
+                      className={`shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-150 ${
+                        active ? 'text-white shadow-lg' : 'text-slate-400 hover:text-slate-100'
+                      }`}
+                      style={{
+                        background: active
+                          ? 'linear-gradient(135deg, rgba(99,102,241,0.35) 0%, rgba(139,92,246,0.25) 100%)'
+                          : 'rgba(30,41,59,0.6)',
+                        border: active
+                          ? '1px solid rgba(99,102,241,0.5)'
+                          : '1px solid rgba(100,116,139,0.18)',
+                        boxShadow: active ? '0 4px 14px rgba(99,102,241,0.25)' : 'none',
+                      }}
+                    >
+                      <Table2 className={`w-3.5 h-3.5 ${active ? 'text-indigo-300' : ''}`} />
+                      {t.name}
+                      <span className={`ml-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-bold ${
+                        active ? 'bg-indigo-500/40 text-indigo-200' : 'bg-slate-700/60 text-slate-500'
+                      }`}>
+                        {t.headers?.length || 0}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              </div>
+
+              {/* ══════════════════════════════════════════════════════════
+                  CONTENIDO DE LA TABLA
+              ══════════════════════════════════════════════════════════ */}
+              <div data-tour="tables-data">
                 {!selectedTable ? (
-                  <div className="relative h-[500px] flex items-center justify-center rounded-2xl overflow-hidden" 
-                    style={{ 
-                      background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.6) 0%, rgba(30, 41, 59, 0.4) 100%)', 
-                      border: '1px solid rgba(100, 116, 139, 0.2)' 
-                    }}>
-                    {/* Decorative pattern */}
-                    <div className="absolute inset-0 opacity-5">
-                      <div className="absolute inset-0" style={{ 
-                        backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)',
-                        backgroundSize: '40px 40px'
-                      }} />
-                    </div>
+                  <div className="relative h-[340px] flex items-center justify-center rounded-2xl overflow-hidden"
+                    style={{
+                      background: 'linear-gradient(180deg, rgba(30,41,59,0.6) 0%, rgba(30,41,59,0.4) 100%)',
+                      border: '1px solid rgba(100,116,139,0.2)',
+                    }}
+                  >
                     <div className="text-center z-10">
-                      <div className="relative w-24 h-24 mx-auto mb-8">
+                      <div className="relative w-16 h-16 mx-auto mb-5">
                         <div className="absolute inset-0 rounded-2xl bg-slate-600/30 blur-xl" />
-                        <div className="relative w-full h-full rounded-2xl flex items-center justify-center" 
-                          style={{ 
-                            background: 'linear-gradient(135deg, rgba(71, 85, 105, 0.6) 0%, rgba(51, 65, 85, 0.4) 100%)',
-                            border: '1px solid rgba(100, 116, 139, 0.3)'
-                          }}>
-                          <ArrowLeft className="w-8 h-8 text-slate-400" />
+                        <div className="relative w-full h-full rounded-2xl flex items-center justify-center"
+                          style={{ background: 'linear-gradient(135deg, rgba(71,85,105,0.6) 0%, rgba(51,65,85,0.4) 100%)', border: '1px solid rgba(100,116,139,0.3)' }}>
+                          <ArrowLeft className="w-7 h-7 text-slate-400" />
                         </div>
                       </div>
-                      <h3 className="text-2xl font-bold text-white mb-3">Selecciona una tabla</h3>
-                      <p className="text-slate-400 max-w-sm mx-auto">
-                        Elige una tabla del panel izquierdo para visualizar y gestionar sus registros
+                      <h3 className="text-xl font-bold text-white mb-2">Selecciona una tabla</h3>
+                      <p className="text-slate-400 text-sm max-w-xs mx-auto">
+                        Elige una tarjeta de arriba para ver y gestionar sus registros
                       </p>
                     </div>
                   </div>
@@ -861,27 +1077,15 @@ export default function Tables() {
                           )}
                           <button
                             onClick={() => {
-                              setShowAddRow(!showAddRow);
                               setRowForm({});
                               setRowError("");
+                              setFieldErrors({});
+                              setShowAddRow(true);
                             }}
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                              showAddRow 
-                                ? 'bg-slate-600/50 text-slate-300 hover:bg-slate-600' 
-                                : 'bg-sky-500 text-white hover:bg-sky-400 shadow-lg shadow-sky-500/30'
-                            }`}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all bg-indigo-500 text-white hover:bg-indigo-400 shadow-lg shadow-indigo-500/30"
                           >
-                            {showAddRow ? (
-                              <>
-                                <X className="w-4 h-4" />
-                                <span>Cancelar</span>
-                              </>
-                            ) : (
-                              <>
-                                <Plus className="w-4 h-4" />
-                                <span>Nuevo registro</span>
-                              </>
-                            )}
+                            <Plus className="w-4 h-4" />
+                            <span>Nuevo registro</span>
                           </button>
                         </div>
                       </div>
@@ -969,108 +1173,7 @@ export default function Tables() {
                       )}
                     </div>
 
-                    {/* Add row form */}
-                    {showAddRow && (
-                      <div className="p-4" style={{ background: 'rgba(30, 41, 59, 0.5)', borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
-                        <form onSubmit={handleAddRow}>
-                          <h4 className="text-sm font-medium text-slate-300 mb-3">Nueva fila</h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
-                            {getVisibleHeaders().map((header) => (
-                              <div key={header.key}>
-                                <label className="text-[11px] text-slate-500 block mb-1">
-                                  {header.label}
-                                  {header.required && <span className="text-red-400 ml-1">*</span>}
-                                </label>
-                                {header.type === "file" ? (
-                                  <div
-                                    className={`rounded-lg px-2 py-2 ${
-                                      fieldErrors[header.key] ? "ring-2 ring-red-500/50" : ""
-                                    }`}
-                                    style={{
-                                      background: "rgba(71, 85, 105, 0.4)",
-                                      border: fieldErrors[header.key]
-                                        ? "1px solid rgba(239, 68, 68, 0.5)"
-                                        : "1px solid rgba(100, 116, 139, 0.3)",
-                                    }}
-                                  >
-                                    <FileFieldControl
-                                      workspaceId={workspaceId}
-                                      value={rowForm[header.key]}
-                                      onChange={(v) => {
-                                        setRowForm({ ...rowForm, [header.key]: v });
-                                        validateField(header.key, v);
-                                      }}
-                                      disabled={addingRow}
-                                    />
-                                  </div>
-                                ) : (
-                                <input
-                                  type={header.type === "number" || header.type === "integer" || header.type === "currency" ? "number" : header.type === "date" ? "date" : header.type === "time" ? "time" : header.type === "email" ? "email" : "text"}
-                                  value={rowForm[header.key] || ""}
-                                  onChange={(e) => {
-                                    setRowForm({ ...rowForm, [header.key]: e.target.value });
-                                    validateField(header.key, e.target.value);
-                                  }}
-                                  onBlur={(e) => validateField(header.key, e.target.value)}
-                                  placeholder={header.placeholder || header.label}
-                                  className={`w-full px-3 py-2.5 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 transition-all ${
-                                    fieldErrors[header.key] 
-                                      ? 'ring-2 ring-red-500/50 focus:ring-red-500/50' 
-                                      : 'focus:ring-indigo-500/30'
-                                  }`}
-                                  style={{ 
-                                    background: 'rgba(71, 85, 105, 0.4)', 
-                                    border: fieldErrors[header.key] ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(100, 116, 139, 0.3)' 
-                                  }}
-                                  min={header.type === "number" && header.validation?.min !== undefined ? header.validation.min : undefined}
-                                  max={header.type === "number" && header.validation?.max !== undefined ? header.validation.max : undefined}
-                                  step={header.type === "integer" ? "1" : header.type === "currency" ? "0.01" : undefined}
-                                />
-                                )}
-                                {fieldErrors[header.key] && (
-                                  <p className="text-xs text-red-400 mt-1">{fieldErrors[header.key]}</p>
-                                )}
-                                {header.helpText && !fieldErrors[header.key] && (
-                                  <p className="text-xs text-slate-500 mt-1">{header.helpText}</p>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                          {rowError && (
-                            <p className="text-sm text-red-400 mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                              {rowError}
-                            </p>
-                          )}
-                          <div className="flex gap-3">
-                            <button 
-                              type="submit" 
-                              disabled={addingRow}
-                              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-500 text-white text-sm font-medium hover:bg-sky-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                              {addingRow ? (
-                                <>
-                                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                  <span>Guardando...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Check className="w-4 h-4" />
-                                  <span>Guardar</span>
-                                </>
-                              )}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => { setShowAddRow(false); setFieldErrors({}); setRowError(""); }}
-                              className="px-4 py-2 rounded-lg text-slate-400 text-sm font-medium hover:bg-slate-600/50 hover:text-slate-200 transition-all"
-                              style={{ border: '1px solid rgba(100, 116, 139, 0.3)' }}
-                            >
-                              Cancelar
-                            </button>
-                          </div>
-                        </form>
-                      </div>
-                    )}
+                    {/* Add row form — ahora es modal, este bloque queda vacío */}
 
                     {/* Table data */}
                     {loadingData ? (
@@ -1227,11 +1330,38 @@ export default function Tables() {
                                       ) : fileMeta?.url ? (
                                         <span className="flex items-center gap-2 min-w-0">
                                           {fileMeta.mimeType?.startsWith('image/') ? (
-                                            <img src={toAbsoluteApiUrl(fileMeta.url)} alt="" className="h-8 w-8 rounded object-cover shrink-0 border border-slate-600/50" />
+                                            <button
+                                              type="button"
+                                              onClick={() => setPreviewImage({ url: toAbsoluteApiUrl(fileMeta.url), filename: fileMeta.filename })}
+                                              className="relative shrink-0 group/img"
+                                            >
+                                              <img src={toAbsoluteApiUrl(fileMeta.url)} alt="" className="h-9 w-9 rounded-lg object-cover border border-slate-600/50 transition-all group-hover/img:brightness-75" />
+                                              <ZoomIn className="absolute inset-0 m-auto w-4 h-4 text-white opacity-0 group-hover/img:opacity-100 transition-opacity" />
+                                            </button>
                                           ) : null}
-                                          <a href={toAbsoluteApiUrl(fileMeta.url)} target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline truncate text-xs" title={fileMeta.filename}>
-                                            {fileMeta.filename || 'Archivo'}
-                                          </a>
+                                          <span className="flex flex-col gap-1 min-w-0">
+                                            <span className="text-slate-300 truncate text-xs" title={fileMeta.filename}>{fileMeta.filename || 'Archivo'}</span>
+                                            <span className="flex items-center gap-1">
+                                              <a
+                                                href={toAbsoluteApiUrl(fileMeta.url)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-1 text-[10px] text-sky-400 hover:text-sky-300 transition-colors"
+                                                title="Ver archivo"
+                                              >
+                                                <Eye className="w-3 h-3" />Ver
+                                              </a>
+                                              <span className="text-slate-700">·</span>
+                                              <a
+                                                href={toAbsoluteApiUrl(fileMeta.url)}
+                                                download={fileMeta.filename || true}
+                                                className="flex items-center gap-1 text-[10px] text-emerald-400 hover:text-emerald-300 transition-colors"
+                                                title="Descargar"
+                                              >
+                                                <Download className="w-3 h-3" />Descargar
+                                              </a>
+                                            </span>
+                                          </span>
                                         </span>
                                       ) : (
                                         <span className={`block truncate ${isNumeric ? 'font-mono tabular-nums' : ''} ${isEmail ? 'text-sky-400' : ''}`} title={String(row[k] ?? "-")}>

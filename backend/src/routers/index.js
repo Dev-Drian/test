@@ -8,6 +8,7 @@ import * as notifications from "../controllers/notificationController.js";
 import * as auth from "../controllers/authController.js";
 import * as plans from "../controllers/plansController.js";
 import * as views from "../controllers/viewsController.js";
+import * as externalIntegrations from "../controllers/externalIntegrationsController.js";
 import * as google from "../controllers/googleController.js";
 import * as inbound from "../controllers/inboundController.js";
 import * as admin from "../controllers/adminController.js";
@@ -144,6 +145,15 @@ router.post("/views/:viewId/refresh-mapping", requireAuth, views.refreshMapping)
 router.post("/views/:viewId/order", requireAuth, views.manageOrder);
 router.put("/views/:viewId/item/:itemId", requireAuth, views.updateItemStatus);
 router.post("/views/:viewId/duplicate", requireAuth, views.duplicateView);
+
+// ============ INTEGRACIONES — APIs EXTERNAS (Alegra, Siigo, custom) ============
+router.get("/integrations/external/types", requireAuth, externalIntegrations.getIntegrationTypes);
+router.post("/integrations/external/analyze", requireAuth, externalIntegrations.analyzeIntegrationMapping);
+router.get("/workspace/:workspaceId/integrations/external", requireAuth, validateWorkspace, externalIntegrations.listExternalApis);
+router.post("/workspace/:workspaceId/integrations/external", requireAuth, validateWorkspace, externalIntegrations.createExternalApi);
+router.put("/workspace/:workspaceId/integrations/external/:apiId", requireAuth, validateWorkspace, externalIntegrations.updateExternalApi);
+router.delete("/workspace/:workspaceId/integrations/external/:apiId", requireAuth, validateWorkspace, externalIntegrations.deleteExternalApi);
+router.post("/workspace/:workspaceId/integrations/external/:apiId/test", requireAuth, validateWorkspace, externalIntegrations.testExternalApi);
 
 // ============ INTEGRACIONES - GOOGLE ============
 // OAuth

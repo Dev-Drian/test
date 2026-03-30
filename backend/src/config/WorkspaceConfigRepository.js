@@ -175,8 +175,20 @@ export class WorkspaceConfigRepository extends BaseRepository {
             avatarUrl: null,
           },
         },
+
+        // APIs externas (facturación, CRM, ERP, etc.)
+        // Las credenciales se cifran con AES-256 antes de guardar.
+        // Estructura de cada entrada:
+        // {
+        //   id, provider ('alegra'|'siigo'|'custom'), name, enabled,
+        //   credentials: { encrypted: 'aes256:iv:ciphertext' },
+        //   tableId,          ← tabla a la que aplica el mapeo
+        //   fieldMapping: { 'campo.destino': 'campo_tabla' },
+        //   providerConfig: { ... campos fijos del proveedor (sellerId, numberTemplateId, etc.) }
+        // }
+        externalApis: [],
       },
-      
+
       // Metadata
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

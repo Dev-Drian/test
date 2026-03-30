@@ -850,6 +850,11 @@ function evaluateCondition(condition, context) {
     fieldValue = parts.reduce((obj, key) => obj?.[key], context);
   }
   
+  // Normalizar undefined/null a '' para comparaciones consistentes
+  if (fieldValue === undefined || fieldValue === null) {
+    fieldValue = '';
+  }
+  
   // Procesar el valor de comparación (puede ser template)
   let compareValue = value;
   if (typeof value === 'string' && value.includes('{{')) {

@@ -191,8 +191,7 @@ export class ChatEngine {
     
     log.debug('Executing handler for tool', { tool, handlerName });
     
-    // DEBUG: Log LLM arguments
-    console.log('[Engine] LLM tool:', tool, 'args:', JSON.stringify(args));
+    console.log(`\n🤖 [LLM] ${tool}${args?.record_type ? ` → ${args.record_type}` : ''}${args?.filters && Object.keys(args.filters).length ? ` | filtros: ${JSON.stringify(args.filters)}` : ''}`);
     // Enriquecer contexto con los argumentos extraídos por el LLM
     context.llmExtracted = args;
     context.selectedTool = tool;

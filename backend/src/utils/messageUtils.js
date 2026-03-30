@@ -92,13 +92,25 @@ export function splitMessageForPlatform(text, platform) {
   return splitMessage(text, limit);
 }
 
-/** URL https con extensión de imagen típica (para enviar a Meta por link). */
-const TRAILING_IMAGE_URL =
-  /^https:\/\/[^\s]+\.(jpe?g|png|gif|webp)(\?[^\s]*)?$/i;
+/** Markdown image syntax: ![alt](https://...) */
+const MARKDOWN_IMAGE_RE = /!\[[^\]]*\]\((https:\/\/[^)]+)\)/g;
+
+/** Detecta si una URL https es de imagen (extensión o dominio conocido). */
+function isPublicImageUrl(url) {
+  if (!url || !url.startsWith('https://')) return false;
+  return /\.(jpe?g|png|gif|webp|avif)(\?|$)/i.test(url)
+    || url.includes('unsplash.com')
+    || url.includes('picsum.photos')
+    || url.includes('cloudinary.com')
+    || url.includes('imgur.com');
+}
 
 /**
- * Si la última línea del mensaje es una URL HTTPS pública de imagen, la separa.
- * Así el bot puede responder: texto del producto + línea final con la URL guardada en la tabla.
+ * Extrae las imágenes embed en el mensaje (formato ![...](url)) y retorna
+ * el texto limpio + la primera URL de imagen pública encontrada.
+ *
+ * Esto permite que WhatsApp/Meta reciba texto plano + una imagen adjunta
+ * en lugar del markdown crudo que no renderiza en esos canales.
  *
  * @returns {{ body: string, imageUrl: string | null }}
  */
@@ -106,16 +118,24 @@ export function splitTextAndTrailingPublicImageUrl(text) {
   const raw = (text || '').trimEnd();
   if (!raw) return { body: '', imageUrl: null };
 
+  // Extraer primera URL de imagen de los markdown ![...](url) del texto
+  let firstImageUrl = null;
+  const body = raw.replace(MARKDOWN_IMAGE_RE, (_, url) => {
+    if (!firstImageUrl && isPublicImageUrl(url)) firstImageUrl = url;
+    return ''; // quitar el markdown del texto
+  }).replace(/\n{3,}/g, '\n\n').trimEnd(); // colapsar líneas en blanco extra
+
+  if (firstImageUrl) {
+    return { body: body || '', imageUrl: firstImageUrl };
+  }
+
+  // Fallback: última línea como URL plana (comportamiento original)
   const lines = raw.split('\n');
   const last = (lines[lines.length - 1] || '').trim();
-  if (!TRAILING_IMAGE_URL.test(last)) {
-    return { body: raw, imageUrl: null };
+  if (isPublicImageUrl(last)) {
+    const fallbackBody = lines.slice(0, -1).join('\n').trimEnd();
+    return { body: fallbackBody, imageUrl: last };
   }
 
-  if (lines.length <= 1) {
-    return { body: '', imageUrl: last };
-  }
-
-  const body = lines.slice(0, -1).join('\n').trimEnd();
-  return { body, imageUrl: last };
+  return { body: raw, imageUrl: null };
 }

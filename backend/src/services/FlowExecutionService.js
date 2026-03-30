@@ -287,12 +287,144 @@ class FlowExecutionService {
         return { output: { sent: true, channel: 'whatsapp', message } };
         
       case 'send_email':
-        log.info('Would send Email', { to: data.to, subject: data.subject });
-        return { output: { sent: true, channel: 'email' } };
+      case 'sendEmail': {
+        const emailTo      = processTemplate(data.to || data.email || '', vars);
+        const emailSubject = processTemplate(data.subject || 'Notificación', vars);
+        const emailBody    = processTemplate(data.body || data.message || data.html || '', vars);
+
+        if (!emailTo) {
+          log.warn('[FlowExec] send_email: destinatario vacío, se omite');
+          return { output: { sent: false, channel: 'email', reason: 'no_recipient' } };
+        }
+
+        try {
+          const { getEmailService } = await import('./EmailService.js');
+          const result = await getEmailService().send({
+            to: emailTo,
+            subject: emailSubject,
+            html: emailBody.includes('<') ? emailBody : `<p style="font-family:sans-serif;font-size:15px;line-height:1.6;color:#334155;">${emailBody.replace(/\n/g, '<br>')}</p>`,
+            text: emailBody,
+          });
+          log.info('[FlowExec] Email enviado', { to: emailTo, subject: emailSubject, id: result.id });
+          return { output: { sent: true, channel: 'email', id: result.id } };
+        } catch (emailErr) {
+          log.error('[FlowExec] Error enviando email', { error: emailErr.message });
+          return { output: { sent: false, channel: 'email', error: emailErr.message } };
+        }
+      }
         
       case 'send_sms':
         log.info('Would send SMS', { to: data.to });
         return { output: { sent: true, channel: 'sms' } };
+
+      case 'http_request':
+      case 'webhook': {
+        const method  = (data.method || 'POST').toUpperCase();
+        const rawUrl  = processTemplate(data.url || '', vars);
+
+        if (!rawUrl) {
+          log.warn('[FlowExec] http_request: URL vacía, se omite');
+          return { output: { success: false, reason: 'no_url' } };
+        }
+
+        // ── SSRF: bloquear rangos privados y loopback ──────────────────────
+        let parsedUrl;
+        try { parsedUrl = new URL(rawUrl); } catch {
+          return { output: { success: false, reason: 'invalid_url' } };
+        }
+        const hostname = parsedUrl.hostname.toLowerCase();
+        const BLOCKED = /^(localhost|127\.|0\.0\.0\.0|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|::1$|fc00:|fe80:)/;
+        if (BLOCKED.test(hostname)) {
+          log.warn('[FlowExec] http_request: URL interna bloqueada por seguridad', { hostname });
+          return { output: { success: false, reason: 'blocked_url' } };
+        }
+        // ──────────────────────────────────────────────────────────────────
+
+        // Resolver headers (puede contener variables)
+        const rawHeaders = data.headers || {};
+        const resolvedHeaders = {};
+        for (const [k, v] of Object.entries(rawHeaders)) {
+          resolvedHeaders[k] = processTemplate(String(v), vars);
+        }
+        if (!resolvedHeaders['Content-Type'] && method !== 'GET') {
+          resolvedHeaders['Content-Type'] = 'application/json';
+        }
+
+        // Resolver body
+        let body = undefined;
+        if (method !== 'GET' && data.body) {
+          const rawBody = typeof data.body === 'string'
+            ? processTemplate(data.body, vars)
+            : processTemplate(JSON.stringify(data.body), vars);
+          try { body = JSON.parse(rawBody); } catch { body = rawBody; }
+        }
+
+        // Query params para GET
+        let finalUrl = rawUrl;
+        if (method === 'GET' && data.params) {
+          const qs = new URLSearchParams(
+            Object.fromEntries(
+              Object.entries(data.params).map(([k, v]) => [k, processTemplate(String(v), vars)])
+            )
+          ).toString();
+          if (qs) finalUrl = `${rawUrl}${rawUrl.includes('?') ? '&' : '?'}${qs}`;
+        }
+
+        try {
+          const { default: axios } = await import('axios');
+          const response = await axios({
+            method,
+            url: finalUrl,
+            headers: resolvedHeaders,
+            data: body,
+            timeout: data.timeout || 15000,
+            maxContentLength: 1 * 1024 * 1024, // 1 MB de respuesta máx
+            validateStatus: () => true, // no lanzar por 4xx/5xx
+          });
+
+          const responseData = response.data;
+          const outputVar = data.outputVar || 'httpResponse';
+
+          log.info('[FlowExec] http_request completado', {
+            url: finalUrl, method, status: response.status, outputVar
+          });
+
+          if (response.status >= 400) {
+            const errorMsg = responseData?.message || responseData?.error || `HTTP ${response.status}`;
+            if (data.onError === 'stop') {
+              throw new Error(`http_request falló: ${errorMsg}`);
+            }
+            return { output: { success: false, status: response.status, error: errorMsg, [outputVar]: responseData } };
+          }
+
+          return { output: { success: true, status: response.status, [outputVar]: responseData } };
+
+        } catch (httpErr) {
+          log.error('[FlowExec] http_request error', { url: finalUrl, error: httpErr.message });
+          if (data.onError === 'stop') throw httpErr;
+          return { output: { success: false, error: httpErr.message } };
+        }
+      }
+
+      case 'apply_mapping': {
+        // Aplica un fieldMapping guardado en workspace a los vars actuales
+        // data.mapping = { 'campo_destino': 'campo_origen' } o viene de vars.__mapping
+        const mapping = data.mapping || vars.__integrationMapping || {};
+        const mapped = {};
+        for (const [destKey, srcKey] of Object.entries(mapping)) {
+          const val = processTemplate(`{{${srcKey}}}`, vars);
+          // Soportar rutas de objeto anidadas como 'client.name'
+          const parts = destKey.split('.');
+          let cursor = mapped;
+          for (let i = 0; i < parts.length - 1; i++) {
+            if (!cursor[parts[i]]) cursor[parts[i]] = {};
+            cursor = cursor[parts[i]];
+          }
+          cursor[parts[parts.length - 1]] = val;
+        }
+        const outputVar = data.outputVar || 'mappedPayload';
+        return { output: { [outputVar]: mapped } };
+      }
         
       default:
         return { output: { actionExecuted: actionType } };

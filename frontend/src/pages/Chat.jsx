@@ -1,356 +1,40 @@
 /**
  * Chat - Centro de Atención Omnicanal
- * Divide conversaciones por canales: Todos, Web/IA, Messenger, Instagram, WhatsApp
+ * Orquestador principal: state, effects y composición de sub-componentes.
  */
-import { useContext, useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useContext, useEffect, useState, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { BarChart3, Plus, Search, AlertTriangle, Check, Loader2, CheckCircle, MessageSquare, Bot, Paperclip, Filter, Phone, User, MoreHorizontal, PanelLeftClose, PanelLeft, Sparkles, Database } from "lucide-react";
 import { WorkspaceContext } from "../context/WorkspaceContext";
 import { useToast, useConfirm } from "../components/Toast";
-import { 
+import {
   listAgents,
   listTables,
-  getOrCreateChat, 
+  getOrCreateChat,
   sendChatMessage,
-  replyExternalChat, 
-  listChats, 
+  replyExternalChat,
+  listChats,
   deleteChat,
   renameChat,
   markChatRead,
   importFileViaChat,
   previewImportViaChat,
 } from "../api/client";
-import { SendIcon, TrashIcon, EditIcon, ChatIcon, SparklesIcon } from "../components/Icons";
 import { useSocketEvent } from "../hooks/useSocket";
 import { NewConversationModal, ChatContextPanel } from "../components/chat/ChatSidePanels.jsx";
+import { EXTERNAL_CHANNEL_LABELS } from "../components/chat/ChatConstants";
+import ChannelBadge from "../components/chat/ChannelBadge";
+import ChatSidebar from "../components/chat/ChatSidebar";
+import ChatHeader from "../components/chat/ChatHeader";
+import { NoWorkspaceState, NoChatSelectedState } from "../components/chat/ChatEmptyState";
+import ChatMessageList from "../components/chat/ChatMessageList";
+import ChatInputBar from "../components/chat/ChatInputBar";
 
-// ── Custom Platform Icons (SVG) ─────────────────────────────────────────────
-const WhatsAppIcon = ({ className }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-  </svg>
-);
-
-const MessengerIcon = ({ className }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 0C5.373 0 0 4.974 0 11.111c0 3.498 1.744 6.614 4.469 8.654V24l4.088-2.242c1.092.301 2.246.464 3.443.464 6.627 0 12-4.974 12-11.111S18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8l3.131 3.259L19.752 8l-6.561 6.963z"/>
-  </svg>
-);
-
-const InstagramIcon = ({ className }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
-  </svg>
-);
-
-const AllChannelsIcon = ({ className }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="7" height="7" rx="1"/>
-    <rect x="14" y="3" width="7" height="7" rx="1"/>
-    <rect x="3" y="14" width="7" height="7" rx="1"/>
-    <rect x="14" y="14" width="7" height="7" rx="1"/>
-  </svg>
-);
-
-const TelegramIcon = ({ className }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-  </svg>
-);
-
-// ── Channel definitions ─────────────────────────────────────────────────────
-const CHANNELS = [
-  { id: 'all',       label: 'Todos',      Icon: AllChannelsIcon, color: 'slate',   gradient: 'from-slate-500 to-slate-600'   },
-  { id: 'web',       label: 'Web',        Icon: Bot,             color: 'indigo',  gradient: 'from-indigo-500 to-indigo-600' },
-  { id: 'telegram',  label: 'Telegram',   Icon: TelegramIcon,    color: 'sky',     gradient: 'from-sky-400 to-sky-500'       },
-  { id: 'messenger', label: 'Messenger',  Icon: MessengerIcon,   color: 'blue',    gradient: 'from-blue-500 to-blue-600'     },
-  { id: 'instagram', label: 'Instagram',  Icon: InstagramIcon,   color: 'pink',    gradient: 'from-pink-500 to-purple-600'   },
-  { id: 'whatsapp',  label: 'WhatsApp',   Icon: WhatsAppIcon,    color: 'green',   gradient: 'from-green-500 to-green-600'   },
-];
-
-const CHANNEL_COLORS = {
-  web:       { bg: 'rgba(99,102,241,0.15)',  border: 'rgba(99,102,241,0.3)',  text: '#818cf8', dot: '#818cf8' },
-  telegram:  { bg: 'rgba(56,189,248,0.15)',  border: 'rgba(56,189,248,0.3)',  text: '#38bdf8', dot: '#38bdf8' },
-  messenger: { bg: 'rgba(59,130,246,0.15)',  border: 'rgba(59,130,246,0.3)',  text: '#60a5fa', dot: '#60a5fa' },
-  instagram: { bg: 'rgba(236,72,153,0.15)',  border: 'rgba(236,72,153,0.3)',  text: '#f472b6', dot: '#f472b6' },
-  whatsapp:  { bg: 'rgba(16,185,129,0.15)',  border: 'rgba(16,185,129,0.3)',  text: '#34d399', dot: '#34d399' },
-};
-
-const CHANNEL_GRADIENTS = {
-  all:       { from: '#64748b', to: '#475569', shadow: 'rgba(100,116,139,0.3)' },
-  web:       { from: '#6366f1', to: '#4f46e5', shadow: 'rgba(99,102,241,0.3)'  },
-  telegram:  { from: '#0088cc', to: '#0077b5', shadow: 'rgba(0,136,204,0.3)'  },
-  messenger: { from: '#0084ff', to: '#006acd', shadow: 'rgba(0,132,255,0.3)'  },
-  instagram: { from: '#E1306C', to: '#833AB4', shadow: 'rgba(225,48,108,0.3)' },
-  whatsapp:  { from: '#25D366', to: '#128C7E', shadow: 'rgba(37,211,102,0.3)' },
-};
-
-const CHANNEL_ICONS = { 
-  all:       AllChannelsIcon,
-  web:       Bot,
-  telegram:  TelegramIcon,
-  messenger: MessengerIcon, 
-  instagram: InstagramIcon, 
-  whatsapp:  WhatsAppIcon 
-};
-
-// ── Filter tabs definitions ─────────────────────────────────────────────────
-const FILTER_TABS = [
-  { id: 'inbox', label: 'Entrada' },
-  { id: 'active', label: 'Activos' },
-  { id: 'all', label: 'Todos' },
-];
-
-// ── User Avatar Component ───────────────────────────────────────────────────
-function UserAvatar({ name, profilePic, size = 'md', channel, showOnline = false, unreadCount = 0, showChannelBadge = true }) {
-  const sizes = {
-    xs: 'w-6 h-6 text-[10px]',
-    sm: 'w-8 h-8 text-xs',
-    md: 'w-10 h-10 text-sm',
-    lg: 'w-12 h-12 text-base',
-    xl: 'w-14 h-14 text-lg'
-  };
-  
-  const initials = name 
-    ? name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
-    : 'U';
-  
-  const colors = [
-    'from-blue-500 to-cyan-500',
-    'from-violet-500 to-purple-500', 
-    'from-pink-500 to-rose-500',
-    'from-amber-500 to-orange-500',
-    'from-emerald-500 to-teal-500',
-    'from-indigo-500 to-blue-500',
-  ];
-  
-  const colorIndex = name ? name.charCodeAt(0) % colors.length : 0;
-
-  const ChannelIcon = channel && CHANNEL_ICONS[channel];
-  const channelGradient = channel && CHANNEL_GRADIENTS[channel];
-
-  return (
-    <div className="relative">
-      {profilePic ? (
-        <img 
-          src={profilePic} 
-          alt={name} 
-          className={`${sizes[size]} rounded-full object-cover ring-2 ring-white/10`}
-        />
-      ) : (
-        <div className={`${sizes[size]} rounded-full bg-gradient-to-br ${colors[colorIndex]} flex items-center justify-center font-semibold text-white shadow-lg`}>
-          {initials}
-        </div>
-      )}
-      {/* Channel indicator - solo si showChannelBadge es true */}
-      {showChannelBadge && ChannelIcon && (
-        <div 
-          className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center border-2 border-slate-900 shadow-md"
-          style={{ background: `linear-gradient(135deg, ${channelGradient?.from || '#6366f1'}, ${channelGradient?.to || '#4f46e5'})` }}
-        >
-          <ChannelIcon className="w-2.5 h-2.5 text-white" />
-        </div>
-      )}
-      {/* Unread badge */}
-      {unreadCount > 0 && (
-        <div className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-blue-500 flex items-center justify-center text-[10px] font-bold text-white shadow-lg">
-          {unreadCount > 99 ? '99+' : unreadCount}
-        </div>
-      )}
-      {/* Online indicator */}
-      {showOnline && !ChannelIcon && (
-        <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-slate-900" />
-      )}
-    </div>
-  );
-}
-
-// ── Markdown renderer ───────────────────────────────────────────────────────
-function renderMarkdown(text) {
-  if (!text) return null;
-  const lines = text.split('\n');
-  return (
-    <>
-      {lines.map((line, lineIdx) => {
-        const parts = [];
-        let remaining = line;
-        let key = 0;
-        while (remaining.length > 0) {
-          const linkMatch = remaining.match(/\[([^\]]+)\]\(([^)]+)\)/);
-          const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
-          let firstMatch = null;
-          let matchType = null;
-          if (linkMatch && boldMatch) {
-            firstMatch = linkMatch.index < boldMatch.index ? linkMatch : boldMatch;
-            matchType = linkMatch.index < boldMatch.index ? 'link' : 'bold';
-          } else if (linkMatch) { firstMatch = linkMatch; matchType = 'link'; }
-          else if (boldMatch) { firstMatch = boldMatch; matchType = 'bold'; }
-          if (firstMatch) {
-            const before = remaining.slice(0, firstMatch.index);
-            if (before) parts.push(<span key={key++}>{before}</span>);
-            if (matchType === 'link') {
-              const [, linkText, linkUrl] = firstMatch;
-              parts.push(
-                <a key={key++} href={linkUrl}
-                  target={linkUrl.startsWith('/') ? '_self' : '_blank'}
-                  rel="noopener noreferrer"
-                  className="text-violet-400 hover:text-violet-300 underline underline-offset-2 transition-colors">
-                  {linkText}
-                </a>
-              );
-            } else {
-              parts.push(<strong key={key++} className="font-semibold text-slate-100">{firstMatch[1]}</strong>);
-            }
-            remaining = remaining.slice(firstMatch.index + firstMatch[0].length);
-          } else {
-            parts.push(<span key={key++}>{remaining}</span>);
-            break;
-          }
-        }
-        return <span key={lineIdx}>{parts}{lineIdx < lines.length - 1 && <br />}</span>;
-      })}
-    </>
-  );
-}
-
-// ── Import Preview Card ─────────────────────────────────────────────────────
-function ImportPreviewCard({ message, onConfirm, onCancel, confirming, agentName }) {
-  const { preview } = message;
-  if (!preview) return null;
-  const { mapping = {}, csvColumns = [], tableHeaders = [], tableName, totalRows, preview: sampleRows = [] } = preview;
-  const mappedCount = Object.keys(mapping).length;
-  const unmappedCols = csvColumns.filter(c => !mapping[c]);
-
-  return (
-    <div className="py-5" style={{ borderTop: '1px solid rgba(100,116,139,0.15)' }}>
-      <div className="flex gap-4">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-linear-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20 shrink-0">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold mb-3 uppercase tracking-wide text-emerald-400">{agentName}</p>
-          <div className="p-4 rounded-xl mb-3" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-            <p className="text-sm text-slate-200 font-medium mb-1">
-              <BarChart3 className="w-4 h-4 inline mr-1 text-emerald-400" /> Analicé <strong>{message.file?.name}</strong> — {totalRows} filas detectadas
-            </p>
-            <p className="text-xs text-slate-400">
-              Tabla destino: <span className="text-emerald-400 font-semibold">{tableName}</span>
-              {' · '}{mappedCount}/{csvColumns.length} columnas mapeadas correctamente
-            </p>
-          </div>
-          <div className="mb-3 rounded-xl overflow-hidden" style={{ border: '1px solid rgba(100,116,139,0.2)' }}>
-            <table className="w-full text-xs">
-              <thead>
-                <tr style={{ background: 'rgba(51,65,85,0.5)' }}>
-                  <th className="px-3 py-2 text-left text-slate-400 font-medium">Columna archivo</th>
-                  <th className="px-3 py-2 text-left text-slate-400 font-medium">→ Campo en sistema</th>
-                  <th className="px-3 py-2 text-left text-slate-400 font-medium">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {csvColumns.map(col => {
-                  const mapped = mapping[col];
-                  const header = tableHeaders.find(h => h.key === mapped);
-                  return (
-                    <tr key={col} style={{ borderTop: '1px solid rgba(100,116,139,0.1)' }}>
-                      <td className="px-3 py-1.5 text-slate-300 font-mono">{col}</td>
-                      <td className="px-3 py-1.5 text-slate-300">{header?.label || mapped || '—'}</td>
-                      <td className="px-3 py-1.5">
-                        {mapped
-                          ? <span className="text-emerald-400 text-[10px]"><Check className="w-3 h-3 inline" /> mapeado</span>
-                          : <span className="text-amber-400 text-[10px]"><AlertTriangle className="w-3 h-3 inline" /> ignorado</span>}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          {sampleRows.length > 0 && (
-            <div className="mb-3">
-              <p className="text-xs text-slate-500 mb-1.5">Vista previa ({sampleRows.length} filas):</p>
-              <div className="rounded-xl overflow-x-auto" style={{ border: '1px solid rgba(100,116,139,0.2)' }}>
-                <table className="text-xs whitespace-nowrap">
-                  <thead><tr style={{ background: 'rgba(51,65,85,0.5)' }}>{Object.keys(sampleRows[0]).map(k => <th key={k} className="px-3 py-1.5 text-left text-slate-400 font-medium">{k}</th>)}</tr></thead>
-                  <tbody>{sampleRows.map((row, i) => <tr key={i} style={{ borderTop: '1px solid rgba(100,116,139,0.1)' }}>{Object.values(row).map((v, j) => <td key={j} className="px-3 py-1.5 text-slate-300 max-w-32 truncate">{String(v ?? '')}</td>)}</tr>)}</tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {unmappedCols.length > 0 && (
-            <p className="text-xs text-amber-400 mb-3">
-              <AlertTriangle className="w-3 h-3 inline mr-1" /> {unmappedCols.length} columna(s) sin mapear serán ignoradas: {unmappedCols.join(', ')}
-            </p>
-          )}
-          {message.type === 'import_done' ? (
-            <div className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">{renderMarkdown(message.content)}</div>
-          ) : (
-            <div className="flex items-center gap-3 mt-2">
-              <button onClick={onConfirm} disabled={confirming}
-                className="px-4 py-2 rounded-xl text-white text-sm font-semibold transition-all hover:scale-[1.03] disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 4px 15px rgba(16,185,129,0.3)' }}
-              >
-                {confirming ? <><Loader2 className="w-4 h-4 inline mr-1 animate-spin" /> Importando...</> : <><CheckCircle className="w-4 h-4 inline mr-1" /> Confirmar ({totalRows} registros)</>}
-              </button>
-              <button
-                onClick={onCancel}
-                disabled={confirming}
-                className="px-4 py-2 rounded-xl text-slate-400 text-sm font-medium hover:text-slate-200 hover:bg-slate-700/50 transition-all disabled:opacity-50"
-                style={{ border: '1px solid rgba(100, 116, 139, 0.3)' }}
-              >
-                Cancelar
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function formatTimeAgo(iso) {
-  if (!iso) return "";
-  const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return "";
-  const sec = Math.floor((Date.now() - t) / 1000);
-  if (sec < 45) return "ahora";
-  if (sec < 3600) return `${Math.floor(sec / 60)}m`;
-  if (sec < 86400) return `${Math.floor(sec / 3600)}h`;
-  if (sec < 604800) return `${Math.floor(sec / 86400)}d`;
-  return new Date(iso).toLocaleDateString("es", { day: "numeric", month: "short" });
-}
-
-// ── Channel Badge ───────────────────────────────────────────────────────────
-function ChannelBadge({ channel }) {
-  const c = CHANNEL_COLORS[channel] || CHANNEL_COLORS.web;
-  const labels = { web: 'Web', telegram: 'Telegram', messenger: 'Messenger', instagram: 'Instagram', whatsapp: 'WhatsApp' };
-  const Icon = CHANNEL_ICONS[channel] || CHANNEL_ICONS.web;
-  const gradient = CHANNEL_GRADIENTS[channel] || CHANNEL_GRADIENTS.web;
-  
-  return (
-    <span 
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold text-white"
-      style={{ 
-        background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`,
-        boxShadow: `0 2px 8px -2px ${gradient.shadow}`
-      }}
-    >
-      <Icon className="w-3 h-3" />
-      {labels[channel] || channel}
-    </span>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// ── Main Component ──────────────────────────────────────────────────────────
-// ══════════════════════════════════════════════════════════════════════════════
 export default function Chat() {
-  const { workspaceId, workspaceName } = useContext(WorkspaceContext);
+  const { workspaceId } = useContext(WorkspaceContext);
   const { toast } = useToast();
   const { confirm, ConfirmModal } = useConfirm();
 
-  // Core state
+  // ── Core state ────────────────────────────────────────────────────────
   const [agents, setAgents] = useState([]);
   const [selectedAgentId, setSelectedAgentId] = useState("");
   const [selectedAgentName, setSelectedAgentName] = useState("");
@@ -371,36 +55,47 @@ export default function Chat() {
   const [newConvOpen, setNewConvOpen] = useState(false);
   const [creatingWebChat, setCreatingWebChat] = useState(false);
   const [contextPanelOpen, setContextPanelOpen] = useState(true);
-  const messagesEndRef = useRef(null);
-  const textareaRef = useRef(null);
-  const fileInputRef = useRef(null);
 
-  // File import state
+  // ── File import state ─────────────────────────────────────────────────
   const [attachedFile, setAttachedFile] = useState(null);
   const [importTables, setImportTables] = useState([]);
   const [importTableId, setImportTableId] = useState('');
   const [tableSearch, setTableSearch] = useState('');
   const [pendingImport, setPendingImport] = useState(null);
 
-  // Active chat metadata
-  const activeChatMeta = useMemo(() => {
-    return chatList.find(c => c._id === chatId) || null;
-  }, [chatList, chatId]);
+  // ── Derived / memoized ────────────────────────────────────────────────
+  const activeChatMeta = useMemo(() => chatList.find(c => c._id === chatId) || null, [chatList, chatId]);
 
   const headerMeta = useMemo(() => {
     if (!chatId) return null;
-    return (
-      activeChatMeta || {
-        _id: chatId,
-        title: "Conversación",
-        channel: "web",
-        platform: "web",
-        senderName: null,
-      }
-    );
+    return activeChatMeta || { _id: chatId, title: "Conversación", channel: "web", platform: "web", senderName: null };
   }, [chatId, activeChatMeta]);
 
-  // WebSocket
+  const isExternalThread = headerMeta?.channel && headerMeta.channel !== "web";
+
+  const filteredChats = useMemo(() => {
+    let list = chatList;
+    if (activeChannel !== 'all') list = list.filter(c => (c.channel || c.platform || 'web') === activeChannel);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(c => (c.title || '').toLowerCase().includes(q) || (c.externalRef || '').toLowerCase().includes(q) || (c.senderName || '').toLowerCase().includes(q));
+    }
+    return list;
+  }, [chatList, activeChannel, searchQuery]);
+
+  const tabFilteredChats = useMemo(() => {
+    if (filterTab === 'inbox') return filteredChats.filter(c => c.unreadCount > 0);
+    if (filterTab === 'active') { const dayAgo = Date.now() - 86400000; return filteredChats.filter(c => c.lastActivityAt && new Date(c.lastActivityAt).getTime() > dayAgo); }
+    return filteredChats;
+  }, [filteredChats, filterTab]);
+
+  const channelCounts = useMemo(() => {
+    const counts = { all: chatList.length, web: 0, telegram: 0, messenger: 0, instagram: 0, whatsapp: 0 };
+    chatList.forEach(c => { const ch = c.channel || c.platform || 'web'; if (counts[ch] !== undefined) counts[ch]++; else counts.web++; });
+    return counts;
+  }, [chatList]);
+
+  // ── WebSocket ─────────────────────────────────────────────────────────
   useSocketEvent('chat:message', ({ chatId: incomingChatId, message }) => {
     if (incomingChatId === chatId && message?.content) {
       setMessages(prev => {
@@ -410,80 +105,20 @@ export default function Chat() {
     }
   });
 
-  // External channel: refresh chat list when a chat is created/updated via Meta
   useSocketEvent('meta:chat-ready', (data) => {
     if (!workspaceId) return;
     const incomingAgentId = data?.agentId;
     if (!incomingAgentId) return;
-
-    // Switch to the correct agent if different
-    if (incomingAgentId !== selectedAgentId) {
-      setSelectedAgentId(incomingAgentId);
-    }
-
-    // Fetch chat list for the incoming agent (not the currently selected one)
-    listChats(workspaceId, incomingAgentId)
-      .then(res => {
-        setChatList(res.data || []);
-        if (data?.chatId) setChatId(data.chatId);
-      })
-      .catch(() => {});
-
+    if (incomingAgentId !== selectedAgentId) setSelectedAgentId(incomingAgentId);
+    listChats(workspaceId, incomingAgentId).then(res => { setChatList(res.data || []); if (data?.chatId) setChatId(data.chatId); }).catch(() => {});
     toast.success(`Chat listo: ${data?.senderName || 'Contacto'} via ${data?.platform || 'meta'}`);
   });
 
-  // Filter chats by channel + search
-  const filteredChats = useMemo(() => {
-    let list = chatList;
-    if (activeChannel !== 'all') {
-      list = list.filter(c => (c.channel || c.platform || 'web') === activeChannel);
-    }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(c =>
-        (c.title || '').toLowerCase().includes(q) ||
-        (c.externalRef || '').toLowerCase().includes(q) ||
-        (c.senderName || '').toLowerCase().includes(q)
-      );
-    }
-    return list;
-  }, [chatList, activeChannel, searchQuery]);
-
-  // Filter chats by filter tab (inbox, active, all)
-  const tabFilteredChats = useMemo(() => {
-    let list = filteredChats;
-    if (filterTab === 'inbox') {
-      list = list.filter(c => c.unreadCount > 0);
-    } else if (filterTab === 'active') {
-      const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
-      list = list.filter(c => c.lastActivityAt && new Date(c.lastActivityAt).getTime() > dayAgo);
-    }
-    return list;
-  }, [filteredChats, filterTab]);
-
-  // Channel counts
-  const channelCounts = useMemo(() => {
-    const counts = { all: chatList.length, web: 0, telegram: 0, messenger: 0, instagram: 0, whatsapp: 0 };
-    chatList.forEach(c => {
-      const ch = c.channel || c.platform || 'web';
-      if (counts[ch] !== undefined) counts[ch]++;
-      else counts.web++;
-    });
-    return counts;
-  }, [chatList]);
-
-  // ── File handling ───────────────────────────────────────────────────────
+  // ── File handling ─────────────────────────────────────────────────────
   const loadImportTables = useCallback(async () => {
     if (importTables.length > 0 || !workspaceId) return;
-    try {
-      const res = await listTables(workspaceId);
-      const t = res.data || [];
-      setImportTables(t);
-      if (t.length > 0) setImportTableId(t[0]._id);
-    } catch (e) {
-      console.error(e);
-      toast.error('Error al cargar tablas');
-    }
+    try { const res = await listTables(workspaceId); const t = res.data || []; setImportTables(t); if (t.length > 0) setImportTableId(t[0]._id); }
+    catch (e) { console.error(e); toast.error('Error al cargar tablas'); }
   }, [workspaceId, importTables.length, toast]);
 
   const handleFileSelect = useCallback((e) => {
@@ -494,19 +129,12 @@ export default function Chat() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       let content;
-      if (isExcel) {
-        const bytes = new Uint8Array(ev.target.result);
-        let binary = '';
-        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-        content = btoa(binary);
-      } else {
-        content = ev.target.result;
-      }
+      if (isExcel) { const bytes = new Uint8Array(ev.target.result); let binary = ''; for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]); content = btoa(binary); }
+      else { content = ev.target.result; }
       setAttachedFile({ name: file.name, content, encoding: isExcel ? 'base64' : 'utf8', size: file.size });
       loadImportTables();
     };
-    if (isExcel) reader.readAsArrayBuffer(file);
-    else reader.readAsText(file, 'UTF-8');
+    if (isExcel) reader.readAsArrayBuffer(file); else reader.readAsText(file, 'UTF-8');
     e.target.value = '';
   }, [loadImportTables]);
 
@@ -514,113 +142,56 @@ export default function Chat() {
     if (!attachedFile || !importTableId || sending) return;
     let currentChatId = chatId;
     if (!currentChatId) {
-      try {
-        const res = await getOrCreateChat(workspaceId, selectedAgentId);
-        const newChat = res.data.chat || res.data;
-        currentChatId = newChat._id;
-        setChatId(currentChatId);
-        setNewChatId(currentChatId);
-        setChatList(prev => [{ _id: currentChatId, title: `Importar ${attachedFile.name}`, messageCount: 0, channel: 'web' }, ...prev]);
-      } catch { return; }
+      try { const res = await getOrCreateChat(workspaceId, selectedAgentId); const newChat = res.data.chat || res.data; currentChatId = newChat._id; setChatId(currentChatId); setNewChatId(currentChatId); setChatList(prev => [{ _id: currentChatId, title: `Importar ${attachedFile.name}`, messageCount: 0, channel: 'web' }, ...prev]); }
+      catch { return; }
     }
     const fileToImport = attachedFile;
     setAttachedFile(null);
     setMessages(prev => [...prev, { role: 'user', content: `Importar: **${fileToImport.name}**`, id: `user_import_${Date.now()}`, ts: Date.now() }]);
     setSending(true);
-    try {
-      const res = await previewImportViaChat({ workspaceId, tableId: importTableId, file: fileToImport });
-      setMessages(prev => [...prev, { role: 'assistant', type: 'import_preview', id: `import_preview_${Date.now()}`, ts: Date.now(), preview: res.data, tableId: importTableId, file: fileToImport }]);
-    } catch (err) {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'No pude analizar el archivo: ' + (err.response?.data?.error || err.message),
-        id: `err_${Date.now()}`,
-        ts: Date.now(),
-      }]);
-    } finally {
-      setSending(false);
-    }
+    try { const res = await previewImportViaChat({ workspaceId, tableId: importTableId, file: fileToImport }); setMessages(prev => [...prev, { role: 'assistant', type: 'import_preview', id: `import_preview_${Date.now()}`, ts: Date.now(), preview: res.data, tableId: importTableId, file: fileToImport }]); }
+    catch (err) { setMessages(prev => [...prev, { role: 'assistant', content: 'No pude analizar el archivo: ' + (err.response?.data?.error || err.message), id: `err_${Date.now()}`, ts: Date.now() }]); }
+    finally { setSending(false); }
   };
 
   const handleConfirmImport = async (msg) => {
     if (pendingImport || sending) return;
-    setPendingImport({ msgId: msg.id });
-    setSending(true);
-    try {
-      const res = await importFileViaChat({ workspaceId, agentId: selectedAgentId, chatId, tableId: msg.tableId, file: msg.file });
-      const reply = res.data?.response || 'Importación completada.';
-      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, type: 'import_done', content: reply } : m));
-    } catch (err) {
-      const errMsg = 'Error al importar: ' + (err.response?.data?.error || err.message);
-      setMessages(prev => prev.map(m =>
-        m.id === msg.id ? { ...m, type: undefined, content: errMsg } : m
-      ));
-    } finally {
-      setSending(false);
-      setPendingImport(null);
-    }
+    setPendingImport({ msgId: msg.id }); setSending(true);
+    try { const res = await importFileViaChat({ workspaceId, agentId: selectedAgentId, chatId, tableId: msg.tableId, file: msg.file }); const reply = res.data?.response || 'Importación completada.'; setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, type: 'import_done', content: reply } : m)); }
+    catch (err) { const errMsg = 'Error al importar: ' + (err.response?.data?.error || err.message); setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, type: undefined, content: errMsg } : m)); }
+    finally { setSending(false); setPendingImport(null); }
   };
 
-  const handleCancelImport = (msgId) => {
-    setMessages(prev => prev.map(m =>
-      m.id === msgId ? { ...m, type: undefined, content: 'Importación cancelada.' } : m
-    ));
-  };
+  const handleCancelImport = (msgId) => { setMessages(prev => prev.map(m => m.id === msgId ? { ...m, type: undefined, content: 'Importación cancelada.' } : m)); };
 
-  // ── Load agents ─────────────────────────────────────────────────────────
+  // ── Load agents ───────────────────────────────────────────────────────
   useEffect(() => {
     if (!workspaceId) return;
     setLoading(true);
-    listAgents(workspaceId)
-      .then((res) => {
-        const agentsList = res.data || [];
-        setAgents(agentsList);
-        if (agentsList.length === 1) {
-          setSelectedAgentId(agentsList[0]._id);
-          setSelectedAgentName(agentsList[0].name);
-        }
-      })
-      .finally(() => setLoading(false));
+    listAgents(workspaceId).then(res => { const list = res.data || []; setAgents(list); if (list.length === 1) { setSelectedAgentId(list[0]._id); setSelectedAgentName(list[0].name); } }).finally(() => setLoading(false));
   }, [workspaceId]);
 
-  // ── Load chat list (todos los chats del workspace) ──────────────────────
+  // ── Load chat list ────────────────────────────────────────────────────
   useEffect(() => {
     if (!workspaceId) { setChatList([]); return; }
     setLoadingChats(true);
-    // Cargar todos los chats - el agentId es opcional
-    listChats(workspaceId)
-      .then((res) => setChatList(res.data || []))
-      .catch(() => setChatList([]))
-      .finally(() => setLoadingChats(false));
+    listChats(workspaceId).then(res => setChatList(res.data || [])).catch(() => setChatList([])).finally(() => setLoadingChats(false));
   }, [workspaceId]);
 
-  // ── Load selected chat ──────────────────────────────────────────────────
+  // ── Load selected chat ────────────────────────────────────────────────
   useEffect(() => {
     if (!workspaceId || !selectedAgentId || !chatId) { setMessages([]); return; }
     if (chatId === newChatId) { setNewChatId(null); return; }
     getOrCreateChat(workspaceId, selectedAgentId, chatId)
-      .then((res) => {
-        const msgs = res.data.chat?.messages || [];
-        setMessages(msgs.map((m, idx) => ({ ...m, id: m._id || m.id || `msg-${idx}`, ts: m.timestamp ? new Date(m.timestamp).getTime() : Date.now() })));
-      })
+      .then(res => { const msgs = res.data.chat?.messages || []; setMessages(msgs.map((m, idx) => ({ ...m, id: m._id || m.id || `msg-${idx}`, ts: m.timestamp ? new Date(m.timestamp).getTime() : Date.now() }))); })
       .catch(() => setMessages([]));
   }, [workspaceId, selectedAgentId, chatId]);
 
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
-  useEffect(() => { if (chatId) textareaRef.current?.focus(); }, [chatId]);
-
-  const handleTextareaChange = (e) => {
-    setInput(e.target.value);
-    e.target.style.height = 'auto';
-    e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
-  };
-
+  // ── Handlers ──────────────────────────────────────────────────────────
   const handleAgentChange = (agentId) => {
     setSelectedAgentId(agentId);
-    const agent = agents.find(a => a._id === agentId);
-    setSelectedAgentName(agent?.name || "");
-    setChatId("");
-    setMessages([]);
+    setSelectedAgentName(agents.find(a => a._id === agentId)?.name || "");
+    setChatId(""); setMessages([]);
   };
 
   const handleNewChat = async () => {
@@ -629,41 +200,19 @@ export default function Chat() {
     try {
       const res = await getOrCreateChat(workspaceId, selectedAgentId);
       const newChat = res.data.chat || res.data;
-      setNewChatId(newChat._id);
-      setChatId(newChat._id);
-      setMessages([]);
+      setNewChatId(newChat._id); setChatId(newChat._id); setMessages([]);
       setChatList(prev => [{ _id: newChat._id, title: "Nueva conversación", messageCount: 0, createdAt: newChat.createdAt, channel: 'web' }, ...prev]);
-      setActiveChannel('all');
-      setNewConvOpen(false);
-      setContextPanelOpen(true);
-    } catch (err) {
-      console.error("Error creating chat:", err);
-      toast.error('Error al crear conversación');
-    } finally {
-      setCreatingWebChat(false);
-    }
+      setActiveChannel('all'); setNewConvOpen(false); setContextPanelOpen(true);
+    } catch (err) { console.error("Error creating chat:", err); toast.error('Error al crear conversación'); }
+    finally { setCreatingWebChat(false); }
   };
 
   const handleSelectChat = async (chat) => {
     setChatId(chat._id);
-    
-    // Si el chat tiene un agente asociado, seleccionarlo
-    if (chat.agentId) {
-      const agent = agents.find(a => a._id === chat.agentId);
-      if (agent) {
-        setSelectedAgentId(agent._id);
-        setSelectedAgentName(agent.name);
-      }
-    }
-    
-    // Mark as read if has unread messages
+    if (chat.agentId) { const agent = agents.find(a => a._id === chat.agentId); if (agent) { setSelectedAgentId(agent._id); setSelectedAgentName(agent.name); } }
     if (chat.unreadCount > 0 && workspaceId) {
-      try {
-        await markChatRead(workspaceId, chat._id);
-        setChatList(prev => prev.map(c => c._id === chat._id ? { ...c, unreadCount: 0 } : c));
-      } catch (err) {
-        console.error('Error marking chat as read:', err);
-      }
+      try { await markChatRead(workspaceId, chat._id); setChatList(prev => prev.map(c => c._id === chat._id ? { ...c, unreadCount: 0 } : c)); }
+      catch (err) { console.error('Error marking chat as read:', err); }
     }
   };
 
@@ -671,27 +220,11 @@ export default function Chat() {
     e.stopPropagation();
     const confirmed = await confirm({ title: 'Eliminar conversación', message: '¿Eliminar esta conversación? No se puede deshacer.', confirmText: 'Eliminar', cancelText: 'Cancelar', type: 'danger' });
     if (!confirmed) return;
-    try {
-      await deleteChat(workspaceId, chatIdToDelete);
-      setChatList(prev => prev.filter(c => c._id !== chatIdToDelete));
-      if (chatId === chatIdToDelete) { setChatId(""); setMessages([]); }
-      toast.success('Conversación eliminada');
-    } catch { toast.error('Error al eliminar'); }
+    try { await deleteChat(workspaceId, chatIdToDelete); setChatList(prev => prev.filter(c => c._id !== chatIdToDelete)); if (chatId === chatIdToDelete) { setChatId(""); setMessages([]); } toast.success('Conversación eliminada'); }
+    catch { toast.error('Error al eliminar'); }
   };
 
   const handleStartRename = (e, chat) => { e.stopPropagation(); setEditingChatId(chat._id); setEditingTitle(chat.title || "Nueva conversación"); };
-  const handleSaveRename = async (e) => {
-    e.stopPropagation();
-    if (!editingTitle.trim()) { setEditingChatId(null); return; }
-    try {
-      await renameChat(workspaceId, editingChatId, editingTitle.trim());
-      setChatList(prev => prev.map(c => c._id === editingChatId ? { ...c, title: editingTitle.trim() } : c));
-    } catch (err) {
-      console.error("Error renaming chat:", err);
-      toast.error('Error al renombrar conversación');
-    }
-    setEditingChatId(null);
-  };
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -700,444 +233,96 @@ export default function Chat() {
     if (!text || !workspaceId || sending) return;
     let currentChatId = chatId;
     if (!currentChatId) {
-      try {
-        const res = await getOrCreateChat(workspaceId, selectedAgentId);
-        const newChat = res.data.chat || res.data;
-        currentChatId = newChat._id;
-        setNewChatId(currentChatId);
-        setChatId(currentChatId);
-        setChatList(prev => [{ _id: currentChatId, title: text.slice(0, 40) + (text.length > 40 ? "..." : ""), messageCount: 0, createdAt: newChat.createdAt, channel: 'web' }, ...prev]);
-      } catch (err) {
-        console.error("Error creating chat:", err);
-        toast.error('Error al iniciar conversación');
-        return;
-      }
+      try { const res = await getOrCreateChat(workspaceId, selectedAgentId); const newChat = res.data.chat || res.data; currentChatId = newChat._id; setNewChatId(currentChatId); setChatId(currentChatId); setChatList(prev => [{ _id: currentChatId, title: text.slice(0, 40) + (text.length > 40 ? "..." : ""), messageCount: 0, createdAt: newChat.createdAt, channel: 'web' }, ...prev]); }
+      catch (err) { console.error("Error creating chat:", err); toast.error('Error al iniciar conversación'); return; }
     }
     setInput("");
-    if (textareaRef.current) textareaRef.current.style.height = 'auto';
-    // Si es un chat externo, el operador es "assistant" (responde al cliente)
     const isExternal = activeChatMeta?.channel && activeChatMeta.channel !== 'web';
     const msgRole = isExternal ? 'assistant' : 'user';
     setMessages(prev => [...prev, { role: msgRole, content: text, id: Date.now(), ts: Date.now(), ...(isExternal && { isHuman: true }) }]);
     setSending(true);
     try {
-      if (isExternal) {
-        await replyExternalChat({ workspaceId, chatId: currentChatId, message: text });
-        // No hay respuesta de bot — el mensaje ya se envió al usuario externo
-      } else {
-        const res = await sendChatMessage({ workspaceId, agentId: selectedAgentId || undefined, chatId: currentChatId, message: text, token: import.meta.env.VITE_OPENAI_KEY || undefined, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
-        const reply = res.data?.response || res.data?.text || "Sin respuesta.";
-        setMessages(prev => [...prev, { role: "assistant", content: reply, id: Date.now() + 1, ts: Date.now() }]);
-      }
+      if (isExternal) { await replyExternalChat({ workspaceId, chatId: currentChatId, message: text }); }
+      else { const res = await sendChatMessage({ workspaceId, agentId: selectedAgentId || undefined, chatId: currentChatId, message: text, token: import.meta.env.VITE_OPENAI_KEY || undefined, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }); const reply = res.data?.response || res.data?.text || "Sin respuesta."; setMessages(prev => [...prev, { role: "assistant", content: reply, id: Date.now() + 1, ts: Date.now() }]); }
       setChatList(prev => prev.map(c => c._id === currentChatId && c.messageCount === 0 ? { ...c, title: text.slice(0, 40) + (text.length > 40 ? "..." : ""), messageCount: 2 } : c));
-    } catch (err) {
-      setMessages(prev => [...prev, { role: "assistant", content: "Error: " + (err.response?.data?.error || err.message), id: Date.now() + 1, ts: Date.now() }]);
-    } finally { setSending(false); }
+    } catch (err) { setMessages(prev => [...prev, { role: "assistant", content: "Error: " + (err.response?.data?.error || err.message), id: Date.now() + 1, ts: Date.now() }]); }
+    finally { setSending(false); }
   };
 
   const handleKeyDown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e); } };
 
-  // ── No workspace ────────────────────────────────────────────────────────
-  if (!workspaceId) {
-    return (
-      <div className="flex items-center justify-center h-full" style={{ background: '#0a0a0f' }}>
-        <div className="text-center animate-fade-up">
-          <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center mx-auto mb-6 text-indigo-400"><ChatIcon size="lg" /></div>
-          <h1 className="text-2xl font-semibold text-slate-100 mb-2">Centro de Conversaciones</h1>
-          <p className="text-slate-400 mb-6 max-w-sm">Selecciona un workspace para comenzar</p>
-          <Link to="/workspaces" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-400 transition-colors">Ir a Workspaces</Link>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Render ──────────────────────────────────────────────────────────────
-  const isExternalThread =
-    headerMeta?.channel && headerMeta.channel !== "web";
-  const externalChannelLabels = {
-    whatsapp: "WhatsApp",
-    messenger: "Messenger",
-    instagram: "Instagram",
-    telegram: "Telegram",
-    web: "Web",
+  const handleTableSearchChange = (val) => {
+    setTableSearch(val);
+    const match = importTables.find(t => t.name.toLowerCase().includes(val.toLowerCase()));
+    if (match) setImportTableId(match._id);
   };
 
+  // ── No workspace ──────────────────────────────────────────────────────
+  if (!workspaceId) return <NoWorkspaceState />;
+
+  // ── Render ────────────────────────────────────────────────────────────
   return (
     <div className="h-full flex min-h-0" style={{ background: '#0a0a0f' }}>
+      {/* Sidebar */}
+      <ChatSidebar
+        sidebarOpen={sidebarOpen}
+        agents={agents}
+        selectedAgentId={selectedAgentId}
+        chatId={chatId}
+        activeChannel={activeChannel}
+        searchQuery={searchQuery}
+        filterTab={filterTab}
+        channelCounts={channelCounts}
+        tabFilteredChats={tabFilteredChats}
+        loadingChats={loadingChats}
+        editingChatId={editingChatId}
+        editingTitle={editingTitle}
+        onNewConversation={() => {
+          if (!selectedAgentId && agents.length > 0) { toast.error("Selecciona un agente primero"); return; }
+          setNewConvOpen(true);
+        }}
+        onFilterTabChange={setFilterTab}
+        onSearchChange={setSearchQuery}
+        onChannelChange={setActiveChannel}
+        onAgentChange={handleAgentChange}
+        onSelectChat={handleSelectChat}
+        onStartRename={handleStartRename}
+        onSaveRename={(e) => {
+          e.stopPropagation();
+          if (!editingTitle.trim()) { setEditingChatId(null); return; }
+          renameChat(workspaceId, editingChatId, editingTitle.trim()).then(() => { setChatList(prev => prev.map(c => c._id === editingChatId ? { ...c, title: editingTitle.trim() } : c)); }).catch(err => { console.error("Error renaming chat:", err); toast.error('Error al renombrar conversación'); });
+          setEditingChatId(null);
+        }}
+        onEditingTitleChange={setEditingTitle}
+        onDeleteChat={handleDeleteChat}
+        onResetFilters={() => { setFilterTab("all"); setSearchQuery(""); setActiveChannel("all"); }}
+      />
 
-      {/* ═══════════ SIDEBAR - Centro de Atención ═══════════ */}
-      <aside className={`${sidebarOpen ? 'w-[340px]' : 'w-0'} shrink-0 flex flex-col transition-all duration-300 overflow-hidden bg-[#0d0d12]`}
-        style={{ borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-        <div className="flex flex-col h-full min-w-[340px]">
-
-          {/* Header */}
-          <div className="px-5 pt-5 pb-3">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h2 className="text-lg font-semibold text-white tracking-tight">Conversaciones</h2>
-                <p className="text-[11px] text-slate-500 mt-0.5">Inbox omnicanal · un solo lugar</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!selectedAgentId && agents.length > 0) {
-                    toast.error("Selecciona un agente primero");
-                    return;
-                  }
-                  setNewConvOpen(true);
-                }}
-                disabled={agents.length === 0}
-                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30 border border-transparent hover:border-white/10"
-                title="Nueva conversación (tipo y agente)"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Filter Tabs */}
-            <div className="flex items-center gap-1 mb-4 p-0.5 rounded-xl bg-black/20 border border-white/[0.06]">
-              {FILTER_TABS.map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setFilterTab(tab.id)}
-                  className={`flex-1 px-2 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                    filterTab === tab.id
-                      ? 'text-white bg-white/10 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-300'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Search with Filters */}
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <input 
-                  type="text" 
-                  placeholder="Buscar por nombre o referencia..."
-                  value={searchQuery} 
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl text-sm text-slate-200 placeholder-slate-500 bg-white/[0.04] border border-white/[0.08] focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 focus:outline-none transition-all"
-                />
-              </div>
-              <button 
-                type="button"
-                className="flex flex-col items-center justify-center px-2.5 py-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 border border-white/[0.08] transition-all min-w-[3.25rem]"
-                title="Restablecer filtros y canal"
-                onClick={() => {
-                  setFilterTab("all");
-                  setSearchQuery("");
-                  setActiveChannel("all");
-                }}
-              >
-                <Filter className="w-4 h-4 mb-0.5 opacity-80" />
-                <span className="text-[10px] font-bold text-violet-400 tabular-nums">{channelCounts[activeChannel] ?? 0}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Channel Selector - Diseño profesional con iconos oficiales */}
-          <div className="px-4 pb-4">
-            <div className="grid grid-cols-5 gap-2">
-              {CHANNELS.map(ch => {
-                const isActive = activeChannel === ch.id;
-                const count = channelCounts[ch.id] || 0;
-                const gradient = CHANNEL_GRADIENTS[ch.id];
-                
-                return (
-                  <button
-                    key={ch.id}
-                    onClick={() => setActiveChannel(ch.id)}
-                    className={`relative flex flex-col items-center justify-center p-3 rounded-xl transition-all duration-200 group ${
-                      isActive
-                        ? 'text-white shadow-lg scale-[1.02]'
-                        : 'bg-white/[0.03] text-slate-400 hover:bg-white/[0.06] hover:text-slate-200 border border-white/[0.04]'
-                    }`}
-                    style={isActive ? {
-                      background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`,
-                      boxShadow: `0 8px 24px -4px ${gradient.shadow}`
-                    } : {}}
-                  >
-                    {/* Icon */}
-                    <ch.Icon className={`w-5 h-5 mb-1.5 transition-transform ${isActive ? '' : 'group-hover:scale-110'}`} />
-                    
-                    {/* Label */}
-                    <span className="text-[10px] font-semibold tracking-wide truncate max-w-full">
-                      {ch.label}
-                    </span>
-                    
-                    {/* Count Badge */}
-                    {count > 0 && (
-                      <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full text-[9px] font-bold ${
-                        isActive 
-                          ? 'bg-white text-slate-800' 
-                          : 'bg-blue-500 text-white'
-                      }`}>
-                        {count > 99 ? '99+' : count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Agent selector (collapsed) */}
-          {(activeChannel === 'all' || activeChannel === 'web') && agents.length > 0 && (
-            <div className="px-5 py-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-              <select
-                value={selectedAgentId}
-                onChange={e => handleAgentChange(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg text-sm text-slate-200 bg-white/5 border border-white/10 focus:border-violet-500/50 focus:outline-none cursor-pointer"
-              >
-                <option value="" className="bg-slate-900">Seleccionar agente...</option>
-                {agents.map(agent => (
-                  <option key={agent._id} value={agent._id} className="bg-slate-900">
-                    {agent.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Chat list */}
-          <div className="flex-1 overflow-y-auto">
-            {loadingChats ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
-              </div>
-            ) : tabFilteredChats.length === 0 ? (
-              <div className="px-5 py-12 text-center">
-                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-white/5 flex items-center justify-center">
-                  <MessageSquare className="w-5 h-5 text-slate-500" />
-                </div>
-                <p className="text-sm text-slate-400">
-                  {filterTab === 'inbox' ? 'Sin mensajes nuevos' : 
-                   filterTab === 'active' ? 'Sin chats activos' : 'Sin conversaciones'}
-                </p>
-                {activeChannel === 'web' && !selectedAgentId && agents.length > 0 && (
-                  <p className="text-xs text-slate-500 mt-2">Selecciona un agente para crear chats</p>
-                )}
-              </div>
-            ) : (
-              <div className="divide-y divide-white/5">
-                {tabFilteredChats.map((chat) => {
-                  const ch = chat.channel || chat.platform || 'web';
-                  const isActive = chatId === chat._id;
-                  const displayName = chat.senderName || chat.title || 'Usuario';
-                  const lastMsg = chat.lastMessage || chat.title || 'Nueva conversación';
-                  
-                  return (
-                    <div
-                      key={chat._id}
-                      className={`group flex items-center gap-3 px-5 py-3 cursor-pointer transition-all ${
-                        isActive 
-                          ? 'bg-blue-500/10 border-l-2 border-blue-500' 
-                          : 'hover:bg-white/[0.03] border-l-2 border-transparent'
-                      }`}
-                      onClick={() => handleSelectChat(chat)}
-                    >
-                      {/* Avatar */}
-                      <UserAvatar 
-                        name={displayName}
-                        profilePic={chat.senderProfilePic}
-                        channel={ch}
-                        size="md"
-                        unreadCount={chat.unreadCount || 0}
-                      />
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-0.5">
-                          <span className={`text-sm font-medium truncate ${isActive ? 'text-white' : 'text-slate-200'}`}>
-                            {displayName}
-                          </span>
-                          <span className="text-[10px] text-slate-500 shrink-0">
-                            {chat.lastActivityAt ? formatTimeAgo(chat.lastActivityAt) : ''}
-                          </span>
-                        </div>
-                        <p className={`text-xs truncate ${chat.unreadCount > 0 ? 'text-slate-300 font-medium' : 'text-slate-500'}`}>
-                          {lastMsg.slice(0, 50)}{lastMsg.length > 50 ? '...' : ''}
-                        </p>
-                      </div>
-
-                      {/* Actions on hover */}
-                      {editingChatId !== chat._id && (
-                        <div className="hidden group-hover:flex items-center gap-0.5">
-                          <button 
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/10 transition-all"
-                            onClick={e => handleStartRename(e, chat)}
-                          >
-                            <EditIcon size="xs" />
-                          </button>
-                          <button 
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
-                            onClick={e => handleDeleteChat(e, chat._id)}
-                          >
-                            <TrashIcon size="xs" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      </aside>
-
-      {/* ═══════════ MAIN AREA ═══════════ */}
+      {/* Main area */}
       <main className="flex-1 flex flex-col min-w-0 min-h-0 relative" style={{ background: '#0a0a0f' }}>
-        <div
-          className="pointer-events-none absolute inset-0 z-0 opacity-90"
-          style={{
-            background:
-              'radial-gradient(ellipse 85% 55% at 50% -15%, rgba(139,92,246,0.11), transparent 55%), radial-gradient(ellipse 50% 40% at 100% 100%, rgba(99,102,241,0.07), transparent 50%)',
-          }}
-        />
+        {/* Ambient gradient */}
+        <div className="pointer-events-none absolute inset-0 z-0 opacity-90" style={{ background: 'radial-gradient(ellipse 85% 55% at 50% -15%, rgba(139,92,246,0.11), transparent 55%), radial-gradient(ellipse 50% 40% at 100% 100%, rgba(99,102,241,0.07), transparent 50%)' }} />
 
-        {/* Top bar */}
+        {/* Header */}
         {chatId && headerMeta && (
-          <div
-            className="relative z-[1] shrink-0 px-4 sm:px-6 py-3 flex items-center justify-between gap-3 backdrop-blur-md"
-            style={{
-              borderBottom: '1px solid rgba(255,255,255,0.06)',
-              background: 'linear-gradient(180deg, rgba(14,14,22,0.92) 0%, rgba(10,10,15,0.88) 100%)',
-            }}
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <button
-                type="button"
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 border border-white/[0.06] transition-all shrink-0"
-                title={sidebarOpen ? 'Ocultar lista' : 'Mostrar lista'}
-              >
-                {sidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeft className="w-5 h-5" />}
-              </button>
-
-              <UserAvatar
-                name={headerMeta?.senderName || headerMeta?.title || 'Conversación'}
-                profilePic={headerMeta?.senderProfilePic}
-                channel={headerMeta?.channel || headerMeta?.platform || 'web'}
-                size="md"
-                showOnline={!isExternalThread}
-              />
-
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-base font-semibold text-white truncate">
-                    {headerMeta?.senderName || headerMeta?.title || 'Conversación'}
-                  </h3>
-                  <ChannelBadge channel={headerMeta.channel || headerMeta.platform || 'web'} />
-                </div>
-                <p className="text-xs text-slate-500 truncate mt-0.5">
-                  {isExternalThread ? (
-                    <>
-                      <span className="text-amber-400/90 font-medium">Operador</span>
-                      {' · '}
-                      {headerMeta?.externalRef || 'Cliente externo'}
-                    </>
-                  ) : selectedAgentName ? (
-                    <>Asistente: <span className="text-slate-400">{selectedAgentName}</span></>
-                  ) : (
-                    'Chat web con IA'
-                  )}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                type="button"
-                onClick={() => setContextPanelOpen((o) => !o)}
-                className={`p-2 rounded-xl transition-all ${
-                  contextPanelOpen
-                    ? "text-violet-300 bg-violet-500/15 border border-violet-500/25"
-                    : "text-slate-500 hover:text-slate-300 hover:bg-white/5 border border-transparent"
-                }`}
-                title={contextPanelOpen ? "Ocultar contexto y tablas" : "Mostrar contexto (tipo + contactos)"}
-              >
-                <Database className="w-5 h-5" />
-              </button>
-              <button
-                type="button"
-                className="p-2 rounded-xl text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-all"
-                title="Próximamente"
-                disabled
-              >
-                <Phone className="w-5 h-5" />
-              </button>
-              <button
-                type="button"
-                className="p-2 rounded-xl text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-all"
-                title="Próximamente"
-                disabled
-              >
-                <MoreHorizontal className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+          <ChatHeader
+            headerMeta={headerMeta}
+            sidebarOpen={sidebarOpen}
+            selectedAgentName={selectedAgentName}
+            isExternalThread={isExternalThread}
+            contextPanelOpen={contextPanelOpen}
+            onToggleSidebar={() => setSidebarOpen(o => !o)}
+            onToggleContextPanel={() => setContextPanelOpen(o => !o)}
+          />
         )}
 
         {!chatId ? (
-          <div className="relative z-[1] flex-1 flex flex-col min-h-0">
-            <div className="flex-1 flex items-center justify-center p-6">
-              <div className="text-center max-w-lg px-4">
-                <div className="relative w-[4.5rem] h-[4.5rem] mx-auto mb-6">
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500/25 to-indigo-600/20 blur-2xl" />
-                  <div
-                    className="relative w-[4.5rem] h-[4.5rem] rounded-2xl flex items-center justify-center ring-1 ring-white/10"
-                    style={{
-                      background: 'linear-gradient(145deg, rgba(139,92,246,0.9), rgba(79,70,229,0.95))',
-                      boxShadow: '0 12px 40px rgba(99,102,241,0.35)',
-                    }}
-                  >
-                    <MessageSquare className="w-8 h-8 text-white" strokeWidth={1.75} />
-                  </div>
-                </div>
-                <h1 className="text-2xl font-bold text-white tracking-tight mb-2">Elige una conversación</h1>
-                <p className="text-slate-400 text-sm leading-relaxed mb-8">
-                  WhatsApp, Instagram, Messenger, Telegram y web en un solo inbox. Selecciona un chat a la izquierda o crea uno nuevo con tu agente.
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
-                  {CHANNELS.filter((c) => c.id !== 'all').map((ch) => {
-                    const count = channelCounts[ch.id] || 0;
-                    const IconComp = ch.Icon;
-                    const color = CHANNEL_COLORS[ch.id];
-                    return (
-                      <button
-                        key={ch.id}
-                        type="button"
-                        onClick={() => setActiveChannel(ch.id)}
-                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all hover:scale-[1.02] active:scale-[0.98]"
-                        style={{
-                          background: color?.bg || 'rgba(255,255,255,0.05)',
-                          border: `1px solid ${color?.border || 'rgba(255,255,255,0.1)'}`,
-                          color: color?.text || '#e2e8f0',
-                        }}
-                      >
-                        <IconComp className="w-4 h-4 opacity-90" />
-                        <span className="tabular-nums font-bold">{count}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                <p className="text-slate-600 text-xs">
-                  {chatList.length > 0
-                    ? `${chatList.length} conversación${chatList.length !== 1 ? 'es' : ''} en este proyecto`
-                    : 'Aún no hay conversaciones en este proyecto'}
-                </p>
-              </div>
-            </div>
-          </div>
+          <NoChatSelectedState chatList={chatList} channelCounts={channelCounts} onChannelChange={setActiveChannel} />
         ) : (
           <div className="relative z-[1] flex-1 flex flex-col min-h-0 min-w-0">
             <div className="flex-1 flex min-h-0 min-w-0">
               <div className="flex-1 flex flex-col min-w-0 min-h-0">
+                {/* Mobile context bar */}
                 {contextPanelOpen && (
                   <div className="lg:hidden shrink-0 px-4 py-2.5 border-b border-white/[0.06] bg-black/20 flex flex-wrap items-center gap-2 text-[11px]">
                     <span className="text-slate-500">Canal</span>
@@ -1145,151 +330,24 @@ export default function Chat() {
                     {isExternalThread && headerMeta?.externalRef && (
                       <span className="text-slate-600 font-mono truncate max-w-[200px]">{headerMeta.externalRef}</span>
                     )}
-                    <Link
-                      to="/tables"
-                      className="ml-auto text-violet-400 font-medium hover:underline"
-                    >
-                      Ver tablas / contactos
-                    </Link>
+                    <Link to="/tables" className="ml-auto text-violet-400 font-medium hover:underline">Ver tablas / contactos</Link>
                   </div>
                 )}
-                <div className="flex-1 overflow-y-auto px-4 lg:px-8 xl:px-12 scrollbar-thin min-h-0">
-              <div className="py-5 space-y-1 max-w-4xl mx-auto">
-                {messages.length === 0 && !sending ? (
-                  <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-                    <div className="w-14 h-14 rounded-2xl bg-violet-500/10 ring-1 ring-violet-500/20 flex items-center justify-center mb-4">
-                      <Sparkles className="w-7 h-7 text-violet-400" />
-                    </div>
-                    <p className="text-slate-200 font-semibold">Aún no hay mensajes</p>
-                    <p className="text-sm text-slate-500 mt-2 max-w-sm leading-relaxed">
-                      {isExternalThread
-                        ? `Escribe abajo para responder al cliente por ${externalChannelLabels[headerMeta?.channel] || 'su canal'}.`
-                        : 'Escribe para chatear con tu asistente. Puedes adjuntar CSV o Excel para importar datos.'}
-                    </p>
-                  </div>
-                ) : null}
 
-                {messages.map((m, idx) => {
-                  if (m.type === 'import_preview' || m.type === 'import_done') {
-                    return <ImportPreviewCard key={m.id || idx} message={m} onConfirm={() => handleConfirmImport(m)} onCancel={() => handleCancelImport(m.id)} confirming={!!(pendingImport?.msgId === m.id)} agentName={selectedAgentName} />;
-                  }
-                  
-                  const isUser = m.role === 'user';
-                  const isExternalChat = headerMeta?.channel && headerMeta.channel !== 'web';
-                  const prevMsg = messages[idx - 1];
-                  const nextMsg = messages[idx + 1];
-                  
-                  // Determinar si es el primer mensaje de una secuencia del mismo remitente
-                  const isFirstInGroup = !prevMsg || prevMsg.role !== m.role || prevMsg.type === 'import_preview' || prevMsg.type === 'import_done';
-                  const isLastInGroup = !nextMsg || nextMsg.role !== m.role || nextMsg.type === 'import_preview' || nextMsg.type === 'import_done';
-                  
-                  // Nombres y avatares
-                  const senderName = isUser 
-                    ? (isExternalChat ? (headerMeta?.senderName || 'Cliente') : 'Tú')
-                    : selectedAgentName;
-                  const senderProfilePic = isUser && isExternalChat ? headerMeta?.senderProfilePic : null;
-                  
-                  // El usuario local se alinea a la derecha, los demás a la izquierda
-                  const alignRight = isUser && !isExternalChat;
-                  
-                  return (
-                    <div 
-                      key={m.id || idx} 
-                      className={`flex gap-4 ${isFirstInGroup ? 'pt-5' : 'pt-1'} ${alignRight ? 'flex-row-reverse' : ''}`}
-                    >
-                      {/* Avatar - solo mostrar en el primer mensaje del grupo */}
-                      <div className={`w-10 shrink-0 ${isFirstInGroup ? '' : 'invisible'}`}>
-                        {isFirstInGroup && (
-                          isUser ? (
-                            isExternalChat ? (
-                              <UserAvatar
-                                name={headerMeta?.senderName || 'Cliente'}
-                                profilePic={senderProfilePic}
-                                size="md"
-                                showChannelBadge={false}
-                              />
-                            ) : (
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                                <User className="w-5 h-5 text-white" />
-                              </div>
-                            )
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                              <SparklesIcon size="sm" className="text-white" />
-                            </div>
-                          )
-                        )}
-                      </div>
-                      
-                      {/* Message content */}
-                      <div className={`flex-1 min-w-0 ${alignRight ? 'flex flex-col items-end' : ''}`}>
-                        {/* Nombre y tiempo - solo en primer mensaje del grupo */}
-                        {isFirstInGroup && (
-                          <div className={`flex items-center gap-3 mb-1.5 ${alignRight ? 'flex-row-reverse' : ''}`}>
-                            <span className={`text-sm font-semibold ${isUser ? 'text-blue-400' : 'text-emerald-400'}`}>
-                              {senderName}
-                            </span>
-                            {m.ts && (
-                              <span className="text-xs text-slate-500">
-                                {new Date(m.ts).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                        
-                        {/* Burbuja del mensaje */}
-                        <div 
-                          className={`inline-block max-w-[85%] lg:max-w-[70%] xl:max-w-[60%] px-4 py-2.5 text-[15px] leading-relaxed ring-1 ring-white/[0.04] ${
-                            alignRight 
-                              ? `bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25 ${isFirstInGroup ? 'rounded-2xl rounded-tr-md' : isLastInGroup ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-r-md'}`
-                              : isUser
-                                ? `bg-slate-800/90 text-slate-100 backdrop-blur-sm border border-slate-600/40 ${isFirstInGroup ? 'rounded-2xl rounded-tl-md' : isLastInGroup ? 'rounded-2xl rounded-bl-md' : 'rounded-2xl rounded-l-md'}`
-                                : `bg-gradient-to-br from-slate-800/90 to-slate-900/80 text-slate-100 backdrop-blur-sm border border-violet-500/15 ${isFirstInGroup ? 'rounded-2xl rounded-tl-md' : isLastInGroup ? 'rounded-2xl rounded-bl-md' : 'rounded-2xl rounded-l-md'}`
-                          }`}
-                        >
-                          {isUser ? (
-                            <span className="whitespace-pre-wrap">{m.content}</span>
-                          ) : (
-                            <div className="prose prose-sm prose-invert max-w-none [&>p]:mb-2 [&>p:last-child]:mb-0 [&>ul]:my-2 [&>ol]:my-2">
-                              {renderMarkdown(m.content)}
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Timestamp inline para mensajes no agrupados */}
-                        {!isFirstInGroup && isLastInGroup && m.ts && (
-                          <span className={`text-xs text-slate-500 mt-1.5 ${alignRight ? 'text-right' : ''}`}>
-                            {new Date(m.ts).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* Typing indicator */}
-                {sending && (
-                  <div className="flex gap-4 pt-5">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20">
-                      <SparklesIcon size="sm" className="text-white" />
-                    </div>
-                    <div>
-                      <span className="text-sm font-semibold text-emerald-400 mb-1.5 block">{selectedAgentName}</span>
-                      <div className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl rounded-tl-md bg-slate-800/60 backdrop-blur-sm border border-slate-700/30">
-                        <div className="flex gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 typing-dot" />
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 typing-dot" />
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 typing-dot" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-                </div>
+                {/* Messages */}
+                <ChatMessageList
+                  messages={messages}
+                  sending={sending}
+                  selectedAgentName={selectedAgentName}
+                  headerMeta={headerMeta}
+                  isExternalThread={isExternalThread}
+                  pendingImport={pendingImport}
+                  onConfirmImport={handleConfirmImport}
+                  onCancelImport={handleCancelImport}
+                />
               </div>
 
+              {/* Context panel (desktop) */}
               {contextPanelOpen && (
                 <aside className="hidden lg:flex w-[min(100%,300px)] xl:w-[320px] shrink-0 min-h-0">
                   <ChatContextPanel
@@ -1303,75 +361,38 @@ export default function Chat() {
               )}
             </div>
 
+            {/* Operator mode banner */}
             {isExternalThread && (
               <div className="shrink-0 px-4 lg:px-8 xl:px-12 pt-3">
                 <div className="max-w-4xl mx-auto flex items-start gap-3 rounded-xl px-4 py-2.5 bg-amber-500/[0.07] border border-amber-500/25 text-xs text-amber-100/90 leading-relaxed">
                   <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
                   <p>
-                    <span className="font-semibold text-amber-200">Modo operador</span>
-                    {' — '}
-                    Tu mensaje se envía al cliente por{' '}
-                    <span className="font-medium text-amber-100">
-                      {externalChannelLabels[headerMeta?.channel] || 'canal externo'}
-                    </span>
-                    .
+                    <span className="font-semibold text-amber-200">Modo operador</span>{' — '}Tu mensaje se envía al cliente por{' '}
+                    <span className="font-medium text-amber-100">{EXTERNAL_CHANNEL_LABELS[headerMeta?.channel] || 'canal externo'}</span>.
                   </p>
                 </div>
               </div>
             )}
 
-            {/* Input bar */}
-            <div className="shrink-0 px-4 lg:px-8 xl:px-12 backdrop-blur-sm" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'linear-gradient(to top, rgba(13,13,18,0.98), rgba(10,10,15,0.95))' }}>
-              {attachedFile && (
-                <div className="pt-4 max-w-4xl mx-auto">
-                  <div className="flex items-center gap-2.5 p-3 rounded-2xl flex-wrap" style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(56,189,248,0.06))', border: '1px solid rgba(139,92,246,0.2)', boxShadow: '0 4px 16px rgba(139,92,246,0.05)' }}>
-                    <Paperclip className="w-4 h-4 text-violet-400" />
-                    <span className="text-sky-300 text-sm font-medium truncate max-w-40">{attachedFile.name}</span>
-                    <span className="text-slate-500 text-xs">({(attachedFile.size / 1024).toFixed(0)} KB)</span>
-                    <span className="text-slate-400 text-xs mx-1">→</span>
-                    <div className="relative flex-1 min-w-32 max-w-xs">
-                      <input type="text" placeholder="Buscar tabla..."
-                        value={tableSearch || (importTables.find(t => t._id === importTableId)?.name || '')}
-                        onChange={e => { setTableSearch(e.target.value); const match = importTables.find(t => t.name.toLowerCase().includes(e.target.value.toLowerCase())); if (match) setImportTableId(match._id); }}
-                        onFocus={() => setTableSearch('')} onBlur={() => setTableSearch('')}
-                        className="w-full text-xs bg-slate-700/70 text-slate-200 rounded-lg px-2.5 py-1.5 border border-slate-600 focus:border-sky-500 outline-none"
-                        list="import-tables-list" />
-                      <datalist id="import-tables-list">{importTables.map(t => <option key={t._id} value={t.name} />)}</datalist>
-                    </div>
-                    <button onClick={() => { setAttachedFile(null); setTableSearch(''); }}
-                      className="p-1 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-700 transition-all shrink-0">
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                  </div>
-                </div>
-              )}
-              <form onSubmit={handleSend} className="py-4 max-w-4xl mx-auto w-full">
-                <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFileSelect} />
-                <div className="relative rounded-2xl transition-all duration-300 focus-within:ring-2 focus-within:ring-violet-500/25 focus-within:border-violet-500/30"
-                  style={{ background: 'linear-gradient(145deg, rgba(30,41,59,0.85), rgba(15,23,42,0.95))', border: '1px solid rgba(100,116,139,0.22)', boxShadow: '0 12px 40px rgba(0,0,0,0.35)' }}>
-                  <textarea ref={textareaRef}
-                    placeholder={
-                      attachedFile
-                        ? `Enviar para analizar ${attachedFile.name}...`
-                        : isExternalThread
-                          ? 'Escribe la respuesta al cliente…'
-                          : 'Mensaje al asistente · Enter envía, Shift+Enter salto de línea'
-                    }
-                    value={input} onChange={handleTextareaChange} onKeyDown={handleKeyDown} rows={1} disabled={sending}
-                    className="w-full px-5 py-4 pr-[7.5rem] bg-transparent text-slate-100 text-[15px] placeholder-slate-500 resize-none focus:outline-none max-h-48 leading-relaxed" style={{ fontWeight: 450 }} />
-                  <div className="absolute right-2.5 bottom-2.5 flex items-center gap-1">
-                    <button type="button" onClick={() => fileInputRef.current?.click()} disabled={sending}
-                      className="p-2.5 rounded-xl text-slate-400 hover:text-violet-300 hover:bg-violet-500/10 disabled:opacity-30 transition-all duration-200" title="Adjuntar CSV o Excel">
-                      <Paperclip className="w-5 h-5" />
-                    </button>
-                    <button type="submit" disabled={sending || (!input.trim() && !attachedFile)}
-                      className="p-3 rounded-xl text-white disabled:opacity-30 transition-all duration-200 hover:scale-[1.03] active:scale-[0.97]" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 4px 24px rgba(139,92,246,0.45)' }}>
-                      <SendIcon size="sm" />
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </div>
+            {/* Input */}
+            <ChatInputBar
+              input={input}
+              sending={sending}
+              attachedFile={attachedFile}
+              importTables={importTables}
+              importTableId={importTableId}
+              tableSearch={tableSearch}
+              isExternalThread={isExternalThread}
+              headerMeta={headerMeta}
+              onInputChange={setInput}
+              onKeyDown={handleKeyDown}
+              onSubmit={handleSend}
+              onFileSelect={handleFileSelect}
+              onRemoveFile={() => { setAttachedFile(null); setTableSearch(''); }}
+              onTableSearchChange={handleTableSearchChange}
+              onTableSearchFocus={() => setTableSearch('')}
+              onTableSearchBlur={() => setTableSearch('')}
+            />
           </div>
         )}
       </main>
@@ -1381,15 +402,10 @@ export default function Chat() {
         onClose={() => setNewConvOpen(false)}
         agents={agents}
         selectedAgentId={selectedAgentId}
-        onAgentChange={(id) => {
-          setSelectedAgentId(id);
-          const agent = agents.find((a) => a._id === id);
-          setSelectedAgentName(agent?.name || "");
-        }}
+        onAgentChange={(id) => { setSelectedAgentId(id); setSelectedAgentName(agents.find(a => a._id === id)?.name || ""); }}
         onCreateWeb={handleNewChat}
         creating={creatingWebChat}
       />
-
       {ConfirmModal}
     </div>
   );

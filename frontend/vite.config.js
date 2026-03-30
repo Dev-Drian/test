@@ -18,6 +18,7 @@ export default defineConfig({
   },
   server: {
     port: 3020,
+    allowedHosts: ["haplologic-misael-archaeologically.ngrok-free.dev"],
     proxy: {
       "/api": {
         target: "http://localhost:3010",

@@ -256,6 +256,90 @@ export const VIEW_TYPES = {
   },
 };
 
+// ═══════════════════════════════════════════════════════════════════════════
+// TIPOS DE INTEGRACIÓN EXTERNA
+// Mismo motor que VIEW_TYPES pero el destino es un API externo, no una vista.
+// ═══════════════════════════════════════════════════════════════════════════
+export const INTEGRATION_TYPES = {
+  alegra_invoice: {
+    name: 'Factura Electrónica — Alegra',
+    provider: 'alegra',
+    icon: '🧾',
+    description: 'Crea facturas electrónicas válidas ante la DIAN a través de Alegra',
+    apiDocsUrl: 'https://developer.alegra.com/docs/facturas',
+    requiredFields: {
+      'client.name':            { label: 'Nombre del cliente',        autoDetect: ['nombre', 'cliente', 'razon_social', 'name', 'comprador'] },
+      'client.identification':  { label: 'NIT / Cédula',              autoDetect: ['nit', 'cedula', 'identificacion', 'documento', 'cc', 'rut'] },
+      'items[0].description':   { label: 'Descripción del servicio',  autoDetect: ['servicio', 'descripcion', 'concepto', 'destino', 'producto', 'item'] },
+      'items[0].price':         { label: 'Precio unitario',           autoDetect: ['precio', 'valor', 'total', 'monto', 'totalPagar', 'importe'] },
+      'date':                   { label: 'Fecha de emisión',          autoDetect: ['fecha', 'fechaViaje', 'fecha_factura', 'date', 'fecha_emision'] },
+    },
+    optionalFields: {
+      'client.email':           { label: 'Email del cliente',         autoDetect: ['email', 'correo', 'emailCliente'] },
+      'client.phonePrimary':    { label: 'Teléfono del cliente',      autoDetect: ['telefono', 'phone', 'celular', 'tel'] },
+      'items[0].quantity':      { label: 'Cantidad',                  autoDetect: ['cantidad', 'adultos', 'unidades', 'quantity', 'qty'] },
+      'items[0].discount':      { label: '% Descuento',               autoDetect: ['descuento', 'discount', 'promo', 'rebaja'] },
+      'observations':           { label: 'Observaciones',             autoDetect: ['notas', 'observaciones', 'comentarios', 'notes'] },
+      'dueDate':                { label: 'Fecha de vencimiento',      autoDetect: ['fecha_vencimiento', 'vence', 'due_date', 'plazo'] },
+    },
+    // Campos fijos del negocio (no vienen de la tabla, se configuran 1 vez en el workspace)
+    providerConfig: {
+      'seller.id':              { label: 'ID del vendedor en Alegra',    hint: 'Configuración → Vendedores → Ver ID', required: false },
+      'numberTemplate.id':      { label: 'ID Resolución DIAN en Alegra', hint: 'Configuración → Numeración → Ver ID de la resolución activa', required: true },
+      'paymentMethod':          { label: 'Forma de pago por defecto',     options: ['cash', 'credit_card', 'transfer', 'check'], default: 'cash', required: true },
+      'currency':               { label: 'Moneda',                       options: ['COP', 'USD'], default: 'COP', required: false },
+    },
+  },
+
+  siigo_invoice: {
+    name: 'Factura Electrónica — Siigo',
+    provider: 'siigo',
+    icon: '🧾',
+    description: 'Crea facturas electrónicas válidas ante la DIAN a través de Siigo',
+    apiDocsUrl: 'https://siigoapi.readme.io/reference/facturas',
+    requiredFields: {
+      'customer.person_type':        { label: 'Tipo de persona',            autoDetect: [], default: 'Person' },
+      'customer.id_type':            { label: 'Tipo de documento',          autoDetect: ['tipo_doc', 'tipo_identificacion'], default: 'CC' },
+      'customer.identification':     { label: 'NIT / Cédula',               autoDetect: ['nit', 'cedula', 'identificacion', 'documento'] },
+      'customer.name[0]':            { label: 'Nombre del cliente',         autoDetect: ['nombre', 'cliente', 'name', 'razon_social'] },
+      'customer.address.address':    { label: 'Dirección del cliente',      autoDetect: ['direccion', 'address', 'domicilio'] },
+      'items[0].code.id':            { label: 'ID del producto en Siigo',   autoDetect: [], hint: 'ID del producto creado en Siigo' },
+      'items[0].description':        { label: 'Descripción del servicio',   autoDetect: ['servicio', 'descripcion', 'concepto', 'destino'] },
+      'items[0].quantity':           { label: 'Cantidad',                   autoDetect: ['cantidad', 'adultos', 'unidades', 'qty'] },
+      'items[0].price':              { label: 'Precio unitario',            autoDetect: ['precio', 'valor', 'totalPagar', 'monto'] },
+      'date':                        { label: 'Fecha de emisión',           autoDetect: ['fecha', 'fechaViaje', 'fecha_factura', 'date'] },
+    },
+    optionalFields: {
+      'customer.contacts[0].email':  { label: 'Email del cliente',         autoDetect: ['email', 'correo'] },
+      'customer.contacts[0].phone':  { label: 'Teléfono del cliente',      autoDetect: ['telefono', 'celular', 'phone'] },
+      'observations':                { label: 'Observaciones',             autoDetect: ['notas', 'observaciones', 'comentarios'] },
+    },
+    providerConfig: {
+      'document.id':            { label: 'ID Tipo documento Siigo (FV)',  hint: 'En Siigo: Configuración → Tipos de comprobante → Factura de Venta → ID', required: true },
+      'seller':                 { label: 'ID del vendedor en Siigo',      hint: 'En Siigo: Mi negocio → Usuarios → Ver ID', required: false },
+      'cost_center':            { label: 'Centro de costos',              hint: 'Opcional. En Siigo: Configuración → Centros de costos', required: false },
+    },
+  },
+
+  custom_api: {
+    name: 'API Personalizada',
+    provider: 'custom',
+    icon: '🔗',
+    description: 'Conecta con cualquier sistema externo que tenga API REST',
+    requiredFields: {
+      // El usuario define sus propios campos en la UI
+    },
+    optionalFields: {},
+    providerConfig: {
+      'baseUrl':    { label: 'URL base del API',    hint: 'Ej: https://api.micrm.com/v1', required: true },
+      'authType':   { label: 'Tipo de autenticación', options: ['bearer', 'basic', 'api_key', 'none'], required: true },
+      'authHeader': { label: 'Header de autenticación', hint: 'Ej: Authorization', required: false },
+    },
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+
 // Aliases comunes para campos (español/inglés)
 const FIELD_ALIASES = {
   start: ['fecha', 'fecha_inicio', 'date', 'start_date', 'dia', 'fecha_cita', 'inicio', 'when'],
@@ -282,6 +366,16 @@ const FIELD_ALIASES = {
   mesa_id: ['mesa_id', 'mesa', 'table_id', 'table', 'id_mesa'],
   items: ['items', 'productos', 'lineas', 'detalle', 'products', 'order_items'],
   total: ['total', 'monto', 'importe', 'amount', 'suma', 'subtotal'],
+  // Integración DIAN / Alegra / Siigo
+  'client.name':           ['nombre', 'cliente', 'razon_social', 'name', 'nombre_cliente', 'razon'],
+  'client.identification': ['nit', 'cedula', 'identificacion', 'documento', 'cedula_cliente', 'rut'],
+  'client.email':          ['email', 'correo', 'email_cliente', 'correo_electronico'],
+  'client.phonePrimary':   ['telefono', 'celular', 'phone', 'tel', 'movil'],
+  'items[0].description':  ['servicio', 'descripcion', 'concepto', 'destino', 'producto', 'item', 'detalle'],
+  'items[0].price':        ['precio', 'valor', 'total', 'monto', 'totalPagar', 'valor_total', 'importe'],
+  'items[0].quantity':     ['cantidad', 'adultos', 'quantity', 'qty', 'unidades'],
+  'date':                  ['fecha', 'fechaViaje', 'fecha_factura', 'fecha_emision', 'date', 'dia'],
+  'observations':          ['notas', 'observaciones', 'comentarios', 'notes', 'descripcion'],
 };
 
 export class ViewMappingService {
