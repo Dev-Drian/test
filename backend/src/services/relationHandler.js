@@ -2,6 +2,94 @@ import { v4 as uuidv4 } from "uuid";
 import { connectDB, getWorkspaceDbName, getTableDataDbName } from "../config/db.js";
 
 /**
+ * Normaliza texto para comparación fuzzy
+ * - Convierte a minúsculas
+ * - Elimina acentos/tildes
+ * - Elimina espacios extra
+ */
+function normalizeText(text) {
+  if (!text) return '';
+  return String(text)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Quita acentos
+    .replace(/[^a-z0-9\s]/g, '') // Solo letras, números y espacios
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Calcula similitud entre dos strings (0 a 1)
+ * Basado en coeficiente de Dice (bigrams)
+ */
+function stringSimilarity(str1, str2) {
+  const s1 = normalizeText(str1);
+  const s2 = normalizeText(str2);
+  
+  if (s1 === s2) return 1;
+  if (!s1 || !s2) return 0;
+  
+  // Si uno contiene al otro, alta similitud
+  if (s1.includes(s2) || s2.includes(s1)) {
+    const shorter = s1.length < s2.length ? s1 : s2;
+    const longer = s1.length < s2.length ? s2 : s1;
+    return shorter.length / longer.length * 0.9 + 0.1; // Entre 0.1 y 1
+  }
+  
+  // Comparar palabras en común
+  const words1 = s1.split(' ').filter(w => w.length > 2);
+  const words2 = s2.split(' ').filter(w => w.length > 2);
+  
+  if (words1.length === 0 || words2.length === 0) {
+    // Usar Levenshtein simplificado para strings cortos
+    return levenshteinSimilarity(s1, s2);
+  }
+  
+  let matches = 0;
+  for (const w1 of words1) {
+    for (const w2 of words2) {
+      if (w1 === w2 || w1.includes(w2) || w2.includes(w1)) {
+        matches++;
+        break;
+      }
+    }
+  }
+  
+  return matches / Math.max(words1.length, words2.length);
+}
+
+/**
+ * Similitud basada en distancia Levenshtein
+ */
+function levenshteinSimilarity(s1, s2) {
+  if (s1 === s2) return 1;
+  const longer = s1.length > s2.length ? s1 : s2;
+  const shorter = s1.length > s2.length ? s2 : s1;
+  
+  if (longer.length === 0) return 1;
+  
+  const costs = [];
+  for (let i = 0; i <= s1.length; i++) {
+    let lastValue = i;
+    for (let j = 0; j <= s2.length; j++) {
+      if (i === 0) {
+        costs[j] = j;
+      } else if (j > 0) {
+        let newValue = costs[j - 1];
+        if (s1.charAt(i - 1) !== s2.charAt(j - 1)) {
+          newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+        }
+        costs[j - 1] = lastValue;
+        lastValue = newValue;
+      }
+    }
+    if (i > 0) costs[s2.length] = lastValue;
+  }
+  
+  return (longer.length - costs[s2.length]) / longer.length;
+}
+
+/**
  * Convierte hora de formato 24h a 12h con AM/PM
  */
 function formatTo12Hour(time24) {
@@ -200,14 +288,14 @@ function normalizeForComparison(value) {
 }
 
 /**
- * Busca un registro en una tabla por valor de campo (coincidencia exacta)
+ * Busca un registro en una tabla con fuzzy matching inteligente
+ * Prioridad: 1) Exacta, 2) Contiene/contenido, 3) Similitud alta
  */
 async function findRecordInTable(workspaceId, tableId, searchField, searchValue) {
   const dataDb = await connectDB(getTableDataDbName(workspaceId, tableId));
-  // Búsqueda case-insensitive, filtrando por tableId para obtener solo registros de esta tabla
   const result = await dataDb.find({
     selector: {
-      tableId: tableId, // <- IMPORTANTE: filtrar por tableId
+      tableId: tableId,
       $or: [
         { main: { $exists: false } },
         { main: { $ne: true } },
@@ -217,14 +305,73 @@ async function findRecordInTable(workspaceId, tableId, searchField, searchValue)
   });
   
   const docs = result.docs || [];
+  const searchNormalized = normalizeText(searchValue);
   const searchLower = String(searchValue).toLowerCase().trim();
   
   console.log(`[relationHandler] findRecordInTable: tableId=${tableId}, searchField=${searchField}, value=${searchValue}, docsFound=${docs.length}`);
   
-  return docs.find(doc => {
+  // 1. Coincidencia exacta (case-insensitive)
+  const exactMatch = docs.find(doc => {
     const fieldValue = doc[searchField];
     return fieldValue && String(fieldValue).toLowerCase().trim() === searchLower;
   });
+  
+  if (exactMatch) {
+    console.log(`[relationHandler] Exact match found: ${exactMatch[searchField]}`);
+    return exactMatch;
+  }
+  
+  // 2. El valor buscado está contenido en algún registro o viceversa
+  const containsMatches = docs.filter(doc => {
+    const fieldValue = doc[searchField];
+    if (!fieldValue) return false;
+    const fieldNormalized = normalizeText(fieldValue);
+    return fieldNormalized.includes(searchNormalized) || searchNormalized.includes(fieldNormalized);
+  });
+  
+  if (containsMatches.length === 1) {
+    console.log(`[relationHandler] Contains match found: "${searchValue}" → "${containsMatches[0][searchField]}"`);
+    return containsMatches[0];
+  }
+  
+  // Si hay múltiples coincidencias parciales, buscar la más específica
+  if (containsMatches.length > 1) {
+    // Ordenar por similitud y tomar el mejor
+    const ranked = containsMatches.map(doc => ({
+      doc,
+      similarity: stringSimilarity(doc[searchField], searchValue)
+    })).sort((a, b) => b.similarity - a.similarity);
+    
+    // Si el mejor tiene buena similitud, usarlo
+    if (ranked[0].similarity >= 0.6) {
+      console.log(`[relationHandler] Best partial match: "${searchValue}" → "${ranked[0].doc[searchField]}" (${(ranked[0].similarity * 100).toFixed(0)}%)`);
+      return ranked[0].doc;
+    }
+  }
+  
+  // 3. Búsqueda por similitud de string (para errores tipográficos)
+  const SIMILARITY_THRESHOLD = 0.65; // 65% de similitud mínima
+  
+  const similarities = docs
+    .map(doc => {
+      const fieldValue = doc[searchField];
+      if (!fieldValue) return null;
+      return {
+        doc,
+        similarity: stringSimilarity(fieldValue, searchValue)
+      };
+    })
+    .filter(item => item && item.similarity >= SIMILARITY_THRESHOLD)
+    .sort((a, b) => b.similarity - a.similarity);
+  
+  if (similarities.length > 0) {
+    const best = similarities[0];
+    console.log(`[relationHandler] Fuzzy match found: "${searchValue}" → "${best.doc[searchField]}" (${(best.similarity * 100).toFixed(0)}% similar)`);
+    return best.doc;
+  }
+  
+  console.log(`[relationHandler] No match found for: ${searchValue}`);
+  return undefined;
 }
 
 /**
@@ -671,13 +818,22 @@ export async function validateRelationField(workspaceId, value, fieldConfig) {
   
   console.log(`[relationHandler] Found table: ${relatedTable._id} (${relatedTable.name})`);
   
-  // Buscar si existe el registro
+  // Buscar si existe el registro (ahora con fuzzy matching)
   const mainSearchField = searchField || displayField || "nombre";
   const existingRecord = await findRecordInTable(workspaceId, relatedTable._id, mainSearchField, value);
   
   if (existingRecord) {
-    console.log(`[relationHandler] Record found: ${value}`);
-    return { valid: true }; // El registro existe
+    const matchedValue = existingRecord[mainSearchField];
+    const isExactMatch = String(matchedValue).toLowerCase().trim() === String(value).toLowerCase().trim();
+    
+    console.log(`[relationHandler] Record found: "${value}" → "${matchedValue}" (exact: ${isExactMatch})`);
+    
+    // Devolver el valor correcto encontrado para usarlo en lugar del input del usuario
+    return { 
+      valid: true,
+      matchedValue: matchedValue,
+      wasAutoMatched: !isExactMatch
+    };
   }
   
   console.log(`[relationHandler] Record NOT found: ${value}`);

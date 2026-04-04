@@ -33,6 +33,29 @@ export class ChatRepository extends BaseRepository {
   }
   
   /**
+   * Busca un chat por referencia externa (platform:senderId)
+   * Se usa para evitar crear chats duplicados del mismo usuario externo.
+   * @param {string} workspaceId 
+   * @param {string} externalRef - Formato: "platform:senderId" (ej: "messenger:123456")
+   * @param {string} agentId - ID del agente (opcional, para filtrar por agente específico)
+   * @returns {Promise<object|null>}
+   */
+  async findByExternalRef(workspaceId, externalRef, agentId = null) {
+    const selector = { 
+      type: 'chat', 
+      externalRef 
+    };
+    
+    // Si se especifica agentId, filtrar por ese agente
+    if (agentId) {
+      selector.agentId = agentId;
+    }
+    
+    const results = await this.find(selector, { limit: 1 }, workspaceId);
+    return results.length > 0 ? results[0] : null;
+  }
+  
+  /**
    * Crea un nuevo chat
    * @param {string} workspaceId 
    * @param {object} data 

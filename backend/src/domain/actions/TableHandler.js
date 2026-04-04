@@ -391,6 +391,7 @@ RESPONDE EN JSON:
       citas: ['cita', 'citas', 'appointment', 'appointments', 'reserva', 'reservas', 'booking'],
       empleados: ['empleado', 'empleados', 'employee', 'employees', 'personal', 'staff'],
       inventario: ['inventario', 'inventory', 'stock', 'almacen', 'bodega'],
+      salidas: ['salida', 'salidas', 'salidas programadas', 'fechas', 'disponibilidad', 'calendario', 'cupos', 'horarios'],
     };
 
     for (const [key, synList] of Object.entries(synonyms)) {

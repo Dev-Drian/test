@@ -214,10 +214,10 @@ export async function seed() {
               showOptionsOnNotFound: true
             }
           },
-          { key: 'fechaViaje', label: 'Fecha del Viaje', type: 'date', required: true, emoji: '📅', priority: 4 },
-          { key: 'adultos', label: 'Adultos', type: 'number', required: true, emoji: '👨', priority: 5, validation: { min: 1, max: 50 }, defaultValue: 1 },
-          { key: 'ninos', label: 'Niños', type: 'number', required: false, emoji: '👶', priority: 6, validation: { min: 0, max: 20 }, defaultValue: 0 },
-          { key: 'puntoRecogida', label: 'Punto de Recogida', type: 'select', required: true, emoji: '📍', priority: 7, options: ['Terminal Norte', 'Terminal Sur', 'Centro Comercial Plaza', 'Parque Principal', 'Hotel zona centro', 'Aeropuerto'] },
+          { key: 'fechaViaje', label: 'Fecha del Viaje', type: 'date', required: true, emoji: '📅', priority: 4, askMessage: '¿Para qué fecha deseas reservar? (Verificaré disponibilidad)' },
+          { key: 'adultos', label: 'Adultos', type: 'number', required: true, emoji: '👨', priority: 5, validation: { min: 1, max: 50 }, defaultValue: 1, askMessage: '¿Para cuántas personas adultas?' },
+          { key: 'ninos', label: 'Niños', type: 'number', required: false, emoji: '👶', priority: 6, validation: { min: 0, max: 20 }, defaultValue: 0, askMessage: '¿Van niños? ¿Cuántos? (Si no van niños, dime 0 o "ninguno")' },
+          { key: 'puntoRecogida', label: 'Punto de Recogida', type: 'select', required: true, emoji: '📍', priority: 7, options: ['Terminal Norte', 'Terminal Sur', 'Centro Comercial Plaza', 'Parque Principal', 'Hotel zona centro', 'Aeropuerto'], askMessage: '¿En qué punto de recogida te queda más cómodo?' },
           { key: 'totalPagar', label: 'Total a Pagar', type: 'number', required: false, emoji: '💰', priority: 8, hiddenFromChat: true, autoCalculate: true },
           { key: 'abono', label: 'Abono', type: 'number', required: false, emoji: '💵', validation: { min: 0 }, defaultValue: 0 },
           { key: 'saldo', label: 'Saldo Pendiente', type: 'number', required: false, emoji: '💳', hiddenFromChat: true },

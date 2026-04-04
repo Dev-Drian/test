@@ -38,7 +38,16 @@ app.use(compression({
 // Rate limiting global para /api (100 req/min por IP)
 app.use('/api', apiLimiter);
 
-app.use(express.json({ limit: "25mb" }));
+// Capturar raw body para validación de firmas en webhooks (Meta, Stripe, etc.)
+app.use(express.json({ 
+  limit: "25mb",
+  verify: (req, res, buf) => {
+    // Guardar el raw body para rutas que necesitan validar firmas HMAC
+    if (req.originalUrl.includes('/webhooks/')) {
+      req.rawBody = buf.toString('utf-8');
+    }
+  }
+}));
 app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 // Sanitizar inputs para prevenir XSS
 app.use(sanitizeBody({ escapeHtml: false }));

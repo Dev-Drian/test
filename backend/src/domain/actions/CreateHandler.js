@@ -263,6 +263,44 @@ export class CreateHandler extends ActionHandler {
             };
           }
           
+          // Si es query, verificar si pregunta por disponibilidad del registro relacionado
+          if (extracted.newIntent === 'query') {
+            const messageLower = context.message.toLowerCase();
+            const isAvailabilityQuery = /disponib|horario|fecha.*(tien|hay)|que dias|cuando|a que hora/i.test(messageLower);
+            
+            console.log('[CreateHandler] Availability query check:', { messageLower, isAvailabilityQuery });
+            
+            if (isAvailabilityQuery) {
+              // Buscar disponibilidad del registro relacionado ya seleccionado
+              const availability = await this._getRelatedRecordAvailability(context, 'date');
+              console.log('[CreateHandler] Availability result:', availability);
+              
+              if (availability) {
+                let response = `📅 **${availability.recordName}** `;
+                
+                if (availability.dias) {
+                  response += `tiene salidas los: **${availability.dias}**`;
+                }
+                if (availability.horarios) {
+                  response += `\n🕐 Horarios: **${availability.horarios}**`;
+                }
+                if (availability.precios) {
+                  const preciosStr = Object.entries(availability.precios)
+                    .map(([key, val]) => `${key}: $${val}`)
+                    .join(', ');
+                  response += `\n💰 ${preciosStr}`;
+                }
+                
+                response += '\n\n¿Para qué fecha deseas reservar?';
+                
+                return {
+                  handled: true,
+                  response: response,
+                };
+              }
+            }
+          }
+          
           // Para query, availability, thanks → indicar al Engine que re-procese
           // Los campos ya fueron guardados arriba, así que el contexto se preserva
           // Devolver handled: false CON newIntent para que el Engine re-procese
@@ -374,6 +412,12 @@ export class CreateHandler extends ActionHandler {
                 response: `⚠️ "${newValue}" no está registrado como ${fieldConfig.label}.\n\n📋 Opciones disponibles: ${optionsStr}\n\n¿Cuál ${fieldConfig.label} deseas?`,
               };
             }
+            
+            // Si hubo fuzzy match, usar el valor correcto
+            if (relationValidation.matchedValue) {
+              console.log(`[CreateHandler] Fuzzy matched: "${newValue}" → "${relationValidation.matchedValue}"`);
+              newValue = relationValidation.matchedValue;
+            }
           }
           
           const changeResult = context.changeField(field, newValue);
@@ -414,9 +458,10 @@ export class CreateHandler extends ActionHandler {
             const fieldConfig = fieldsConfig.find(fc => fc.key === firstRejected.key);
             
             if (fieldConfig) {
+              const question = await this._generateQuestion(fieldConfig, context);
               return {
                 handled: true,
-                response: `⚠️ ${firstRejected.reason}\n\n${this._generateQuestion(fieldConfig, context)}`,
+                response: `⚠️ ${firstRejected.reason}\n\n${question}`,
               };
             }
           }
@@ -675,8 +720,8 @@ export class CreateHandler extends ActionHandler {
       };
     }
     
-    // Generar pregunta
-    const question = this._generateQuestion(nextField, context);
+    // Generar pregunta (async para obtener disponibilidad)
+    const question = await this._generateQuestion(nextField, context);
     
     // Construir resumen de progreso
     const progress = this._buildProgressSummary(context.collectedFields, fieldsConfig);
@@ -721,8 +766,8 @@ export class CreateHandler extends ActionHandler {
       return await this._createRecord(context);
     }
     
-    // Generar pregunta
-    const question = this._generateQuestion(nextField, context);
+    // Generar pregunta (async para obtener disponibilidad)
+    const question = await this._generateQuestion(nextField, context);
     
     // Construir resumen de progreso
     const progress = this._buildProgressSummary(context.collectedFields, fieldsConfig);
@@ -735,9 +780,149 @@ export class CreateHandler extends ActionHandler {
   }
   
   /**
-   * Genera la pregunta para un campo
+   * Obtiene información de disponibilidad de un registro relacionado
+   * Por ejemplo: si el usuario eligió un destino, buscar sus días/horarios disponibles
    */
-  _generateQuestion(fieldConfig, context) {
+  async _getRelatedRecordAvailability(context, forFieldType) {
+    try {
+      console.log('[CreateHandler] _getRelatedRecordAvailability called:', {
+        workspaceId: context.workspaceId,
+        tableId: context.pendingCreate?.tableId,
+        collectedFields: context.collectedFields,
+      });
+      
+      const fieldsConfig = await this.tableRepository?.getFieldsConfig(
+        context.workspaceId,
+        context.pendingCreate?.tableId
+      );
+      
+      if (!fieldsConfig) {
+        console.log('[CreateHandler] No fieldsConfig found');
+        return null;
+      }
+      
+      // Buscar campos de tipo relation que ya tengan valor
+      for (const [key, value] of Object.entries(context.collectedFields || {})) {
+        if (!value) continue;
+        
+        const config = fieldsConfig.find(f => f.key === key);
+        console.log('[CreateHandler] Checking field for relation:', { key, type: config?.type, hasRelation: !!config?.relation });
+        
+        if (config?.type !== 'relation' || !config.relation) continue;
+        
+        console.log('[CreateHandler] Processing relation field:', { key, value, tableName: config.relation.tableName });
+        
+        // Buscar el registro relacionado
+        const relatedTable = await findTableByName(context.workspaceId, config.relation.tableName);
+        if (!relatedTable) {
+          console.log('[CreateHandler] Related table not found:', config.relation.tableName);
+          continue;
+        }
+        
+        console.log('[CreateHandler] Found related table:', { tableId: relatedTable._id, headers: relatedTable.headers?.map(h => h.key) });
+        
+        const searchField = config.relation.searchField || config.relation.displayField || 'nombre';
+        const { connectDB, getTableDataDbName } = await import('../../config/db.js');
+        const dataDb = await connectDB(getTableDataDbName(context.workspaceId, relatedTable._id));
+        
+        const result = await dataDb.find({
+          selector: {
+            [searchField]: value,
+            $or: [
+              { main: { $exists: false } },
+              { main: { $ne: true } },
+            ],
+          },
+          limit: 1,
+        });
+        
+        if (result.docs?.length > 0) {
+          const record = result.docs[0];
+          console.log('[CreateHandler] Found related record:', { recordKeys: Object.keys(record) });
+          
+          // Buscar campos de disponibilidad en el registro
+          const availabilityInfo = this._extractAvailabilityFromRecord(record, relatedTable.headers || []);
+          console.log('[CreateHandler] Extracted availability info:', availabilityInfo);
+          
+          if (availabilityInfo) {
+            return {
+              recordName: value,
+              tableName: config.relation.tableName,
+              ...availabilityInfo
+            };
+          }
+        } else {
+          console.log('[CreateHandler] No related record found for:', { searchField, value });
+        }
+      }
+      
+      return null;
+    } catch (err) {
+      console.warn('[CreateHandler] Error getting availability:', err.message);
+      return null;
+    }
+  }
+  
+  /**
+   * Extrae información de disponibilidad de un registro
+   */
+  _extractAvailabilityFromRecord(record, headers) {
+    const result = {};
+    
+    // Normalizar key a snake_case para comparar (convierte camelCase)
+    const normalizeKey = (key) => {
+      return (key || '')
+        .replace(/([a-z])([A-Z])/g, '$1_$2')
+        .toLowerCase()
+        .replace(/ñ/g, 'n');
+    };
+    
+    // Nombres comunes de campos de disponibilidad
+    const dateFieldNames = ['dias', 'dias_disponibles', 'fechas', 'fechas_disponibles', 'days', 'available_days'];
+    const timeFieldNames = ['horario', 'horarios', 'hora', 'hora_salida', 'hora_regreso', 'hora_llegada', 'schedule', 'hours', 'time', 'salida', 'regreso'];
+    const priceFieldNames = ['precio', 'precio_adulto', 'precio_nino', 'costo', 'tarifa', 'price'];
+    
+    for (const header of headers) {
+      const keyNormalized = normalizeKey(header.key);
+      const labelNormalized = normalizeKey(header.label);
+      const value = record[header.key];
+      
+      if (value === undefined || value === null || value === '') continue;
+      
+      // Detectar campos de día/fecha
+      if (dateFieldNames.some(n => keyNormalized.includes(n) || labelNormalized.includes(n))) {
+        result.dias = Array.isArray(value) ? value.join(', ') : value;
+      }
+      
+      // Detectar campos de horario
+      if (timeFieldNames.some(n => keyNormalized.includes(n) || labelNormalized.includes(n))) {
+        // Si ya tenemos horarios, concatenar (salida + regreso)
+        if (result.horarios) {
+          result.horarios += ` - ${value}`;
+        } else {
+          result.horarios = Array.isArray(value) ? value.join(', ') : String(value);
+        }
+      }
+      
+      // Detectar campos de precio
+      if (priceFieldNames.some(n => keyNormalized.includes(n) || labelNormalized.includes(n))) {
+        if (!result.precios) result.precios = {};
+        const label = header.label || header.key;
+        result.precios[label] = value;
+      }
+    }
+    
+    // Solo retornar si encontró algo relevante
+    if (Object.keys(result).length > 0) {
+      return result;
+    }
+    return null;
+  }
+  
+  /**
+   * Genera la pregunta para un campo (async para obtener disponibilidad)
+   */
+  async _generateQuestion(fieldConfig, context) {
     // Si tiene mensaje personalizado, usarlo
     if (fieldConfig.askMessage) {
       return this._processTemplate(fieldConfig.askMessage, context);
@@ -745,6 +930,30 @@ export class CreateHandler extends ActionHandler {
     
     // Generar pregunta por defecto según el tipo
     const label = fieldConfig.label || fieldConfig.key;
+    
+    // Para campos de fecha/hora, intentar mostrar disponibilidad
+    if (fieldConfig.type === 'date' || fieldConfig.type === 'time') {
+      const availability = await this._getRelatedRecordAvailability(context, fieldConfig.type);
+      
+      if (availability) {
+        let availabilityStr = '';
+        
+        if (fieldConfig.type === 'date' && availability.dias) {
+          availabilityStr = `\n\n📋 **${availability.recordName}** tiene salidas los: ${availability.dias}`;
+          if (availability.horarios) {
+            availabilityStr += `\n🕐 Horarios: ${availability.horarios}`;
+          }
+        } else if (fieldConfig.type === 'time' && availability.horarios) {
+          availabilityStr = `\n\n🕐 Horarios disponibles para **${availability.recordName}**: ${availability.horarios}`;
+        }
+        
+        if (fieldConfig.type === 'date') {
+          return `📅 ¿Para qué fecha?${availabilityStr}`;
+        } else {
+          return `🕐 ¿A qué hora?${availabilityStr}`;
+        }
+      }
+    }
     
     switch (fieldConfig.type) {
       case 'date':

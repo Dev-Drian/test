@@ -32,20 +32,50 @@ export class QueryHandler extends ActionHandler {
     const { workspaceId, analysis, message, tables } = context;
     
     // V3: El tableId ya viene resuelto desde Engine._mapToolArgsToContext()
-    const tableId = analysis?.tableId;
+    let tableId = analysis?.tableId;
     // Soportar tanto 'id' (de ChatService) como '_id' (de DB directa)
-    const tableSchema = tableId ? tables?.find(t => (t.id || t._id) === tableId) : null;
+    let tableSchema = tableId ? tables?.find(t => (t.id || t._id) === tableId) : null;
     const requestedType = context.llmExtracted?.record_type || analysis?.requestedType;
+    
+    // ════════════════════════════════════════════════════════════════════════
+    // MAPEO ESPECIAL: Detectar preguntas sobre disponibilidad/fechas
+    // Si el usuario pregunta por "fechas disponibles", "disponibilidad", "cupos",
+    // "salidas", etc. → buscar en tabla "Salidas Programadas"
+    // ════════════════════════════════════════════════════════════════════════
+    const messageLower = (message || '').toLowerCase();
+    const availabilityKeywords = [
+      'fechas disponibles', 'disponibilidad', 'cupos', 'hay salida',
+      'que dias', 'cuando hay', 'próximas salidas', 'salidas disponibles',
+      'hay disponibilidad', 'horarios disponibles', 'cuantos cupos',
+      'fechas tienen', 'tienen disponibles', 'que fechas', 'cuales fechas'
+    ];
+    
+    const isAvailabilityQuery = availabilityKeywords.some(kw => messageLower.includes(kw));
+    if (isAvailabilityQuery) {
+      // Buscar tabla "Salidas Programadas"
+      const salidasTable = tables?.find(t => 
+        t.name?.toLowerCase().includes('salidas') || 
+        t.name?.toLowerCase().includes('programadas') ||
+        t.keywords?.some(k => k.toLowerCase().includes('disponibilidad'))
+      );
+      if (salidasTable) {
+        tableId = salidasTable.id || salidasTable._id;
+        tableSchema = salidasTable;
+        if (!analysis) context.analysis = {};
+        context.analysis.tableId = tableId;
+      }
+    }
     
     // ════════════════════════════════════════════════════════════════════════
     // VALIDACIÓN CRÍTICA: Detectar si el LLM eligió una tabla incorrecta
     // Ejemplo: Usuario pregunta "empleados" pero LLM elige "Departamentos"
     // porque Departamentos tiene un campo llamado "empleados"
+    // NOTA: Saltar esta validación si ya detectamos consulta de disponibilidad
     // ════════════════════════════════════════════════════════════════════════
-    const messageLower = (message || '').toLowerCase();
     
     // Extraer qué entidad menciona el usuario en su mensaje
-    const userRequestedEntity = this._extractEntityFromMessage(messageLower, tables);
+    // Solo si NO es una consulta de disponibilidad (ya resuelta arriba)
+    const userRequestedEntity = isAvailabilityQuery ? null : this._extractEntityFromMessage(messageLower, tables);
     
     if (userRequestedEntity && tableSchema) {
       const userEntityNorm = this._normalizeForComparison(userRequestedEntity);
@@ -141,6 +171,25 @@ export class QueryHandler extends ActionHandler {
         ...llmFilters,
         ...parsedQuery.filters,
       };
+      
+      // ═══ FILTRO AUTOMÁTICO POR CONTEXTO DE PENDINGCREATE ═══
+      // Si el usuario está en medio de una reserva y pregunta por disponibilidad,
+      // filtrar automáticamente por el destino que ya eligió
+      const pendingCreate = context.chatData?.pendingCreate;
+      console.log('[QueryHandler] Filtro de disponibilidad:', {
+        isAvailabilityQuery,
+        hasPendingCreate: !!pendingCreate,
+        collectedDestino: pendingCreate?.collectedData?.destino,
+        currentFilters: combinedFilters
+      });
+      if (pendingCreate?.collectedData?.destino && isAvailabilityQuery) {
+        const selectedDestino = pendingCreate.collectedData.destino;
+        // Solo agregar filtro si no se especificó otro destino en la consulta
+        if (!combinedFilters.destino) {
+          combinedFilters.destino = selectedDestino;
+          console.log('[QueryHandler] Filtro de destino aplicado:', selectedDestino);
+        }
+      }
       
       // ═══ CONTROL DE ACCESO POR TABLA ═══
       // Verificar si el agente tiene fullAccess para esta tabla
@@ -641,7 +690,12 @@ export class QueryHandler extends ActionHandler {
     
     rows.slice(0, 10).forEach((row, i) => {
       // Obtener el campo principal (usualmente 'nombre')
-      const mainField = row.nombre || row.title || Object.values(row).find(v => typeof v === 'string' && v.length > 0);
+      // Excluir campos internos como id, _id, tableId, etc.
+      const excludedKeys = ['id', '_id', 'tableId', '_rev', 'createdAt', 'updatedAt', 'chatOriginId'];
+      const mainField = row.nombre || row.title || row.destino || 
+        Object.entries(row).find(([k, v]) => 
+          typeof v === 'string' && v.length > 0 && !excludedKeys.includes(k) && !k.startsWith('_')
+        )?.[1];
       
       // Detectar imagen antes de iterar campos — ponerla justo después del título
       let imageUrl = null;
@@ -654,7 +708,7 @@ export class QueryHandler extends ActionHandler {
         }
       }
 
-      response += `${i + 1}. **${mainField || 'Sin nombre'}**\n`;
+      response += `${i + 1}. ${mainField || 'Sin nombre'}\n`;
       if (imageUrl) {
         // 1 resultado → imagen real vía Meta (el canal la enviará como adjunto)
         // >1 resultados → URL plana (WhatsApp genera preview automático, sin spam de imágenes)

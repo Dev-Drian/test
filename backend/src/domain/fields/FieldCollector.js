@@ -82,6 +82,16 @@ export class FieldCollector {
           availableOptions: relationValidation.availableOptions,
         };
       }
+      
+      // Si hubo fuzzy match, usar el valor correcto del registro
+      if (relationValidation.matchedValue) {
+        console.log(`[FieldCollector] Using matched value: "${value}" → "${relationValidation.matchedValue}"`);
+        return {
+          valid: true,
+          normalizedValue: relationValidation.matchedValue,
+          wasAutoMatched: relationValidation.wasAutoMatched,
+        };
+      }
     }
     
     // 3. Validar según configuración
@@ -178,33 +188,63 @@ export class FieldCollector {
       
       const content = response.content || '{}';
       const cleaned = content.replace(/```json?\s*/g, '').replace(/```/g, '').trim();
+      console.log('[FieldCollector] Raw LLM extraction:', cleaned);
       const extracted = JSON.parse(cleaned);
       
       // Validar y normalizar campos extraídos
       if (extracted.extractedFields && Object.keys(extracted.extractedFields).length > 0) {
         const validatedFields = {};
         const configMap = {};
+        // Mapa de keys normalizadas para fuzzy matching
+        const normalizedKeyMap = {};
+        
+        const normalizeFieldKey = (key) => {
+          return (key || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '') // Quita acentos
+            .replace(/ñ/g, 'n')
+            .replace(/[^a-z0-9]/g, '');
+        };
+        
         fieldsConfig.forEach(fc => {
           configMap[fc.key] = fc;
+          // También mapear por key normalizada y por label normalizado
+          normalizedKeyMap[normalizeFieldKey(fc.key)] = fc.key;
+          normalizedKeyMap[normalizeFieldKey(fc.label)] = fc.key;
         });
         
-        for (const [key, value] of Object.entries(extracted.extractedFields)) {
-          const config = configMap[key];
+        for (let [key, value] of Object.entries(extracted.extractedFields)) {
+          // Intentar encontrar la config con la key exacta
+          let config = configMap[key];
+          let resolvedKey = key;
+          
+          // Si no existe, intentar con key normalizada
+          if (!config) {
+            const normalizedKey = normalizeFieldKey(key);
+            const matchedKey = normalizedKeyMap[normalizedKey];
+            if (matchedKey) {
+              console.log(`[FieldCollector] Normalized key: "${key}" → "${matchedKey}"`);
+              config = configMap[matchedKey];
+              resolvedKey = matchedKey;
+            }
+          }
+          
           if (!config) {
             console.warn(`[FieldCollector] Unknown field: ${key}`);
             continue;
           }
           
           // Validar campo (ahora es async para validar relaciones)
-          const validation = await this.validateExtractedField(key, value, config, pendingCreate);
+          const validation = await this.validateExtractedField(resolvedKey, value, config, pendingCreate);
           
           if (validation.valid) {
-            validatedFields[key] = validation.normalizedValue;
+            validatedFields[resolvedKey] = validation.normalizedValue;
             
             // Si necesita crear nuevo registro relacionado (confirmOnMatch sin coincidencia)
             if (validation.needsNewRecord) {
               extracted.needsNewRelatedRecord = {
-                field: key,
+                field: resolvedKey,
                 value: value,
                 tableName: validation.tableName,
                 tableId: validation.tableId,
@@ -212,9 +252,9 @@ export class FieldCollector {
             }
           } else if (validation.needsConfirmation) {
             // Coincidencia encontrada que necesita confirmación del usuario
-            console.log(`[FieldCollector] Confirmation needed for ${key}:`, validation.matchFound);
+            console.log(`[FieldCollector] Confirmation needed for ${resolvedKey}:`, validation.matchFound);
             extracted.confirmationNeeded = {
-              field: key,
+              field: resolvedKey,
               value: value,
               matchFound: validation.matchFound,
               matchField: validation.matchField,
@@ -224,11 +264,11 @@ export class FieldCollector {
             };
             // No agregar a validatedFields hasta que confirme
           } else {
-            console.warn(`[FieldCollector] Field validation failed: ${key} - ${validation.error}`);
+            console.warn(`[FieldCollector] Field validation failed: ${resolvedKey} - ${validation.error}`);
             // Si hay opciones disponibles (campo de tipo relation), guardarlas para mostrar al usuario
             if (validation.availableOptions) {
               extracted.relationError = {
-                field: key,
+                field: resolvedKey,
                 value: value,
                 error: validation.error,
                 availableOptions: validation.availableOptions,
@@ -416,6 +456,7 @@ Responde SOLO con JSON válido:
 
 REGLAS CRÍTICAS:
 1. Las keys en "extractedFields" DEBEN ser EXACTAMENTE las keys listadas en CAMPOS QUE FALTAN (${missingFields.join(', ')}). NO uses otras keys.
+1.1 IMPORTANTE: Las keys NO TIENEN TILDES. Si el campo es "ninos", usa "ninos" NO "niños". Si es "telefono", usa "telefono" NO "teléfono". Copia la key EXACTA de la lista.
 2. EXTRAE TODOS LOS CAMPOS que el usuario mencione en su mensaje, no solo uno. Si dice "Juan Pérez, producto Software CRM, 5 unidades", extrae cliente, producto Y cantidad.
 3. Si el campo que se pregunta es "${currentlyAsking || '(ninguno)'}" y el usuario da un valor simple (sin otros datos), asígnalo a ESE campo.
 4. NO inventes datos. Solo extrae lo que el usuario dice EXPLÍCITAMENTE en su mensaje.
@@ -437,30 +478,29 @@ REGLAS PARA CAMPOS NUMÉRICOS:
 16. Los campos de tipo number SOLO aceptan números positivos (a menos que se especifique lo contrario).
 17. NUNCA extraigas valores negativos para cantidad, precio, stock u otros campos numéricos con validación min >= 0.
 18. Si el usuario dice "-20 cantidad" o "cantidad negativa" → isDataResponse: false, clarificationNeeded: "La cantidad debe ser un número positivo"
-18. Si el usuario dice "n + 1", "el doble", expresiones matemáticas → eso NO es un valor válido, clarificationNeeded: "Por favor indica un número específico"
+19. Si el usuario dice "n + 1", "el doble", expresiones matemáticas → eso NO es un valor válido, clarificationNeeded: "Por favor indica un número específico"
+
+REGLAS CRÍTICAS PARA MÚLTIPLES VALORES EN UN MENSAJE:
+20. EXTRAE TODOS los campos numéricos mencionados EN EL MISMO MENSAJE. Si el usuario dice "2 adultos y 1 niño", extrae AMBOS campos en extractedFields.
+21. MAPEO DE PALABRAS A KEYS (ignora tildes y plurales):
+    - "niño/niños" → usar key "ninos"
+    - "adulto/adultos" → usar key "adultos"  
+    - "teléfono" → usar key "telefono"
+    - Siempre copia la KEY EXACTA de la lista de campos, NO la palabra del usuario.
+22. Busca patrones como "N + [palabra]" donde la palabra indica el campo: "3 personas", "2 adultos", "1 niño", "5 unidades".
+23. Si el mensaje contiene múltiples cantidades con diferentes descriptores, CADA UNA va a su campo correspondiente.
 
 REGLAS PARA NOMBRES DE PRODUCTOS CON NÚMEROS:
-19. "Software CRM Pro 2" es el NOMBRE COMPLETO del producto, NO "Software CRM Pro" + cantidad 2.
-20. Si el producto termina en número (ej: "CRM 2.0", "Windows 11", "PS5"), el número ES PARTE DEL NOMBRE.
-21. Solo extrae cantidad cuando el usuario EXPLÍCITAMENTE la separa: "2 unidades de CRM", "CRM Pro, 5", "quiero 3".
-
-REGLA CRÍTICA PARA PATRÓN "quiero/necesito N [producto]":
-22. "quiero 2 servidores cloud" → producto: "servidores cloud" (o "Servidor Cloud"), cantidad: 2
-23. "necesito 5 licencias" → producto: "licencias", cantidad: 5
-24. Cuando el número está ANTES del producto/servicio, el número es CANTIDAD, el resto es el PRODUCTO.
-25. Patrones equivalentes: "quiero N X", "necesito N X", "dame N X", "me dan N X" → cantidad: N, producto: X
-26. CRÍTICO: Las palabras "quiero", "necesito", "dame", "me dan", "compro" SON VERBOS DE INTENCIÓN, NO son valores de campos. NUNCA extraigas estas palabras como cliente, producto u otro campo.
+24. "Software CRM Pro 2" es el NOMBRE COMPLETO del producto, NO "Software CRM Pro" + cantidad 2.
+25. Solo extrae cantidad cuando el usuario EXPLÍCITAMENTE la separa: "2 unidades de CRM", "CRM Pro, 5", "quiero 3".
 
 REGLAS CONTRA TEXTO BASURA:
-27. NUNCA uses el mensaje del usuario como valor de un campo a menos que sea una respuesta directa válida.
-28. Si el usuario habla sobre el proceso ("de la cantidad de software") NO es un nombre de cliente válido.
-29. Mensajes como "cambia X por Y", "el producto por el cliente" son INSTRUCCIONES, no datos → isDataResponse: false
-30. VERBOS DE INTENCIÓN PROHIBIDOS como valores: quiero, necesito, dame, compro, pido, solicito, requiero, deseo. Estos NUNCA son nombres de cliente/producto.
+26. NUNCA uses el mensaje del usuario como valor de un campo a menos que sea una respuesta directa válida.
+27. VERBOS DE INTENCIÓN PROHIBIDOS como valores: quiero, necesito, dame, compro. Estos NUNCA son nombres de cliente/producto.
 
 REGLAS CAMPOS file (archivo / imagen / documento):
-31. Si el campo es tipo "file", el valor en extractedFields DEBE ser un objeto con "url" (y preferiblemente "filename"). Ejemplo: usuario dice "te paso el comprobante https://ejemplo.com/c.pdf" → { "comprobante": { "url": "https://ejemplo.com/c.pdf", "filename": "c.pdf" } }.
-32. Si preguntas por un archivo y el usuario responde sin ninguna URL → isDataResponse: false, clarificationNeeded: pide un enlace público o indica que puede subir el archivo desde el panel Tablas del sistema.
-33. No inventes URLs. Solo acepta URLs que el usuario escriba explícitamente en el mensaje.
+28. Si el campo es tipo "file", el valor DEBE ser un objeto con "url". Ejemplo: { "comprobante": { "url": "https://ejemplo.com/c.pdf" } }.
+29. Si preguntas por un archivo y el usuario responde sin URL → isDataResponse: false, clarificationNeeded: pide un enlace.
 
 REGLA FINAL - EXTRACCIÓN MÚLTIPLE:
 - Si el usuario proporciona VARIOS datos en un mensaje, EXTRÁELOS TODOS.

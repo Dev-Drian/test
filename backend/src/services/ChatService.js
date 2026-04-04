@@ -130,6 +130,20 @@ export class ChatService {
       ? await this.chatRepo.findById(chatId, workspaceId)
       : null;
     
+    // Si no hay chatId pero viene de canal externo, buscar chat existente por externalRef
+    if (!chat && metadata?.externalRef) {
+      log.debug('Searching for existing chat by externalRef', { 
+        requestId, 
+        externalRef: metadata.externalRef,
+        agentId 
+      });
+      chat = await this.chatRepo.findByExternalRef(workspaceId, metadata.externalRef, agentId);
+      if (chat) {
+        chatId = chat._id;
+        log.debug('Found existing chat by externalRef', { requestId, chatId });
+      }
+    }
+    
     if (!chat) {
       log.debug('Creating new chat', { requestId });
       const chatData = { agentId, messages: [] };
